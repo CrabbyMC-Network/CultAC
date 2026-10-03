@@ -136,7 +136,7 @@ public class GeyserItemUseTest {
         final CultPlayer player;
         Harness() {
             UUID uuid = UUID.randomUUID();
-            player = new CultPlayer(new User(new User.Profile(uuid, ".Placement_Replay"), null, null, null, channel),
+            player = new CultPlayer(ac.cult.cultac.network.TestUsers.create(new User.Profile(uuid, ".Placement_Replay"), channel),
                     MovementPlatform.BEDROCK, new BedrockPlayerState(uuid));
             player.gamemode = GameMode.SURVIVAL;
             var cache = new WorldCache(session);

@@ -1,19 +1,17 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.DecodedPacketReceiveListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 @CheckData(name = "BadPacketsJ", stableKey = "cult.badpackets.use_item_rotation_mismatch", description = "Rotation in use item packet did not match tick rotation")
 public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
@@ -42,16 +40,15 @@ public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             this.rotations = 0;
             return;
         }
 
-        final NmsPacketUtil.UseItemData data = NmsPacketUtil.readUseItem(packet);
-        final float yaw = data.yaw();
-        final float pitch = data.pitch();
+        final float yaw = packet.yaw();
+        final float pitch = packet.pitch();
 
         if (this.rotations > 0 && (this.yaw != yaw || this.pitch != pitch)) {
             if (!player.canSkipTicks() || this.yaw != player.xRot || this.pitch != player.yRot) {
@@ -68,8 +65,7 @@ public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
 
     // isTickPacket: movement packets count unless they answered a teleport
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             this.rotations = 0;
@@ -77,14 +73,13 @@ public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
         }
 
         if (this.rotations > 0 && !player.packetStateData.lastPacketWasTeleport) {
-            onTickPacket(player, packet instanceof ServerboundMovePlayerPacket.PosRot
-                    || packet instanceof ServerboundMovePlayerPacket.Rot);
+            onTickPacket(player, packet.hasRotation());
         }
     }
 
     // isTickPacket: tick end counts for 1.21.2+ clients when no movement arrived this client tick
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             this.rotations = 0;

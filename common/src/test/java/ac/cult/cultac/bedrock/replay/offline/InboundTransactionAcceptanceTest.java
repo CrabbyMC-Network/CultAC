@@ -8,7 +8,6 @@ import ac.cult.cultac.player.CultPlayer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Method;
 import java.util.UUID;
-import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.protocol.common.ServerboundPongPacket;
 import org.junit.Test;
 
@@ -21,6 +20,30 @@ import ac.cult.cultac.checks.impl.prediction.runner.PacketModHandler;
 import static org.junit.Assert.assertTrue;
 
 public final class InboundTransactionAcceptanceTest {
+    @Test
+    public void transactionTrackingUsesTheWirePingIdAndMarksItOnlyOnce() throws Exception {
+        OfflineCultTestBootstrap.installConfig();
+        CultPlayer player = offlineJavaPlayer();
+        try {
+            var first = createTrackedTransaction(player);
+            var second = createTrackedTransaction(player);
+            var completed = new java.util.ArrayList<Integer>();
+            player.latencyUtils.addRealTimeTask(first.transaction(), () -> completed.add(first.transaction()));
+            player.latencyUtils.addRealTimeTask(second.transaction(), () -> completed.add(second.transaction()));
+            // A decoded or re-encoded ping has the same wire ID and a different Java identity.
+            var decoded = new ac.cult.cultac.network.CultWrite(new ac.cult.cultac.protocol.packet.clientbound.ClientboundPing(first.id()), false);
+            assertTrue(player.markTransactionPacketSent(decoded));
+            assertFalse(player.markTransactionPacketSent(first.packet()));
+            assertFalse(player.markTransactionPacketSent(first.id(), 0));
+            assertTrue(player.markTransactionPacketSent(second.id(), 0));
+            assertTrue(player.addTransactionResponse(second.id()));
+            assertEquals(java.util.List.of(first.transaction(), second.transaction()), completed);
+            assertFalse(player.addTransactionResponse(second.id()));
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
+    }
+
     @Test
     public void legacyTransactionsSurviveInventoryAcknowledgementsWithoutPrematureConfirmation() throws Exception {
         OfflineCultTestBootstrap.installConfig();
@@ -73,12 +96,12 @@ public final class InboundTransactionAcceptanceTest {
             player.markTrackedTransactionPacketSent(transaction);
 
             PacketPingListener listener = new PacketPingListener();
-            PacketReceiveEvent accepted = receiveEvent(player, new ServerboundPongPacket(transaction.id()));
-            listener.onPong(accepted, player, (ServerboundPongPacket) accepted.getNmsPacket());
+            var accepted = RecordReceiveTestEvents.pong(player, transaction.id());
+            listener.onPong(accepted, player, accepted.getPacket());
             assertTrue(accepted.isAcceptedTransactionResponse());
 
-            PacketReceiveEvent unknown = receiveEvent(player, new ServerboundPongPacket(transaction.id()));
-            listener.onPong(unknown, player, (ServerboundPongPacket) unknown.getNmsPacket());
+            var unknown = RecordReceiveTestEvents.pong(player, transaction.id());
+            listener.onPong(unknown, player, unknown.getPacket());
             assertFalse(unknown.isAcceptedTransactionResponse());
 
             // The accepted fact remains attached to its original event; processing the
@@ -310,7 +333,7 @@ public final class InboundTransactionAcceptanceTest {
     }
 
     private static PacketReceiveEvent receiveEvent(CultPlayer player, ServerboundPongPacket packet) {
-        return new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+        return RecordReceiveTestEvents.pong(player, packet.getId());
     }
 
     private static CultPlayer offlineJavaPlayer() {
@@ -319,12 +342,7 @@ public final class InboundTransactionAcceptanceTest {
 
     private static CultPlayer offlineJavaPlayer(ClientVersion version) {
         UUID playerId = UUID.fromString("9c5e440b-265d-435f-98f1-1f539659c003");
-        User user = new User(
-                new User.Profile(playerId, ".Transaction_Test"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Transaction_Test"), new EmbeddedChannel());
         return new CultPlayer(user) {
             @Override
             public ClientVersion getClientVersion() {

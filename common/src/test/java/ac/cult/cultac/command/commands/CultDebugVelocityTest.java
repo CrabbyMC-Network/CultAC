@@ -55,7 +55,6 @@ public final class CultDebugVelocityTest {
         final EmbeddedChannel javaChannel = new EmbeddedChannel();
         final EmbeddedChannel wire = new EmbeddedChannel();
         final GeyserSession session = Mockito.mock(GeyserSession.class, Mockito.RETURNS_DEEP_STUBS);
-        final Map<Object, Object> players;
         final Map<Object, Object> users;
         final Map<Object, Object> taps;
         final CultPlayer player;
@@ -63,13 +62,15 @@ public final class CultDebugVelocityTest {
         Transport() throws Exception {
             OfflineCultTestBootstrap.installConfig();
             UUID uuid = UUID.randomUUID();
-            User user = new User(new User.Profile(uuid, ".Velocity_Test"), null, null, null, javaChannel);
+            User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(uuid, ".Velocity_Test"), javaChannel);
             player = new CultPlayer(user, MovementPlatform.BEDROCK, new BedrockPlayerState(uuid));
-            players = map(CultAPI.INSTANCE.getPlayerDataManager(), "playerDataMap");
-            users = map(CultAPI.INSTANCE.getNetworkManager(), "currentUsersByUuid");
+            var manager = CultAPI.INSTANCE.getNetworkManager();
+            var connections = manager.getClass().getDeclaredField("connections");
+            connections.setAccessible(true);
+            users = map(connections.get(manager), "currentByUuid");
             taps = map(null, GeyserBedrockBridgeRuntime.class, "PACKET_TAPS");
-            players.put(user, player);
-            users.put(uuid, user);
+            synchronized (user.getCultConnection()) { user.getCultConnection().player(player); }
+            users.put(uuid, user.getCultConnection());
             Mockito.when(session.javaUuid()).thenReturn(uuid);
             Mockito.when(session.getPlayerEntity().geyserId()).thenReturn(123L);
             Mockito.when(session.getDownstream().getSession().getChannel().localAddress())
@@ -100,8 +101,8 @@ public final class CultDebugVelocityTest {
         @Override
         public void close() {
             taps.remove(session);
-            players.remove(player.user);
-            users.remove(player.playerUUID, player.user);
+            synchronized (player.user.getCultConnection()) { player.user.getCultConnection().player(null); }
+            users.remove(player.playerUUID, player.user.getCultConnection());
             wire.finishAndReleaseAll();
             javaChannel.finishAndReleaseAll();
         }

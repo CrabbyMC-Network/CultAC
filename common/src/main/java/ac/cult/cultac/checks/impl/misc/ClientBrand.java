@@ -5,14 +5,13 @@ import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 
 public class ClientBrand extends Check implements CheckListener {
 
@@ -31,10 +30,10 @@ public class ClientBrand extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCustomPayload(final PacketReceiveEvent event, CultPlayer player, ServerboundCustomPayloadPacket packet) {
-        String channelName = NmsPacketUtil.payloadChannel(packet.payload());
+    public void onCustomPayload(final PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
+        String channelName = packet.channel();
         if (channelName == null) return;
-        handle(channelName, NmsPacketUtil.payloadData(event));
+        handle(channelName, event.getPacket().data());
     }
 
 

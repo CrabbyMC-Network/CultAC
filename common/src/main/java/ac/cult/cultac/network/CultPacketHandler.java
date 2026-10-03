@@ -8,5 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface CultPacketHandler {
-    String packetClass() default "";
+    /** An opaque family's catalog key, when no payload record identifies it. */
+    String value() default "";
 }

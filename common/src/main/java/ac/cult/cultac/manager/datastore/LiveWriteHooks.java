@@ -55,7 +55,7 @@ public interface LiveWriteHooks {
             long now,
             @NotNull SessionTracker.ClientMeta meta);
 
-    /** Convenience for {@code PacketPlayerJoinQuit.onUserLogin}. Builds meta from the User + CultPlayer internally. */
+    /** Convenience for {@code PlayerLoginHooks.onLogin}. Builds meta from the User + CultPlayer internally. */
     void onJoinFromUserLogin(@NotNull PlatformPlayer player, @NotNull User user, long now);
 
     /** Convenience for {@code PlayerDataManager.onDisconnect}. Builds meta internally; tolerates null cultPlayer (early-disconnect race). */

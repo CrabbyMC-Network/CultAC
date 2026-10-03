@@ -78,6 +78,11 @@ fabric/run/
 
 # Runtime logs
 common/logs/
+protocol-validation/versions/*/logs/
+
+# Python validation helpers
+__pycache__/
+*.pyc
 
 .ignored/
 /workspace.gradle.kts

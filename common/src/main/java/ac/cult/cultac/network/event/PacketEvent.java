@@ -1,113 +1,53 @@
 package ac.cult.cultac.network.event;
 
 import ac.cult.cultac.network.protocol.player.User;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.protocol.ConnectionLifecycle;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.packet.Opaque;
 import org.bukkit.entity.Player;
+import java.util.Objects;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public abstract class PacketEvent {
+public abstract class PacketEvent<R> {
     private final User user;
-    private Packet<?> packet;
-    private final ConnectionProtocol connectionState;
+    private final ConnectionPhase phase;
+    private final PacketType<R> type;
+    private final R original;
     private final long timestamp = System.currentTimeMillis();
-    private final boolean insideBundle;
-    private final List<Packet<?>> packetsBeforeSend = new ArrayList<>(1);
-    private final List<Packet<?>> packetsAfterSend = new ArrayList<>(2);
-    private final List<Runnable> tasksAfterSend = new ArrayList<>(2);
-    private final List<Runnable> postTasks = new ArrayList<>(2);
+    private R packet;
     private boolean cancelled;
-    private boolean reEncode;
-    private Object lastUsedWrapper;
-    private ByteBuf byteBuf;
 
-    protected PacketEvent(User user, Packet<?> packet, ConnectionProtocol connectionState) {
-        this(user, packet, connectionState, false);
-    }
-
-    protected PacketEvent(User user, Packet<?> packet, ConnectionProtocol connectionState, boolean insideBundle) {
+    protected PacketEvent(User user, ConnectionPhase phase, PacketType<R> type, R packet) {
         this.user = user;
-        this.packet = packet;
-        this.connectionState = connectionState;
-        this.insideBundle = insideBundle;
+        this.phase = Objects.requireNonNull(phase);
+        this.type = Objects.requireNonNull(type);
+        this.original = this.packet = type.recordClass().cast(Objects.requireNonNull(packet));
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public Player getPlayer() {
-        return user == null ? null : user.getPlayer();
-    }
-
-    public Packet<?> getNmsPacket() {
-        return packet;
-    }
-
-    public void setNmsPacket(Packet<?> packet) {
-        this.packet = packet;
-    }
-
-    public ConnectionProtocol getConnectionState() {
-        return connectionState;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public boolean isInsideBundle() {
-        return insideBundle;
-    }
-
-    public List<Packet<?>> getPacketsBeforeSend() {
-        return packetsBeforeSend;
-    }
-
-    public List<Packet<?>> getPacketsAfterSend() {
-        return packetsAfterSend;
-    }
-
-    public List<Runnable> getTasksAfterSend() {
-        return tasksAfterSend;
-    }
-
-    public List<Runnable> getPostTasks() {
-        return postTasks;
-    }
-
-    public boolean isCancelled() {
-        return cancelled;
-    }
+    public User getUser() { return user; }
+    public Player getPlayer() { return user == null ? null : user.getPlayer(); }
+    public ConnectionPhase getPhase() { return phase; }
+    public PacketType<R> getPacketType() { return type; }
+    public R getPacket() { return packet; }
+    public R getOriginalPacket() { return original; }
+    public long getTimestamp() { return timestamp; }
+    public boolean isCancelled() { return cancelled; }
+    public boolean isReplaced() { return packet != original; }
 
     public void setCancelled(boolean cancelled) {
+        if (cancelled) requireEditable();
         this.cancelled = cancelled;
     }
-
-    public void markForReEncode(boolean reEncode) {
-        this.reEncode = reEncode;
+    public void replace(R replacement) {
+        requireEditable();
+        if (!type.writable()) throw new IllegalArgumentException("Read-only packet family: " + type);
+        R checked = type.recordClass().cast(Objects.requireNonNull(replacement));
+        if (checked instanceof Opaque opaque && opaque.type() != type) throw new IllegalArgumentException("Different opaque family");
+        packet = checked;
     }
-
-    public boolean shouldReEncode() {
-        return reEncode;
+    private void requireEditable() {
+        if (ConnectionLifecycle.handles(type)) throw new IllegalStateException("Protocol-switch packet cannot be cancelled or replaced: " + type);
     }
-
-    public Object getLastUsedWrapper() {
-        return lastUsedWrapper;
-    }
-
-    public void setLastUsedWrapper(Object lastUsedWrapper) {
-        this.lastUsedWrapper = lastUsedWrapper;
-    }
-
-    public ByteBuf getByteBuf() {
-        return byteBuf;
-    }
-
-    public void setByteBuf(ByteBuf byteBuf) {
-        this.byteBuf = byteBuf;
-    }
+    /** Packet callback failures retain the original bytes, as before. */
+    public void discardChanges() { packet = original; cancelled = false; }
 }

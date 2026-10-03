@@ -1,12 +1,11 @@
 package ac.cult.cultac.checks.impl.breaking;
 
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
@@ -15,8 +14,7 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.math.VectorUtils;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 @CheckData(name = "FarBreak", stableKey = "cult.breaking.far_break", description = "Breaking blocks too far away", experimental = true)
 public class FarBreak extends Check implements BlockBreakListener {
@@ -32,13 +30,13 @@ public class FarBreak extends Check implements BlockBreakListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         didLastMovementIncludePosition = packet.hasPosition();
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (!player.cameraEntity.isSelf() || player.inVehicle() || blockBreak.action == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK) // PE DiggingAction.CANCELLED_DIGGING
+        if (!player.cameraEntity.isSelf() || player.inVehicle() || blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) // PE DiggingAction.CANCELLED_DIGGING
             return; // falses
 
         double min = Double.MAX_VALUE;

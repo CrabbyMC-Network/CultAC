@@ -15,9 +15,11 @@ import ac.cult.cultac.utils.data.SetbackPosWithVector;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
-import net.minecraft.network.ConnectionProtocol;
+import ac.cult.cultac.protocol.ConnectionPhase;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetPassengers;
+import ac.cult.cultac.protocol.packet.ClientboundPackets;
+import ac.cult.cultac.protocol.ConnectionPhase;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
@@ -57,7 +59,7 @@ public final class BedrockTransportAuthorityTest {
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
             int playerVehicle = 17;
-            ClientboundSetPassengersPacket mount = passengersPacket(
+            ClientboundSetPassengers mount = passengersPacket(
                     playerVehicle, player.entityID);
             player.packetEntityReplication.onSetPassengers(
                     sendEvent(player, mount), player, mount);
@@ -66,7 +68,7 @@ public final class BedrockTransportAuthorityTest {
             assertTrue(player.compensatedEntities.vehicles.hasPlayerPassengerState());
 
             int unrelatedVehicle = 29;
-            ClientboundSetPassengersPacket unrelated = passengersPacket(unrelatedVehicle, 1234);
+            ClientboundSetPassengers unrelated = passengersPacket(unrelatedVehicle, 1234);
             player.packetEntityReplication.onSetPassengers(
                     sendEvent(player, unrelated), player, unrelated);
 
@@ -128,12 +130,29 @@ public final class BedrockTransportAuthorityTest {
 
             EmbeddedChannel channel = (EmbeddedChannel) player.user.getChannel();
             channel.runPendingTasks();
-            boolean sentVehicleSetback = false;
+            var registries = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(
+                    net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+            var codec = net.minecraft.network.protocol.game.GameProtocols.CLIENTBOUND_TEMPLATE
+                    .bind(net.minecraft.network.RegistryFriendlyByteBuf.decorator(registries)).codec();
+            int sentVehicleSetbacks = 0;
             Object outbound;
             while ((outbound = channel.readOutbound()) != null) {
-                sentVehicleSetback |= outbound instanceof ClientboundMoveVehiclePacket;
+                try {
+                    if (outbound instanceof io.netty.buffer.ByteBuf frame) {
+                        var decoded = codec.decode(new net.minecraft.network.RegistryFriendlyByteBuf(frame, registries));
+                        assertFalse(frame.isReadable());
+                        if (decoded instanceof ClientboundMoveVehiclePacket correction) {
+                            sentVehicleSetbacks++;
+                            assertEquals(safePosition, correction.movingTo().position());
+                            assertEquals(player.xRot, correction.movingTo().yRot(), 0.0F);
+                            assertEquals(player.yRot, correction.movingTo().xRot(), 0.0F);
+                        }
+                    }
+                } finally {
+                    io.netty.util.ReferenceCountUtil.release(outbound);
+                }
             }
-            assertTrue(sentVehicleSetback);
+            assertEquals(1, sentVehicleSetbacks);
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
         }
@@ -240,21 +259,12 @@ public final class BedrockTransportAuthorityTest {
         handle.set(player.user, Mockito.mock(ServerPlayer.class));
     }
 
-    private static PacketSendEvent sendEvent(
-            CultPlayer player,
-            ClientboundSetPassengersPacket packet
-    ) {
-        return new PacketSendEvent(player.user, packet, ConnectionProtocol.PLAY);
+    private static PacketSendEvent<ClientboundSetPassengers> sendEvent(CultPlayer player, ClientboundSetPassengers packet) {
+        return new PacketSendEvent<>(player.user, ConnectionPhase.PLAY, ClientboundPackets.SET_PASSENGERS, packet, false);
     }
 
-    private static ClientboundSetPassengersPacket passengersPacket(
-            int vehicleId,
-            int... passengers
-    ) {
-        ClientboundSetPassengersPacket packet = Mockito.mock(ClientboundSetPassengersPacket.class);
-        Mockito.when(packet.getVehicle()).thenReturn(vehicleId);
-        Mockito.when(packet.getPassengers()).thenReturn(passengers);
-        return packet;
+    private static ClientboundSetPassengers passengersPacket(int vehicleId, int... passengers) {
+        return new ClientboundSetPassengers(vehicleId, java.util.Arrays.stream(passengers).boxed().toList());
     }
 
     private static void setTimerBalance(TimerCheck timer, long balance) throws ReflectiveOperationException {

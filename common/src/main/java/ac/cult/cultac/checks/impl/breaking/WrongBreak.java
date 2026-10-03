@@ -1,7 +1,8 @@
 package ac.cult.cultac.checks.impl.breaking;
 
+import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
@@ -11,7 +12,6 @@ import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.level.block.state.BlockState;
 
 @CheckData(name = "WrongBreak", stableKey = "cult.breaking.wrong_break", description = "Sent block break progress for a different block than the one being mined")
@@ -47,7 +47,7 @@ public class WrongBreak extends Check implements BlockBreakListener {
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK) { // PE DiggingAction.START_DIGGING
+        if (blockBreak.action == PlayerAction.START_DESTROY_BLOCK) { // PE DiggingAction.START_DIGGING
             final BlockPos pos = blockBreak.position;
 
             // getBlockDamage might not return the correct value if the player
@@ -58,13 +58,13 @@ public class WrongBreak extends Check implements BlockBreakListener {
             lastBlock = pos;
         }
 
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK) { // PE DiggingAction.CANCELLED_DIGGING
+        if (blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) { // PE DiggingAction.CANCELLED_DIGGING
             final BlockPos pos = blockBreak.position;
 
             if (!shouldExempt(blockBreak.block, pos.getY()) && !pos.equals(lastBlock)) {
                 // https://github.com/GrimAnticheat/Grim/issues/1512
                 if (player.getClientVersion().isOlderThan(ClientVersion.V_1_14_4) || (!lastBlockWasInstantBreak && pos.equals(lastCancelledBlock))) {
-                    var buf = V.write(verbose()).uint(VerboseTags.enumId(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK))
+                    var buf = V.write(verbose()).uint(VerboseCodecs.digging(PlayerAction.ABORT_DESTROY_BLOCK))
                             .bool(lastBlock != null)
                             .mcPos(lastBlock == null ? 0 : lastBlock.getX(), lastBlock == null ? 0 : lastBlock.getY(), lastBlock == null ? 0 : lastBlock.getZ())
                             .mcPos(pos.getX(), pos.getY(), pos.getZ());
@@ -82,12 +82,12 @@ public class WrongBreak extends Check implements BlockBreakListener {
             return;
         }
 
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK) { // PE DiggingAction.FINISHED_DIGGING
+        if (blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK) { // PE DiggingAction.FINISHED_DIGGING
             final BlockPos pos = blockBreak.position;
 
             // when a player looks away from the mined block, they send a cancel, and if they look at it again, they don't send another start. (thanks mojang!)
             if (!pos.equals(lastCancelledBlock) && (!lastBlockWasInstantBreak || player.getClientVersion().isOlderThan(ClientVersion.V_1_14_4)) && !pos.equals(lastBlock)) {
-                var buf = V.write(verbose()).uint(VerboseTags.enumId(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK))
+                var buf = V.write(verbose()).uint(VerboseCodecs.digging(PlayerAction.STOP_DESTROY_BLOCK))
                         .bool(lastBlock != null)
                         .mcPos(lastBlock == null ? 0 : lastBlock.getX(), lastBlock == null ? 0 : lastBlock.getY(), lastBlock == null ? 0 : lastBlock.getZ())
                         .mcPos(pos.getX(), pos.getY(), pos.getZ());

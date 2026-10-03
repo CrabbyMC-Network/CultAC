@@ -41,12 +41,8 @@ import ac.cult.cultac.checks.impl.prediction.stage.world.WorldStageBuilder;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.checks.type.PositionListener;
 import ac.cult.cultac.manager.player.SetbackTeleportUtil;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
-import ac.cult.cultac.network.packet.NmsPacketUtil.MovePlayerData;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
@@ -82,8 +78,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Generated;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.GameMode;
@@ -235,8 +230,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
          : this.player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && this.player.getClientVersion().isOlderThan(ClientVersion.V_1_21_2);
    }
 
-   private boolean isPassengerRotationOnlyTick(ServerboundMovePlayerPacket packet) {
-      return packet instanceof Rot
+   private boolean isPassengerRotationOnlyTick(ServerboundMovePlayer packet) {
+      return packet.rotationOnly()
          && (
             this.player.packetStateData.hasPassengerRotationThisClientTick()
                || this.player.compensatedEntities.getSelf().inVehicle()
@@ -245,8 +240,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
          );
    }
 
-   private boolean isPacketHandlerRotationTeleport(ServerboundMovePlayerPacket packet) {
-      return packet instanceof Rot && this.player.packetStateData.lastPacketWasTeleport;
+   private boolean isPacketHandlerRotationTeleport(ServerboundMovePlayer packet) {
+      return packet.rotationOnly() && this.player.packetStateData.lastPacketWasTeleport;
    }
 
    public void onPlayerTickEnd(PacketReceiveEvent event) {
@@ -275,10 +270,10 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
       }
    }
 
-   private void handleMovePlayer(ServerboundMovePlayerPacket packet) {
+   private void handleMovePlayer(ServerboundMovePlayer packet) {
       if (!this.player.isBedrockMovement()) {
-         MovePlayerData flying = NmsPacketUtil.readMovePlayer(packet, this.player);
-         if (!flying.hasPositionChanged()) {
+         ServerboundMovePlayer flying = packet;
+         if (!flying.hasPosition()) {
             if (!this.isPacketHandlerRotationTeleport(packet)) {
                if (!this.isPassengerRotationOnlyTick(packet)) {
                   this.player.onGround = flying.onGround();
@@ -315,8 +310,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
    }
 
    @CultPacketHandler
-   @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-   public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+   public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
       this.handleMovePlayer(packet);
    }
 
@@ -1199,7 +1194,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
             new VelocityTransformer(curSimulationContext), player, contextPacketStart, curSimulationContext
          );
          SimulationContext sortContext = curSimulationContext;
-         validInitialVelocities.sort(
+         // Empty or single-candidate lists need no ordering and may be immutable.
+         if (validInitialVelocities.size() > 1) validInitialVelocities.sort(
             Comparator.comparing(PredVector::tickSkippingComparator)
                .thenComparing(
                   Comparator.comparing(PredVector::packetModifiersLength).thenComparing(predVector -> predVector.distanceToSqr(sortContext.getTarget()))

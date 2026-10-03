@@ -2,15 +2,12 @@ package ac.cult.cultac.checks.impl.movement;
 
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
 import net.minecraft.world.phys.Vec3;
 
 public class SetbackBlocker extends CultProcessor implements CheckListener {
@@ -18,7 +15,7 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
         super(playerData);
     }
 
-    private void handleMovePlayer(final PacketReceiveEvent event, ServerboundMovePlayerPacket movePacket,
+    private void handleMovePlayer(final PacketReceiveEvent<ServerboundMovePlayer> event, ServerboundMovePlayer movePacket,
                                   boolean translatedBedrockMovement) {
         // This is transport integrity, not a check-level setback decision.
         // Real Geyser emits at most one MovePlayer projection for each
@@ -33,9 +30,8 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
                 // Bedrock authored collision flags, not this Java ground bit. Normalize
                 // Geyser's velocity-based projection from the already simulated frame here.
                 boolean onGround = !player.packetStateData.lastPacketWasTeleport && authorization.canonicalGround();
-                if (onGround != movePacket.isOnGround() && !player.isDisabled() && !player.noModifyPacketPermission) {
-                    event.setNmsPacket(NmsPacketUtil.withOnGround(movePacket, player, onGround));
-                    event.markForReEncode(true);
+                if (onGround != movePacket.onGround() && !player.isDisabled() && !player.noModifyPacketPermission) {
+                    event.replace(movePacket.withOnGround(onGround));
                 }
             }
         }
@@ -50,22 +46,22 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
         if (!player.isBedrockMovement()
                 && !teleport
                 && player.compensatedEntities.vehicles.hasPlayerPassengerState()
-                && !(movePacket instanceof ServerboundMovePlayerPacket.Rot)) {
+                && !(movePacket.rotationOnly())) {
             event.setCancelled(true);
         }
 
         if (player.isDisabled()) { return; } // Let's avoid letting people disable cult with cult.nomodifypackets
         if (!player.shouldEnforceMovementSetbacks()) return;
 
-        NmsPacketUtil.MovePlayerData wrapper = NmsPacketUtil.readMovePlayer(movePacket, player);
+        ServerboundMovePlayer wrapper = movePacket;
         // The player must obey setbacks
-        if (!teleport && wrapper.hasPositionChanged()
+        if (!teleport && wrapper.hasPosition()
                 && player.getSetbackTeleportUtil().shouldBlockMovement(translatedBedrockMovement)) {
             if (player.getSetbackTeleportUtil().isDebug()) { LogUtil.info(player.getName() + " movement has been blocked! : " + player.getSetbackTeleportUtil().getDebugStrings()); }
             event.setCancelled(true);
         }
 
-        if (!teleport && player.isInBed && wrapper.hasPositionChanged()) {
+        if (!teleport && player.isInBed && wrapper.hasPosition()) {
             Vec3 bedPosition = player.bedPosition;
             if (bedPosition == null
                     || Math.max(Math.abs(wrapper.x() - bedPosition.x), Math.abs(wrapper.z() - bedPosition.z)) > 0.5D
@@ -125,8 +121,8 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet, false);
     }
 
@@ -135,12 +131,12 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
      * treating that projection as a second prediction input. The raw auth-input
      * frame must already have been validated before Geyser translated it.
      */
-    public void onTranslatedBedrockMove(PacketReceiveEvent event, ServerboundMovePlayerPacket packet) {
+    public void onTranslatedBedrockMove(PacketReceiveEvent<ServerboundMovePlayer> event, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet, true);
     }
 
     @CultPacketHandler
-    public void onMoveVehicle(PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehiclePacket packet) {
+    public void onMoveVehicle(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         handleMoveVehicle(event);
     }
 }

@@ -10,13 +10,13 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 
 public class PacketPlayerSteer {
     //LOW
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerInputPacket packet) {
+    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         if (event.isCancelled()) {
             return;
         }
@@ -25,9 +25,9 @@ public class PacketPlayerSteer {
         // synthesized input must not undo it. 1.7 uses older packet layouts.
         if (player.isBedrockMovement() || player.getClientVersion().isOlderThan(ClientVersion.V_1_8)
                 || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)) {
-            player.isSneaking = packet.input().shift();
+            player.isSneaking = packet.shift();
         }
-        net.minecraft.world.entity.player.Input input = packet.input();
+        ServerboundPlayerInput input = packet;
         // Vanilla sends input only when key state changes; keep the latest raw state even before mounting.
         float vehicleHoriz = input.left() ? 1.0F : (input.right() ? -1.0F : 0.0F);
         float vehicleForward = input.forward() ? 1.0F : (input.backward() ? -1.0F : 0.0F);

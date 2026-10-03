@@ -1,10 +1,15 @@
 package ac.cult.cultac.network;
 
+import ac.cult.cultac.protocol.PacketType;
+
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.PacketFlow;
+import ac.cult.cultac.protocol.ProtocolRuntime;
+import ac.cult.cultac.protocol.PacketDirection;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.WildcardType;
+import java.util.Objects;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -18,120 +23,106 @@ import java.util.List;
 import java.util.Set;
 
 public final class PacketHandlerScanner {
-    private PacketHandlerScanner() {
-    }
-
-    private static final ClassValue<HandlerSchema> SCHEMAS = new ClassValue<>() {
-        @Override
-        protected HandlerSchema computeValue(Class<?> listenerClass) {
-            return HandlerSchema.build(listenerClass);
+    private final ProtocolRuntime runtime;
+    private final ClassValue<Schema> schemas = new ClassValue<>() {
+        @Override protected Schema computeValue(Class<?> type) {
+            return buildSchema(type);
         }
     };
 
-    public static List<ReceiveRegistration> receiveHandlers(Object listener) {
-        return scan(listener, Direction.RECEIVE).receiveRegistrations();
+    public PacketHandlerScanner(ProtocolRuntime runtime) {
+        this.runtime = Objects.requireNonNull(runtime);
     }
 
-    public static List<SendRegistration> sendHandlers(Object listener) {
-        return scan(listener, Direction.SEND).sendRegistrations();
+    public ProtocolRuntime runtime() { return runtime; }
+    Schema schema(Class<?> type) { return schemas.get(type); }
+
+    public boolean supports(PacketType<?> type) {
+        if (!runtime.contains(type)) throw new IllegalArgumentException("Packet type is outside the runtime catalog: " + type);
+        return runtime.supports(type);
     }
 
-    public static boolean hasReceiveHandlerDeclaration(Class<?> listenerClass) {
-        return SCHEMAS.get(listenerClass).hasReceiveDeclaration();
-    }
-
-    public static boolean hasSendHandlerDeclaration(Class<?> listenerClass) {
-        return SCHEMAS.get(listenerClass).hasSendDeclaration();
-    }
-
-    public static List<Class<? extends Packet<?>>> sendPacketTypes(Class<?> listenerClass) {
-        return listenerClass == null ? List.of() : SCHEMAS.get(listenerClass).sendPacketTypes();
-    }
-
-    public static List<Class<? extends Packet<?>>> receivePacketTypes(Class<?> listenerClass) {
-        return listenerClass == null ? List.of() : SCHEMAS.get(listenerClass).receivePacketTypes();
-    }
-
-    public static RegistrationSet handlers(Object listener) {
-        return scan(listener, Direction.BOTH);
-    }
-
-    private static RegistrationSet scan(Object listener, Direction requestedDirection) {
-        if (listener == null) {
-            return new RegistrationSet(List.of(), List.of());
-        }
-
-        List<ReceiveRegistration> receiveRegistrations = new ArrayList<>();
-        List<SendRegistration> sendRegistrations = new ArrayList<>();
-
-        for (HandlerEntry entry : SCHEMAS.get(listener.getClass()).entries()) {
-            if (!requestedDirection.accepts(entry.direction()) || entry.packetTypes().isEmpty()) {
-                continue;
-            }
-            MethodHandle handle = entry.unboundHandle().bindTo(listener);
-            if (entry.direction() == Direction.RECEIVE) {
-                PacketReceiveHandler<Packet<?>> handler = receiveInvoker(handle, entry.method());
-                for (Class<? extends Packet<?>> packetType : entry.packetTypes()) {
-                    receiveRegistrations.add(new ReceiveRegistration(packetType, handler));
-                }
-            } else {
-                PacketSendHandler<Packet<?>> handler = sendInvoker(handle, entry.method());
-                for (Class<? extends Packet<?>> packetType : entry.packetTypes()) {
-                    sendRegistrations.add(new SendRegistration(packetType, handler));
-                }
+    private PacketType<?> packetType(Class<?> owner, Method method, PacketDirection direction) {
+        Class<?> record = method.getParameterTypes()[2];
+        if (!record.isRecord()) throw invalid(owner, method, "third parameter must be one concrete catalog record");
+        if (method.getGenericParameterTypes()[0] instanceof ParameterizedType eventType) {
+            var argument = eventType.getActualTypeArguments()[0];
+            if (!argument.equals(record) && !(argument instanceof WildcardType wildcard && wildcard.getLowerBounds().length == 0
+                    && Arrays.equals(wildcard.getUpperBounds(), new java.lang.reflect.Type[]{Object.class}))) {
+                throw invalid(owner, method, "event record argument must match the third parameter");
             }
         }
-
-        return new RegistrationSet(List.copyOf(receiveRegistrations), List.copyOf(sendRegistrations));
+        String key = method.getAnnotation(CultPacketHandler.class).value();
+        PacketType<?> type = key.isEmpty() ? runtime.typeForRecord(record) : runtime.typeForKey(key);
+        if (type == null) throw invalid(owner, method, "record is outside the runtime catalog: " + record.getName());
+        if (type.recordClass() != record) throw invalid(owner, method, "record does not match the catalog key: " + key);
+        if (type.direction() != direction) throw invalid(owner, method, "record direction does not match the event");
+        return supports(type) ? type : null;
     }
 
-    private record HandlerEntry(
-            Method method,
-            Direction direction,
-            List<Class<? extends Packet<?>>> packetTypes,
-            MethodHandle unboundHandle
-    ) {
+    /** Validate the whole listener, then bind only its receive callbacks in declaration order. */
+    public List<ReceiveRegistration> receiveHandlers(Object listener) {
+        if (listener == null) return List.of();
+        List<ReceiveRegistration> receives = new ArrayList<>();
+        for (Entry entry : schema(listener.getClass()).entries()) {
+            if (entry.direction() != PacketDirection.SERVERBOUND || entry.packetType() == null) continue;
+            MethodHandle handle = entry.handle().bindTo(listener);
+            PacketReceiveHandler<Object> callback = (event, player, packet) -> invoke(handle, entry.method(), event, player, packet);
+            receives.add(new ReceiveRegistration(entry.packetType(), callback, entry.method()));
+        }
+        return List.copyOf(receives);
     }
 
-    private record HandlerSchema(
-            List<HandlerEntry> entries,
-            boolean hasReceiveDeclaration,
-            boolean hasSendDeclaration,
-            List<Class<? extends Packet<?>>> receivePacketTypes,
-            List<Class<? extends Packet<?>>> sendPacketTypes
-    ) {
-        private static HandlerSchema build(Class<?> listenerClass) {
-            List<HandlerEntry> entries = new ArrayList<>();
-            List<Class<? extends Packet<?>>> receivePacketTypes = new ArrayList<>();
-            List<Class<? extends Packet<?>>> sendPacketTypes = new ArrayList<>();
-            Set<RouteKey> routes = new HashSet<>();
-            boolean hasReceiveDeclaration = false;
-            boolean hasSendDeclaration = false;
+    /** Validate the whole listener, then bind only its send callbacks in declaration order. */
+    public List<SendRegistration> sendHandlers(Object listener) {
+        if (listener == null) return List.of();
+        List<SendRegistration> sends = new ArrayList<>();
+        for (Entry entry : schema(listener.getClass()).entries()) {
+            if (entry.direction() != PacketDirection.CLIENTBOUND || entry.packetType() == null) continue;
+            MethodHandle handle = entry.handle().bindTo(listener);
+            PacketSendHandler<Object> callback = (event, player, packet) -> invoke(handle, entry.method(), event, player, packet);
+            sends.add(new SendRegistration(entry.packetType(), callback, entry.method()));
+        }
+        return List.copyOf(sends);
+    }
 
-            for (Method method : annotatedMethods(listenerClass)) {
-                HandlerSignature signature = signature(method, listenerClass);
-                // A declaration counts even when its optional packetClass is absent on this runtime.
-                if (signature.direction() == Direction.RECEIVE) {
-                    hasReceiveDeclaration = true;
-                } else {
-                    hasSendDeclaration = true;
-                }
-                List<Class<? extends Packet<?>>> packetTypes = signature.direction() == Direction.RECEIVE
-                        ? receivePacketTypes : sendPacketTypes;
-                for (Class<? extends Packet<?>> packetType : signature.packetTypes()) {
-                    RouteKey route = new RouteKey(signature.direction(), packetType);
-                    if (!routes.add(route)) {
-                        throw invalid(listenerClass, method, "duplicates " + signature.direction().description()
-                                + " handler for " + packetType.getName());
-                    }
-                    packetTypes.add(packetType);
-                }
-                entries.add(new HandlerEntry(method, signature.direction(), signature.packetTypes(),
-                        unboundHandle(listenerClass, method)));
+    public boolean hasReceiveHandlerDeclaration(Class<?> type) {
+        return schema(type).hasDeclaration(PacketDirection.SERVERBOUND);
+    }
+
+    public boolean hasSendHandlerDeclaration(Class<?> type) {
+        return schema(type).hasDeclaration(PacketDirection.CLIENTBOUND);
+    }
+
+    /** Class-only discovery uses the exact schema that supplies bound callbacks. */
+    public List<PacketType<?>> packetTypes(Class<?> listenerClass, PacketDirection direction) {
+        if (listenerClass == null) return List.of();
+        List<PacketType<?>> result = new ArrayList<>();
+        for (Entry entry : schema(listenerClass).entries()) {
+            if (entry.direction() == direction && entry.packetType() != null) result.add(entry.packetType());
+        }
+        return List.copyOf(result);
+    }
+
+    private Schema buildSchema(Class<?> listenerClass) {
+        List<Entry> entries = new ArrayList<>();
+        Set<PacketType<?>> routes = new HashSet<>();
+        for (Method method : annotatedMethods(listenerClass)) {
+            PacketDirection direction = direction(listenerClass, method);
+            var packetType = packetType(listenerClass, method, direction);
+            if (packetType != null && !routes.add(packetType)) {
+                throw invalid(listenerClass, method, "duplicates " + direction + " handler for " + packetType);
             }
+            // Keep unsupported declarations: direction checks still need them.
+            entries.add(new Entry(method, direction, packetType, unboundHandle(listenerClass, method)));
+        }
+        return new Schema(List.copyOf(entries));
+    }
 
-            return new HandlerSchema(List.copyOf(entries), hasReceiveDeclaration, hasSendDeclaration,
-                    List.copyOf(receivePacketTypes), List.copyOf(sendPacketTypes));
+    record Entry(Method method, PacketDirection direction, PacketType<?> packetType, MethodHandle handle) { }
+    record Schema(List<Entry> entries) {
+        boolean hasDeclaration(PacketDirection direction) {
+            return entries.stream().anyMatch(entry -> entry.direction() == direction);
         }
     }
 
@@ -183,87 +174,15 @@ public final class PacketHandlerScanner {
         return methods;
     }
 
-    private static HandlerSignature signature(Method method, Class<?> listenerClass) {
-        if (Modifier.isStatic(method.getModifiers())) {
-            throw invalid(listenerClass, method, "must not be static");
-        }
-        if (method.getReturnType() != Void.TYPE) {
-            throw invalid(listenerClass, method, "must return void");
-        }
-
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length != 3) {
-            throw invalid(listenerClass, method, "must accept exactly event, CultPlayer, and one concrete packet");
-        }
-        if (parameterTypes[1] != CultPlayer.class) {
-            throw invalid(listenerClass, method, "second parameter must be CultPlayer");
-        }
-
-        Direction direction;
-        if (parameterTypes[0] == PacketReceiveEvent.class) {
-            direction = Direction.RECEIVE;
-        } else if (parameterTypes[0] == PacketSendEvent.class) {
-            direction = Direction.SEND;
-        } else {
-            throw invalid(listenerClass, method, "first parameter must be PacketReceiveEvent or PacketSendEvent");
-        }
-
-        List<Class<? extends Packet<?>>> packetTypes = packetTypes(parameterTypes[2], direction, listenerClass, method);
-        return new HandlerSignature(direction, packetTypes);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<Class<? extends Packet<?>>> packetTypes(
-            Class<?> parameterType,
-            Direction direction,
-            Class<?> listenerClass,
-            Method method
-    ) {
-        CultPacketHandler handlerAnnotation = method.getAnnotation(CultPacketHandler.class);
-        String optionalPacketClass = handlerAnnotation.packetClass().trim();
-        if (!optionalPacketClass.isEmpty()) {
-            if (parameterType != Packet.class) {
-                throw invalid(listenerClass, method,
-                        "handlers using packetClass must accept Packet as their third parameter");
-            }
-            try {
-                Class<?> resolved = Class.forName(optionalPacketClass, false, listenerClass.getClassLoader());
-                if (!Packet.class.isAssignableFrom(resolved)
-                        || resolved.isInterface()
-                        || Modifier.isAbstract(resolved.getModifiers())) {
-                    throw invalid(listenerClass, method,
-                            "packetClass must name one concrete Packet implementation: " + optionalPacketClass);
-                }
-                return List.of((Class<? extends Packet<?>>) resolved);
-            } catch (ClassNotFoundException ignored) {
-                return List.of();
-            }
-        }
-        if (!Packet.class.isAssignableFrom(parameterType)) {
-            throw invalid(listenerClass, method, "third parameter must extend Packet");
-        }
-        if (parameterType == Packet.class) {
-            throw invalid(listenerClass, method, "must name one concrete packet class, not Packet");
-        }
-
-        CultPacketGroup groupAnnotation = method.getAnnotation(CultPacketGroup.class);
-        if (groupAnnotation != null) {
-            PacketGroup group = groupAnnotation.value();
-            if (group.flow() != direction.flow()) {
-                throw invalid(listenerClass, method, "packet group " + group.name()
-                        + " is for " + group.flow() + " handlers, not " + direction.description());
-            }
-            if (parameterType != group.familyType()) {
-                throw invalid(listenerClass, method, "packet group " + group.name()
-                        + " requires third parameter " + group.familyType().getName());
-            }
-            return group.packetTypes();
-        }
-
-        if (parameterType.isInterface() || Modifier.isAbstract(parameterType.getModifiers())) {
-            throw invalid(listenerClass, method, "must name one concrete packet class, not an abstract packet family");
-        }
-        return List.of((Class<? extends Packet<?>>) parameterType);
+    private static PacketDirection direction(Class<?> listenerClass, Method method) {
+        if (Modifier.isStatic(method.getModifiers())) throw invalid(listenerClass, method, "must not be static");
+        if (method.getReturnType() != void.class) throw invalid(listenerClass, method, "must return void");
+        Class<?>[] parameters = method.getParameterTypes();
+        if (parameters.length != 3) throw invalid(listenerClass, method, "must accept exactly event, CultPlayer, and one concrete packet");
+        if (parameters[1] != CultPlayer.class) throw invalid(listenerClass, method, "second parameter must be CultPlayer");
+        if (parameters[0] == PacketReceiveEvent.class) return PacketDirection.SERVERBOUND;
+        if (parameters[0] == PacketSendEvent.class) return PacketDirection.CLIENTBOUND;
+        throw invalid(listenerClass, method, "first parameter must be PacketReceiveEvent or PacketSendEvent");
     }
 
     private static MethodHandle unboundHandle(Class<?> listenerClass, Method method) {
@@ -275,12 +194,12 @@ public final class PacketHandlerScanner {
         }
     }
 
-    private static PacketReceiveHandler<Packet<?>> receiveInvoker(MethodHandle handle, Method method) {
-        return new MethodHandleReceiveHandler(method, handle);
-    }
-
-    private static PacketSendHandler<Packet<?>> sendInvoker(MethodHandle handle, Method method) {
-        return new MethodHandleSendHandler(method, handle);
+    private static void invoke(MethodHandle handle, Method method, Object event, CultPlayer player, Object packet) {
+        try {
+            handle.invoke(event, player, packet);
+        } catch (Throwable failure) {
+            throw invocationFailure(method, failure);
+        }
     }
 
     private static RuntimeException invocationFailure(Method method, Throwable throwable) {
@@ -302,44 +221,6 @@ public final class PacketHandlerScanner {
                 + listenerClass.getName() + "#" + method.getName() + ": " + reason, cause);
     }
 
-    private static final class MethodHandleReceiveHandler implements PacketReceiveHandler<Packet<?>> {
-        private final Method method;
-        private final MethodHandle handle;
-
-        private MethodHandleReceiveHandler(Method method, MethodHandle handle) {
-            this.method = method;
-            this.handle = handle;
-        }
-
-        @Override
-        public void handle(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-            try {
-                handle.invoke(event, player, packet);
-            } catch (Throwable throwable) {
-                throw invocationFailure(method, throwable);
-            }
-        }
-    }
-
-    private static final class MethodHandleSendHandler implements PacketSendHandler<Packet<?>> {
-        private final Method method;
-        private final MethodHandle handle;
-
-        private MethodHandleSendHandler(Method method, MethodHandle handle) {
-            this.method = method;
-            this.handle = handle;
-        }
-
-        @Override
-        public void handle(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-            try {
-                handle.invoke(event, player, packet);
-            } catch (Throwable throwable) {
-                throw invocationFailure(method, throwable);
-            }
-        }
-    }
-
     private static String parameterSignature(Method method) {
         StringBuilder builder = new StringBuilder();
         for (Class<?> parameterType : method.getParameterTypes()) {
@@ -351,52 +232,8 @@ public final class PacketHandlerScanner {
         return builder.toString();
     }
 
-    private enum Direction {
-        RECEIVE("receive", PacketFlow.SERVERBOUND),
-        SEND("send", PacketFlow.CLIENTBOUND),
-        BOTH("both", null);
-
-        private final String description;
-        private final PacketFlow flow;
-
-        Direction(String description, PacketFlow flow) {
-            this.description = description;
-            this.flow = flow;
-        }
-
-        boolean accepts(Direction direction) {
-            return this == BOTH || this == direction;
-        }
-
-        String description() {
-            return description;
-        }
-
-        PacketFlow flow() {
-            return flow;
-        }
-    }
-
-    public record RegistrationSet(
-            List<ReceiveRegistration> receiveRegistrations,
-            List<SendRegistration> sendRegistrations
-    ) {
-    }
-
-    public record ReceiveRegistration(
-            Class<? extends Packet<?>> packetType,
-            PacketReceiveHandler<Packet<?>> handler
-    ) {
-    }
-
-    public record SendRegistration(
-            Class<? extends Packet<?>> packetType,
-            PacketSendHandler<Packet<?>> handler
-    ) {
-    }
-
-    private record HandlerSignature(Direction direction, List<Class<? extends Packet<?>>> packetTypes) {
-    }
+    public record ReceiveRegistration(PacketType<?> packetType, PacketReceiveHandler<Object> handler, Method method) { }
+    public record SendRegistration(PacketType<?> packetType, PacketSendHandler<Object> handler, Method method) { }
 
     private record MethodSignature(String name, List<Class<?>> parameterTypes) {
         private static MethodSignature from(Method method) {
@@ -404,6 +241,4 @@ public final class PacketHandlerScanner {
         }
     }
 
-    private record RouteKey(Direction direction, Class<? extends Packet<?>> packetType) {
-    }
 }

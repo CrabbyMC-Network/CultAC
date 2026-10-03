@@ -1,5 +1,6 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -7,11 +8,10 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.DeadCheck;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
 import net.minecraft.world.phys.Vec3;
 
 @CheckData(name = "BadPacketsU", stableKey = "cult.badpackets.invalid_block_placement", description = "Sent impossible use item packet")
@@ -25,7 +25,7 @@ public class BadPacketsU extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onUseItemOn(final PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
+    public void onUseItemOn(final PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         // Supported clients cannot express legacy face-255 item use with this packet.
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) return;
         if (true) return; // TODO: this only works on 1.8 servers?
@@ -34,9 +34,8 @@ public class BadPacketsU extends Check implements CheckListener {
         // except y gets wrapped?
         final int expectedY = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_8) ? 4095 : 255;
 
-        final NmsPacketUtil.UseItemOnData data = NmsPacketUtil.readUseItemOn(packet);
-        final BlockPos pos = data.blockPosition();
-        final Vec3 cursor = data.cursor();
+        final BlockPos pos = SpigotConversionUtil.toNmsBlockPos(packet.blockPosition());
+        final Vec3 cursor = SpigotConversionUtil.toNmsVec(packet.cursor());
 
         if (pos.getX() != -1
                 || pos.getY() != expectedY
@@ -44,12 +43,12 @@ public class BadPacketsU extends Check implements CheckListener {
                 || cursor.x != 0
                 || cursor.y != 0
                 || cursor.z != 0
-                || data.sequence() != 0
+                || packet.sequence() != 0
         ) {
             var buf = V.write(verbose())
                     .mcPos(pos.getX(), pos.getY(), pos.getZ())
                     .cursor((float) cursor.x, (float) cursor.y, (float) cursor.z)
-                    .bool(true).sint(data.sequence());
+                    .bool(true).sint(packet.sequence());
             if (flag(buf) && shouldModifyPackets()) {
                 player.onPacketCancel();
                 event.setCancelled(true);

@@ -5,6 +5,7 @@ import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
 import versioning.BuildConfig
+import java.util.zip.ZipFile
 
 plugins {
     `maven-publish`
@@ -92,6 +93,7 @@ dependencies {
     implementation(libs.cult.bukkit.internal)
 
     implementation(project(":common"))
+    implementation(project(":protocol-paper"))
     shadow(project(":common"))
 }
 
@@ -234,6 +236,12 @@ tasks {
     }
 
     shadowJar {
+        minimize {
+            // The complete protocol catalog and backend are loaded as a unit. During
+            // staged migration not every transport entry point has a direct caller yet.
+            exclude(project(":protocol"))
+            exclude(project(":protocol-paper"))
+        }
         dependsOn(":placement-1-21-11-adapter:classes")
         from(project(":placement-1-21-11-adapter").layout.buildDirectory.dir("classes/java/main"))
         dependsOn(":placement-26-2-adapter:classes")
@@ -276,5 +284,32 @@ tasks.register<ShadowJar>("devShadowJar") {
 
     manifest {
         attributes["paperweight-mappings-namespace"] = "mojang"
+    }
+}
+
+// Inspect the actual output, including transitively shaded and relocated entries.
+// Native conformance sources and migration archives never enter the runtime jar.
+tasks.withType<ShadowJar>().configureEach {
+    doLast {
+        val forbiddenOracle = Regex("protocol/(validation|oracle|legacy)/|protocolvalidation/|protocol[-_]oracle|protocol[-_]validation|legacy[-_.]?extractor", RegexOption.IGNORE_CASE)
+        ZipFile(archiveFile.get().asFile).use { archive ->
+            for (required in listOf(
+                "ac/cult/cultac/protocol/ProtocolRuntime.class",
+                "ac/cult/cultac/network/CultConnection.class",
+                "ac/cult/cultac/protocol/paper/CultDecoder.class",
+                "ac/cult/cultac/protocol/paper/CultEncoder.class"
+            )) {
+                check(archive.getEntry(required) != null) { "Protocol class missing from production jar: $required" }
+            }
+            for (entry in archive.entries()) {
+                check("asm" !in entry.name.split('/')) { "ASM in production jar: ${entry.name}" }
+                check(!forbiddenOracle.containsMatchIn(entry.name)) { "Protocol oracle in production jar: ${entry.name}" }
+                if (entry.name.endsWith("plugin.yml") || entry.name.endsWith("paper-plugin.yml")) {
+                    val descriptor = archive.getInputStream(entry).bufferedReader().use { it.readText() }
+                    check(!Regex("protocol[. /_-]*(validation|oracle)|legacy[. /_-]*extractor", RegexOption.IGNORE_CASE)
+                        .containsMatchIn(descriptor)) { "Protocol oracle descriptor in production jar: ${entry.name}" }
+                }
+            }
+        }
     }
 }

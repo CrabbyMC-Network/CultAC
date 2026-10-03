@@ -4,13 +4,10 @@ import ac.cult.cultac.checks.BedrockSupported;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 //@CheckData(name="NoFall")
 @BedrockSupported
@@ -22,7 +19,7 @@ public class NoFallExecutor extends Check implements CheckListener {
             .setback(10)
             .build()); }
 
-    private void handleMovePlayer(PacketReceiveEvent event, ServerboundMovePlayerPacket packet) {
+    private void handleMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, ServerboundMovePlayer packet) {
         boolean forceGroundFalse = player.packetStateData.lastPacketWasTeleport;
         // The prediction based NoFall check (that runs before us without the packet)
         // has asked us to set the player's onGround status to the ground state the
@@ -31,20 +28,18 @@ public class NoFallExecutor extends Check implements CheckListener {
         // Also flip teleports because vanilla doesn't handle the teleports well.
         Boolean desiredOnGround = player.packetStateData.consumeDesiredOnGround();
         if (desiredOnGround != null && !forceGroundFalse && shouldModifyPackets()) {
-            event.setNmsPacket(NmsPacketUtil.withOnGround(packet, player, desiredOnGround));
-            event.markForReEncode(true);
+            event.replace(packet.withOnGround(desiredOnGround));
         }
         if (forceGroundFalse) {
             if (shouldModifyPackets()) {
-                event.setNmsPacket(NmsPacketUtil.withOnGround(packet, player, false));
-                event.markForReEncode(true);
+                event.replace(packet.withOnGround(false));
             }
         }
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet);
     }
 }

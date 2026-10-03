@@ -74,7 +74,9 @@ final class BedrockMovementInputFactory {
                 worldSnapshot,
                 previousState,
                 tickInput.inputFrame());
-        player.bedrockState.movementEffects.glideBoost(frame, hasAcknowledgedStartChunk(player, context));
+        boolean actorMovementTick = !player.bedrockState.loadingScreen.active()
+                && hasAcknowledgedStartChunk(player, context);
+        player.bedrockState.movementEffects.glideBoost(frame, actorMovementTick);
         return new Input(
                 frame,
                 previousState,
@@ -84,7 +86,7 @@ final class BedrockMovementInputFactory {
                 previousState.isHorse() ? BedrockHorseMovement.maxUpStep(previousState, worldSnapshot.movementContext())
                         : previousState.isBoat() ? boatStep(previousState) : BedrockSimulation.DEFAULT_MAX_AUTO_STEP,
                 mobJumpComponent,
-                hasAcknowledgedStartChunk(player, context)
+                actorMovementTick
         );
     }
 

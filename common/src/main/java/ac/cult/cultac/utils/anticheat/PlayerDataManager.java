@@ -29,9 +29,8 @@ public class PlayerDataManager {
                 CultAPI.INSTANCE.getEventBus().get(GrimQuitEvent.class);
     }
 
-    // CultAC/PacketEvents keyed this by User. A UUID identifies an account, not
-    // a connection; two live connections with the same UUID must both be checked.
-    private final ConcurrentHashMap<User, CultPlayer> playerDataMap = new ConcurrentHashMap<>();
+    // Enumeration only; each session owns its sole player attachment.
+    private final Set<CultPlayer> activePlayers = ConcurrentHashMap.newKeySet();
     // Exemption belongs to one connection, not to an identity. Two simultaneous
     // connections may legitimately present the same UUID; carrying an exemption
     // across them would let the replacement connection evade the anticheat.
@@ -93,7 +92,7 @@ public class PlayerDataManager {
         if (user == null) {
             return null;
         }
-        return playerDataMap.get(user);
+        return user.getCultPlayer();
     }
 
     @Nullable
@@ -106,15 +105,13 @@ public class PlayerDataManager {
             remove(user);
             return;
         }
-        if (playerDataMap.containsKey(user)) {
-            return;
-        }
-
-        CultPlayer created = createPlayer(user);
-        CultPlayer existing = playerDataMap.putIfAbsent(user, created);
-        if (existing != null) {
-            created.onRemove();
-            return;
+        var session = user.getCultConnection();
+        CultPlayer created;
+        synchronized (session) {
+            if (session.disconnected() || session.player() != null) return;
+            created = createPlayer(user);
+            session.player(created);
+            activePlayers.add(created);
         }
 
         Channels.JOIN.fire(created);
@@ -129,7 +126,12 @@ public class PlayerDataManager {
             return false;
         }
 
-        CultPlayer tracked = playerDataMap.remove(user);
+        CultPlayer tracked;
+        synchronized (user.getCultConnection()) {
+            tracked = user.getCultPlayer();
+            user.getCultConnection().player(null);
+            if (tracked != null) activePlayers.remove(tracked);
+        }
         if (tracked == null) {
             return false;
         }
@@ -139,7 +141,7 @@ public class PlayerDataManager {
 
     /**
      * Ends only this exact connection. Another User presenting the same UUID has
-     * its own map entry and cannot be removed by this path.
+     * its own session attachment and cannot be removed by this path.
      */
     public boolean onDisconnect(final User user) {
         if (user == null || user.getUUID() == null) {
@@ -147,7 +149,12 @@ public class PlayerDataManager {
             return false;
         }
 
-        CultPlayer tracked = playerDataMap.remove(user);
+        CultPlayer tracked;
+        synchronized (user.getCultConnection()) {
+            tracked = user.getCultPlayer();
+            user.getCultConnection().player(null);
+            if (tracked != null) activePlayers.remove(tracked);
+        }
         if (tracked == null) {
             clearExemptions(user);
             return false;
@@ -183,11 +190,11 @@ public class PlayerDataManager {
     }
 
     public Collection<CultPlayer> getEntries() {
-        return playerDataMap.values();
+        return java.util.Collections.unmodifiableSet(activePlayers);
     }
 
     public int size() {
-        return playerDataMap.size();
+        return activePlayers.size();
     }
 
     private CultPlayer createPlayer(User user) {

@@ -8,7 +8,7 @@ import zipfile
 
 OFFICIAL_CLIENT_SHA1 = {
     "26.2": "2dc72797acbc1b63fc16a11c4ac393605f453754",
-    "26.3-rc-1": "a64d116707456e8c6069776a558936d11a2674e1",
+    "26.3": "e877b6a07acd633fb3bb475002175cec036e7b87",
 }
 
 

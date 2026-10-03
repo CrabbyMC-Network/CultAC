@@ -20,7 +20,6 @@ import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
@@ -31,8 +30,8 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import org.bukkit.GameMode;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.util.Vector;
 
@@ -58,8 +57,8 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
             .description("Attacked an entity from too far away")
             .build()); }
 
-    private void handleInteract(final PacketReceiveEvent event, NmsPacketUtil.InteractData action) {
-        if (!player.isDisabled() && action != null && action.action() == NmsPacketUtil.InteractAction.ATTACK) {
+    private void handleInteract(final PacketReceiveEvent event, ServerboundInteract action) {
+        if (!player.isDisabled() && action != null && action.action() == InteractAction.ATTACK) {
 
             // Don't let the player teleport to bypass reach
             if (player.getSetbackTeleportUtil().shouldBlockMovement()) {
@@ -117,14 +116,11 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        handleInteract(event, NmsPacketUtil.readInteract(packet));
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        handleInteract(event, packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        handleInteract(event, NmsPacketUtil.readAttack(packet));
-    }
+
 
     @Override
     public void onPlayerTickEnd(final PacketReceiveEvent event) {

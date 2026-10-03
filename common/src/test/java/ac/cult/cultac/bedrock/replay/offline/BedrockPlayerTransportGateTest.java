@@ -5,10 +5,9 @@ import ac.cult.cultac.events.packets.listeners.PacketServerTeleport;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.SetbackPosWithVector;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundAcceptTeleportation;
+import ac.cult.cultac.protocol.value.Vec3d;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
 
@@ -23,8 +22,7 @@ public final class BedrockPlayerTransportGateTest {
         try {
             mountImmediately(player, 71);
             CheckManagerListener listener = new CheckManagerListener();
-            ServerboundMovePlayerPacket.Rot rotation = new ServerboundMovePlayerPacket.Rot(
-                    45.0F, 10.0F, false, false);
+            ServerboundMovePlayer rotation = new ServerboundMovePlayer(0, 0, 0, 45.0F, 10.0F, false, false, false, true);
 
             PacketReceiveEvent first = receiveEvent(player, rotation);
             listener.onMovePlayer(first, player, rotation);
@@ -51,8 +49,7 @@ public final class BedrockPlayerTransportGateTest {
         try {
             mountImmediately(player, 73);
             seedSetbackAnchor(player, new Vec3(0.5D, 64.0D, 0.5D));
-            ServerboundMovePlayerPacket.Pos position = new ServerboundMovePlayerPacket.Pos(
-                    3.0D, 67.0D, 4.0D, false, false);
+            ServerboundMovePlayer position = new ServerboundMovePlayer(3.0D, 67.0D, 4.0D, 0, 0, false, false, true, false);
             PacketReceiveEvent event = receiveEvent(player, position);
 
             new CheckManagerListener().onMovePlayer(event, player, position);
@@ -78,13 +75,12 @@ public final class BedrockPlayerTransportGateTest {
                     new Vec3(527.2020263671875, 64.84375, -78.90235137939453), false);
             player.packetStateData.bedrockServerResponse = true;
 
-            ServerboundAcceptTeleportationPacket accept =
-                    new ServerboundAcceptTeleportationPacket(teleportId, player.x, player.y, player.z, player.xRot, player.yRot);
+            ServerboundAcceptTeleportation accept =
+                    new ServerboundAcceptTeleportation(teleportId, new Vec3d(player.x, player.y, player.z), player.xRot, player.yRot);
             new PacketServerTeleport().onAcceptTeleportation(
-                    receiveEvent(player, accept), player, accept);
+                    RecordReceiveTestEvents.teleport(player, accept), player, accept);
 
-            ServerboundMovePlayerPacket.PosRot acknowledgement = new ServerboundMovePlayerPacket.PosRot(
-                    expected.x, expected.y, expected.z, 15.0F, 5.0F, false, false);
+            ServerboundMovePlayer acknowledgement = new ServerboundMovePlayer(expected.x, expected.y, expected.z, 15.0F, 5.0F, false, false, true, true);
             PacketReceiveEvent event = receiveEvent(player, acknowledgement);
 
             new CheckManagerListener().onMovePlayer(event, player, acknowledgement);
@@ -112,7 +108,8 @@ public final class BedrockPlayerTransportGateTest {
         player.getSetbackTeleportUtil().hasFullyJoined = true;
     }
 
-    private static PacketReceiveEvent receiveEvent(CultPlayer player, Packet<?> packet) {
-        return new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+    private static PacketReceiveEvent<ServerboundMovePlayer> receiveEvent(CultPlayer player, ServerboundMovePlayer packet) {
+        return RecordReceiveTestEvents.movement(player, packet);
     }
+
 }

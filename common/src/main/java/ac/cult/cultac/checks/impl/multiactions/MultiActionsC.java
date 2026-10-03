@@ -9,7 +9,7 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import ac.cult.cultac.utils.inventory.InventoryClick;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,7 +45,7 @@ public class MultiActionsC extends Check implements CheckListener {
 
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) {
         if (player.serverOpenedInventoryThisTick) return;
 
         boolean sprinting = isVerboseSprinting(player);

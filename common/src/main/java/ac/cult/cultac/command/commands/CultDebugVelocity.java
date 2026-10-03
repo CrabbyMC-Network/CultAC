@@ -15,7 +15,9 @@ import io.netty.channel.ChannelPipeline;
 import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundEntityMotion;
+import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.network.CultWrite;
 import net.minecraft.world.phys.Vec3;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -100,9 +102,10 @@ public final class CultDebugVelocity implements BuildableCommand {
             // ClientPacketListener#handleSetEntityMotion -> Entity#lerpMotion replaces
             // client velocity. Sending only the packet avoids a second Bukkit velocity broadcast.
             Integer vehicleId = player.compensatedEntities.vehicles.serverPlayerVehicle;
-            var packet = new ClientboundSetEntityMotionPacket(vehicleId == null ? player.entityID : vehicleId, velocity);
-            if (silent) player.user.sendPacketSilently(packet);
-            else player.user.sendPacket(packet);
+            var packet = new ClientboundEntityMotion(vehicleId == null ? player.entityID : vehicleId,
+                    new Vec3d(velocity.x, velocity.y, velocity.z));
+            player.user.write(silent ? new CultWrite(packet, true)
+                    : new CultWrite(packet, false));
             sender.sendMessage(Component.text("Sent " + (silent ? "silent " : "") + "velocity " + velocity + " via a Java packet.",
                     NamedTextColor.GRAY));
         });

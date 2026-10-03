@@ -1,6 +1,8 @@
 package ac.cult.cultac.checks.type;
 
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.network.CultPacketHandler;
@@ -12,10 +14,9 @@ import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import ac.cult.cultac.utils.nmsutil.Ray;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import org.bukkit.GameMode;
 import org.bukkit.util.Vector;
 
@@ -31,7 +32,7 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
 
     private final int samplesBeforeCheck;
     private BlockPos diggingLocation = null;
-    private Action lastDiggingAction = Action.STOP_DESTROY_BLOCK;
+    private PlayerAction lastDiggingAction = PlayerAction.STOP_DESTROY_BLOCK;
     // We don't know if it's digging until the tick after a player's look,
     // or the 300 ms after breaking a block successfully
     private final LastInstance lastDigging = new LastInstance(player);
@@ -60,29 +61,29 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
         buffer = Math.max(buffer, 0);
     }
 
-    private void handleDigAction(ServerboundPlayerActionPacket actionPacket) {
+    private void handleDigAction(ServerboundPlayerAction action) {
         // Cancel digging is pointless in this game
         // You don't actually cancel the digging
-        NmsPacketUtil.PlayerActionData action = NmsPacketUtil.readPlayerAction(actionPacket);
         switch (action.action()) {
             case START_DESTROY_BLOCK:
-                double damage = BlockBreakSpeed.getBlockDamage(player, action.blockPosition());
+                BlockPos blockPosition = SpigotConversionUtil.toNmsBlockPos(action.position());
+                double damage = BlockBreakSpeed.getBlockDamage(player, blockPosition);
                 boolean wasInstabreak = (damage > 1 || (player.gamemode == GameMode.CREATIVE && damage != 0));
 
                 if (wasInstabreak) { // Client is done mining first tick, no more packets
                     diggingLocation = null;
-                    lastDiggingAction = Action.STOP_DESTROY_BLOCK;
+                    lastDiggingAction = PlayerAction.STOP_DESTROY_BLOCK;
                 } else {
-                    diggingLocation = action.blockPosition().immutable();
-                    lastDiggingAction = Action.START_DESTROY_BLOCK;
+                    diggingLocation = blockPosition;
+                    lastDiggingAction = PlayerAction.START_DESTROY_BLOCK;
                     lastDigging.reset();
                 }
                 break;
             case ABORT_DESTROY_BLOCK: // The player doesn't actually cancel digging, this is a lie
-                lastDiggingAction = Action.ABORT_DESTROY_BLOCK;
+                lastDiggingAction = PlayerAction.ABORT_DESTROY_BLOCK;
                 break;
             case STOP_DESTROY_BLOCK:
-                lastDiggingAction = Action.STOP_DESTROY_BLOCK;
+                lastDiggingAction = PlayerAction.STOP_DESTROY_BLOCK;
                 // 300 ms delay after breaking blocks have animations without sending START_DIG
                 if (diggingLocation != null) lastDigging.setRaw(-6);
                 diggingLocation = null;
@@ -105,17 +106,12 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         handleDigAction(packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPunchPacket")
-    public void onPunch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSwing(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSwingPacket")
-    public void onSwing(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         handleSwing();
     }
 
@@ -125,9 +121,9 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
 
         // If the player isn't within 10 blocks of the block they are digging, don't bother.
         if (diggingLocation != null && playerPos.distanceSquared(new Vector(diggingLocation.getX(), diggingLocation.getY(), diggingLocation.getZ())) < 100) {
-            if (lastDiggingAction == Action.START_DESTROY_BLOCK) { // START_BREAK without FINISH_BREAK or CANCEL_BREAK
+            if (lastDiggingAction == PlayerAction.START_DESTROY_BLOCK) { // START_BREAK without FINISH_BREAK or CANCEL_BREAK
                 lastDigging.reset();
-            } else if (lastDiggingAction == Action.ABORT_DESTROY_BLOCK) { // Buggy cancel digging
+            } else if (lastDiggingAction == PlayerAction.ABORT_DESTROY_BLOCK) { // Buggy cancel digging
                 // Brute force eye height because desync
                 for (double eyeHeight : player.getPossibleEyeHeights()) {
                     Ray trace = new Ray(player, playerPos.getX(), playerPos.getY() + eyeHeight, playerPos.getZ(), player.xRot, player.yRot);

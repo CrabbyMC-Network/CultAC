@@ -8,7 +8,7 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
 
 import java.util.ArrayDeque;
 
@@ -50,7 +50,7 @@ public class PacketOrderE extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         int currentFlags = currentFlags();
         if (currentFlags != 0) {
             if (player.canSkipTicks() && flags.add(currentFlags) || flag(write(currentFlags))) {

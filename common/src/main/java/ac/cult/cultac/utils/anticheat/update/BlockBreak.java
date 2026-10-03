@@ -1,5 +1,6 @@
 package ac.cult.cultac.utils.anticheat.update;
 
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.HitboxData;
@@ -7,7 +8,6 @@ import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.block.BlockFace;
 
@@ -18,14 +18,14 @@ public final class BlockBreak {
     public final BlockPos position;
     public final BlockFace face;
     public final int faceId;
-    public final ServerboundPlayerActionPacket.Action action;
+    public final PlayerAction action;
     public final int sequence;
     public final BlockState block;
     private final CultPlayer player;
     @Getter
     private boolean cancelled;
 
-    public BlockBreak(CultPlayer player, BlockPos position, BlockFace face, int faceId, ServerboundPlayerActionPacket.Action action, int sequence, BlockState block) {
+    public BlockBreak(CultPlayer player, BlockPos position, BlockFace face, int faceId, PlayerAction action, int sequence, BlockState block) {
         this.player = player;
         this.position = position;
         this.face = face;

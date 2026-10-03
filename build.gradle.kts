@@ -46,17 +46,8 @@ tasks.register("printVersion") {
 
 // ---------- Java Compile Optimization ----------
 subprojects {
-    // Checksums are pinned in gradle/verification-metadata.xml.
-    repositories.exclusiveContent {
-        forRepository {
-            repositories.maven("https://maven.fancyspaces.net/origami/releases") {
-                name = "auditedPaperRc2"
-            }
-        }
-        filter {
-            includeVersion("io.papermc.paper", "dev-bundle", "26.3-rc-2.build.1-alpha")
-            includeVersion("io.papermc.paper", "paper-api", "26.3-rc-2.build.1-alpha")
-        }
+    repositories.maven("https://repo.papermc.io/repository/maven-public/") {
+        content { includeGroup("io.papermc.paper") }
     }
     tasks.withType<JavaCompile>().configureEach {
         options.isFork = true

@@ -1,12 +1,10 @@
 package ac.cult.cultac.utils.latency;
 
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.network.packet.WorldPackets.BlockUpdate;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundBlockChangedAckPacket;
-import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockChangedAck;
+import ac.cult.cultac.network.CultWrite;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -28,29 +26,24 @@ public final class BlockPredictionAckSender {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
         if (transaction == null) {
             for (TrackedBlockUpdate update : updates) {
-                player.user.sendPacket(new ClientboundBlockUpdatePacket(update.pos(), update.state()));
+                player.user.write(new BlockUpdate(update.pos(), update.state()));
             }
-            player.user.sendPacket(new ClientboundBlockChangedAckPacket(sequence));
+            player.user.write(new CultWrite(new ClientboundBlockChangedAck(sequence), false));
             return;
         }
 
-        List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>(updates.size() + 2);
-        List<Packet<?>> alreadyHandledPackets = new ArrayList<>(updates.size() + 1);
+        List<CultWrite> packets = new ArrayList<>(updates.size() + 2);
         for (TrackedBlockUpdate update : updates) {
-            ClientboundBlockUpdatePacket packet = new ClientboundBlockUpdatePacket(update.pos(), update.state());
-            packets.add(packet);
-            alreadyHandledPackets.add(packet);
+            packets.add(new CultWrite(new BlockUpdate(update.pos(), update.state()), true));
             player.compensatedWorld.handleServerBlockUpdate(update.pos(), update.state(), transaction);
         }
 
-        ClientboundBlockChangedAckPacket ack = new ClientboundBlockChangedAckPacket(sequence);
-        packets.add(ack);
-        alreadyHandledPackets.add(ack);
+        packets.add(new CultWrite(new ClientboundBlockChangedAck(sequence), true));
         packets.add(transaction.packet());
         player.compensatedWorld.handlePredictionConfirmation(sequence, transaction);
 
         // Vanilla processes bundled sub-packets in order and only then replies to the ping.
         // This makes the pong an exact marker for the client applying the ack and updates.
-        player.user.sendPacketWithSilentPackets(new ClientboundBundlePacket(packets), alreadyHandledPackets);
+        player.user.write(packets, true);
     }
 }

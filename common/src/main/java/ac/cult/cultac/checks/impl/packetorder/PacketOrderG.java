@@ -1,5 +1,8 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
@@ -9,8 +12,7 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -39,19 +41,19 @@ public class PacketOrderG extends Check implements PostPredictionListener {
         };
     }
 
-    private static int action(@Nullable ServerboundPlayerActionPacket.Action action) {
+    private static int action(@Nullable PlayerAction action) {
         return action == null ? ACTION_OPEN_INVENTORY
-                : action == ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND ? ACTION_SWAP : ACTION_DROP;
+                : action == PlayerAction.SWAP_ITEM_WITH_OFFHAND ? ACTION_SWAP : ACTION_DROP;
     }
 
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        final ServerboundPlayerActionPacket.Action action = packet.getAction();
-        if (action != ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND
-                && action != ServerboundPlayerActionPacket.Action.DROP_ITEM
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        final PlayerAction action = packet.action();
+        if (action != PlayerAction.SWAP_ITEM_WITH_OFFHAND
+                && action != PlayerAction.DROP_ITEM
 
-                && action != ServerboundPlayerActionPacket.Action.DROP_ALL_ITEMS
+                && action != PlayerAction.DROP_ALL_ITEMS
         ) return;
 
         onAction(event, player, action);
@@ -59,14 +61,14 @@ public class PacketOrderG extends Check implements PostPredictionListener {
 
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent event, CultPlayer player, ServerboundClientCommandPacket packet) {
+    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         // The 26.2 enum has no OPEN_INVENTORY_ACHIEVEMENT (removed in 1.12)
-        if (packet.getAction().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) {
+        if (packet.action().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) {
             onAction(event, player, null);
         }
     }
 
-    private void onAction(PacketReceiveEvent event, CultPlayer player, @Nullable ServerboundPlayerActionPacket.Action action) {
+    private void onAction(PacketReceiveEvent event, CultPlayer player, @Nullable PlayerAction action) {
         if (player.packetOrderProcessor.isAttackingOrStabbing()
                 || player.packetOrderProcessor.isReleasing()
                 || player.packetOrderProcessor.isRightClicking()
@@ -96,10 +98,10 @@ public class PacketOrderG extends Check implements PostPredictionListener {
     }
 
 
-    private boolean canCancel(@Nullable ServerboundPlayerActionPacket.Action action) {
-        return action != ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM
-                && ((action != ServerboundPlayerActionPacket.Action.DROP_ITEM
-                && action != ServerboundPlayerActionPacket.Action.DROP_ALL_ITEMS)
+    private boolean canCancel(@Nullable PlayerAction action) {
+        return action != PlayerAction.RELEASE_USE_ITEM
+                && ((action != PlayerAction.DROP_ITEM
+                && action != PlayerAction.DROP_ALL_ITEMS)
                 || player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8));
     }
 

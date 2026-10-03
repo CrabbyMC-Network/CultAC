@@ -1,6 +1,6 @@
 package ac.cult.cultac.utils.latency;
 
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
 import org.bukkit.Material;
@@ -14,17 +14,6 @@ final class PredictedResultSlotValidator {
     private PredictedResultSlotValidator() {
     }
 
-    record MerchantOfferSnapshot(ItemStack costA, ItemStack costB, ItemStack result, boolean outOfStock) {
-        static MerchantOfferSnapshot fromNms(net.minecraft.world.item.trading.MerchantOffer offer) {
-            return new MerchantOfferSnapshot(
-                    SpigotConversionUtil.fromNmsItemStack(offer.getCostA()),
-                    SpigotConversionUtil.fromNmsItemStack(offer.getCostB()),
-                    SpigotConversionUtil.fromNmsItemStack(offer.getResult()),
-                    offer.isOutOfStock()
-            );
-        }
-    }
-
     record ResultAllowance(Material material, long amount) {
     }
 
@@ -35,7 +24,7 @@ final class PredictedResultSlotValidator {
             ItemStack beforeCarried,
             List<ItemStack> afterSlots,
             ItemStack afterCarried,
-            List<MerchantOfferSnapshot> merchantOffers,
+            List<MerchantOffer> merchantOffers,
             int selectedMerchantOffer
     ) {
         int resultSlot = switch (menuType) {
@@ -97,7 +86,7 @@ final class PredictedResultSlotValidator {
             List<ItemStack> beforeSlots,
             List<ItemStack> afterSlots,
             ItemStack result,
-            List<MerchantOfferSnapshot> merchantOffers,
+            List<MerchantOffer> merchantOffers,
             int selectedMerchantOffer
     ) {
         return isSaneDialogResult(menuType, beforeSlots, result, merchantOffers, selectedMerchantOffer)
@@ -108,7 +97,7 @@ final class PredictedResultSlotValidator {
             MenuType menuType,
             List<ItemStack> slots,
             ItemStack result,
-            List<MerchantOfferSnapshot> merchantOffers,
+            List<MerchantOffer> merchantOffers,
             int selectedMerchantOffer
     ) {
         if (slots == null || slots.isEmpty() || isEmpty(result)) {
@@ -139,7 +128,7 @@ final class PredictedResultSlotValidator {
             ItemStack beforeCarried,
             List<ItemStack> afterSlots,
             ItemStack afterCarried,
-            List<MerchantOfferSnapshot> merchantOffers,
+            List<MerchantOffer> merchantOffers,
             int selectedMerchantOffer
     ) {
         List<ItemStack> candidates = new java.util.ArrayList<>(afterSlots.size() + 1);

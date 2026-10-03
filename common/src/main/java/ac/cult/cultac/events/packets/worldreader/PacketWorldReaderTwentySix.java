@@ -1,159 +1,59 @@
 package ac.cult.cultac.events.packets.worldreader;
 
-import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.utils.latency.CompensatedWorld.ClientboundDimensionData;
-import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
+import ac.cult.cultac.network.packet.WorldPackets.Chunk;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.latency.CompensatedGeysers;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedChunk;
-import net.minecraft.SharedConstants;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.core.registries.BuiltInRegistries;
+import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
+import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.CraftServer;
+import net.minecraft.world.level.chunk.PalettedContainerFactory;
+import net.minecraft.server.MinecraftServer;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
+/** Pinned 26.3 section reader, using vanilla's palette implementation. */
 public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
+    // Creating a vanilla palette factory builds DFU codecs; share it for this server registry.
+    private static volatile SectionFactory sectionFactory;
 
-    private static final ClientVersion SERVER_VERSION =
-            ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
-
-    // Mojang includes lighting with the chunk packet. Decode only the chunk payload and ignore the light payload here.
     @Override
-    public void handleMapChunk(CultPlayer player, PacketSendEvent event, ClientboundLevelChunkWithLightPacket packet) {
-        ClientboundDimensionData dimensionData = player.compensatedWorld.getLastClientboundDimension();
-        net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData payload =
-                (net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData)
-                        ac.cult.cultac.network.packet.NmsPacketUtil.invokeNoArg(packet, "chunkData", "getChunkData");
-        int chunkX = ac.cult.cultac.network.packet.NmsPacketUtil.intValue(packet, "x", "getX");
-        int chunkZ = ac.cult.cultac.network.packet.NmsPacketUtil.intValue(packet, "z", "getZ");
-        FriendlyByteBuf chunkData = payload.getReadBuffer();
-
-        CachedSection[] chunks = new CachedSection[dimensionData.sectionCount()];
+    public void handleMapChunk(CultPlayer player, PacketSendEvent<Chunk> event, Chunk packet) {
+        var dimension = player.compensatedWorld.getLastClientboundDimension();
+        CachedSection[] chunks = new CachedSection[dimension.sectionCount()];
+        var palettes = palettes();
+        var bytes = new FriendlyByteBuf(Unpooled.wrappedBuffer(packet.sections()));
         try {
             for (int i = 0; i < chunks.length; i++) {
-                LevelChunkSection section = createSection();
-                section.read(chunkData);
+                var section = new LevelChunkSection(palettes);
+                section.read(bytes);
                 chunks[i] = new CachedSection(section.getStates().copy());
             }
-        } finally {
-            chunkData.release();
-        }
-
-        List<BlockPos> geyserTickers = new ArrayList<>();
-        if (SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_26_2)) {
-            forEachBlockEntity(payload, chunkX, chunkZ, (position, type, tag) -> {
-                if ("potent_sulfur".equals(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(type).getPath())
-                        && hasGeyserTicker(chunks, dimensionData.minHeight(), position)) {
-                    geyserTickers.add(position.immutable());
-                }
-            });
-        }
-
-        addChunkToCache(event, player, chunks, true, dimensionData.dimension(), chunkX, chunkZ, geyserTickers);
-    }
-
-    private static void forEachBlockEntity(net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData payload,
-                                           int x, int z,
-                                           net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData.BlockEntityTagOutput output) {
-        try {
-            try {
-                payload.getClass().getMethod("forEachBlockEntityTag", int.class, int.class,
-                        net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData.BlockEntityTagOutput.class)
-                        .invoke(payload, x, z, output);
-            } catch (NoSuchMethodException legacy) {
-                ((java.util.function.Consumer<net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData.BlockEntityTagOutput>)
-                        payload.getClass().getMethod("getBlockEntitiesTagsConsumer", int.class, int.class).invoke(payload, x, z)).accept(output);
-            }
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("Unable to read chunk block entities", failure);
-        }
+        } finally { bytes.release(); }
+        var tickers = packet.tickerCandidates().stream()
+                .filter(position -> hasGeyserTicker(chunks, dimension.minHeight(), position)).toList();
+        addChunkToCache(event, player, chunks, true, dimension.dimension(), packet.x(), packet.z(), tickers);
     }
 
     private static boolean hasGeyserTicker(CachedSection[] sections, int minHeight, BlockPos position) {
         int offsetY = position.getY() - minHeight;
         int sectionIndex = offsetY >> 4;
-        if (offsetY < 0 || sectionIndex >= sections.length || sections[sectionIndex] == null) {
-            return false;
-        }
+        if (offsetY < 0 || sectionIndex >= sections.length || sections[sectionIndex] == null) return false;
         return CompensatedGeysers.hasTicker(sections[sectionIndex].getState(
                 CachedChunk.index(position.getX() & 0xF, offsetY & 0xF, position.getZ() & 0xF)));
     }
 
-    // PalettedContainerFactory builds its DataFixerUpper codecs on creation, so resolve it once per
-    // RegistryAccess instead of once per section. Each section is still a fresh mutable instance.
-    private static volatile SectionFactory sectionFactory;
-
-    private static LevelChunkSection createSection() {
-        RegistryAccess access = ((CraftServer) Bukkit.getServer()).getServer().registryAccess();
+    private static PalettedContainerFactory palettes() {
+        RegistryAccess access = MinecraftServer.getServer().registryAccess();
         SectionFactory factory = sectionFactory;
         if (factory == null || factory.access() != access) {
-            factory = SectionFactory.create(access);
+            factory = new SectionFactory(access, PalettedContainerFactory.create(access));
             sectionFactory = factory;
         }
-        return factory.newSection();
+        return factory.palettes();
     }
 
-    private record SectionFactory(RegistryAccess access, Constructor<?> constructor, Object argument) {
-        private static SectionFactory create(RegistryAccess access) {
-            try {
-                Class<?> factoryClass = Class.forName("net.minecraft.world.level.chunk.PalettedContainerFactory");
-                Object factory = factoryClass.getMethod("create", RegistryAccess.class).invoke(null, access);
-                return new SectionFactory(access, LevelChunkSection.class.getConstructor(factoryClass), factory);
-            } catch (ClassNotFoundException ignored) {
-                Object biomeRegistry = lookupRegistry(access, Registries.BIOME);
-                try {
-                    return new SectionFactory(access,
-                            LevelChunkSection.class.getConstructor(net.minecraft.core.Registry.class), biomeRegistry);
-                } catch (ReflectiveOperationException exception) {
-                    throw new IllegalStateException("Unable to construct legacy chunk section", unwrap(exception));
-                }
-            } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unable to construct chunk section", unwrap(exception));
-            }
-        }
-
-        private LevelChunkSection newSection() {
-            try {
-                return (LevelChunkSection) constructor.newInstance(argument);
-            } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unable to construct chunk section", unwrap(exception));
-            }
-        }
-    }
-
-    private static Object lookupRegistry(RegistryAccess access, Object key) {
-        for (String methodName : new String[]{"registryOrThrow", "lookupOrThrow"}) {
-            for (Method method : RegistryAccess.class.getMethods()) {
-                if (!method.getName().equals(methodName)
-                        || method.getParameterCount() != 1
-                        || !net.minecraft.core.Registry.class.isAssignableFrom(method.getReturnType())) {
-                    continue;
-                }
-                try {
-                    return method.invoke(access, key);
-                } catch (ReflectiveOperationException exception) {
-                    throw new IllegalStateException("Unable to resolve biome registry", unwrap(exception));
-                }
-            }
-        }
-        throw new IllegalStateException("No supported registry lookup accessor");
-    }
-
-    private static Throwable unwrap(ReflectiveOperationException exception) {
-        return exception instanceof InvocationTargetException invocationTargetException
-                ? invocationTargetException.getTargetException()
-                : exception;
-    }
+    private record SectionFactory(RegistryAccess access, PalettedContainerFactory palettes) { }
 }

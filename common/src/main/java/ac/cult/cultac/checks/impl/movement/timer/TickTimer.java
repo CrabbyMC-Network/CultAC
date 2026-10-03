@@ -1,16 +1,15 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 @CheckData(name = "TickTimer", stableKey = "cult.timer.tick", description = "Did not send client tick end packet", setback = 1)
 public final class TickTimer extends Check implements CheckListener {
@@ -29,8 +28,8 @@ public final class TickTimer extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable() || player.packetStateData.lastPacketWasTeleport) return;
 
         if (!receivedTickEnd
@@ -41,8 +40,8 @@ public final class TickTimer extends Check implements CheckListener {
         flyingPackets++;
     }
 
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!isApplicable()) return;
 
         receivedTickEnd = true;

@@ -2,7 +2,6 @@ package ac.cult.cultac.utils.latency;
 
 import ac.cult.cultac.network.protocol.ClientVersion;
 
-import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
@@ -16,19 +15,15 @@ import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
-import ac.cult.cultac.utils.nmsutil.WatchableIndexUtil.MetadataAccessor;
 import ac.cult.cultac.utils.nmsutil.WatchableIndexUtil;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
-import net.minecraft.network.syncher.SynchedEntityData;
+import ac.cult.cultac.protocol.value.AttributeSnapshot;
+import ac.cult.cultac.network.packet.EntityMetadata;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
+import ac.cult.cultac.protocol.value.AttributeModifier;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
@@ -45,10 +40,8 @@ public class CompensatedEntities {
     private static final boolean USES_SADDLE_EQUIPMENT_SLOT = Arrays.stream(EquipmentSlot.values())
             .anyMatch(slot -> slot.name().equals("SADDLE"));
     public final Int2ObjectOpenHashMap<PacketEntity> entityMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
-    // Team checks use these profiles to resolve player names to UUIDs.
-    public final Object2ObjectOpenHashMap<UUID, User.Profile> profiles = new Object2ObjectOpenHashMap<>();
     public final Int2ObjectOpenHashMap<TrackerData> serverPositionsMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
-    private final Int2ObjectOpenHashMap<List<ClientboundUpdateAttributesPacket.AttributeSnapshot>> pendingAttributes = new Int2ObjectOpenHashMap<>(10, 0.7f);
+    private final Int2ObjectOpenHashMap<List<AttributeSnapshot>> pendingAttributes = new Int2ObjectOpenHashMap<>(10, 0.7f);
     private final Int2ObjectOpenHashMap<List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>>> pendingEquipment = new Int2ObjectOpenHashMap<>(10, 0.7f);
     public final CompensatedVehicleState vehicles;
     public boolean hasSprintingAttributeEnabled = false;
@@ -160,15 +153,15 @@ public class CompensatedEntities {
         return player.isBedrockMovement() || player.getClientVersion().isNewerThanOrEquals(since);
     }
 
-    public void updateAttributes(int entityID, List<ClientboundUpdateAttributesPacket.AttributeSnapshot> objects) {
+    public void updateAttributes(int entityID, List<AttributeSnapshot> objects) {
         boolean selfScaleChanged = false;
         if (entityID == player.entityID) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (matchesAttribute(snapshot, "movement_speed")) {
 
                     boolean foundSprintingModifier = false;
                     for (AttributeModifier modifier : snapshot.modifiers()) {
-                        if (NmsIdentifierUtil.attributeModifierId(modifier).equals(SPRINTING_MODIFIER_ID)) {
+                        if (modifier.id().equals(SPRINTING_MODIFIER_ID)) {
                             foundSprintingModifier = true;
                         }
                     }
@@ -192,22 +185,22 @@ public class CompensatedEntities {
                     player.compensatedEntities.getSelf().gravity = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttributeName(snapshot, "step_height")) {
+                if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttribute(snapshot, "step_height")) {
                     player.compensatedEntities.getSelf().stepHeightAttribute = calculateAttribute(snapshot, 0.0, 10.0);
                 }
 
                 // 26.2 attributes (Attributes#BOUNCINESS / FRICTION_MODIFIER /
                 // AIR_DRAG_MODIFIER). Matched by registry path because the static
                 // constants do not exist on pre-26.2 servers.
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "bounciness")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "bounciness")) {
                     player.compensatedEntities.getSelf().bounciness = calculateAttribute(snapshot, 0.0, 1.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "friction_modifier")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "friction_modifier")) {
                     player.compensatedEntities.getSelf().frictionModifier = calculateAttribute(snapshot, 0.0, 2048.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "air_drag_modifier")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "air_drag_modifier")) {
                     player.compensatedEntities.getSelf().airDragModifier = calculateAttribute(snapshot, 0.0, 2048.0);
                 }
 
@@ -215,15 +208,15 @@ public class CompensatedEntities {
                     player.compensatedEntities.getSelf().setBlockInteractionRange(calculateAttribute(snapshot, 0.0, 64.0));
                 }
 
-                if (matchesAttributeName(snapshot, "block_break_speed")) {
+                if (matchesAttribute(snapshot, "block_break_speed")) {
                     player.compensatedEntities.getSelf().blockBreakSpeed = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
 
-                if (matchesAttributeName(snapshot, "mining_efficiency")) {
+                if (matchesAttribute(snapshot, "mining_efficiency")) {
                     player.compensatedEntities.getSelf().miningEfficiency = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
 
-                if (matchesAttributeName(snapshot, "submerged_mining_speed")) {
+                if (matchesAttribute(snapshot, "submerged_mining_speed")) {
                     player.compensatedEntities.getSelf().submergedMiningSpeed = calculateAttribute(snapshot, 0.0, 20.0);
                 }
             }
@@ -237,7 +230,7 @@ public class CompensatedEntities {
         }
 
         if (entity != null) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttribute(snapshot, "scale")) {
                     entity.scale = (float) calculateAttribute(snapshot, 0.0625, 16.0);
                     entityScaleChanged = true;
@@ -247,26 +240,26 @@ public class CompensatedEntities {
                     entity.gravity = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttributeName(snapshot, "step_height")) {
+                if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttribute(snapshot, "step_height")) {
                     entity.stepHeightAttribute = calculateAttribute(snapshot, 0.0, 10.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "bounciness")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "bounciness")) {
                     entity.bounciness = calculateAttribute(snapshot, 0.0, 1.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "friction_modifier")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "friction_modifier")) {
                     entity.frictionModifier = calculateAttribute(snapshot, 0.0, 2048.0);
                 }
 
-                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttributeName(snapshot, "air_drag_modifier")) {
+                if (supportsAttributes(ClientVersion.V_26_2) && matchesAttribute(snapshot, "air_drag_modifier")) {
                     entity.airDragModifier = calculateAttribute(snapshot, 0.0, 2048.0);
                 }
             }
         }
 
         if (entity instanceof PacketEntityHorse horse) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (matchesAttribute(snapshot, "movement_speed")) {
                     horse.movementSpeedAttribute = (float) calculateAttribute(snapshot, 0.0, 1024.0);
                 }
@@ -278,7 +271,7 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityRideable) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (matchesAttribute(snapshot, "movement_speed")) {
                     ((PacketEntityRideable) entity).movementSpeedAttribute = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
@@ -290,7 +283,7 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityHappyGhast happyGhast) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (matchesAttribute(snapshot, "movement_speed")) {
                     happyGhast.movementSpeedAttribute = (float) calculateAttribute(snapshot, 0.0, 1024.0);
                 }
@@ -302,7 +295,7 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityNautilus nautilus) {
-            for (ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot : objects) {
+            for (AttributeSnapshot snapshot : objects) {
                 if (matchesAttribute(snapshot, "movement_speed")) {
                     nautilus.movementSpeedAttribute = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
@@ -317,41 +310,16 @@ public class CompensatedEntities {
         }
     }
 
-    private boolean matchesAttributeName(ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot, String path) {
-        return snapshot.attribute()
-                .unwrapKey()
-                .map(key -> NmsIdentifierUtil.resourceKey(key).equals("minecraft:" + path))
-                .orElse(false);
+    private boolean matchesAttribute(AttributeSnapshot snapshot, String path) {
+        return snapshot.attribute().equals("minecraft:" + path);
     }
 
-    private boolean matchesAttribute(ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot, String suffix) {
-        if ("movement_speed".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.MOVEMENT_SPEED);
-        }
-        if ("jump_strength".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.JUMP_STRENGTH);
-        }
-        if ("flying_speed".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.FLYING_SPEED);
-        }
-        if ("scale".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.SCALE);
-        }
-        if ("gravity".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.GRAVITY);
-        }
-        if ("block_interaction_range".equals(suffix)) {
-            return snapshot.attribute().is(Attributes.BLOCK_INTERACTION_RANGE);
-        }
-        return false;
-    }
-
-    private double calculateAttribute(ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot, double minValue, double maxValue) {
+    private double calculateAttribute(AttributeSnapshot snapshot, double minValue, double maxValue) {
         return calculateAttribute(snapshot, minValue, maxValue, Set.of(SPRINTING_MODIFIER_ID, SNOW_MODIFIER_ID));
     }
 
     private double calculateAttribute(
-            ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot,
+            AttributeSnapshot snapshot,
             double minValue,
             double maxValue,
             Set<String> excludedModifierIds
@@ -363,7 +331,7 @@ public class CompensatedEntities {
     }
 
     private double calculateAttributeValue(
-            ClientboundUpdateAttributesPacket.AttributeSnapshot snapshot,
+            AttributeSnapshot snapshot,
             Set<String> excludedModifierIds
     ) {
         double d0 = snapshot.base();
@@ -371,7 +339,7 @@ public class CompensatedEntities {
         List<AttributeModifier> modifiers = new ArrayList<>(snapshot.modifiers());
         modifiers.removeIf(modifier -> {
             for (String excludedModifierId : excludedModifierIds) {
-                if (NmsIdentifierUtil.attributeModifierId(modifier).equals(excludedModifierId)) {
+                if (modifier.id().equals(excludedModifierId)) {
                     return true;
                 }
             }
@@ -444,7 +412,7 @@ public class CompensatedEntities {
         // assuming server entity IDs match tick order.
         packetEntity.setClientTickOrder(nextClientEntityTickOrder++);
         entityMap.put(entityID, packetEntity);
-        List<ClientboundUpdateAttributesPacket.AttributeSnapshot> pending = pendingAttributes.remove(entityID);
+        List<AttributeSnapshot> pending = pendingAttributes.remove(entityID);
         if (pending != null) {
             updateAttributes(entityID, pending);
         }
@@ -600,7 +568,7 @@ public class CompensatedEntities {
         return null;
     }
 
-    public void updateEntityMetadata(int entityID, List<SynchedEntityData.DataValue<?>> watchableObjects) {
+    public void updateEntityMetadata(int entityID, List<EntityMetadata.Entry> watchableObjects) {
         PacketEntity entity = player.compensatedEntities.getEntity(entityID);
         if (entity == null) return;
 
@@ -619,7 +587,7 @@ public class CompensatedEntities {
             applyHappyGhastMetadata(happyGhast, watchableObjects);
         }
         if (entity instanceof PacketEntityNautilus nautilus) {
-            SynchedEntityData.DataValue<?> dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.NAUTILUS_DASH);
+            EntityMetadata.Entry dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.NAUTILUS_DASH);
             if (dashData != null && dashData.value() instanceof Boolean dashing) {
                 nautilus.setDashingFromMetadata(dashing);
             }
@@ -627,13 +595,13 @@ public class CompensatedEntities {
         applyGravityMetadata(entity, watchableObjects);
 
         if (entity.type == EntityTypesCompat.FIREWORK_ROCKET) {
-            SynchedEntityData.DataValue<?> fireworkData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FIREWORK_ATTACHED_TO_TARGET);
+            EntityMetadata.Entry fireworkData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FIREWORK_ATTACHED_TO_TARGET);
             if (fireworkData == null) return;
             trackFireworkIfAttachedToPlayer(entityID, fireworkData.value());
         }
 
         if (entity instanceof PacketEntityHook) {
-            SynchedEntityData.DataValue<?> hookedData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FISHING_HOOKED_ENTITY);
+            EntityMetadata.Entry hookedData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FISHING_HOOKED_ENTITY);
             if (hookedData == null) return;
             ((PacketEntityHook) entity).attached = (Integer) hookedData.value() - 1; // the server adds 1 to the ID
         }
@@ -643,10 +611,10 @@ public class CompensatedEntities {
         }
     }
 
-    private void applyAgeableMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
+    private void applyAgeableMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (!entity.isAgeable()) return;
 
-        SynchedEntityData.DataValue<?> babyData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.AGEABLE_BABY);
+        EntityMetadata.Entry babyData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.AGEABLE_BABY);
         if (babyData == null) return;
 
         Object value = babyData.value();
@@ -658,11 +626,11 @@ public class CompensatedEntities {
         }
     }
 
-    private void applySizeMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
+    private void applySizeMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (!entity.isSize()) return;
 
-        MetadataAccessor<Integer> sizeIndex = entity.type == EntityTypesCompat.PHANTOM ? WatchableIndexUtil.PHANTOM_SIZE : WatchableIndexUtil.SLIME_SIZE;
-        SynchedEntityData.DataValue<?> sizeData = WatchableIndexUtil.getIndex(watchableObjects, sizeIndex);
+        int sizeIndex = entity.type == EntityTypesCompat.PHANTOM ? WatchableIndexUtil.PHANTOM_SIZE : WatchableIndexUtil.SLIME_SIZE;
+        EntityMetadata.Entry sizeData = WatchableIndexUtil.getIndex(watchableObjects, sizeIndex);
         if (sizeData == null) return;
 
         Object value = sizeData.value();
@@ -673,14 +641,14 @@ public class CompensatedEntities {
         }
     }
 
-    private void applyShulkerMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
-        SynchedEntityData.DataValue<?> attachFaceData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_ATTACH_FACE);
+    private void applyShulkerMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
+        EntityMetadata.Entry attachFaceData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_ATTACH_FACE);
         if (attachFaceData != null) {
             // This NMS -> Bukkit conversion is great and works in all 11 versions.
             ((PacketEntityShulker) entity).facing = BlockFace.valueOf(attachFaceData.value().toString().toUpperCase());
         }
 
-        SynchedEntityData.DataValue<?> peekData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_PEEK);
+        EntityMetadata.Entry peekData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_PEEK);
         if (peekData == null) return;
 
         int peek = Byte.toUnsignedInt((byte) peekData.value());
@@ -699,16 +667,9 @@ public class CompensatedEntities {
         player.compensatedWorld.openShulkerBoxes.add(closing);
     }
 
-    private void applyRideableBoostMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
+    private void applyRideableBoostMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (entity.type == EntityTypesCompat.PIG) {
-            SynchedEntityData.DataValue<?> saddleData = WatchableIndexUtil.PIG_SADDLE.resolved()
-                    ? WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.PIG_SADDLE)
-                    : null;
-            if (saddleData != null && saddleData.value() instanceof Boolean saddled) {
-                ((PacketEntityRideable) entity).hasSaddle = saddled;
-            }
-
-            SynchedEntityData.DataValue<?> boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.PIG_BOOST_TIME);
+            EntityMetadata.Entry boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.PIG_BOOST_TIME);
             if (boostData != null) {
                 ((PacketEntityRideable) entity).boost.onSynced((int) boostData.value());
             }
@@ -716,22 +677,15 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityStrider) {
-            SynchedEntityData.DataValue<?> saddleData = WatchableIndexUtil.STRIDER_SADDLE.resolved()
-                    ? WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.STRIDER_SADDLE)
-                    : null;
-            if (saddleData != null && saddleData.value() instanceof Boolean saddled) {
-                ((PacketEntityRideable) entity).hasSaddle = saddled;
-            }
-
-            SynchedEntityData.DataValue<?> boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.STRIDER_BOOST_TIME);
+            EntityMetadata.Entry boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.STRIDER_BOOST_TIME);
             if (boostData != null) {
                 ((PacketEntityRideable) entity).boost.onSynced((int) boostData.value());
             }
         }
     }
 
-    private void applyHorseMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
-        SynchedEntityData.DataValue<?> flagsData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HORSE_FLAGS);
+    private void applyHorseMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
+        EntityMetadata.Entry flagsData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HORSE_FLAGS);
         if (flagsData != null) {
             byte flags = (byte) flagsData.value();
             PacketEntityHorse horse = (PacketEntityHorse) entity;
@@ -745,23 +699,23 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityCamel camel) {
-            SynchedEntityData.DataValue<?> dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.CAMEL_DASH);
+            EntityMetadata.Entry dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.CAMEL_DASH);
             if (dashData != null) {
                 camel.setDashingFromMetadata((boolean) dashData.value());
             }
         }
     }
 
-    private void applyHappyGhastMetadata(PacketEntityHappyGhast happyGhast, List<SynchedEntityData.DataValue<?>> watchableObjects) {
-        SynchedEntityData.DataValue<?> staysStillData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HAPPY_GHAST_STAYS_STILL);
+    private void applyHappyGhastMetadata(PacketEntityHappyGhast happyGhast, List<EntityMetadata.Entry> watchableObjects) {
+        EntityMetadata.Entry staysStillData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HAPPY_GHAST_STAYS_STILL);
         if (staysStillData != null && staysStillData.value() instanceof Boolean staysStill) {
             happyGhast.staysStill = staysStill;
         }
     }
 
-    private void applyGravityMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
+    private void applyGravityMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (!player.isBedrockMovement() && player.getClientVersion().isOlderThan(ClientVersion.V_1_10)) return;
-        SynchedEntityData.DataValue<?> gravityData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.ENTITY_NO_GRAVITY);
+        EntityMetadata.Entry gravityData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.ENTITY_NO_GRAVITY);
         if (gravityData != null && gravityData.value() instanceof Boolean noGravity) {
             // Vanilla uses hasNoGravity, which is a bad name IMO
             // hasGravity > hasNoGravity
@@ -779,8 +733,8 @@ public class CompensatedEntities {
         }
     }
 
-    private void applyNoAiMetadata(PacketEntity entity, List<SynchedEntityData.DataValue<?>> watchableObjects) {
-        SynchedEntityData.DataValue<?> mobFlags = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.MOB_FLAGS);
+    private void applyNoAiMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
+        EntityMetadata.Entry mobFlags = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.MOB_FLAGS);
         if (mobFlags != null) {
             entity.noAI = ((byte) mobFlags.value() & 0x01) != 0;
         }

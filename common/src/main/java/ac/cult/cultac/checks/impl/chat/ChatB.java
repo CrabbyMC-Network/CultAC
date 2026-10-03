@@ -1,5 +1,9 @@
 package ac.cult.cultac.checks.impl.chat;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChat;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommandSigned;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
@@ -8,9 +12,6 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket;
-import net.minecraft.network.protocol.game.ServerboundChatPacket;
 
 // this can false from click events, but I doubt this would actually
 // happen unless they're trying to flag, or if the server is set up badly
@@ -23,7 +24,7 @@ public class ChatB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onChatMessage(PacketReceiveEvent event, CultPlayer player, ServerboundChatPacket packet) {
+    public void onChatMessage(PacketReceiveEvent<ServerboundChat> event, CultPlayer player, ServerboundChat packet) {
         String message = packet.message();
         if (message.isEmpty() || !message.trim().equals(message)
                 || message.startsWith("/") && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_19)) {
@@ -35,7 +36,7 @@ public class ChatB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onChatCommandUnsigned(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandPacket packet) {
+    public void onChatCommandUnsigned(PacketReceiveEvent<ServerboundChatCommand> event, CultPlayer player, ServerboundChatCommand packet) {
         String command = "/" + packet.command();
         if (!command.stripTrailing().equals(command) && flag(V.write(verbose()).bool(false).str(command))) {
             event.setCancelled(true);
@@ -44,7 +45,7 @@ public class ChatB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onChatCommand(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandSignedPacket packet) {
+    public void onChatCommand(PacketReceiveEvent<ServerboundChatCommandSigned> event, CultPlayer player, ServerboundChatCommandSigned packet) {
         String command = "/" + packet.command();
         if (!command.trim().equals(command) && flag(V.write(verbose()).bool(false).str(command))) {
             event.setCancelled(true);

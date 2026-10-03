@@ -1,21 +1,20 @@
 package ac.cult.cultac.checks.impl.vehicle;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.KnownInput;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPaddleBoatPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 
 @CheckData(name = "VehicleF", stableKey = "cult.vehicle.boat_input_mismatch", experimental = true, description = "Sent incorrect boat paddle states")
 public class VehicleF extends Check implements CheckListener {
@@ -32,7 +31,7 @@ public class VehicleF extends Check implements CheckListener {
 
 
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent event, CultPlayer player, ServerboundPaddleBoatPacket packet) {
+    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         // lastVehicleSwitch isn't updated by this time.
         if (lastTickVehicle != player.compensatedEntities.getSelf().getRiding()) return;
 
@@ -47,34 +46,33 @@ public class VehicleF extends Check implements CheckListener {
             expectedLeft = player.boatData.nextVehicleForward > 0 || player.boatData.nextVehicleHoriz < 0;
             expectedRight = player.boatData.nextVehicleForward > 0 || player.boatData.nextVehicleHoriz > 0;
 
-            if (player.boatData.nextVehicleForward == 0 && packet.getLeft() && packet.getRight()) {
+            if (player.boatData.nextVehicleForward == 0 && packet.left() && packet.right()) {
                 return; // the player is pressing forward and backward
             }
         }
 
-        if (packet.getLeft() != expectedLeft || packet.getRight() != expectedRight) {
-            boolean sentLeft = packet.getLeft();
-            boolean sentRight = packet.getRight();
+        if (packet.left() != expectedLeft || packet.right() != expectedRight) {
+            boolean sentLeft = packet.left();
+            boolean sentRight = packet.right();
             if (flag(V.write(verbose()).bool(sentLeft).bool(sentRight).bool(expectedLeft).bool(expectedRight))
                 && shouldModifyPackets()) {
-                event.setNmsPacket(new ServerboundPaddleBoatPacket(expectedLeft, expectedRight));
-                event.markForReEncode(true);
+                event.replace(new ServerboundPaddleBoat(expectedLeft, expectedRight));
             }
         }
     }
 
     // isTickPacket: movement packets count unless they answered a teleport
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.packetStateData.lastPacketWasTeleport) {
             lastTickVehicle = player.compensatedEntities.getSelf().getRiding();
         }
     }
 
     // isTickPacket: tick end counts for 1.21.2+ clients when no movement arrived this client tick
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 && !player.packetStateData.receivedMovementThisClientTick) {
             lastTickVehicle = player.compensatedEntities.getSelf().getRiding();

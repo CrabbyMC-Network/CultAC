@@ -1,11 +1,21 @@
 package ac.cult.cultac.network.packet;
 
+import ac.cult.cultac.protocol.testing.CodecFixture;
+
 import ac.cult.cultac.checks.impl.chat.ChatB;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.PacketDirection;
+import ac.cult.cultac.protocol.ProtocolRuntime;
+import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.data.ProtocolData;
+import ac.cult.cultac.protocol.packet.ServerboundPackets;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 import java.util.OptionalInt;
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommandSigned;
 import net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket;
 import org.junit.Test;
 
@@ -15,33 +25,39 @@ import static org.junit.Assert.assertNotNull;
 
 public final class PortDecodedFieldMappingTest {
     @Test
-    public void chatCommandHandlersBindSignedAndUnsignedNmsFamiliesCorrectly() throws Exception {
+    public void chatCommandHandlersBindSignedAndUnsignedRecordFamiliesCorrectly() throws Exception {
         assertNotNull(ChatB.class.getDeclaredMethod(
                 "onChatCommandUnsigned",
                 PacketReceiveEvent.class,
                 CultPlayer.class,
-                ServerboundChatCommandPacket.class));
+                ServerboundChatCommand.class));
         assertNotNull(ChatB.class.getDeclaredMethod(
                 "onChatCommand",
                 PacketReceiveEvent.class,
                 CultPlayer.class,
-                ServerboundChatCommandSignedPacket.class));
+                ServerboundChatCommandSigned.class));
     }
 
     @Test
     public void spectatorSentinelConversionPreservesPacketEventsIntegerContract() {
-        assertEquals(42, NmsPacketUtil.readSpectatorEntityId(
-                new ServerboundSpectatorActionPacket(OptionalInt.of(42))));
-        assertEquals(0, NmsPacketUtil.readSpectatorEntityId(
-                new ServerboundSpectatorActionPacket(OptionalInt.empty())));
+        var data = ProtocolData.load(ProtocolVersion.V26_3);
+        var codec = new CodecFixture(ProtocolRuntime.create(data));
+        codec.phase(ConnectionPhase.PLAY);
+        int id = data.packets(ConnectionPhase.PLAY, PacketDirection.SERVERBOUND).id("minecraft:spectator_action");
+        var bytes = new FriendlyByteBuf(Unpooled.buffer());
+        try {
+            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(bytes, new ServerboundSpectatorActionPacket(OptionalInt.of(42)));
+            assertEquals(42, codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes).target().orElse(0));
+            bytes.clear();
+            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(bytes, new ServerboundSpectatorActionPacket(OptionalInt.empty()));
+            assertEquals(0, codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes).target().orElse(0));
+        } finally { bytes.release(); }
     }
 
     @Test
     public void transactionAcceptanceDefaultsToFalseOnEachReceiveEvent() {
-        PacketReceiveEvent event = new PacketReceiveEvent(
-                null,
-                new ServerboundSpectatorActionPacket(OptionalInt.empty()),
-                net.minecraft.network.ConnectionProtocol.PLAY);
+        var event = new PacketReceiveEvent<>(null, ConnectionPhase.PLAY, ServerboundPackets.SPECTATOR_ACTION,
+                new ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction(OptionalInt.empty()));
         assertFalse(event.isAcceptedTransactionResponse());
     }
 }

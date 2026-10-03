@@ -6,13 +6,12 @@ import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 @CheckData(name = "BadPacketsH", stableKey = "cult.badpackets.unexpected_sequence", description = "Sent unexpected sequence id", experimental = true)
 public class BadPacketsH extends BlockPlaceCheck implements BlockBreakListener {
@@ -34,9 +33,9 @@ public class BadPacketsH extends BlockPlaceCheck implements BlockBreakListener {
 
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         if (!isApplicable()) return;
-        if (shouldCancel(NmsPacketUtil.readUseItem(packet).sequence())) {
+        if (shouldCancel(packet.sequence())) {
             event.setCancelled(true);
             player.onPacketCancel();
         }

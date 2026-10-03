@@ -6,19 +6,16 @@ import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.DeadCheck;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.world.InteractionHand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.Hand;
 
 @CheckData(name = "PacketOrderC", stableKey = "cult.packetorder.interact_order", description = "Sent INTERACT and INTERACT_AT entity packets in the wrong order")
 @DeadCheck(reason = DeadCheck.Reason.VERSION_GATED, detail = "isApplicable() requires a client older than 26.1.")
@@ -37,7 +34,7 @@ public class PacketOrderC extends Check implements CheckListener {
 
     private boolean sentInteractAt = false;
     private int requiredEntity;
-    private InteractionHand requiredHand;
+    private Hand requiredHand;
     private boolean requiredSneaking;
 
     public PacketOrderC(final CultPlayer player) {
@@ -55,13 +52,12 @@ public class PacketOrderC extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (!isApplicable()
                 || !DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
 
-        final NmsPacketUtil.InteractData data = NmsPacketUtil.readInteract(packet);
 
-        final PacketEntity entity = player.compensatedEntities.entityMap.get(data.entityId());
+        final PacketEntity entity = player.compensatedEntities.entityMap.get(packet.entityId());
 
         // For armor stands, vanilla clients send:
         //  - when renaming the armor stand or in spectator mode: INTERACT_AT + INTERACT
@@ -69,9 +65,9 @@ public class PacketOrderC extends Check implements CheckListener {
         // Just exempt armor stands to be safe
         if (entity != null && entity.getType() == EntityTypesCompat.ARMOR_STAND) return;
 
-        final boolean sneaking = data.sneaking();
+        final boolean sneaking = packet.sneaking();
 
-        switch (data.action()) {
+        switch (packet.action()) {
             // INTERACT_AT then INTERACT
             case INTERACT:
                 if (!sentInteractAt) {
@@ -79,12 +75,12 @@ public class PacketOrderC extends Check implements CheckListener {
                         event.setCancelled(true);
                         player.onPacketCancel();
                     }
-                } else if (data.entityId() != requiredEntity || data.hand() != requiredHand || sneaking != requiredSneaking) {
+                } else if (packet.entityId() != requiredEntity || packet.hand() != requiredHand || sneaking != requiredSneaking) {
                     if (flag(V.write(verbose(), KIND_MISMATCH)
                             .sint(requiredEntity)
-                            .sint(data.entityId())
+                            .sint(packet.entityId())
                             .uint(VerboseTags.enumId(requiredHand))
-                            .uint(VerboseTags.enumId(data.hand()))
+                            .uint(VerboseTags.enumId(packet.hand()))
                             .bool(requiredSneaking)
                             .bool(sneaking)) && shouldModifyPackets()) {
                         event.setCancelled(true);
@@ -102,8 +98,8 @@ public class PacketOrderC extends Check implements CheckListener {
                     }
                 }
 
-                requiredHand = data.hand();
-                requiredEntity = data.entityId();
+                requiredHand = packet.hand();
+                requiredEntity = packet.entityId();
                 requiredSneaking = sneaking;
                 sentInteractAt = true;
                 break;
@@ -114,8 +110,8 @@ public class PacketOrderC extends Check implements CheckListener {
 
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
 
         if (sentInteractAt) {

@@ -2,19 +2,15 @@ package ac.cult.cultac.bedrock.replay.offline;
 
 import ac.cult.cultac.checks.impl.chat.ChatD;
 import ac.cult.cultac.events.packets.listeners.PacketConfigurationListener;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import java.util.UUID;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
-import net.minecraft.network.protocol.common.custom.DiscardedPayload;
-import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ClientInformation;
-import net.minecraft.world.entity.player.ChatVisiblity;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientInformation;
+import ac.cult.cultac.protocol.value.ClientInformation;
+import ac.cult.cultac.protocol.value.ChatVisibility;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -25,9 +21,8 @@ public final class PacketConfigurationParityTest {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = offlineJavaPlayer();
         try {
-            ServerboundCustomPayloadPacket packet = new ServerboundCustomPayloadPacket(
-                    new DiscardedPayload(Identifier.parse("cult:play_only"), new byte[0]));
-            PacketReceiveEvent event = new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+            var packet = new ServerboundCustomPayload("cult:play_only", new byte[0]);
+            var event = RecordReceiveTestEvents.customPayload(player, packet);
 
             new PacketConfigurationListener().onCustomPayload(event, player, packet);
 
@@ -42,19 +37,19 @@ public final class PacketConfigurationParityTest {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = offlineJavaPlayer();
         try {
-            ClientInformation defaults = ClientInformation.createDefault();
+            ClientInformation defaults = defaults();
             ClientInformation hidden = new ClientInformation(
                     defaults.language(),
                     defaults.viewDistance(),
-                    ChatVisiblity.HIDDEN,
+                    ChatVisibility.HIDDEN,
                     defaults.chatColors(),
                     defaults.modelCustomisation(),
                     defaults.mainHand(),
                     defaults.textFilteringEnabled(),
                     defaults.allowsListing(),
                     defaults.particleStatus());
-            ServerboundClientInformationPacket packet = new ServerboundClientInformationPacket(hidden);
-            PacketReceiveEvent event = new PacketReceiveEvent(player.user, packet, ConnectionProtocol.CONFIGURATION);
+            ServerboundClientInformation packet = new ServerboundClientInformation(hidden);
+            var event = RecordReceiveTestEvents.clientInformation(player, packet, ac.cult.cultac.protocol.ConnectionPhase.CONFIGURATION);
 
             new PacketConfigurationListener().onClientInformation(event, player, packet);
 
@@ -69,7 +64,7 @@ public final class PacketConfigurationParityTest {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = offlineJavaPlayer();
         try {
-            ClientInformation defaults = ClientInformation.createDefault();
+            ClientInformation defaults = defaults();
             ClientInformation lowDistance = new ClientInformation(
                     defaults.language(),
                     1,
@@ -80,16 +75,21 @@ public final class PacketConfigurationParityTest {
                     defaults.textFilteringEnabled(),
                     defaults.allowsListing(),
                     defaults.particleStatus());
-            ServerboundClientInformationPacket packet = new ServerboundClientInformationPacket(lowDistance);
-            PacketReceiveEvent event = new PacketReceiveEvent(player.user, packet, ConnectionProtocol.CONFIGURATION);
+            ServerboundClientInformation packet = new ServerboundClientInformation(lowDistance);
+            var event = RecordReceiveTestEvents.clientInformation(player, packet, ac.cult.cultac.protocol.ConnectionPhase.CONFIGURATION);
 
             new PacketConfigurationListener().onClientInformation(event, player, packet);
 
-            assertTrue(event.getNmsPacket() == packet);
-            assertTrue(!event.shouldReEncode());
+            assertTrue(event.getPacket() == packet);
+            assertTrue(event.getOriginalPacket() == packet);
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
         }
+    }
+
+    private static ClientInformation defaults() {
+        return new ClientInformation("en_us", 2, ChatVisibility.FULL, true, 0,
+                ac.cult.cultac.protocol.value.MainHand.RIGHT, false, false, ac.cult.cultac.protocol.value.ParticleStatus.ALL);
     }
 
     private static boolean booleanField(Object target, String name) throws Exception {
@@ -100,12 +100,7 @@ public final class PacketConfigurationParityTest {
 
     private static CultPlayer offlineJavaPlayer() {
         UUID playerId = UUID.fromString("244cd32d-3e42-4ec0-b22c-c95be54d1c58");
-        User user = new User(
-                new User.Profile(playerId, ".Configuration_Test"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Configuration_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 }

@@ -1,11 +1,11 @@
 package ac.cult.cultac.checks.impl.elytra;
 
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
@@ -13,7 +13,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.Equippable;
@@ -36,9 +36,9 @@ public class ElytraD extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (!isApplicable()) return;
-        if (NmsPacketUtil.readPlayerCommand(packet).action() == NmsPacketUtil.PlayerCommandAction.START_FLYING_WITH_ELYTRA
+        if (packet.action() == PlayerCommandAction.START_FLYING_WITH_ELYTRA
                 && !canGlide()
                 && flag()) {
             setback = true;

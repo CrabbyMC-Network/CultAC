@@ -16,16 +16,16 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 
 public class PacketEntityAction {
 
     //LOW
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         // Bedrock commands have already been consumed at their movement phase.
         if (player.isBedrockMovement()) return;
-        switch (packet.getAction()) {
+        switch (packet.action()) {
                 case START_SPRINTING:
                     player.isSprinting = true;
                     player.vehicleData.camelSprintingState = SprintingState.STARTED;
@@ -36,7 +36,7 @@ public class PacketEntityAction {
                     player.vehicleData.camelSprintingState = SprintingState.STOPPED;
                     player.compensatedEntities.hasSprintingAttributeEnabled = false;
                     break;
-                case START_FALL_FLYING:
+                case START_FLYING_WITH_ELYTRA:
                     if (player.onGround || player.lastOnGround || lavaPreventsGlideActivation(player)) {
                         rejectGlideStart(event, player);
                         break;
@@ -57,13 +57,13 @@ public class PacketEntityAction {
                         rejectGlideStart(event, player);
                     }
                     break;
-                case START_RIDING_JUMP:
+                case START_JUMPING_WITH_HORSE:
                     PacketEntityNautilus nautilus = player.compensatedEntities.vehicles.getVelocityMovementVehicle() instanceof PacketEntityNautilus value
                             ? value : null;
                     if (nautilus != null && nautilus.hasSaddle && nautilus.dashCooldown <= 0) {
-                        nautilus.nextPendingJumpScale = packet.getData() >= 90
+                        nautilus.nextPendingJumpScale = packet.data() >= 90
                                 ? 1.0F
-                                : 0.4F + 0.4F * packet.getData() / 90.0F;
+                                : 0.4F + 0.4F * packet.data() / 90.0F;
                         break;
                     }
                     PacketEntityHorse horse = player.compensatedEntities.vehicles.getClientVisibleHorseRoot();
@@ -72,9 +72,9 @@ public class PacketEntityAction {
                         break;
                     }
                     if (horse != null && horse.hasSaddle) {
-                        double jumpScale = packet.getData() >= 90
+                        double jumpScale = packet.data() >= 90
                                 ? 1.0F
-                                : 0.4F + 0.4F * packet.getData() / 90.0F;
+                                : 0.4F + 0.4F * packet.data() / 90.0F;
                         // MCP-Reborn ClientLevel#tickNonPassenger ticks the root
                         // horse before tickPassenger runs LocalPlayer#rideTick.
                         // LocalPlayer#aiStep calls onPlayerJump(...) during that

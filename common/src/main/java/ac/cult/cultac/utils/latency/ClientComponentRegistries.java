@@ -8,7 +8,7 @@ import net.minecraft.core.component.BlockTransformer;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
+import ac.cult.cultac.network.packet.RegistryData;
 import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -27,7 +27,7 @@ public final class ClientComponentRegistries {
     private final Map<ResourceKey<? extends Registry<?>>, List<RegistrySynchronization.PackedRegistryEntry>> entries = new HashMap<>();
     private RegistryAccess.Frozen received;
 
-    public void append(ClientboundRegistryDataPacket packet) {
+    public void append(RegistryData packet) {
         if (isRelevant(packet.registry())) {
             entries.computeIfAbsent(packet.registry(), ignored -> new ArrayList<>()).addAll(packet.entries());
         }

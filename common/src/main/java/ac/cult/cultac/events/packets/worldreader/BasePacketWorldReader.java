@@ -1,64 +1,58 @@
 package ac.cult.cultac.events.packets.worldreader;
 
+import ac.cult.cultac.protocol.value.GameEventType;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockChangedAck;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedChunk;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
 import ac.cult.cultac.utils.data.TeleportData;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundBlockChangedAckPacket;
-import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
-import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import ac.cult.cultac.network.packet.WorldPackets.BlockUpdate;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundForgetLevelChunk;
+import ac.cult.cultac.network.packet.WorldPackets.Chunk;
+import ac.cult.cultac.network.packet.WorldPackets.SectionBlocksUpdate;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class BasePacketWorldReader {
 
     @CultPacketHandler
-    public void onForgetLevelChunk(PacketSendEvent event, CultPlayer player, ClientboundForgetLevelChunkPacket packet) {
-        Object chunkPos = packet.pos();
-        unloadChunk(event, player,
-                NmsPacketUtil.intMethodOrFieldValue(chunkPos, "x"),
-                NmsPacketUtil.intMethodOrFieldValue(chunkPos, "z"));
+    public void onForgetLevelChunk(PacketSendEvent<ClientboundForgetLevelChunk> event, CultPlayer player, ClientboundForgetLevelChunk packet) {
+        unloadChunk(event, player, packet.x(), packet.z());
     }
 
     @CultPacketHandler
-    public void onLevelChunkWithLight(PacketSendEvent event, CultPlayer player, ClientboundLevelChunkWithLightPacket packet) {
+    public void onLevelChunkWithLight(PacketSendEvent<Chunk> event, CultPlayer player, Chunk packet) {
         handleMapChunk(player, event, packet);
     }
 
     @CultPacketHandler
-    public void onBlockUpdate(PacketSendEvent event, CultPlayer player, ClientboundBlockUpdatePacket packet) {
+    public void onBlockUpdate(PacketSendEvent<BlockUpdate> event, CultPlayer player, BlockUpdate packet) {
         handleBlockChange(player, event, packet);
     }
 
     @CultPacketHandler
-    public void onBlockEvent(PacketSendEvent event, CultPlayer player, ClientboundBlockEventPacket packet) {
+    public void onBlockEvent(PacketSendEvent<ClientboundBlockEvent> event, CultPlayer player, ClientboundBlockEvent packet) {
         handleBlockEvent(player, event, packet);
     }
 
     @CultPacketHandler
-    public void onSectionBlocksUpdate(PacketSendEvent event, CultPlayer player, ClientboundSectionBlocksUpdatePacket packet) {
+    public void onSectionBlocksUpdate(PacketSendEvent<SectionBlocksUpdate> event, CultPlayer player, SectionBlocksUpdate packet) {
         handleMultiBlockChange(player, event, packet);
     }
 
     @CultPacketHandler
-    public void onBlockChangedAck(PacketSendEvent event, CultPlayer player, ClientboundBlockChangedAckPacket packet) {
+    public void onBlockChangedAck(PacketSendEvent<ClientboundBlockChangedAck> event, CultPlayer player, ClientboundBlockChangedAck packet) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
         if (transaction != null) {
-            List<Packet<? super ClientGamePacketListener>> packets = List.of(packet, transaction.packet());
-            event.setNmsPacket(new ClientboundBundlePacket(packets));
+
+            event.getWritesAfterSend().add(transaction.packet());
             event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
             player.compensatedWorld.handlePredictionConfirmation(packet.sequence(), transaction);
         } else {
@@ -67,30 +61,30 @@ public class BasePacketWorldReader {
     }
 
     @CultPacketHandler
-    public void onGameEvent(PacketSendEvent event, CultPlayer player, ClientboundGameEventPacket packet) {
-        player.latencyUtils.addRealTimeTaskNow(() -> { if (packet.getEvent() == ClientboundGameEventPacket.START_RAINING) {
+    public void onGameEvent(PacketSendEvent<ClientboundGameEvent> event, CultPlayer player, ClientboundGameEvent packet) {
+        player.latencyUtils.addRealTimeTaskNow(() -> { if (packet.event() == GameEventType.START_RAINING) {
                 player.compensatedWorld.isRaining = true;
-            } else if (packet.getEvent() == ClientboundGameEventPacket.STOP_RAINING) {
+            } else if (packet.event() == GameEventType.STOP_RAINING) {
                 player.compensatedWorld.isRaining = false;
-            } else if (packet.getEvent() == ClientboundGameEventPacket.RAIN_LEVEL_CHANGE) {
-                player.compensatedWorld.isRaining = packet.getParam() > 0.2f;
+            } else if (packet.event() == GameEventType.RAIN_LEVEL_CHANGE) {
+                player.compensatedWorld.isRaining = packet.param() > 0.2f;
             }
         });
     }
 
-    public void handleMapChunk(CultPlayer player, PacketSendEvent event, ClientboundLevelChunkWithLightPacket packet) {
+    public void handleMapChunk(CultPlayer player, PacketSendEvent<Chunk> event, Chunk packet) {
         // Subclasses decode the active chunk format.
     }
 
-    public void addChunkToCache(PacketSendEvent event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, int chunkX, int chunkZ) {
+    public void addChunkToCache(PacketSendEvent<?> event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, int chunkX, int chunkZ) {
         addChunkToCache(event, player, chunks, isGroundUp, packetDimension(player), chunkX, chunkZ);
     }
 
-    public void addChunkToCache(PacketSendEvent event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, String dimension, int chunkX, int chunkZ) {
+    public void addChunkToCache(PacketSendEvent<?> event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, String dimension, int chunkX, int chunkZ) {
         addChunkToCache(event, player, chunks, isGroundUp, dimension, chunkX, chunkZ, List.of());
     }
 
-    public void addChunkToCache(PacketSendEvent event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, String dimension, int chunkX, int chunkZ, List<BlockPos> geyserTickers) {
+    public void addChunkToCache(PacketSendEvent<?> event, CultPlayer player, CachedSection[] chunks, boolean isGroundUp, String dimension, int chunkX, int chunkZ, List<BlockPos> geyserTickers) {
         // The compensated world stores what this connection sees. Translate
         // before pooling so clients with different palettes cannot share wrong states.
         for (int i = 0; i < chunks.length; i++) {
@@ -138,7 +132,7 @@ public class BasePacketWorldReader {
         return player.compensatedWorld.getLastClientboundDimension().dimension();
     }
 
-    public void unloadChunk(PacketSendEvent event, CultPlayer player, int x, int z) {
+    public void unloadChunk(PacketSendEvent<?> event, CultPlayer player, int x, int z) {
         if (player == null) return;
         if (player.chunkDebug) { player.sendMessage("Chunk " + x + " " + z + " queued for unload."); }
         int applyTransaction = appendTrailingProofTransaction(event, player);
@@ -151,30 +145,30 @@ public class BasePacketWorldReader {
         player.compensatedWorld.removeChunkLater(x, z);
     }
 
-    private int appendTrailingProofTransaction(PacketSendEvent event, CultPlayer player) {
+    private int appendTrailingProofTransaction(PacketSendEvent<?> event, CultPlayer player) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForDeferredSend();
         if (transaction == null) {
             return player.lastTransactionSent.get();
         }
 
-        event.getPacketsAfterSend().add(transaction.packet());
+        event.getWritesAfterSend().add(transaction.packet());
         event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
         return transaction.transaction();
     }
 
-    public void handleBlockChange(CultPlayer player, PacketSendEvent event, ClientboundBlockUpdatePacket blockChange) {
+    public void handleBlockChange(CultPlayer player, PacketSendEvent<BlockUpdate> event, BlockUpdate blockChange) {
         int range = 16;
 
-        BlockPos blockPosition = blockChange.getPos();
-        BlockState state = blockChange.getBlockState();
+        BlockPos blockPosition = blockChange.position();
+        BlockState state = blockChange.state();
         // MCP-Reborn ClientPacketListener handles packets in bundle order on the client
         // thread. Put Cult's ping after the block update so the pong marks the point
         // where the client has processed the new block state.
         if (isNearPlayer(player, blockPosition, range)) {
             CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
             if (transaction != null) {
-                List<Packet<? super ClientGamePacketListener>> packets = List.of(blockChange, transaction.packet());
-                event.setNmsPacket(new ClientboundBundlePacket(packets));
+                if (blockChange != event.getOriginalPacket()) event.replace(blockChange);
+                event.getWritesAfterSend().add(transaction.packet());
                 event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
                 player.compensatedWorld.handleServerBlockUpdate(blockPosition, state, transaction);
                 return;
@@ -184,21 +178,21 @@ public class BasePacketWorldReader {
         player.latencyUtils.addRealTimeTaskNow(() -> player.compensatedWorld.handleServerBlockUpdate(blockPosition, state, player.lastTransactionSent.get()));
     }
 
-    public void handleBlockEvent(CultPlayer player, PacketSendEvent event, ClientboundBlockEventPacket blockEvent) {
+    public void handleBlockEvent(CultPlayer player, PacketSendEvent<ClientboundBlockEvent> event, ClientboundBlockEvent blockEvent) {
         int range = 16;
-        BlockPos blockPosition = blockEvent.getPos();
+        BlockPos blockPosition = new BlockPos(blockEvent.position().x(), blockEvent.position().y(), blockEvent.position().z());
         if (isNearPlayer(player, blockPosition, range)) {
             CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
             if (transaction != null) {
-                List<Packet<? super ClientGamePacketListener>> packets = List.of(blockEvent, transaction.packet());
-                event.setNmsPacket(new ClientboundBundlePacket(packets));
+                if (blockEvent != event.getOriginalPacket()) event.replace(blockEvent);
+                event.getWritesAfterSend().add(transaction.packet());
                 event.getTasksAfterSend().add(() -> {
                     player.markTrackedTransactionPacketSent(transaction);
                     Runnable applyEvent = () -> player.compensatedWorld.pistons.handleBlockEvent(
                         blockPosition,
-                        blockEvent.getBlock(),
-                        blockEvent.getB0(),
-                        blockEvent.getB1(),
+                        BuiltInRegistries.BLOCK.byId(blockEvent.blockId()),
+                        blockEvent.action(),
+                        blockEvent.parameter(),
                         transaction.transaction());
                     player.latencyUtils.addRealTimeTask(transaction.transaction(), applyEvent);
                 });
@@ -208,41 +202,35 @@ public class BasePacketWorldReader {
 
         player.latencyUtils.addRealTimeTaskNow(() -> player.compensatedWorld.pistons.handleBlockEvent(
                 blockPosition,
-                blockEvent.getBlock(),
-                blockEvent.getB0(),
-                blockEvent.getB1(),
+                BuiltInRegistries.BLOCK.byId(blockEvent.blockId()),
+                blockEvent.action(),
+                blockEvent.parameter(),
                 player.lastTransactionSent.get()));
     }
 
-    public void handleMultiBlockChange(CultPlayer player, PacketSendEvent event, ClientboundSectionBlocksUpdatePacket multiBlockChange) {
+    public void handleMultiBlockChange(CultPlayer player, PacketSendEvent<SectionBlocksUpdate> event, SectionBlocksUpdate multiBlockChange) {
         int range = 16;
-        List<ServerBlockUpdate> updates = new ArrayList<>();
-        boolean[] nearPlayer = {false};
-
-        multiBlockChange.runUpdates((pos, state) -> {
-            BlockPos immutablePos = pos.immutable();
-            updates.add(new ServerBlockUpdate(immutablePos, state));
-            nearPlayer[0] |= isNearPlayer(player, immutablePos, range);
-        });
+        List<BlockUpdate> updates = multiBlockChange.updates();
+        boolean nearPlayer = updates.stream().anyMatch(update -> isNearPlayer(player, update.position(), range));
 
         if (updates.isEmpty()) {
             return;
         }
 
-        if (nearPlayer[0]) {
+        if (nearPlayer) {
             CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
             if (transaction != null) {
-                List<Packet<? super ClientGamePacketListener>> packets = List.of(multiBlockChange, transaction.packet());
-                event.setNmsPacket(new ClientboundBundlePacket(packets));
+
+                event.getWritesAfterSend().add(transaction.packet());
                 event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
                 player.latencyUtils.addRealTimeTask(transaction.transaction(), () -> updates.forEach(update ->
-                        player.compensatedWorld.handleServerBlockUpdate(update.pos(), update.state(), transaction.transaction())));
+                        player.compensatedWorld.handleServerBlockUpdate(update.position(), update.state(), transaction.transaction())));
                 return;
             }
         }
 
         player.latencyUtils.addRealTimeTaskNow(() -> updates.forEach(update ->
-                player.compensatedWorld.handleServerBlockUpdate(update.pos(), update.state(), player.lastTransactionSent.get())));
+                player.compensatedWorld.handleServerBlockUpdate(update.position(), update.state(), player.lastTransactionSent.get())));
     }
 
     private boolean isNearPlayer(CultPlayer player, BlockPos pos, int range) {
@@ -251,6 +239,4 @@ public class BasePacketWorldReader {
                 && Math.abs(pos.getZ() - player.z) < range;
     }
 
-    private record ServerBlockUpdate(BlockPos pos, BlockState state) {
-    }
 }

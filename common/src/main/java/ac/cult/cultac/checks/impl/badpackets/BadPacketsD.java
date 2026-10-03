@@ -4,12 +4,10 @@ import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 @CheckData(name = "BadPacketsD", stableKey = "cult.badpackets.invalid_pitch", description = "Sent an invalid rotation pitch outside the -90 to 90 range")
 public class BadPacketsD extends Check implements CheckListener {
@@ -20,13 +18,12 @@ public class BadPacketsD extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.packetStateData.lastPacketWasTeleport) return;
 
         if (!packet.hasRotation()) return;
 
-        final float pitch = packet.getXRot(player.xRot);
+        final float pitch = packet.pitchOr(player.xRot);
         if (pitch > 90 || pitch < -90) {
             // Ban.
             if (flag(V.write(verbose()).f32(pitch)) && shouldModifyPackets()) {

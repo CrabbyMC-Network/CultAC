@@ -69,9 +69,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
-import net.minecraft.network.protocol.common.ClientboundPingPacket;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
+import ac.cult.cultac.network.CultWrite;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -93,7 +93,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,7 +117,8 @@ public class CultPlayer implements GrimUser {
     private static final @NotNull ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
-    public record TrackedTransaction(int transaction, int id, ClientboundPingPacket packet) {
+    public record TrackedTransaction(int transaction, CultWrite packet) {
+        public int id() { return ((ClientboundPing) packet.packet()).id(); }
     }
 
     @lombok.Getter
@@ -153,7 +154,7 @@ public class CultPlayer implements GrimUser {
     // Determining player ping
     // The difference between keepalive and transactions is that keepalive is async while transactions are sync
     private Queue<SentTransaction> transactionsSent = new ArrayDeque<>();
-    private final @NotNull Map<@NotNull ClientboundPingPacket, @NotNull TrackedTransaction> transactionsPendingSend = new IdentityHashMap<>(4);
+    private final @NotNull Map<@NotNull Integer, @NotNull TrackedTransaction> transactionsPendingSend = new HashMap<>(4);
     public final @NotNull AtomicInteger lastTransactionSent = new AtomicInteger(0);
     public final @NotNull AtomicInteger lastTransactionReceived = new AtomicInteger(0);
     // End transaction handling stuff
@@ -356,17 +357,16 @@ public class CultPlayer implements GrimUser {
         }
         if (serverPlayer != null) {
             ServerLevel level = serverPlayerLevel(serverPlayer);
-            net.minecraft.network.protocol.game.CommonPlayerSpawnInfo spawnInfo = serverPlayer.createCommonSpawnInfo(level);
-            this.gamemode = switch (spawnInfo.gameType()) {
+            this.gamemode = switch (serverPlayer.gameMode.getGameModeForPlayer()) {
                 case CREATIVE -> GameMode.CREATIVE;
                 case ADVENTURE -> GameMode.ADVENTURE;
                 case SPECTATOR -> GameMode.SPECTATOR;
                 default -> GameMode.SURVIVAL;
             };
-            this.dimension = spawnInfo.dimension();
-            this.world = NmsIdentifierUtil.resourceKey(spawnInfo.dimension());
-            this.compensatedWorld.setLastClientboundDimension(spawnInfo);
-            this.compensatedWorld.setDimension(spawnInfo);
+            this.dimension = level.dimension();
+            this.world = NmsIdentifierUtil.resourceKey(this.dimension);
+            this.compensatedWorld.setLastClientboundDimension(this.world, level.dimensionType());
+            this.compensatedWorld.setDimension(this.world, level.dimensionType());
             this.lastJoinedWorld = System.currentTimeMillis();
         }
     }
@@ -393,14 +393,24 @@ public class CultPlayer implements GrimUser {
     }
 
     public void onRemove() {
-        user.execute(() -> {
+        Runnable cleanup = () -> {
             nettyScheduler.removeScheduler();
             compensatedWorld.clearChunks();
             FairReach fairReach = checkManager.getListener(FairReach.class);
             if (fairReach != null) {
                 fairReach.onPlayerQuit();
             }
-        });
+        };
+        // Disposal runs after packet admission has sealed during plugin shutdown.
+        // It must keep owner confinement without submitting another packet task.
+        var owner = user.getPacketExecutor();
+        if (owner.inEventLoop() || owner.isTerminated()) cleanup.run();
+        else {
+            try { owner.execute(cleanup); }
+            catch (java.util.concurrent.RejectedExecutionException rejected) {
+                owner.terminationFuture().addListener(ignored -> cleanup.run());
+            }
+        }
     }
 
     private long lastCheckedFlying = 0;
@@ -518,17 +528,12 @@ public class CultPlayer implements GrimUser {
 
         lastTransSent = System.currentTimeMillis();
         TrackedTransaction transaction = createTrackedTransaction();
-        user.writePacket(transaction.packet());
+        user.write(transaction.packet());
     }
 
     private boolean canSendTransactionNow() {
-        // don't send transactions outside PLAY phase
-        // Sending in non-play corrupts the pipeline, don't waste bandwidth when anticheat disabled
-        if (user.getEncoderState() != ConnectionProtocol.PLAY || user.getHandle() == null) {
-            return false;
-        }
-        // Send a packet once every 15 seconds to avoid any memory leaks
-        return !disabled || (System.nanoTime() - getPlayerClockAtLeast()) <= 15e9;
+        var phase = user.getEncoderState();
+        return user.getHandle() != null && (phase == ConnectionPhase.PLAY || phase == ConnectionPhase.CONFIGURATION);
     }
 
     public int sendTransactionAndGetId() {
@@ -540,7 +545,7 @@ public class CultPlayer implements GrimUser {
 
         lastTransSent = System.currentTimeMillis();
         TrackedTransaction transaction = createTrackedTransaction();
-        user.writePacket(transaction.packet());
+        user.write(transaction.packet());
         return transaction.transaction();
     }
 
@@ -564,9 +569,9 @@ public class CultPlayer implements GrimUser {
 
     private synchronized TrackedTransaction createTrackedTransaction() {
         int transactionID = nextTransactionId();
-        ClientboundPingPacket packet = new ClientboundPingPacket(transactionID);
-        TrackedTransaction transaction = new TrackedTransaction(lastTransactionSent.incrementAndGet(), transactionID, packet);
-        transactionsPendingSend.put(packet, transaction);
+        CultWrite packet = new CultWrite(new ClientboundPing(transactionID), false);
+        TrackedTransaction transaction = new TrackedTransaction(lastTransactionSent.incrementAndGet(), packet);
+        transactionsPendingSend.put(transactionID, transaction);
         return transaction;
     }
 
@@ -583,12 +588,12 @@ public class CultPlayer implements GrimUser {
         }
     }
 
-    public boolean markTransactionPacketSent(ClientboundPingPacket packet) {
-        return markTransactionPacketSent(packet, System.currentTimeMillis());
+    public boolean markTransactionPacketSent(CultWrite packet) {
+        return markTransactionPacketSent(((ClientboundPing) packet.packet()).id(), System.currentTimeMillis());
     }
 
-    public synchronized boolean markTransactionPacketSent(ClientboundPingPacket packet, long timestamp) {
-        TrackedTransaction transaction = transactionsPendingSend.remove(packet);
+    public synchronized boolean markTransactionPacketSent(int id, long timestamp) {
+        TrackedTransaction transaction = transactionsPendingSend.remove(id);
         if (transaction == null) {
             return false;
         }
@@ -615,7 +620,7 @@ public class CultPlayer implements GrimUser {
                     : ThreadLocalRandom.current().nextInt();
             used = false;
             for (SentTransaction sent : transactionsSent) used |= sent.id() == id;
-            for (TrackedTransaction pending : transactionsPendingSend.values()) used |= pending.id() == id;
+            used |= transactionsPendingSend.containsKey(id);
         } while (used);
         return id;
     }
@@ -815,7 +820,7 @@ public class CultPlayer implements GrimUser {
         }
         LogUtil.info("Disconnecting " + user.getProfile().getName() + " for " + MessageUtil.stripColor(textReason));
         try {
-            user.sendPacket(new ClientboundDisconnectPacket(toNmsComponent(reason)));
+            user.write(new CultWrite(MessageUtil.disconnectPacket(reason), false));
         } catch (Exception ignored) { // The player may be in the wrong state to receive a disconnect packet
             LogUtil.warn("Failed to send disconnect packet to disconnect " + user.getProfile().getName() + "! Disconnecting anyways.");
         }
@@ -824,14 +829,6 @@ public class CultPlayer implements GrimUser {
             CultAPI.INSTANCE.getScheduler().getEntityScheduler().execute(platformPlayer, CultAPI.INSTANCE.getGrimPlugin(),
                     () -> platformPlayer.kickPlayer(textReason), null, 1);
         }
-    }
-
-    private static net.minecraft.network.chat.Component toNmsComponent(Component reason) {
-        if (reason instanceof TranslatableComponent translatableComponent) {
-            return net.minecraft.network.chat.Component.translatable(translatableComponent.key());
-        }
-        String text = LegacyComponentSerializer.legacySection().serialize(reason);
-        return net.minecraft.network.chat.Component.literal(MessageUtil.stripColor(text));
     }
 
     public void pollData() {

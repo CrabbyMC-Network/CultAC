@@ -8,7 +8,7 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCommandSuggestion;
 
 @CheckData(name = "ChatA", stableKey = "cult.exploit.blank_tab_complete", description = "Sent a tab complete packet with no command or input text", experimental = true)
 public class ChatA extends Check implements CheckListener {
@@ -26,9 +26,9 @@ public class ChatA extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCommandSuggestion(PacketReceiveEvent event, CultPlayer player, ServerboundCommandSuggestionPacket packet) {
+    public void onCommandSuggestion(PacketReceiveEvent<ServerboundCommandSuggestion> event, CultPlayer player, ServerboundCommandSuggestion packet) {
         if (!isApplicable()) return;
-        String text = (String) ac.cult.cultac.network.packet.NmsPacketUtil.invokeNoArg(packet, "command", "getCommand");
+        String text = packet.command();
         if (text.equals("/") || text.trim().isEmpty()) {
             if (flag() && shouldModifyPackets()) {
                 event.setCancelled(true);

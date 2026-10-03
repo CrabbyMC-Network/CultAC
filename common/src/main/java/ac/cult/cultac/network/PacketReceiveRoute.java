@@ -2,31 +2,33 @@ package ac.cult.cultac.network;
 
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.Packet;
 
-public final class PacketReceiveRoute {
+public final class PacketReceiveRoute<R> {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static final PacketReceiveRoute EMPTY = new PacketReceiveRoute(new PacketReceiveHandler[0]);
 
-    private final PacketReceiveHandler<Packet<?>>[] handlers;
+    private final PacketReceiveHandler<? super R>[] handlers;
 
-    private PacketReceiveRoute(PacketReceiveHandler<Packet<?>>[] handlers) {
+    private PacketReceiveRoute(PacketReceiveHandler<? super R>[] handlers) {
         this.handlers = handlers;
     }
 
-    public static PacketReceiveRoute of(PacketReceiveHandler<Packet<?>>[] handlers) {
+    public static <R> PacketReceiveRoute<R> of(PacketReceiveHandler<? super R>[] handlers) {
         if (handlers.length == 0) {
-            return EMPTY;
+            return empty();
         }
-        return new PacketReceiveRoute(handlers.clone());
+        return new PacketReceiveRoute<>(handlers.clone());
     }
+
+    @SuppressWarnings("unchecked")
+    public static <R> PacketReceiveRoute<R> empty() { return EMPTY; }
 
     public boolean isEmpty() {
         return handlers.length == 0;
     }
 
-    public void dispatch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        for (PacketReceiveHandler<Packet<?>> handler : handlers) {
+    public void dispatch(PacketReceiveEvent event, CultPlayer player, R packet) {
+        for (PacketReceiveHandler<? super R> handler : handlers) {
             handler.handle(event, player, packet);
         }
     }

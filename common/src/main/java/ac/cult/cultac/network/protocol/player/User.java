@@ -2,55 +2,35 @@ package ac.cult.cultac.network.protocol.player;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
-import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
 import net.kyori.adventure.text.Component;
-import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletionStage;
 
 public final class User {
     @Nullable
     private Player player;
     @Nullable
     private ServerPlayer handle;
-    private final Connection connection;
-    private final Channel channel;
     private final Profile profile;
     private final AtomicBoolean closeRequested = new AtomicBoolean();
     // Kept untyped so Java connections do not require the optional Geyser classes.
     private volatile Object bedrockBridgeConnection;
-    private final EventExecutor packetExecutor;
-    private volatile ConnectionProtocol connectionState;
-    private volatile ConnectionProtocol encoderState;
+    private final ac.cult.cultac.network.CultConnection cultConnection;
 
-    public User(Player player, ServerPlayer handle, Connection connection, Channel channel) {
-        this(new Profile(player.getUniqueId(), player.getName()), player, handle, connection, channel);
+    public User(Profile profile, ac.cult.cultac.network.CultConnection connection) {
+        this.profile = java.util.Objects.requireNonNull(profile);
+        this.cultConnection = java.util.Objects.requireNonNull(connection);
+        connection.bind(this);
     }
-
-    public User(Profile profile, @Nullable Player player, @Nullable ServerPlayer handle, Connection connection, Channel channel) {
-        this(profile, player, handle, connection, channel, channel.eventLoop());
-    }
-
-    public User(Profile profile, @Nullable Player player, @Nullable ServerPlayer handle, Connection connection,
-                Channel channel, EventExecutor packetExecutor) {
-        this.profile = profile;
-        this.player = player;
-        this.handle = handle;
-        this.connection = connection;
-        this.channel = channel;
-        this.packetExecutor = java.util.Objects.requireNonNull(packetExecutor);
-        this.connectionState = ConnectionProtocol.PLAY;
-        this.encoderState = ConnectionProtocol.PLAY;
-    }
+    public ac.cult.cultac.network.CultConnection getCultConnection() { return cultConnection; }
+    public ac.cult.cultac.player.CultPlayer getCultPlayer() { return cultConnection.player(); }
 
     public UUID getUUID() {
         return profile.getUUID();
@@ -75,25 +55,16 @@ public final class User {
     }
 
     public Connection getConnection() {
-        return connection;
+        return cultConnection.nativeConnection();
     }
 
     public Object getChannel() {
-        return channel;
+        return cultConnection.channel();
     }
 
-    public EventExecutor getPacketExecutor() {
-        return packetExecutor;
-    }
-
-    public void execute(Runnable task) {
-        if (packetExecutor.inEventLoop()) task.run();
-        else packetExecutor.execute(task);
-    }
-
-    public void executeLater(Runnable task) {
-        packetExecutor.execute(task);
-    }
+    public EventExecutor getPacketExecutor() { return cultConnection.owner(); }
+    public void execute(Runnable task) { if (getPacketExecutor().inEventLoop()) task.run(); else executeLater(task); }
+    public void executeLater(Runnable task) { getPacketExecutor().execute(task); }
 
     @Nullable
     public Object getBedrockBridgeConnection() {
@@ -104,59 +75,25 @@ public final class User {
         bedrockBridgeConnection = connection;
     }
 
-    public ConnectionProtocol getConnectionState() {
-        return connectionState;
+    public ac.cult.cultac.protocol.ConnectionPhase getConnectionState() {
+        return cultConnection.phase(ac.cult.cultac.protocol.PacketDirection.SERVERBOUND);
     }
-
-    public void setConnectionState(ConnectionProtocol connectionState) {
-        this.connectionState = connectionState;
+    public ac.cult.cultac.protocol.ConnectionPhase getEncoderState() {
+        return cultConnection.phase(ac.cult.cultac.protocol.PacketDirection.CLIENTBOUND);
     }
-
-    public ConnectionProtocol getEncoderState() {
-        return encoderState;
+    public CompletionStage<Void> write(Object packet) {
+        return completion(getCultConnection().write(packet instanceof ac.cult.cultac.network.CultWrite write ? write : new ac.cult.cultac.network.CultWrite(packet, false)));
     }
-
-    public void setEncoderState(ConnectionProtocol encoderState) {
-        this.encoderState = encoderState;
+    public CompletionStage<Void> writeSilently(Object packet) {
+        return completion(getCultConnection().write(new ac.cult.cultac.network.CultWrite(packet, true)));
     }
-
-    public void writePacket(Object packet) {
-        sendPacket(packet);
+    public CompletionStage<Void> write(java.util.List<ac.cult.cultac.network.CultWrite> packets, boolean bundle) {
+        return completion(getCultConnection().write(packets, bundle));
     }
-
-    public void sendPacket(Object packet) {
-        Object nmsPacket = unwrap(packet);
-        if (nmsPacket instanceof net.minecraft.network.protocol.Packet<?> packetToSend) {
-            CultAPI.INSTANCE.getNetworkManager().sendPacket(channel, packetToSend, false);
-        }
-    }
-
-    public void sendPacketSilently(Object packet) {
-        Object nmsPacket = unwrap(packet);
-        if (nmsPacket instanceof Packet<?> packetToSend) {
-            CultAPI.INSTANCE.getNetworkManager().sendPacket(channel, packetToSend, true);
-        }
-    }
-
-    public void sendPacketWithSilentPackets(Object packet, Collection<? extends Packet<?>> silentPackets) {
-        Object nmsPacket = unwrap(packet);
-        if (nmsPacket instanceof Packet<?> packetToSend) {
-            CultAPI.INSTANCE.getNetworkManager().sendPacketWithSilentPackets(channel, packetToSend, silentPackets);
-        }
-    }
-
-    public void receivePacket(Object packet) {
-        Object nmsPacket = unwrap(packet);
-        if (nmsPacket instanceof Packet<?> packetToReceive) {
-            CultAPI.INSTANCE.getNetworkManager().receivePacket(channel, packetToReceive, false);
-        }
-    }
-
-    public void receivePacketSilently(Object packet) {
-        Object nmsPacket = unwrap(packet);
-        if (nmsPacket instanceof Packet<?> packetToReceive) {
-            CultAPI.INSTANCE.getNetworkManager().receivePacket(channel, packetToReceive, true);
-        }
+    private static CompletionStage<Void> completion(io.netty.channel.ChannelFuture future) {
+        var result = new java.util.concurrent.CompletableFuture<Void>();
+        future.addListener(done -> { if (done.isSuccess()) result.complete(null); else result.completeExceptionally(done.cause()); });
+        return result.minimalCompletionStage();
     }
 
     public void closeConnection() {
@@ -167,7 +104,7 @@ public final class User {
         if (player != null) {
             FoliaCompatUtil.runTaskForEntity(player, CultAPI.INSTANCE.getPlugin(), () -> player.kick(Component.text("Disconnected")), null, 0);
         } else {
-            connection.disconnect(net.minecraft.network.chat.Component.literal("Disconnected"));
+            getConnection().disconnect(net.minecraft.network.chat.Component.literal("Disconnected"));
         }
     }
 
@@ -180,24 +117,6 @@ public final class User {
     public void bind(@Nullable Player player, @Nullable ServerPlayer handle) {
         this.player = player;
         this.handle = handle;
-    }
-
-    private Object unwrap(Object packet) {
-        if (packet == null) {
-            return null;
-        }
-        if (packet instanceof net.minecraft.network.protocol.Packet<?>) {
-            return packet;
-        }
-        try {
-            Method getPacket = packet.getClass().getMethod("getPacket");
-            Object unwrapped = getPacket.invoke(packet);
-            if (unwrapped != null) {
-                return unwrapped;
-            }
-        } catch (ReflectiveOperationException ignored) {
-        }
-        return packet;
     }
 
     public static final class Profile {

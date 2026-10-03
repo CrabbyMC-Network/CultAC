@@ -76,6 +76,7 @@ public final class CultACBukkitLoaderPlugin extends JavaPlugin implements Platfo
     @Override
     public void onLoad() {
         LOADER = this;
+        BukkitProtocolTransport.initialize(CultAPI.INSTANCE.getNetworkManager(), getLogger());
         CultAPI.INSTANCE.load(this, this.getBukkitInitTasks());
     }
 

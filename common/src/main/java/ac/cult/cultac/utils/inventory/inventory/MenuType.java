@@ -66,12 +66,7 @@ public enum MenuType {
         return -1;
     }
 
-    public static MenuType fromNms(net.minecraft.world.inventory.MenuType<?> type) {
-        if (type == null) {
-            return UNKNOWN;
-        }
-
-        String registryKey = NmsIdentifierUtil.registryKey(BuiltInRegistries.MENU, type);
+    public static MenuType fromRegistryKey(String registryKey) {
         return registryKey == null ? UNKNOWN : BY_REGISTRY_KEY.getOrDefault(registryKey, UNKNOWN);
     }
 }

@@ -1,5 +1,12 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
@@ -9,12 +16,10 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 import java.util.ArrayDeque;
 
@@ -52,62 +57,53 @@ public class PacketOrderF extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        onAction(event, player, ACTION_INTERACT, null);
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        onAction(event, player, (packet.action() == ac.cult.cultac.protocol.value.InteractAction.ATTACK && net.minecraft.SharedConstants.getProtocolVersion() >= ac.cult.cultac.protocol.ProtocolVersion.V26_1.protocol()) ? ACTION_ATTACK : ACTION_INTERACT, null);
     }
 
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onAction(event, player, ACTION_ATTACK, null);
-    }
 
 
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         onAction(event, player, ACTION_SPECTATE_ENTITY, null);
     }
 
 
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
+    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         onAction(event, player, ACTION_PLACE, null);
     }
 
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         onAction(event, player, ACTION_USE, null);
     }
 
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPickItemPacket")
-    public void onPickItem(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler("serverbound.pick_item")
+    public void onPickItem(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         onAction(event, player, ACTION_PICK, null);
     }
 
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        onAction(event, player, ACTION_DIG, packet.getAction());
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        onAction(event, player, ACTION_DIG, packet.action());
     }
 
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent event, CultPlayer player, ServerboundClientCommandPacket packet) {
+    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         // The 26.2 enum has no OPEN_INVENTORY_ACHIEVEMENT (removed in 1.12)
-        if (packet.getAction().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) {
+        if (packet.action().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) {
             onAction(event, player, ACTION_OPEN_INVENTORY, null);
         }
     }
 
-    private void onAction(PacketReceiveEvent event, CultPlayer player, int action, ServerboundPlayerActionPacket.Action digAction) {
+    private void onAction(PacketReceiveEvent event, CultPlayer player, int action, PlayerAction digAction) {
         if (player.packetOrderProcessor.isSprinting() || player.packetOrderProcessor.isSneaking()) {
             boolean sprinting = player.packetOrderProcessor.isSprinting();
             boolean sneaking = player.packetOrderProcessor.isSneaking();
@@ -127,10 +123,10 @@ public class PacketOrderF extends Check implements PostPredictionListener {
     }
 
 
-    private boolean canCancel(ServerboundPlayerActionPacket.Action action) {
-        return action != ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM
-                && ((action != ServerboundPlayerActionPacket.Action.DROP_ITEM
-                && action != ServerboundPlayerActionPacket.Action.DROP_ALL_ITEMS)
+    private boolean canCancel(PlayerAction action) {
+        return action != PlayerAction.RELEASE_USE_ITEM
+                && ((action != PlayerAction.DROP_ITEM
+                && action != PlayerAction.DROP_ALL_ITEMS)
                 || player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8));
     }
 

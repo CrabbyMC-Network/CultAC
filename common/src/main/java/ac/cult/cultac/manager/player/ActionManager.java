@@ -4,10 +4,10 @@ import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import org.bukkit.inventory.ItemStack;
@@ -15,19 +15,18 @@ import org.bukkit.GameMode;
 import lombok.Getter;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.item.equipment.Equippable;
-import net.minecraft.world.entity.player.Input;
 import org.bukkit.Material;
 
 @Getter
@@ -56,18 +55,14 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
 
     private InteractionHand hand;
 
-    private NmsPacketUtil.InteractAction lastAction = null;
+    private InteractAction lastAction = null;
 
-    private void handleInteract(NmsPacketUtil.InteractData interact) {
+    private void handleInteract(ServerboundInteract interact) {
         if (interact != null) {
-            if (interact.action() == NmsPacketUtil.InteractAction.ATTACK) {
+            if (interact.action() == InteractAction.ATTACK) {
                 attack(interact.entityId());
             }
         }
-    }
-
-    private void handleUseItem(ServerboundUseItemPacket packet) {
-        useItem(NmsPacketUtil.readUseItem(packet).hand());
     }
 
     public void useItem(InteractionHand usedHand) {
@@ -88,8 +83,8 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
         }
     }
 
-    private void handlePlayerAction(ServerboundPlayerActionPacket packet) {
-        if (NmsPacketUtil.readPlayerAction(packet).action() == Action.RELEASE_USE_ITEM) {
+    private void handlePlayerAction(ServerboundPlayerAction packet) {
+        if (packet.action() == PlayerAction.RELEASE_USE_ITEM) {
             releaseItem();
         }
     }
@@ -101,7 +96,7 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     public void attack(int entityId) {
-        this.lastAction = NmsPacketUtil.InteractAction.ATTACK;
+        this.lastAction = InteractAction.ATTACK;
         this.lastTargetId = this.targetId;
         this.targetId = entityId;
         this.target = player.compensatedEntities.getEntity(this.targetId);
@@ -180,35 +175,32 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        handleInteract(NmsPacketUtil.readInteract(packet));
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        handleInteract(packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        handleInteract(NmsPacketUtil.readAttack(packet));
+
+
+    @CultPacketHandler
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
+        useItem(SpigotConversionUtil.toNmsHand(packet.hand()));
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
-        handleUseItem(packet);
-    }
-
-    @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         handlePlayerAction(packet);
     }
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerInputPacket packet) {
-        Input input = packet.input();
+    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
+        ServerboundPlayerInput input = packet;
         player.packetStateData.knownInput = new ac.cult.cultac.utils.data.KnownInput(
                 input.forward(), input.backward(), input.left(), input.right(),
                 input.jump(), input.shift(), input.sprint());
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         selectHotbarSlot();
     }
 
@@ -219,24 +211,15 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     @CultPacketHandler
-    public void onMovePlayerPos(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket.Pos packet) {
+    public void onMovePlayerPos(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         clearMainHandUseAfterSlotChange();
     }
 
-    @CultPacketHandler
-    public void onMovePlayerRot(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket.Rot packet) {
-        clearMainHandUseAfterSlotChange();
-    }
 
-    @CultPacketHandler
-    public void onMovePlayerPosRot(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket.PosRot packet) {
-        clearMainHandUseAfterSlotChange();
-    }
 
-    @CultPacketHandler
-    public void onMovePlayerStatusOnly(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket.StatusOnly packet) {
-        clearMainHandUseAfterSlotChange();
-    }
+
+
+
 
     @Override
     public void onPlayerTickEnd(final PacketReceiveEvent event) {
@@ -259,8 +242,8 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
         }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket")
-    public void onSetHeldSlot(ac.cult.cultac.network.event.PacketSendEvent event, CultPlayer player, net.minecraft.network.protocol.Packet<?> packet) {
+    @CultPacketHandler
+    public void onSetHeldSlot(ac.cult.cultac.network.event.PacketSendEvent<ClientboundSetHeldSlot> event, CultPlayer player, ClientboundSetHeldSlot packet) {
         this.blocking = false;
         player.packetStateData.setSlowedByUsingItem(false);
     }

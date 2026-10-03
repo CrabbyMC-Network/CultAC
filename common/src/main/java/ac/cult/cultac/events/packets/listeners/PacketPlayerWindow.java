@@ -1,28 +1,26 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.CultPacketGroup;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntitySelf;
 import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.Packet;
 import org.bukkit.Material;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
-import net.minecraft.network.protocol.game.ClientboundContainerClosePacket;
-import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
-import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundMountScreenOpen;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundRespawn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.utils.inventory.InventoryClick;
 
 public class PacketPlayerWindow {
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, player);
     }
 
@@ -31,43 +29,38 @@ public class PacketPlayerWindow {
     }
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) { handleInventory(player, true); }
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) { handleInventory(player, true); }
+
+    @CultPacketHandler("serverbound.container_close")
+    public void onServerboundContainerClose(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) { handleInventory(player, false); }
 
     @CultPacketHandler
-    public void onServerboundContainerClose(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClosePacket packet) { handleInventory(player, false); }
-
-    @CultPacketHandler
-    public void onRespawn(PacketSendEvent event, CultPlayer player, ClientboundRespawnPacket packet) {
+    public void onRespawn(PacketSendEvent<ClientboundRespawn> event, CultPlayer player, ClientboundRespawn packet) {
         player.sendTransaction();
         final Runnable closeInventory = () -> handleInventory(player, false);
         player.latencyUtils.addRealTimeTaskNow(closeInventory);
     }
 
     @CultPacketHandler
-    public void onOpenScreen(PacketSendEvent event, CultPlayer player, ClientboundOpenScreenPacket packet) {
+    public void onOpenScreen(PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
         player.sendTransaction();
         // Mark the tick only after the client can observe the screen.
         player.latencyUtils.addRealTimeTask(player.lastTransactionSent.get(), () -> player.serverOpenedInventoryThisTick = true);
-        MenuType type = MenuType.fromNms(packet.getType());
+        MenuType type = MenuType.fromRegistryKey(packet.menuType());
         final Runnable applyScreenOpen = () -> handleInventory(player, type != MenuType.BEACON && !isDesynced(player));
         player.latencyUtils.addRealTimeTaskNow(applyScreenOpen);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundHorseScreenOpenPacket")
-    public void onHorseScreenOpen(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-        onMountScreenOpen(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundMountScreenOpenPacket")
-    public void onMountScreenOpen(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onMountScreenOpen(PacketSendEvent<ClientboundMountScreenOpen> event, CultPlayer player, ClientboundMountScreenOpen packet) {
         player.sendTransaction();
         player.latencyUtils.addRealTimeTask(player.lastTransactionSent.get(), () -> player.serverOpenedInventoryThisTick = true);
         final Runnable openInventory = () -> handleInventory(player, true);
         player.latencyUtils.addRealTimeTaskNow(openInventory);
     }
 
-    @CultPacketHandler
-    public void onClientboundContainerClose(PacketSendEvent event, CultPlayer player, ClientboundContainerClosePacket packet) {
+    @CultPacketHandler("clientbound.container_close")
+    public void onClientboundContainerClose(PacketSendEvent<Opaque> event, CultPlayer player, Opaque packet) {
         player.sendTransaction();
         final Runnable closeInventory = () -> handleInventory(player, false);
         player.latencyUtils.addRealTimeTaskNow(closeInventory);

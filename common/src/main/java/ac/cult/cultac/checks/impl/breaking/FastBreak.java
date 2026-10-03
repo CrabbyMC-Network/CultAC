@@ -1,13 +1,13 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
@@ -17,8 +17,7 @@ import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -55,7 +54,7 @@ public class FastBreak extends Check implements BlockBreakListener {
     double blockDelayBalance = 0;
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK) { // PE DiggingAction.START_DIGGING
+        if (blockBreak.action == PlayerAction.START_DESTROY_BLOCK) { // PE DiggingAction.START_DIGGING
 
             startBreak = System.currentTimeMillis() - (targetBlockPosition == null ? 50 : 0); // ???
             targetBlockPosition = blockBreak.position;
@@ -81,7 +80,7 @@ public class FastBreak extends Check implements BlockBreakListener {
             clampBalance();
         }
 
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK && targetBlockPosition != null) { // PE DiggingAction.FINISHED_DIGGING
+        if (blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK && targetBlockPosition != null) { // PE DiggingAction.FINISHED_DIGGING
             double predictedTime = Math.ceil(1 / maximumBlockDamage) * 50;
             double realTime = System.currentTimeMillis() - startBreak;
             double diff = predictedTime - realTime;
@@ -111,19 +110,14 @@ public class FastBreak extends Check implements BlockBreakListener {
     //
     // listen for flying packets because some block breaks can happen before the next animation (somehow???), causing onGround desync
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         updateMaximumBlockDamage();
     }
 
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPunchPacket")
-    public void onPunch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSwing(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSwingPacket")
-    public void onSwing(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
             updateMaximumBlockDamage();
         }

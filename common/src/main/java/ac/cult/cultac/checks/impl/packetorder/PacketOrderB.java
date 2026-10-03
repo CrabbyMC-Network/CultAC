@@ -1,95 +1,95 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.checks.type.LegacyPacketEventSemantics;
-import ac.cult.cultac.checks.type.OrderedPacketReceiveListener;
+import ac.cult.cultac.checks.type.CheckListener;
+import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.world.InteractionHand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.value.Hand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import org.bukkit.GameMode;
 
 @CheckData(name = "PacketOrderB", stableKey = "cult.packetorder.noswing", description = "Did not swing for attack")
-public class PacketOrderB extends Check implements OrderedPacketReceiveListener {
+public class PacketOrderB extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("[pre-attack|post-attack]");
-    private static final String STANDALONE_ATTACK_PACKET =
-            "net.minecraft.network.protocol.game.ServerboundAttackPacket";
 
     // 1.9 packet order: INTERACT -> ANIMATION
     // 1.8 packet order: ANIMATION -> INTERACT
+    // Both are sent from the same click, before the tick's movement packet and tick end.
     private final boolean is1_9 = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9);
 
     private boolean sentAnimationSinceLastAttack = player.getClientVersion().isNewerThan(ClientVersion.V_1_8);
     private boolean sentAttack;
     private boolean sentAnimation;
-    private boolean sentSlotSwitch;
 
     public PacketOrderB(final CultPlayer player) {
         super(player);
     }
 
-    @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        Packet<?> packet = event.getNmsPacket();
-
-        if (NmsPacketUtil.isSwingOrPunch(packet)
-                && NmsPacketUtil.swingHand(packet) == InteractionHand.MAIN_HAND) {
-            sentAnimationSinceLastAttack = sentAnimation = true;
-            sentAttack = sentSlotSwitch = false;
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
+        // Minecraft#startAttack always swings the main hand.
+        if (packet.hand() != Hand.MAIN_HAND) {
+            checkPostAttack();
             return;
         }
 
-        if (packet instanceof ServerboundInteractPacket interact
-                && NmsPacketUtil.readInteract(interact).action() == NmsPacketUtil.InteractAction.ATTACK) {
-            if (DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) {
-                onAttack(event);
-                return;
-            }
-        }
+        sentAnimationSinceLastAttack = sentAnimation = true;
+        sentAttack = false;
+    }
 
-        if (packet.getClass().getName().equals(STANDALONE_ATTACK_PACKET)) {
-            if (DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) {
-                onAttack(event);
-                return;
-            }
-        }
-
-        if (packet instanceof ServerboundPlayerActionPacket actionPacket
-                && actionPacket.getAction().name().equals("STAB")) {
-            if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)) {
-                // RC1 MultiPlayerGameMode#piercingAttack sends STAB and only a
-                // local animation. A preceding ordinary attack still needs Punch.
-                if (sentAttack && is1_9) flag(V.write(verbose()).bool(false));
-                sentAttack = sentAnimation = sentSlotSwitch = false;
-                sentAnimationSinceLastAttack = true;
-                return;
-            }
+    @CultPacketHandler
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        if (packet.action() == InteractAction.ATTACK
+                && DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) {
             onAttack(event);
-            return;
-        }
-
-        if (packet instanceof ServerboundSetCarriedItemPacket && !is1_9 && !sentSlotSwitch) {
-            sentSlotSwitch = true;
-            return;
-        }
-
-        if (!LegacyPacketEventSemantics.isAsync(packet)) {
-            if (sentAttack && is1_9) {
-                flag(V.write(verbose()).bool(false));
-            }
-            sentAttack = sentAnimation = sentSlotSwitch = false;
         }
     }
 
-    private void onAttack(PacketReceiveEvent event) {
+    @CultPacketHandler
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (packet.action() != PlayerAction.STAB) return;
+
+        if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)) {
+            // MultiPlayerGameMode#piercingAttack sends STAB and only a
+            // local animation. A preceding ordinary attack still needs Punch.
+            checkPostAttack();
+            sentAnimationSinceLastAttack = true;
+            return;
+        }
+        onAttack(event);
+    }
+
+    @CultPacketHandler
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+        checkPostAttack();
+    }
+
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
+        checkPostAttack();
+    }
+
+    // The attack's swing is sent before the tick's movement packet and tick end,
+    // and a 1.8 swing only pays for an attack in its own tick.
+    private void checkPostAttack() {
+        if (sentAttack && is1_9) {
+            flag(V.write(verbose()).bool(false));
+        }
+        sentAttack = sentAnimation = false;
+    }
+
+    private void onAttack(PacketReceiveEvent<?> event) {
         if (player.gamemode == GameMode.SPECTATOR
                 && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11)) {
             return;
@@ -104,6 +104,6 @@ public class PacketOrderB extends Check implements OrderedPacketReceiveListener 
             }
         }
 
-        sentAnimationSinceLastAttack = sentAnimation = sentSlotSwitch = false;
+        sentAnimationSinceLastAttack = sentAnimation = false;
     }
 }

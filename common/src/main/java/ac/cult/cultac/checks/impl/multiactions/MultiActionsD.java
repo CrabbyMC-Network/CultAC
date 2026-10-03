@@ -1,5 +1,7 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -8,7 +10,6 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 
 @CheckData(name = "MultiActionsD", stableKey = "cult.multiactions.inventory_close_while_moving", description = "Closed inventory while moving")
 public class MultiActionsD extends Check implements CheckListener {
@@ -19,8 +20,8 @@ public class MultiActionsD extends Check implements CheckListener {
     }
 
 
-    @CultPacketHandler
-    public void onContainerClose(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClosePacket packet) {
+    @CultPacketHandler("serverbound.container_close")
+    public void onContainerClose(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (player.serverOpenedInventoryThisTick) return;
 
         boolean sprinting = MultiActionsC.isVerboseSprinting(player);

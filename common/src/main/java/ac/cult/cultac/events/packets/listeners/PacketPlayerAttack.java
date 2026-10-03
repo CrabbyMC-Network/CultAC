@@ -1,17 +1,17 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import org.bukkit.inventory.ItemStack;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 
@@ -19,23 +19,20 @@ public class PacketPlayerAttack {
 
     //LOW
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        handleInteractPacket(player, NmsPacketUtil.readInteract(packet));
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        handleInteractPacket(player, packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        handleInteractPacket(player, NmsPacketUtil.readAttack(packet));
-    }
 
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         player.minPlayerAttackSlow = 0;
     }
 
-    private void handleInteractPacket(CultPlayer player, NmsPacketUtil.InteractData interact) {
+    private void handleInteractPacket(CultPlayer player, ServerboundInteract interact) {
         if (interact != null) {
-            if (interact.action() == NmsPacketUtil.InteractAction.ATTACK) {
+            if (interact.action() == InteractAction.ATTACK) {
                 ItemStack heldItem = player.getInventory().getHeldItem();
                 PacketEntity entity = player.compensatedEntities.getEntity(interact.entityId());
 
@@ -49,7 +46,7 @@ public class PacketPlayerAttack {
                         player.minPlayerAttackSlow += 1;
                     }
                 }
-            } else if (interact.action() == NmsPacketUtil.InteractAction.INTERACT) {
+            } else if (interact.action() == InteractAction.INTERACT) {
                 // Interacting with a horse in versions 1.13- will cause the client to
                 // set the player's rotation to the horse's rotation (modern PacketPlayerAttack)
                 if (player.compensatedEntities.getEntity(interact.entityId()) instanceof PacketEntityHorse

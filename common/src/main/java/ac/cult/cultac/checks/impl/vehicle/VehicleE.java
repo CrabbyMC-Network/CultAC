@@ -10,7 +10,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.game.ServerboundPaddleBoatPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 import net.minecraft.world.entity.EntityType;
 
 @CheckData(name = "VehicleE", stableKey = "cult.vehicle.spoofed_boat", experimental = true, description = "Sent boat paddle states while not in a boat")
@@ -23,7 +23,7 @@ public class VehicleE extends Check implements CheckListener {
 
 
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent event, CultPlayer player, ServerboundPaddleBoatPacket packet) {
+    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         final PacketEntity riding = player.compensatedEntities.getSelf().getRiding();
         final EntityType<?> vehicle = riding == null ? null : riding.type;
 

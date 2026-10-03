@@ -2,16 +2,14 @@ package ac.cult.cultac.checks.impl.scaffolding;
 
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import org.bukkit.Material;
 
 @CheckData(name = "PositionPlace", stableKey = "cult.scaffolding.position_place", description = "Placed a block against a hidden face")
@@ -28,8 +26,8 @@ public class PositionPlace extends BlockPlaceCheck {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         didLastMovementIncludePosition = packet.hasPosition();
     }
 

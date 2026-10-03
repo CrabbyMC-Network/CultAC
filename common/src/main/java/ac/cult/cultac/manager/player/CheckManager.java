@@ -1,5 +1,8 @@
 package ac.cult.cultac.manager.player;
 
+
+import ac.cult.cultac.protocol.PacketType;
+
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CultProcessor;
@@ -65,9 +68,14 @@ import ac.cult.cultac.utils.latency.CompensatedCooldown;
 import ac.cult.cultac.utils.latency.CompensatedInventory;
 import ac.cult.cultac.utils.latency.KeepAliveProcessor;
 import ac.cult.cultac.utils.lists.EvictingQueue;
-import ac.cult.cultac.utils.team.TeamHandler;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.network.PacketHandlerScanner;
+import ac.cult.cultac.network.PacketRouteBuilder;
+import ac.cult.cultac.network.PacketRouteBuilder.ReceiveStage;
+import ac.cult.cultac.network.event.PacketListenerPriority;
+import ac.cult.cultac.protocol.PacketDirection;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 import ac.cult.cultac.network.PacketReceiveHandler;
 import ac.cult.cultac.network.PacketReceiveRoute;
 import ac.cult.cultac.network.PacketSendHandler;
@@ -77,10 +85,7 @@ import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.platform.api.permissions.PermissionDefaultValue;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.ConnectionPhase;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -109,7 +114,6 @@ public class CheckManager {
             BadPacketsO.class,
             BadPacketsP.class,
             BadPacketsM.class,
-            TeamHandler.class,
             PostCheck.class,
             ExplosionHandler.class
     );
@@ -136,38 +140,30 @@ public class CheckManager {
     public ClassToInstanceMap<CheckListener> allCheckListeners;
 
     public final Map<Class<? extends Check>, Check> allChecks = new HashMap<>();
-    private final Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.ReceiveRegistration>> prePredictionReceiveRegistrations =
-            new HashMap<>();
-    private final Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.ReceiveRegistration>> receiveRegistrations =
-            new HashMap<>();
-    private final Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.SendRegistration>> sendRegistrations =
-            new HashMap<>();
+    private final PacketHandlerScanner recordScanner;
     private final List<TickEndHandlerRegistration> tickEndHandlers = new ArrayList<>();
-    private final List<EarlyReceiveHandlerRegistration> earlyReceiveHandlers = new ArrayList<>();
+    private Map<PacketType<?>, PacketReceiveRoute<Object>> earlyReceiveRoutes = Map.of();
     private final List<DecodedPacketReceiveListener> decodedReceiveListeners = new ArrayList<>();
-    private final List<OrderedPacketReceiveListener> orderedReceiveListeners = new ArrayList<>();
-    private final Set<CheckListener> receiveDispatchListeners =
-            Collections.newSetFromMap(new IdentityHashMap<>());
-    private final Set<CheckListener> sendDispatchListeners =
-            Collections.newSetFromMap(new IdentityHashMap<>());
-    private Map<Class<? extends Packet<?>>, PacketReceiveRoute> prePredictionReceiveRoutes = Map.of();
-    private Map<Class<? extends Packet<?>>, PacketReceiveRoute> receiveRoutes = Map.of();
-    private Map<Class<? extends Packet<?>>, PacketSendRoute> sendRoutes = Map.of();
+    private final List<PacketReceiveHandler<ServerboundPacket>> nonAsyncReceiveHandlers = new ArrayList<>();
+    private Map<PacketType<?>, PacketReceiveRoute<Object>> prePredictionReceiveRoutes = Map.of();
+    private Map<PacketType<?>, PacketReceiveRoute<Object>> receiveRoutes = Map.of();
+    private Map<PacketType<?>, PacketSendRoute<Object>> sendRoutes = Map.of();
 
     public Collection<Check> getAllChecks() {
         return allChecks.values();
     }
 
-    public static List<Class<? extends Packet<?>>> sendDispatchPacketTypes() {
-        LinkedHashSet<Class<? extends Packet<?>>> packetTypes = new LinkedHashSet<>();
+    public static List<PacketType<?>> sendDispatchPacketTypes(PacketRouteBuilder registrar) {
+        LinkedHashSet<PacketType<?>> packetTypes = new LinkedHashSet<>();
         for (Class<? extends CheckListener> listenerType : SEND_DISPATCH_LISTENER_TYPES) {
-            packetTypes.addAll(PacketHandlerScanner.sendPacketTypes(listenerType));
+            packetTypes.addAll(registrar.packetTypes(listenerType, PacketDirection.CLIENTBOUND));
         }
         return List.copyOf(packetTypes);
     }
 
     public CheckManager(CultPlayer player) {
         this.player = player;
+        this.recordScanner = CultAPI.INSTANCE.getNetworkManager().dispatcher().scanner();
 
         packetChecks = buildPacketChecks(player);
         positionCheck = buildPositionChecks(player);
@@ -200,9 +196,10 @@ public class CheckManager {
             }
         }
 
-        registerPacketDispatch();
-        validatePacketDispatchCoverage();
-        buildPacketRoutes();
+        var registrations = new PacketRegistrations(recordScanner);
+        registerPacketDispatch(registrations);
+        validatePacketDispatchCoverage(registrations);
+        buildPacketRoutes(registrations);
 
         for (CheckListener listener : allCheckListeners.values()) {
             if (listener instanceof Check check) {
@@ -315,7 +312,6 @@ public class CheckManager {
                 new VehicleD(player),
                 new VehicleE(player),
                 new VehicleF(player),
-                new TeamHandler(player),
                 new AirLiquidBreak(player),
                 new WrongBreak(player),
                 new RotationBreak(player),
@@ -461,89 +457,89 @@ public class CheckManager {
                 new Angle(player)));
     }
 
-    private void registerPacketDispatch() {
+    private void registerPacketDispatch(PacketRegistrations registrations) {
         // These callbacks were pre-Via in the committed listener. The raw
         // packet identity is unavailable here, but decoded cancellation and
         // relative ordering are preserved ahead of every ordinary processor.
-        registerEarlyReceive(packetChecks.get(ChatA.class));
-        registerEarlyReceive(packetChecks.get(ChatB.class));
-        registerEarlyReceive(packetChecks.get(ChatC.class));
-        registerEarlyReceive(packetChecks.get(ChatD.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsA.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsC.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsF.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsG.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsI.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsK.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsM.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsW.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsY.class));
-        registerEarlyReceive(packetChecks.get(BadPacketsZ.class));
-        registerEarlyOrderedReceive(packetChecks.get(PacketOrderB.class));
-        registerEarlyReceive(packetChecks.get(PacketOrderC.class));
-        registerEarlyReceive(packetChecks.get(PacketOrderD.class));
-        registerEarlyReceive(packetChecks.get(SelfInteract.class));
-        registerEarlyReceive(packetChecks.get(MultiActionsA.class));
-        registerEarlyOrderedReceive(packetChecks.get(MultiActionsE.class));
-        registerEarlyReceive(packetChecks.get(FastBreak.class));
-        registerEarlyReceive(postPredictionCheck.get(MultiBreak.class));
-        registerEarlyReceive(packetChecks.get(NoSwingBreak.class));
+        registerEarlyReceive(registrations, packetChecks.get(ChatA.class));
+        registerEarlyReceive(registrations, packetChecks.get(ChatB.class));
+        registerEarlyReceive(registrations, packetChecks.get(ChatC.class));
+        registerEarlyReceive(registrations, packetChecks.get(ChatD.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsA.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsC.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsF.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsG.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsI.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsK.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsM.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsW.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsY.class));
+        registerEarlyReceive(registrations, packetChecks.get(BadPacketsZ.class));
+        registerEarlyReceive(registrations, packetChecks.get(PacketOrderB.class));
+        registerEarlyReceive(registrations, packetChecks.get(PacketOrderC.class));
+        registerEarlyReceive(registrations, packetChecks.get(PacketOrderD.class));
+        registerEarlyReceive(registrations, packetChecks.get(SelfInteract.class));
+        registerEarlyReceive(registrations, packetChecks.get(MultiActionsA.class));
+        registerEarlyReceive(registrations, packetChecks.get(MultiActionsE.class));
+        registerEarlyReceive(registrations, packetChecks.get(FastBreak.class));
+        registerEarlyReceive(registrations, postPredictionCheck.get(MultiBreak.class));
+        registerEarlyReceive(registrations, packetChecks.get(NoSwingBreak.class));
 
-        registerOrderedReceive(packetChecks.get(BadPacketsE.class));
-        registerOrderedReceive(packetChecks.get(PacketOrderO.class));
+        var packetOrder = packetChecks.getInstance(PacketOrderO.class);
+        registerNonAsyncReceive(packetOrder, packetOrder::onNonAsyncPacket);
         registerDecodedReceive(packetChecks.get(BadPacketsJ.class));
         registerDecodedReceive(postPredictionCheck.get(BadPacketsX.class));
         registerDecodedReceive(postPredictionCheck.get(ElytraC.class));
 
-        registerPreReceive(prePredictionChecks.get(TimerCheck.class));
-        registerPreReceive(prePredictionChecks.get(TickTimer.class));
-        registerPreReceive(prePredictionChecks.get(DumbTimer.class));
-        registerPreReceive(prePredictionChecks.get(CrashA.class));
-        registerPreReceive(prePredictionChecks.get(CrashC.class));
-        registerPreReceive(prePredictionChecks.get(CrashI.class));
-        registerPreReceive(prePredictionChecks.get(VehicleTimer.class));
-        registerPreReceive(packetChecks.get(SetbackBlocker.class));
+        registerPreReceive(registrations, prePredictionChecks.get(TimerCheck.class));
+        registerPreReceive(registrations, prePredictionChecks.get(TickTimer.class));
+        registerPreReceive(registrations, prePredictionChecks.get(DumbTimer.class));
+        registerPreReceive(registrations, prePredictionChecks.get(CrashA.class));
+        registerPreReceive(registrations, prePredictionChecks.get(CrashC.class));
+        registerPreReceive(registrations, prePredictionChecks.get(CrashI.class));
+        registerPreReceive(registrations, prePredictionChecks.get(VehicleTimer.class));
+        registerPreReceive(registrations, packetChecks.get(SetbackBlocker.class));
 
-        registerReceive(packetChecks.get(SimulationProcessor.class));
-        registerReceive(packetChecks.get(ActionManager.class));
-        registerReceive(packetChecks.get(PluginChannelManager.class));
-        registerReceive(packetChecks.get(Reach.class));
-        registerReceive(packetChecks.get(FairReach.class));
-        registerReceive(packetChecks.get(CompensatedInventory.class));
-        registerReceive(packetChecks.get(PacketPlayerAbilities.class));
-        registerReceive(packetChecks.get(KeepAliveProcessor.class));
-        registerReceive(packetChecks.get(BadPacketsO.class));
-        registerReceive(packetChecks.get(ClientBrand.class));
-        registerReceive(packetChecks.get(NoFallExecutor.class));
-        registerReceive(prePredictionChecks.get(ExploitA.class));
-        registerReceive(prePredictionChecks.get(ExploitB.class));
-        registerReceive(packetChecks.get(BadPacketsD.class));
-        registerReceive(packetChecks.get(BadPacketsJ.class));
-        registerReceive(packetChecks.get(BadPacketsL.class));
-        registerReceive(packetChecks.get(BadPacketsP.class));
-        registerReceive(packetChecks.get(BadPacketsQ.class));
-        registerReceive(packetChecks.get(BadPacketsR.class));
-        registerReceive(packetChecks.get(BadPacketsS.class));
-        registerReceive(packetChecks.get(BadPacketsT.class));
-        registerReceive(packetChecks.get(BadPacketsU.class));
-        registerReceive(packetChecks.get(BadPacketsV.class));
-        registerReceive(blockPlaceCheck.get(BadPacketsH.class));
-        registerReceive(packetChecks.get(PacketOrderProcessor.class));
-        registerReceive(packetChecks.get(MultiActionsC.class));
-        registerReceive(packetChecks.get(MultiActionsD.class));
-        registerReceive(packetChecks.get(VehicleA.class));
-        registerReceive(packetChecks.get(VehicleD.class));
-        registerReceive(packetChecks.get(VehicleE.class));
-        registerReceive(packetChecks.get(VehicleF.class));
-        registerReceive(packetChecks.get(FarBreak.class));
-        registerReceive(packetChecks.get(PositionBreakA.class));
-        registerReceive(packetChecks.get(AutoclickerLimit.class));
-        registerReceive(prePredictionChecks.get(CrashB.class));
-        registerReceive(prePredictionChecks.get(CrashD.class));
-        registerReceive(prePredictionChecks.get(CrashE.class));
-        registerReceive(prePredictionChecks.get(CrashF.class));
-        registerReceive(blockPlaceCheck.get(CrashG.class));
-        registerReceive(prePredictionChecks.get(CrashH.class));
+        registerReceive(registrations, packetChecks.get(SimulationProcessor.class));
+        registerReceive(registrations, packetChecks.get(ActionManager.class));
+        registerReceive(registrations, packetChecks.get(PluginChannelManager.class));
+        registerReceive(registrations, packetChecks.get(Reach.class));
+        registerReceive(registrations, packetChecks.get(FairReach.class));
+        registerReceive(registrations, packetChecks.get(CompensatedInventory.class));
+        registerReceive(registrations, packetChecks.get(PacketPlayerAbilities.class));
+        registerReceive(registrations, packetChecks.get(KeepAliveProcessor.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsO.class));
+        registerReceive(registrations, packetChecks.get(ClientBrand.class));
+        registerReceive(registrations, packetChecks.get(NoFallExecutor.class));
+        registerReceive(registrations, prePredictionChecks.get(ExploitA.class));
+        registerReceive(registrations, prePredictionChecks.get(ExploitB.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsD.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsE.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsJ.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsL.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsP.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsQ.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsR.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsT.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsU.class));
+        registerReceive(registrations, packetChecks.get(BadPacketsV.class));
+        registerReceive(registrations, blockPlaceCheck.get(BadPacketsH.class));
+        registerReceive(registrations, packetChecks.get(PacketOrderProcessor.class));
+        registerReceive(registrations, packetChecks.get(MultiActionsC.class));
+        registerReceive(registrations, packetChecks.get(MultiActionsD.class));
+        registerReceive(registrations, packetChecks.get(VehicleA.class));
+        registerReceive(registrations, packetChecks.get(VehicleD.class));
+        registerReceive(registrations, packetChecks.get(VehicleE.class));
+        registerReceive(registrations, packetChecks.get(VehicleF.class));
+        registerReceive(registrations, packetChecks.get(FarBreak.class));
+        registerReceive(registrations, packetChecks.get(PositionBreakA.class));
+        registerReceive(registrations, packetChecks.get(AutoclickerLimit.class));
+        registerReceive(registrations, prePredictionChecks.get(CrashB.class));
+        registerReceive(registrations, prePredictionChecks.get(CrashD.class));
+        registerReceive(registrations, prePredictionChecks.get(CrashE.class));
+        registerReceive(registrations, prePredictionChecks.get(CrashF.class));
+        registerReceive(registrations, blockPlaceCheck.get(CrashG.class));
+        registerReceive(registrations, prePredictionChecks.get(CrashH.class));
 
         registerTickEnd(packetChecks.get(ActionManager.class));
         registerTickEnd(packetChecks.get(Reach.class));
@@ -558,11 +554,11 @@ public class CheckManager {
         registerTickEnd(packetChecks.get(PacketWorldBorder.class));
         registerTickEnd(positionCheck.get(CompensatedCooldown.class));
 
-        registerReceive(postPredictionCheck.get(NoSlow.class));
-        registerReceive(postPredictionCheck.get(ServerStateNoSlow.class));
-        registerReceive(postPredictionCheck.get(Phase.class));
-        registerReceive(postPredictionCheck.get(PostCheck.class));
-        registerReceive(postPredictionCheck.get(NegativeTimerCheck.class));
+        registerReceive(registrations, postPredictionCheck.get(NoSlow.class));
+        registerReceive(registrations, postPredictionCheck.get(ServerStateNoSlow.class));
+        registerReceive(registrations, postPredictionCheck.get(Phase.class));
+        registerReceive(registrations, postPredictionCheck.get(PostCheck.class));
+        registerReceive(registrations, postPredictionCheck.get(NegativeTimerCheck.class));
         // AimDuplicateLook (rotation listener) declares no packet handlers; registering it for
         // receive dispatch would throw in registerReceive at CheckManager construction.
 
@@ -574,32 +570,32 @@ public class CheckManager {
                 MultiInteractA.class, MultiInteractB.class, ElytraB.class,
                 ElytraC.class, ElytraD.class, ElytraE.class, ElytraF.class, ElytraG.class,
                 ElytraH.class, ElytraI.class)) {
-            registerReceive(postPredictionCheck.get(type));
+            registerReceive(registrations, postPredictionCheck.get(type));
         }
         for (Class<? extends BlockPlaceCheck> type : List.of(
                 MultiPlace.class, MultiActionsF.class, MultiActionsG.class, PositionPlace.class,
                 PacketOrderN.class)) {
-            registerReceive(blockPlaceCheck.get(type));
+            registerReceive(registrations, blockPlaceCheck.get(type));
         }
 
         for (Class<? extends CheckListener> listenerType : SEND_DISPATCH_LISTENER_TYPES) {
-            registerSend(allCheckListeners.get(listenerType));
+            registerSend(registrations, allCheckListeners.get(listenerType));
         }
     }
 
-    private void registerPreReceive(CheckListener listener) {
-        registerReceive(prePredictionReceiveRegistrations, listener);
+    private void registerPreReceive(PacketRegistrations registrations, CheckListener listener) {
+        registerReceive(registrations.prePredictionReceive, registrations.receiveListeners, listener);
     }
 
-    private void registerEarlyReceive(CheckListener listener) {
+    private void registerEarlyReceive(PacketRegistrations packetRegistrations, CheckListener listener) {
         if (listener == null || !shouldRegister(listener)) {
             return;
         }
-        receiveDispatchListeners.add(listener);
+        packetRegistrations.receiveListeners.add(listener);
 
-        List<PacketHandlerScanner.ReceiveRegistration> registrations = PacketHandlerScanner.receiveHandlers(listener);
+        List<PacketHandlerScanner.ReceiveRegistration> registrations = recordScanner.receiveHandlers(listener);
         if (registrations.isEmpty()) {
-            if (!PacketHandlerScanner.hasReceiveHandlerDeclaration(listener.getClass())) {
+            if (!recordScanner.hasReceiveHandlerDeclaration(listener.getClass())) {
                 throw new IllegalStateException("No receive @CultPacketHandler methods on "
                         + listener.getClass().getName());
             }
@@ -607,40 +603,24 @@ public class CheckManager {
         }
 
         for (PacketHandlerScanner.ReceiveRegistration registration : registrations) {
-            PacketReceiveHandler<Packet<?>> handler = (event, player, packet) -> {
+            PacketReceiveHandler<Object> handler = (event, player, packet) -> {
                 if (shouldDispatch(listener)) {
                     registration.handler().handle(event, player, packet);
                 }
             };
-            earlyReceiveHandlers.add(new EarlyReceiveHandlerRegistration(registration.packetType(), handler));
+            packetRegistrations.receive.receiveRoute(registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.EARLY);
         }
     }
 
-    private void registerEarlyOrderedReceive(CheckListener listener) {
+    private void registerNonAsyncReceive(CheckListener listener, PacketReceiveHandler<ServerboundPacket> handler) {
         if (listener == null || !shouldRegister(listener)) {
             return;
         }
-        if (!(listener instanceof OrderedPacketReceiveListener orderedListener)) {
-            throw new IllegalStateException(listener.getClass().getName()
-                    + " is not an ordered packet receive listener");
-        }
-        earlyReceiveHandlers.add(new EarlyReceiveHandlerRegistration(null,
-                (event, player, packet) -> {
-                    if (shouldDispatch(listener)) {
-                        orderedListener.onPacketReceive(event);
-                    }
-                }));
-    }
-
-    private void registerOrderedReceive(CheckListener listener) {
-        if (listener == null || !shouldRegister(listener)) {
-            return;
-        }
-        if (!(listener instanceof OrderedPacketReceiveListener orderedListener)) {
-            throw new IllegalStateException(listener.getClass().getName()
-                    + " is not an ordered packet receive listener");
-        }
-        orderedReceiveListeners.add(orderedListener);
+        nonAsyncReceiveHandlers.add((event, player, packet) -> {
+            if (shouldDispatch(listener)) {
+                handler.handle(event, player, packet);
+            }
+        });
     }
 
     private void registerDecodedReceive(CheckListener listener) {
@@ -654,12 +634,12 @@ public class CheckManager {
         decodedReceiveListeners.add(decodedListener);
     }
 
-    private void registerReceive(CheckListener listener) {
-        registerReceive(receiveRegistrations, listener);
+    private void registerReceive(PacketRegistrations registrations, CheckListener listener) {
+        registerReceive(registrations.receive, registrations.receiveListeners, listener);
     }
 
-    private void registerSend(CheckListener listener) {
-        registerSend(sendRegistrations, listener);
+    private void registerSend(PacketRegistrations registrations, CheckListener listener) {
+        registerSend(registrations.send, registrations.sendListeners, listener);
     }
 
     private void registerTickEnd(CheckListener listener) {
@@ -675,127 +655,86 @@ public class CheckManager {
         tickEndHandlers.add(new TickEndHandlerRegistration(tickEndListener));
     }
 
-    private void registerReceive(Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.ReceiveRegistration>> handlers,
-                                 CheckListener listener) {
+    private void registerReceive(PacketRouteBuilder handlers,
+                                 Set<CheckListener> registeredListeners, CheckListener listener) {
         if (listener == null) {
             return;
         }
         if (!shouldRegister(listener)) {
             return;
         }
-        receiveDispatchListeners.add(listener);
+        registeredListeners.add(listener);
 
-        List<PacketHandlerScanner.ReceiveRegistration> registrations = PacketHandlerScanner.receiveHandlers(listener);
+        List<PacketHandlerScanner.ReceiveRegistration> registrations = recordScanner.receiveHandlers(listener);
         if (registrations.isEmpty()) {
-            if (!PacketHandlerScanner.hasReceiveHandlerDeclaration(listener.getClass())) {
+            if (!recordScanner.hasReceiveHandlerDeclaration(listener.getClass())) {
                 throw new IllegalStateException("No receive @CultPacketHandler methods on " + listener.getClass().getName());
             }
             return;
         }
         for (PacketHandlerScanner.ReceiveRegistration registration : registrations) {
-            PacketReceiveHandler<Packet<?>> handler = (event, player, packet) -> {
+            PacketReceiveHandler<Object> handler = (event, player, packet) -> {
                 if (shouldDispatch(listener)) {
                     registration.handler().handle(event, player, packet);
                 }
             };
-            handlers.computeIfAbsent(registration.packetType(), ignored -> new ArrayList<>())
-                    .add(new PacketHandlerScanner.ReceiveRegistration(registration.packetType(), handler));
+            handlers.receiveRoute(registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.ORDINARY);
         }
     }
 
-    private void registerSend(Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.SendRegistration>> handlers,
-                              CheckListener listener) {
+    private void registerSend(PacketRouteBuilder handlers,
+                              Set<CheckListener> registeredListeners, CheckListener listener) {
         if (listener == null) {
             return;
         }
         if (!shouldRegister(listener)) {
             return;
         }
-        sendDispatchListeners.add(listener);
+        registeredListeners.add(listener);
 
-        List<PacketHandlerScanner.SendRegistration> registrations = PacketHandlerScanner.sendHandlers(listener);
+        List<PacketHandlerScanner.SendRegistration> registrations = recordScanner.sendHandlers(listener);
         if (registrations.isEmpty()) {
-            if (!PacketHandlerScanner.hasSendHandlerDeclaration(listener.getClass())) {
+            if (!recordScanner.hasSendHandlerDeclaration(listener.getClass())) {
                 throw new IllegalStateException("No send @CultPacketHandler methods on " + listener.getClass().getName());
             }
             return;
         }
         for (PacketHandlerScanner.SendRegistration registration : registrations) {
-            PacketSendHandler<Packet<?>> handler = (event, player, packet) -> {
+            PacketSendHandler<Object> handler = (event, player, packet) -> {
                 if (shouldDispatch(listener)) {
                     registration.handler().handle(event, player, packet);
                 }
             };
-            handlers.computeIfAbsent(registration.packetType(), ignored -> new ArrayList<>())
-                    .add(new PacketHandlerScanner.SendRegistration(registration.packetType(), handler));
+            handlers.sendRoute(registration.packetType(), PacketListenerPriority.NORMAL, handler);
         }
     }
 
-    private void validatePacketDispatchCoverage() {
+    private void validatePacketDispatchCoverage(PacketRegistrations registrations) {
         List<String> missing = new ArrayList<>();
         for (CheckListener listener : allCheckListeners.values()) {
             if (!shouldRegister(listener)) {
                 continue;
             }
-            if (PacketHandlerScanner.hasReceiveHandlerDeclaration(listener.getClass())
-                    && !receiveDispatchListeners.contains(listener)) {
+            if (recordScanner.hasReceiveHandlerDeclaration(listener.getClass())
+                    && !registrations.receiveListeners.contains(listener)) {
                 missing.add(listener.getClass().getName() + " receive");
             }
-            if (PacketHandlerScanner.hasSendHandlerDeclaration(listener.getClass())
-                    && !sendDispatchListeners.contains(listener)) {
+            if (recordScanner.hasSendHandlerDeclaration(listener.getClass())
+                    && !registrations.sendListeners.contains(listener)) {
                 missing.add(listener.getClass().getName() + " send");
             }
         }
         if (!missing.isEmpty()) {
-            throw new IllegalStateException("Unregistered @CultPacketHandler declarations: "
+            throw new IllegalStateException("Unregistered packet handler declarations: "
                     + String.join(", ", missing));
         }
     }
 
-    private void buildPacketRoutes() {
-        prePredictionReceiveRoutes = buildReceiveRoutes(prePredictionReceiveRegistrations);
-        receiveRoutes = buildReceiveRoutes(receiveRegistrations);
-        sendRoutes = buildSendRoutes(sendRegistrations);
-    }
-
-    private static Map<Class<? extends Packet<?>>, PacketReceiveRoute> buildReceiveRoutes(
-            Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.ReceiveRegistration>> registrations
-    ) {
-        Map<Class<? extends Packet<?>>, PacketReceiveRoute> routes = new HashMap<>();
-        for (Map.Entry<Class<? extends Packet<?>>, List<PacketHandlerScanner.ReceiveRegistration>> entry
-                : registrations.entrySet()) {
-            routes.put(entry.getKey(), buildReceiveRoute(entry.getValue()));
-        }
-        return Map.copyOf(routes);
-    }
-
-    private static Map<Class<? extends Packet<?>>, PacketSendRoute> buildSendRoutes(
-            Map<Class<? extends Packet<?>>, List<PacketHandlerScanner.SendRegistration>> registrations
-    ) {
-        Map<Class<? extends Packet<?>>, PacketSendRoute> routes = new HashMap<>();
-        for (Map.Entry<Class<? extends Packet<?>>, List<PacketHandlerScanner.SendRegistration>> entry
-                : registrations.entrySet()) {
-            routes.put(entry.getKey(), buildSendRoute(entry.getValue()));
-        }
-        return Map.copyOf(routes);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static PacketReceiveRoute buildReceiveRoute(List<PacketHandlerScanner.ReceiveRegistration> registrations) {
-        PacketReceiveHandler<Packet<?>>[] handlers = new PacketReceiveHandler[registrations.size()];
-        for (int i = 0; i < registrations.size(); i++) {
-            handlers[i] = registrations.get(i).handler();
-        }
-        return PacketReceiveRoute.of(handlers);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static PacketSendRoute buildSendRoute(List<PacketHandlerScanner.SendRegistration> registrations) {
-        PacketSendHandler<Packet<?>>[] handlers = new PacketSendHandler[registrations.size()];
-        for (int i = 0; i < registrations.size(); i++) {
-            handlers[i] = registrations.get(i).handler();
-        }
-        return PacketSendRoute.of(handlers);
+    private void buildPacketRoutes(PacketRegistrations registrations) {
+        earlyReceiveRoutes = registrations.receive.receiveRoutes(ReceiveStage.EARLY);
+        prePredictionReceiveRoutes = registrations.prePredictionReceive.receiveRoutes(ReceiveStage.ORDINARY);
+        receiveRoutes = registrations.receive.receiveRoutes(ReceiveStage.ORDINARY);
+        sendRoutes = registrations.send.sendRoutes();
     }
 
     private boolean shouldRegister(CheckListener listener) {
@@ -828,32 +767,31 @@ public class CheckManager {
     }
 
     public void dispatchPrePredictionReceive(final PacketReceiveEvent packet) {
-        Packet<?> routedPacket = packet.getNmsPacket();
-        PacketReceiveRoute route = prePredictionReceiveRoutes.get(routedPacket.getClass());
+        Object routedPacket = packet.getPacket();
+        PacketReceiveRoute route = prePredictionReceiveRoutes.get(packet.getPacketType());
         if (route != null) {
             route.dispatch(packet, player, routedPacket);
         }
     }
 
     public void dispatchEarlyReceive(final PacketReceiveEvent event) {
-        Packet<?> packet = event.getNmsPacket();
-        for (EarlyReceiveHandlerRegistration handler : earlyReceiveHandlers) {
-            handler.handle(event, player, packet);
-        }
+        Object routedPacket = event.getPacket();
+        var route = earlyReceiveRoutes.get(event.getPacketType());
+        if (route != null) route.dispatch(event, player, routedPacket);
     }
 
     public void dispatchReceiveHandlers(final PacketReceiveEvent packet) {
         dispatchDecodedReceiveObservers(packet);
 
-        Packet<?> routedPacket = packet.getNmsPacket();
-        PacketReceiveRoute route = receiveRoutes.get(routedPacket.getClass());
+        Object routedPacket = packet.getPacket();
+        PacketReceiveRoute route = receiveRoutes.get(packet.getPacketType());
         if (route != null) {
             route.dispatch(packet, player, routedPacket);
         }
 
-        dispatchOrderedReceive(packet);
+        dispatchNonAsyncReceive(packet);
 
-        if (routedPacket instanceof ServerboundMovePlayerPacket
+        if (routedPacket instanceof ServerboundMovePlayer
                 && player.compensatedWorld.pistons.usesLegacyCollision()
                 && !player.packetStateData.lastPacketWasTeleport) {
             // 1.7/1.8 send a movement, rotation or status packet every player tick,
@@ -862,7 +800,7 @@ public class CheckManager {
             player.compensatedWorld.pistons.onLegacyMovementTick();
         }
 
-        if (routedPacket instanceof ServerboundClientTickEndPacket) {
+        if (packet.getPacketType() == ac.cult.cultac.protocol.packet.ServerboundPackets.CLIENT_TICK_END) {
             // MCP-Reborn Minecraft#tick sends ServerboundClientTickEndPacket only
             // after ClientLevel#tickEntities and Level#tickBlockEntities have
             // both finished. Tick-end handlers that simulate the completed client
@@ -876,7 +814,7 @@ public class CheckManager {
     }
 
     public void dispatchDecodedReceiveObservers(final PacketReceiveEvent event) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) {
+        if (event.getPhase() != ConnectionPhase.PLAY) {
             return;
         }
         for (DecodedPacketReceiveListener listener : decodedReceiveListeners) {
@@ -887,20 +825,22 @@ public class CheckManager {
     }
 
     /**
-     * Dispatches checks whose legacy behavior depends on every ordered PLAY
-     * packet, including packets that intentionally bypass the normal check route.
+     * Dispatches explicitly registered callbacks for one non-async PLAY packet,
+     * including packets that intentionally bypass the normal check route.
      */
-    public void dispatchOrderedReceive(final PacketReceiveEvent packet) {
-        for (OrderedPacketReceiveListener listener : orderedReceiveListeners) {
-            if (shouldDispatch(listener)) {
-                listener.onPacketReceive(packet);
-            }
+    public void dispatchNonAsyncReceive(final PacketReceiveEvent<?> event) {
+        if (LegacyPacketEventSemantics.isAsync(event)) {
+            return;
+        }
+        ServerboundPacket packet = event.getPacket();
+        for (PacketReceiveHandler<ServerboundPacket> handler : nonAsyncReceiveHandlers) {
+            handler.handle(event, player, packet);
         }
     }
 
-    public void dispatchSendHandlers(final PacketSendEvent packet) {
-        Packet<?> routedPacket = packet.getNmsPacket();
-        PacketSendRoute route = sendRoutes.get(routedPacket.getClass());
+    public void dispatchSendHandlers(final PacketSendEvent<?> packet) {
+        Object routedPacket = packet.getPacket();
+        PacketSendRoute route = sendRoutes.get(packet.getPacketType());
         if (route != null) {
             route.dispatch(packet, player, routedPacket);
         }
@@ -1118,21 +1058,26 @@ public class CheckManager {
         return getListener(OffsetHandler.class);
     }
 
+    /** Construction data only: callbacks retain their listener, never these collections. */
+    private static final class PacketRegistrations {
+        final PacketRouteBuilder prePredictionReceive;
+        final PacketRouteBuilder receive;
+        final PacketRouteBuilder send;
+        PacketRegistrations(PacketHandlerScanner scanner) {
+            prePredictionReceive = new PacketRouteBuilder(scanner);
+            receive = new PacketRouteBuilder(scanner);
+            send = new PacketRouteBuilder(scanner);
+        }
+        final Set<CheckListener> receiveListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<CheckListener> sendListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
     private record TickEndHandlerRegistration(ClientTickEndListener listener) {
         void handle(PacketReceiveEvent event) {
             listener.onPlayerTickEnd(event);
         }
     }
 
-    private record EarlyReceiveHandlerRegistration(
-            Class<? extends Packet<?>> packetType,
-            PacketReceiveHandler<Packet<?>> handler
-    ) {
-        void handle(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-            if (packetType == null || packetType == packet.getClass()) {
-                handler.handle(event, player, packet);
-            }
-        }
-    }
+
 
 }

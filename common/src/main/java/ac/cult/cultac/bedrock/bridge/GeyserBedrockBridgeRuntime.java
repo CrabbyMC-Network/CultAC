@@ -436,6 +436,8 @@ public final class GeyserBedrockBridgeRuntime {
         private final GeyserEntityPositions entityPositions = new GeyserEntityPositions();
         private final GeyserEntityAttributes entityAttributes = new GeyserEntityAttributes();
         private final GeyserMovementEffectAcks glideBoostAcks = new GeyserMovementEffectAcks();
+        private final ac.cult.cultac.bedrock.player.BedrockLoadingScreenState loadingScreen =
+                new ac.cult.cultac.bedrock.player.BedrockLoadingScreenState();
         private long movementCorrectionSequence;
         private record CorrectionSource(BedrockMovementCorrection correction, Vec3 claimedPosition, int debugId) { }
         private final Map<CorrectPlayerMovePredictionPacket, CorrectionSource> movementCorrectionSources = new IdentityHashMap<>();
@@ -505,6 +507,10 @@ public final class GeyserBedrockBridgeRuntime {
             connection.ensureInEventLoop(() -> {
                 try {
                     if (detached.get()) return;
+                    if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.ServerboundLoadingScreenPacket loading) {
+                        // Unexpected transitions leave the tracked loading state unchanged (should we disconnect?)
+                        loadingScreen.accept(loading.getType(), loading.getLoadingScreenId());
+                    }
                     if (currentPlayer() == null) {
                         // Login traffic must establish the Java connection before ownership can bind.
                         delegate.handlePacket(packet);
@@ -732,6 +738,7 @@ public final class GeyserBedrockBridgeRuntime {
 
         private void initializeActor(CultPlayer player) {
             if (player == null) return;
+            player.bedrockState.loadingScreen = loadingScreen;
             if (actorCreationRuntimeId != null) {
                 player.checkManager.getSimulationProcessor().handleBedrockActorCreation(actorCreationRuntimeId);
                 actorCreationRuntimeId = null;
@@ -1138,6 +1145,7 @@ public final class GeyserBedrockBridgeRuntime {
                 metadata.setTick(boundary.tick());
             }
             if (packet instanceof StartGamePacket startGame) {
+                owner.loadingScreen.startGame();
                 owner.poses.clear();
                 owner.actorCreationSequence++;
                 owner.collisionDefinition = null;
@@ -1189,7 +1197,10 @@ public final class GeyserBedrockBridgeRuntime {
                         player -> received.run());
                 return;
             }
-            if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.ChangeDimensionPacket) owner.entityPositions.clear();
+            if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.ChangeDimensionPacket dimension) {
+                owner.entityPositions.clear();
+                owner.loadingScreen.changeDimension(dimension.getLoadingScreenId());
+            }
             if (packet instanceof StartGamePacket || packet instanceof org.cloudburstmc.protocol.bedrock.packet.ChangeDimensionPacket) {
                 owner.teleportRecovery.clear();
             }

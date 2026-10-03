@@ -4,14 +4,12 @@ import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
 
 @CheckData(name = "BadPacketsR", stableKey = "cult.badpackets.position_starvation", description = "Stopped sending position updates while still responding to transactions", decay = 0.25, experimental = true)
 public class BadPacketsR extends Check implements CheckListener {
@@ -28,7 +26,7 @@ public class BadPacketsR extends Check implements CheckListener {
 
     // isTransaction: the legacy container-ack packet does not exist on 26.2
     @CultPacketHandler
-    public void onPong(final PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(final PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         if (!event.isAcceptedTransactionResponse()) return;
 
         long ms = (player.getPlayerClockAtLeast() - clock) / 1000000L;
@@ -49,15 +47,11 @@ public class BadPacketsR extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(final PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
-
-        if ((packet instanceof ServerboundMovePlayerPacket.PosRot || packet instanceof ServerboundMovePlayerPacket.Pos)
-                && !player.inVehicle()) {
+    public void onMovePlayer(final PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+        if ((packet.hasPosition()) && !player.inVehicle()) {
             positions++;
         }
     }
-
 
     public void handleLegacySteerVehicle() {
         if (player.inVehicle()) {
@@ -65,9 +59,8 @@ public class BadPacketsR extends Check implements CheckListener {
         }
     }
 
-
     @CultPacketHandler
-    public void onMoveVehicle(final PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehiclePacket packet) {
+    public void onMoveVehicle(final PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         if (player.inVehicle()) {
             positions++;
         }

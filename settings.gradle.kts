@@ -66,5 +66,6 @@ include("bukkit")
 include("legacy-placement-adapter")
 include("placement-26-2-adapter")
 include("placement-1-21-11-adapter")
+include("protocol", "protocol-paper")
 
 if (file("workspace.gradle.kts").exists()) apply(from = "workspace.gradle.kts")

@@ -46,7 +46,7 @@ repositories {
 // The current Paper API is built for Java 25, but Cult's classes target Java 21 so
 // final Paper releases across the declared 1.21+ server range can parse the jar. Resolve the
 // compile classpath using the API's runtime level without raising Cult's emitted bytecode.
-configurations.configureEach {
+configurations.matching { it.name.endsWith("CompileClasspath") || it.name.endsWith("RuntimeClasspath") || it.name in listOf("compileClasspath", "runtimeClasspath") }.configureEach {
     attributes.attribute(
         org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE,
         25
@@ -107,6 +107,7 @@ tasks.processResources {
 }
 
 dependencies {
+    api(project(":protocol"))
     paperweight.paperDevBundle(providers.gradleProperty("paperDevBundleVersion").get())
 
     api(libs.cloud.core)
@@ -142,6 +143,7 @@ dependencies {
     compileOnly(libs.luckperms)
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation(project(":protocol-paper"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly(libs.fastutil)
 
@@ -163,8 +165,18 @@ dependencies {
     testRuntimeOnly(libs.viaversion)
 }
 
+tasks.withType<Test>().configureEach {
+    val replayRoot = rootProject.file(providers.gradleProperty("bedrockReplayRoot")
+        .getOrElse("bedrock-smoketest-scenarios"))
+    systemProperty("bedrockReplayRoot", replayRoot.absolutePath)
+    inputs.files(fileTree(replayRoot))
+}
+
 tasks.test {
     useJUnitPlatform()
+    // Native registry bootstrap plus the combined transport/replay fixtures exceed
+    // Gradle's default 512 MiB worker heap. Match the offline replay test worker.
+    maxHeapSize = "2g"
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     System.getProperty("exportBedrockFixtures")?.let {
         systemProperty("exportBedrockFixtures", it)
@@ -196,3 +208,23 @@ tasks.register<Test>("offlineBedrockReplayTest") {
 publishing.publications.create<MavenPublication>("maven") {
     from(components["java"])
 }
+
+// Exercise actual Bukkit server-position delivery on this module's pinned Paper runtime.
+tasks.named<JavaCompile>("compileTestJava") {
+    source(rootProject.file("bukkit/src/main/java/ac/cult/cultac/platform/bukkit/BukkitNativeCodecFactory.java"))
+    source(rootProject.file("bukkit/src/main/java/ac/cult/cultac/platform/bukkit/BukkitPacketCodecs.java"))
+}
+
+sourceSets.test { java.srcDir(rootProject.file("protocol/src/fixtures/java")) }
+
+// Classes are emitted with --release 21. Native compilation resolves the Java 25
+// Paper bundle, while consumers on older bundles can run this same bytecode.
+for (variant in listOf("apiElements", "runtimeElements")) {
+    configurations.named(variant) {
+        attributes.attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+    }
+}
+
+// Shared validation fixture sources belong to their own tree; format only files
+// owned by this module (Spotless rejects targets outside the project directory).
+spotless { java { target("src/**/*.java") } }

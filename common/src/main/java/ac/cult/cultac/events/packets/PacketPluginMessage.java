@@ -1,33 +1,22 @@
 package ac.cult.cultac.events.packets;
 
 import ac.cult.cultac.CultAPI;
-import ac.cult.cultac.network.PacketReceiveHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.player.User;
-import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
-import net.kyori.adventure.text.TranslatableComponent;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import ac.cult.cultac.network.CultWrite;
 
 import java.io.File;
 
 
-public class PacketPluginMessage implements PacketReceiveHandler<Packet<?>> {
+public class PacketPluginMessage {
 
-    @Override
-    public void handle(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        // One NMS class carries both the play- and configuration-phase custom payload.
-        if (!(packet instanceof ServerboundCustomPayloadPacket customPayload)) return;
-        String channelName = NmsPacketUtil.payloadChannel(customPayload.payload());
-        if (channelName == null) return;
-        checkChannel(event.getUser(), channelName);
+    public void handle(PacketReceiveEvent<ServerboundCustomPayload> event, ServerboundCustomPayload packet) {
+        checkChannel(event.getUser(), packet.channel());
     }
 
     private void checkChannel(User user, String channelName) {
@@ -47,10 +36,7 @@ public class PacketPluginMessage implements PacketReceiveHandler<Packet<?>> {
             LogUtil.warn(user.getName() + " is being disconnected for sending ViaVersion proxy data.");
 
             try {
-                ClientboundDisconnectPacket disconnect = new ClientboundDisconnectPacket(
-                        toNmsComponent(MessageUtil.miniMessage(CultAPI.INSTANCE.getConfigManager().getDisconnectPacketError()))
-                );
-                user.sendPacket(disconnect);
+                user.write(new CultWrite(MessageUtil.disconnectPacket(MessageUtil.miniMessage(CultAPI.INSTANCE.getConfigManager().getDisconnectPacketError())), false));
             } catch (Exception e) {
                 LogUtil.warn("Failed to send disconnect packet to kick " + user.getName() + "!");
             }
@@ -71,12 +57,4 @@ public class PacketPluginMessage implements PacketReceiveHandler<Packet<?>> {
         return org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file).getBoolean(pathToValue);
     }
 
-    // Same adventure->NMS component fallback as CultPlayer#disconnect.
-    private static net.minecraft.network.chat.Component toNmsComponent(net.kyori.adventure.text.Component reason) {
-        if (reason instanceof TranslatableComponent translatableComponent) {
-            return net.minecraft.network.chat.Component.translatable(translatableComponent.key());
-        }
-        String text = LegacyComponentSerializer.legacySection().serialize(reason);
-        return net.minecraft.network.chat.Component.literal(MessageUtil.stripColor(text));
-    }
 }

@@ -8,7 +8,6 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.math.Location;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import org.bukkit.GameMode;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,11 +40,6 @@ public class SpectateManager implements StartableInitable, ReloadableInitable {
 
     public boolean isSpectating(UUID uuid) {
         return spectatingPlayers.containsKey(uuid);
-    }
-
-    public boolean shouldHidePlayer(CultPlayer receiver, ClientboundPlayerInfoUpdatePacket.Entry entry) {
-        return entry.profileId() != null
-                && shouldHidePlayer(receiver, entry.profileId());
     }
 
     public boolean shouldHidePlayer(CultPlayer receiver, UUID uuid) {

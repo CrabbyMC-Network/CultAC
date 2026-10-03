@@ -3,17 +3,12 @@ package ac.cult.cultac.utils.latency;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
-import net.minecraft.network.protocol.game.ClientboundSetCameraPacket;
 
-import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CompensatedCameraEntity extends Check {
-    // 26.2 keeps cameraId private with no accessor (only getEntity(Level)); resolve it once.
-    private static final Field CAMERA_ID = resolveCameraIdField();
-
     private final ArrayDeque<PacketEntity> entities = new ArrayDeque<>(1);
 
     public CompensatedCameraEntity(CultPlayer player) {
@@ -22,8 +17,7 @@ public class CompensatedCameraEntity extends Check {
     }
 
 
-    public void onSetCamera(ClientboundSetCameraPacket packet) {
-        final int camera = readCameraId(packet);
+    public void onSetCamera(int camera) {
         player.sendTransaction();
 
         player.latencyUtils.addRealTimeTaskNow(() -> {
@@ -64,21 +58,4 @@ public class CompensatedCameraEntity extends Check {
         entities.add(player.compensatedEntities.getSelf());
     }
 
-    private static Field resolveCameraIdField() {
-        try {
-            Field field = ClientboundSetCameraPacket.class.getDeclaredField("cameraId");
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException exception) {
-            throw new IllegalStateException("Unable to find ClientboundSetCameraPacket#cameraId", exception);
-        }
-    }
-
-    private static int readCameraId(ClientboundSetCameraPacket packet) {
-        try {
-            return CAMERA_ID.getInt(packet);
-        } catch (IllegalAccessException exception) {
-            throw new IllegalStateException("Unable to read ClientboundSetCameraPacket#cameraId", exception);
-        }
-    }
 }

@@ -10,7 +10,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 @CheckData(name = "CrashG", stableKey = "cult.crash.negative_sequence", description = "Sent negative sequence id")
 public class CrashG extends BlockPlaceCheck implements BlockBreakListener {
@@ -30,9 +30,9 @@ public class CrashG extends BlockPlaceCheck implements BlockBreakListener {
     }
 
     @CultPacketHandler
-    public void onUseItem(final PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(final PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         if (!isApplicable()) return;
-        if (ac.cult.cultac.network.packet.NmsPacketUtil.intValue(packet, "sequence", "getSequence") < 0) {
+        if (packet.sequence() < 0) {
             flag();
             event.setCancelled(true);
             player.onPacketCancel();

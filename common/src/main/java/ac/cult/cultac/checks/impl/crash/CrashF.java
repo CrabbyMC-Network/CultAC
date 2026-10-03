@@ -8,10 +8,8 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 
 @CheckData(name = "CrashF", stableKey = "cult.crash.button_crash", description = "Sent an inventory click with an invalid button or slot value")
 public class CrashF extends Check implements CheckListener {
@@ -23,8 +21,7 @@ public class CrashF extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onContainerClick(final PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
-        InventoryClick click = NmsPacketUtil.readContainerClick(packet);
+    public void onContainerClick(final PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick click) {
         WindowClickType clickType = click.clickType();
         int button = click.button();
         int windowId = click.windowId();

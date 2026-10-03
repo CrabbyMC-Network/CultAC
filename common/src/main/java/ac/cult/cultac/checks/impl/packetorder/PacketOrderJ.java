@@ -7,8 +7,8 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 @CheckData(name = "PacketOrderJ", stableKey = "cult.packetorder.attack_interact_use_order", description = "Sent use item after attacking without the expected interaction packet", experimental = true)
 public class PacketOrderJ extends Check implements PostPredictionListener {
@@ -20,13 +20,13 @@ public class PacketOrderJ extends Check implements PostPredictionListener {
 
 
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
+    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         onUse(event, player);
     }
 
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         onUse(event, player);
     }
 

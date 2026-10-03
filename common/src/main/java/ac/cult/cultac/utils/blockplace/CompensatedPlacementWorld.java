@@ -119,7 +119,8 @@ public final class CompensatedPlacementWorld extends Level implements PlacementW
                 null,
                 null,
                 World.Environment.NORMAL,
-                ignored -> null
+                ignored -> null,
+                Runnable::run
         );
         this.blockAccess = blockAccess;
         this.snapshot = snapshot;

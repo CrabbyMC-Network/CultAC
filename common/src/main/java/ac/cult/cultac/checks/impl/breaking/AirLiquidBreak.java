@@ -1,8 +1,9 @@
 package ac.cult.cultac.checks.impl.breaking;
 
+import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.CultAPI;
 import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
@@ -14,7 +15,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.bukkit.Material;
@@ -37,7 +37,7 @@ public class AirLiquidBreak extends Check implements BlockBreakListener {
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action != ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK && blockBreak.action != ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK) // PE DiggingAction.START_DIGGING / FINISHED_DIGGING
+        if (blockBreak.action != PlayerAction.START_DESTROY_BLOCK && blockBreak.action != PlayerAction.STOP_DESTROY_BLOCK) // PE DiggingAction.START_DIGGING / FINISHED_DIGGING
             return;
 
         final Block block = blockBreak.block.getBlock();
@@ -67,7 +67,7 @@ public class AirLiquidBreak extends Check implements BlockBreakListener {
                 || block == Blocks.MOVING_PISTON
                 || block == Blocks.FIRE && noFireHitbox
                 // or the client claims to have broken an unbreakable block
-                || block.defaultDestroyTime() == -1.0f && blockBreak.action == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK
+                || block.defaultDestroyTime() == -1.0f && blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK
                 // or the player is holding a spear
                 || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11)
                 && PIERCING_WEAPON_COMPONENT != null
@@ -75,7 +75,7 @@ public class AirLiquidBreak extends Check implements BlockBreakListener {
 
         if (invalid && flag(V.write(verbose())
                 .sint(BuiltInRegistries.BLOCK.getId(block))
-                .uint(VerboseTags.enumId(blockBreak.action))) && shouldModifyPackets()) {
+                .uint(VerboseCodecs.digging(blockBreak.action))) && shouldModifyPackets()) {
             didLastFlag = true;
             blockBreak.cancel();
         } else {

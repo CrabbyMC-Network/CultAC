@@ -1,5 +1,6 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
@@ -7,9 +8,8 @@ import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 
 @CheckData(name = "BadPacketsQ", stableKey = "cult.badpackets.invalid_horse_jump", description = "Sent a horse jump packet with an invalid entity, action, or boost value")
 public class BadPacketsQ extends Check implements CheckListener {
@@ -20,15 +20,14 @@ public class BadPacketsQ extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
-        final NmsPacketUtil.PlayerCommandData data = NmsPacketUtil.readPlayerCommand(packet);
-        final NmsPacketUtil.PlayerCommandAction action = data.action();
-        final int boost = data.data();
-        final int entity = data.entityId();
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+        final PlayerCommandAction action = packet.action();
+        final int boost = packet.data();
+        final int entity = packet.entityId();
         // you are able to send negative jump boost, how and why!?
         if (Math.abs(boost) > 100
                 || entity != player.entityID
-                || action != NmsPacketUtil.PlayerCommandAction.START_JUMPING_WITH_HORSE && boost != 0) {
+                || action != PlayerCommandAction.START_JUMPING_WITH_HORSE && boost != 0) {
             int actionId = VerboseTags.enumId(action);
             if (flag(V.write(verbose()).sint(boost).uint(actionId).sint(entity)) && shouldModifyPackets()) {
                 event.setCancelled(true);

@@ -1,16 +1,17 @@
 package ac.cult.cultac.checks.impl.chat;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChat;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommandSigned;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket;
-import net.minecraft.network.protocol.game.ServerboundChatPacket;
-import net.minecraft.world.entity.player.ChatVisiblity;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientInformation;
+import ac.cult.cultac.protocol.value.ChatVisibility;
 
 @CheckData(name = "ChatD", stableKey = "cult.exploit.chat_while_hidden", description = "Chatting while chat is hidden")
 public class ChatD extends Check implements CheckListener {
@@ -21,17 +22,17 @@ public class ChatD extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onChatMessage(PacketReceiveEvent event, CultPlayer player, ServerboundChatPacket packet) {
+    public void onChatMessage(PacketReceiveEvent<ServerboundChat> event, CultPlayer player, ServerboundChat packet) {
         check(event);
     }
 
     @CultPacketHandler
-    public void onChatCommandUnsigned(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandSignedPacket packet) {
+    public void onChatCommandUnsigned(PacketReceiveEvent<ServerboundChatCommandSigned> event, CultPlayer player, ServerboundChatCommandSigned packet) {
         check(event);
     }
 
     @CultPacketHandler
-    public void onChatCommand(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandPacket packet) {
+    public void onChatCommand(PacketReceiveEvent<ServerboundChatCommand> event, CultPlayer player, ServerboundChatCommand packet) {
         check(event);
     }
 
@@ -43,8 +44,8 @@ public class ChatD extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onClientInformation(PacketReceiveEvent event, CultPlayer player, ServerboundClientInformationPacket packet) {
+    public void onClientInformation(PacketReceiveEvent<ServerboundClientInformation> event, CultPlayer player, ServerboundClientInformation packet) {
 
-        hidden = packet.information().chatVisibility() == ChatVisiblity.HIDDEN;
+        hidden = packet.information().chatVisibility() == ChatVisibility.HIDDEN;
     }
 }

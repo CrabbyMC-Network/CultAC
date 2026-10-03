@@ -1,19 +1,19 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 @CheckData(name = "NoSwingBreak", stableKey = "cult.breaking.no_swing_break", description = "Did not swing while breaking block", experimental = true)
 public class NoSwingBreak extends Check implements BlockBreakListener {
@@ -25,34 +25,29 @@ public class NoSwingBreak extends Check implements BlockBreakListener {
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action != ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK) { // PE DiggingAction.CANCELLED_DIGGING
+        if (blockBreak.action != PlayerAction.ABORT_DESTROY_BLOCK) { // PE DiggingAction.CANCELLED_DIGGING
             sentBreak = true;
         }
     }
 
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPunchPacket")
-    public void onPunch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSwing(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSwingPacket")
-    public void onSwing(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         sentAnimation = true;
     }
 
     // isTickPacket: movement packets count unless they answered a teleport
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.packetStateData.lastPacketWasTeleport) {
             onTickPacket();
         }
     }
 
     // isTickPacket: tick end counts for 1.21.2+ clients when no movement arrived this client tick
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 && !player.packetStateData.receivedMovementThisClientTick) {
             onTickPacket();

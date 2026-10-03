@@ -1,15 +1,14 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.checks.BedrockSupported;
 import ac.cult.cultac.checks.CheckInfo;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerSlotStateChangedPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 @BedrockSupported
 public class TimerCheck extends AbstractTimerCheck {
@@ -20,8 +19,8 @@ public class TimerCheck extends AbstractTimerCheck {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.isBedrockMovement()) {
             return;
         }
@@ -32,19 +31,19 @@ public class TimerCheck extends AbstractTimerCheck {
         recordTimerEvent(event, false, shouldCountMovePlayerForTimer());
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket")
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, net.minecraft.network.protocol.Packet<?> packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         recordModernClientTickEndPacket();
         recordTimerEvent(event, false, shouldCountClientTickEndForTimer());
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         recordTimerEvent(event, true, false);
     }
 
-    @CultPacketHandler
-    public void onContainerSlotStateChanged(PacketReceiveEvent event, CultPlayer player, ServerboundContainerSlotStateChangedPacket packet) {
+    @CultPacketHandler("serverbound.container_slot_state_changed")
+    public void onContainerSlotStateChanged(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         recordTimerEvent(event, true, false);
     }
 

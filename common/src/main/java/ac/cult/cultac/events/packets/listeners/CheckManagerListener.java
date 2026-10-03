@@ -1,5 +1,46 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.PacketType;
+
+import ac.cult.cultac.utils.inventory.InventoryClick;
+import ac.cult.cultac.network.packet.InventoryPackets.CreativeSlot;
+import ac.cult.cultac.network.packet.InventoryPackets.Slot;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectBundleItem;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectTrade;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundRenameItem;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundEditBook;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCommandSuggestion;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundTeleportToEntity;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChat;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommandSigned;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundKeepAlive;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsVehicle;
 import ac.cult.cultac.checks.impl.movement.GhostBlockMitigator;
@@ -8,13 +49,11 @@ import ac.cult.cultac.checks.impl.movement.timer.VehicleTimer;
 import ac.cult.cultac.checks.impl.scaffolding.AirLiquidPlace;
 import ac.cult.cultac.events.packets.blockplace.PlaceHandler;
 import ac.cult.cultac.manager.player.CheckManager;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
-import ac.cult.cultac.network.PacketRegistrar;
-import ac.cult.cultac.network.PacketHandlerScanner;
+import ac.cult.cultac.network.PacketRouteBuilder;
 import ac.cult.cultac.network.PacketReceiveHandler;
 import ac.cult.cultac.network.PacketSendHandler;
+import ac.cult.cultac.protocol.PacketDirection;
 import ac.cult.cultac.network.event.PacketListenerPriority;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
@@ -38,18 +77,15 @@ import ac.cult.cultac.utils.nmsutil.TraverseBlocks;
 import ac.cult.cultac.utils.latency.BlockPredictionAckSender;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
-import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.common.ServerboundResourcePackPacket;
-import net.minecraft.network.protocol.cookie.ServerboundCookieResponsePacket;
-import net.minecraft.network.protocol.ping.ServerboundPingRequestPacket;
-import net.minecraft.network.protocol.game.*;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientInformation;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
+import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundAcceptTeleportation;
 import org.bukkit.inventory.ItemStack;
 import net.minecraft.world.InteractionHand;
 import org.bukkit.block.BlockFace;
@@ -58,437 +94,247 @@ import org.bukkit.Material;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
-import net.minecraft.network.ConnectionProtocol;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.protocol.ConnectionPhase;
 
 import java.util.List;
+import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.packet.ServerboundPackets;
 
 // TODO: All this stupid one line listeners don't belong here
 //  does anything belong here? This class likely should just be deleted.
-public class CheckManagerListener {
-    private static final PacketReceiveHandler<Packet<?>> EARLY_RECEIVE_FORWARDER =
+public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiveListener {
+
+    private static final List<PacketType<Opaque>> OPAQUE_INTERVENING = List.of(
+            ServerboundPackets.CHUNK_BATCH_RECEIVED, ServerboundPackets.COOKIE_RESPONSE, ServerboundPackets.PING_REQUEST, ServerboundPackets.RESOURCE_PACK, ServerboundPackets.PLACE_RECIPE, ServerboundPackets.SET_BEACON, ServerboundPackets.PICK_ITEM_FROM_BLOCK, ServerboundPackets.PICK_ITEM_FROM_ENTITY, ServerboundPackets.SIGN_UPDATE);
+    private static final List<PacketType<Opaque>> OPAQUE_GENERIC = List.of(
+            ServerboundPackets.CONTAINER_SLOT_STATE_CHANGED, ServerboundPackets.BLOCK_ENTITY_TAG_QUERY, ServerboundPackets.CHANGE_DIFFICULTY, ServerboundPackets.CHANGE_GAME_MODE, ServerboundPackets.CHAT_ACK, ServerboundPackets.CHAT_SESSION_UPDATE, ServerboundPackets.DEBUG_SAMPLE_SUBSCRIPTION, ServerboundPackets.DEBUG_SUBSCRIPTION_REQUEST, ServerboundPackets.ENTITY_TAG_QUERY, ServerboundPackets.JIGSAW_GENERATE, ServerboundPackets.LOCK_DIFFICULTY, ServerboundPackets.RECIPE_BOOK_CHANGE_SETTINGS, ServerboundPackets.RECIPE_BOOK_SEEN_RECIPE, ServerboundPackets.SEEN_ADVANCEMENTS, ServerboundPackets.SET_GAME_RULE, ServerboundPackets.SET_JIGSAW_BLOCK, ServerboundPackets.SET_TEST_BLOCK, ServerboundPackets.TEST_INSTANCE_BLOCK_ACTION, ServerboundPackets.SET_COMMAND_BLOCK, ServerboundPackets.SET_COMMAND_MINECART, ServerboundPackets.SET_STRUCTURE_BLOCK, ServerboundPackets.CONTAINER_BUTTON_CLICK, ServerboundPackets.PICK_ITEM, ServerboundPackets.CONTAINER_CLOSE, ServerboundPackets.CONFIGURATION_ACKNOWLEDGED, ServerboundPackets.CUSTOM_CLICK_ACTION);
+    private static final List<PacketType<Opaque>> OPAQUE_CLIENTTICKEND = List.of(
+            ServerboundPackets.CLIENT_TICK_END);
+    private static final List<PacketType<Opaque>> OPAQUE_PLAYERLOADED = List.of(
+            ServerboundPackets.PLAYER_LOADED);
+    private static final List<PacketType<Opaque>> OPAQUE_RECEIVE_TYPES = java.util.stream.Stream.of(
+            OPAQUE_INTERVENING, OPAQUE_GENERIC, OPAQUE_CLIENTTICKEND, OPAQUE_PLAYERLOADED)
+            .flatMap(List::stream).distinct().toList();
+
+    @Override
+    public void registerOpaqueReceivePackets(PacketRouteBuilder registrar, PacketListenerPriority priority) {
+        registrar.receiveOpaque(OPAQUE_INTERVENING, priority, (event, player, packet) -> processInterveningReceive(event, player));
+        registrar.receiveOpaque(OPAQUE_GENERIC, priority, (event, player, packet) -> processGenericReceive(event, player));
+        registrar.receiveOpaque(OPAQUE_CLIENTTICKEND, priority, (event, player, packet) -> processClientTickEndReceive(event, player));
+        registrar.receiveOpaque(OPAQUE_PLAYERLOADED, priority, (event, player, packet) -> processPlayerLoadedReceive(event, player));
+    }
+    private static final PacketReceiveHandler<Object> EARLY_RECEIVE_FORWARDER =
             new CheckManagerEarlyReceiveForwarder();
-    private static final PacketSendHandler<Packet<?>> SEND_FORWARDER = new CheckManagerSendForwarder();
+    private static final PacketSendHandler<Object> SEND_FORWARDER = new CheckManagerSendForwarder();
 
-    public static List<Class<? extends Packet<?>>> receiveDispatchPacketTypes() {
-        return PacketHandlerScanner.receivePacketTypes(CheckManagerListener.class);
+    public static List<ac.cult.cultac.protocol.PacketType<?>> receiveDispatchPacketTypes(ac.cult.cultac.network.PacketHandlerScanner records) {
+        var types = new java.util.ArrayList<PacketType<?>>(records.packetTypes(CheckManagerListener.class, PacketDirection.SERVERBOUND));
+        for (var type : OPAQUE_RECEIVE_TYPES) if (records.runtime().supports(type)) types.add(type);
+        return List.copyOf(types);
     }
 
-    public void registerForwardingEarlyReceivePackets(PacketRegistrar registrar, PacketListenerPriority priority) {
-        for (Class<? extends Packet<?>> packetType : receiveDispatchPacketTypes()) {
-            registerForwardingEarlyReceivePacket(registrar, priority, packetType);
+    public void registerForwardingEarlyReceivePackets(PacketRouteBuilder registrar, PacketListenerPriority priority) {
+        for (var route : receiveDispatchPacketTypes(registrar.scanner())) {
+            registrar.earlyReceiveRoute(route, priority, EARLY_RECEIVE_FORWARDER);
         }
     }
 
-    private <T extends Packet<?>> void registerForwardingEarlyReceivePacket(
-            PacketRegistrar registrar,
-            PacketListenerPriority priority,
-            Class<T> packetType
-    ) {
-        registrar.earlyReceive(packetType, priority, EARLY_RECEIVE_FORWARDER);
-    }
-
-    public void registerForwardingSendPackets(PacketRegistrar registrar, PacketListenerPriority priority) {
-        for (Class<? extends Packet<?>> packetType : CheckManager.sendDispatchPacketTypes()) {
-            registerForwardingSendPacket(registrar, priority, packetType);
+    public void registerForwardingSendPackets(PacketRouteBuilder registrar, PacketListenerPriority priority) {
+        for (var route : CheckManager.sendDispatchPacketTypes(registrar)) {
+            registrar.sendRoute(route, priority, SEND_FORWARDER);
         }
-    }
-
-    private <T extends Packet<?>> void registerForwardingSendPacket(
-            PacketRegistrar registrar,
-            PacketListenerPriority priority,
-            Class<T> packetType
-    ) {
-        registrar.send(packetType, priority, SEND_FORWARDER);
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         processMovePlayerReceive(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onAcceptTeleportation(PacketReceiveEvent event, CultPlayer player, ServerboundAcceptTeleportationPacket packet) {
+    public void onAcceptTeleportation(PacketReceiveEvent<ServerboundAcceptTeleportation> event, CultPlayer player, ServerboundAcceptTeleportation packet) {
         if (player.isBedrockMovement()) return;
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         // The teleport ID acknowledgement interrupts a Rot -> MoveVehicle pair.
         player.packetStateData.clearPendingVehicleMoveAfterPassengerRotation();
         player.checkManager.dispatchDecodedReceiveObservers(event);
-        player.checkManager.dispatchOrderedReceive(event);
+        player.checkManager.dispatchNonAsyncReceive(event);
     }
 
     @CultPacketHandler
-    public void onChunkBatchReceived(PacketReceiveEvent event, CultPlayer player, ServerboundChunkBatchReceivedPacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onCookieResponse(PacketReceiveEvent event, CultPlayer player, ServerboundCookieResponsePacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onPingRequest(PacketReceiveEvent event, CultPlayer player, ServerboundPingRequestPacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onResourcePack(PacketReceiveEvent event, CultPlayer player, ServerboundResourcePackPacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onContainerSlotStateChanged(PacketReceiveEvent event, CultPlayer player, ServerboundContainerSlotStateChangedPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onMoveVehicle(PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehiclePacket packet) {
+    public void onMoveVehicle(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         processMoveVehicleReceive(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerInputPacket packet) {
+    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent event, CultPlayer player, ServerboundPaddleBoatPacket packet) {
+    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onSetCreativeModeSlot(PacketReceiveEvent event, CultPlayer player, ServerboundSetCreativeModeSlotPacket packet) {
+    public void onSetCreativeModeSlot(PacketReceiveEvent<CreativeSlot> event, CultPlayer player, CreativeSlot packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onClientInformation(PacketReceiveEvent event, CultPlayer player, ServerboundClientInformationPacket packet) {
+    public void onClientInformation(PacketReceiveEvent<ServerboundClientInformation> event, CultPlayer player, ServerboundClientInformation packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
+    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         processUseItemOnReceive(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         processPlayerActionReceive(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         processUseItemReceive(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onCommandSuggestion(PacketReceiveEvent event, CultPlayer player, ServerboundCommandSuggestionPacket packet) {
+    public void onCommandSuggestion(PacketReceiveEvent<ServerboundCommandSuggestion> event, CultPlayer player, ServerboundCommandSuggestion packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onChat(PacketReceiveEvent event, CultPlayer player, ServerboundChatPacket packet) {
+    public void onChat(PacketReceiveEvent<ServerboundChat> event, CultPlayer player, ServerboundChat packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onChatCommand(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandPacket packet) {
+    public void onChatCommand(PacketReceiveEvent<ServerboundChatCommand> event, CultPlayer player, ServerboundChatCommand packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onChatCommandSigned(PacketReceiveEvent event, CultPlayer player, ServerboundChatCommandSignedPacket packet) {
+    public void onChatCommandSigned(PacketReceiveEvent<ServerboundChatCommandSigned> event, CultPlayer player, ServerboundChatCommandSigned packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onEditBook(PacketReceiveEvent event, CultPlayer player, ServerboundEditBookPacket packet) {
+    public void onEditBook(PacketReceiveEvent<ServerboundEditBook> event, CultPlayer player, ServerboundEditBook packet) {
         processGenericReceive(event, player);
     }
 
     // Teleport acknowledgements are handled separately and must not clear the mounted-teleport latch.
-    @CultPacketHandler
-    public void onBlockEntityTagQuery(PacketReceiveEvent event, CultPlayer player, ServerboundBlockEntityTagQueryPacket packet) {
-        processGenericReceive(event, player);
-    }
+
+
+
+
 
     @CultPacketHandler
-    public void onChangeDifficulty(PacketReceiveEvent event, CultPlayer player, ServerboundChangeDifficultyPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundChangeGameModePacket")
-    public void onChangeGameMode(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onChatAck(PacketReceiveEvent event, CultPlayer player, ServerboundChatAckPacket packet) {
+    public void onRenameItem(PacketReceiveEvent<ServerboundRenameItem> event, CultPlayer player, ServerboundRenameItem packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onChatSessionUpdate(PacketReceiveEvent event, CultPlayer player, ServerboundChatSessionUpdatePacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onConfigurationAcknowledged(PacketReceiveEvent event, CultPlayer player, ServerboundConfigurationAcknowledgedPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket")
-    public void onCustomClickAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundDebugSampleSubscriptionPacket")
-    public void onDebugSampleSubscription(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundDebugSubscriptionRequestPacket")
-    public void onDebugSubscriptionRequest(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onEntityTagQuery(PacketReceiveEvent event, CultPlayer player, ServerboundEntityTagQueryPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onJigsawGenerate(PacketReceiveEvent event, CultPlayer player, ServerboundJigsawGeneratePacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onLockDifficulty(PacketReceiveEvent event, CultPlayer player, ServerboundLockDifficultyPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onRecipeBookChangeSettings(PacketReceiveEvent event, CultPlayer player, ServerboundRecipeBookChangeSettingsPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onRecipeBookSeenRecipe(PacketReceiveEvent event, CultPlayer player, ServerboundRecipeBookSeenRecipePacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSeenAdvancements(PacketReceiveEvent event, CultPlayer player, ServerboundSeenAdvancementsPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSetGameRulePacket")
-    public void onSetGameRule(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSetJigsawBlock(PacketReceiveEvent event, CultPlayer player, ServerboundSetJigsawBlockPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSetTestBlockPacket")
-    public void onSetTestBlock(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundTestInstanceBlockActionPacket")
-    public void onTestInstanceBlockAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onRenameItem(PacketReceiveEvent event, CultPlayer player, ServerboundRenameItemPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onCustomPayload(PacketReceiveEvent event, CultPlayer player, ServerboundCustomPayloadPacket packet) {
+    public void onCustomPayload(PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
         if (event.isCancelled()) return;
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onSetCommandBlock(PacketReceiveEvent event, CultPlayer player, ServerboundSetCommandBlockPacket packet) {
+    public void onSelectTrade(PacketReceiveEvent<ServerboundSelectTrade> event, CultPlayer player, ServerboundSelectTrade packet) {
         processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSetCommandMinecart(PacketReceiveEvent event, CultPlayer player, ServerboundSetCommandMinecartPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSetStructureBlock(PacketReceiveEvent event, CultPlayer player, ServerboundSetStructureBlockPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onPlaceRecipe(PacketReceiveEvent event, CultPlayer player, ServerboundPlaceRecipePacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onContainerButtonClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerButtonClickPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSelectTrade(PacketReceiveEvent event, CultPlayer player, ServerboundSelectTradePacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSetBeacon(PacketReceiveEvent event, CultPlayer player, ServerboundSetBeaconPacket packet) {
-        processInterveningReceive(event, player);
     }
 
     // Before 1.21.4, vanilla picks an inventory slot through this packet.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPickItemPacket")
-    public void onPickItem(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        // Unlike the newer block/entity pick packets, legacy PickItem has normal
-        // receive handlers in PacketOrderProcessor and PacketOrderF.
-        processGenericReceive(event, player);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket")
-    public void onPickItemFromBlock(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPickItemFromEntityPacket")
-    public void onPickItemFromEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSelectBundleItemPacket")
-    public void onSelectBundleItem(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSelectBundleItem(PacketReceiveEvent<ServerboundSelectBundleItem> event, CultPlayer player, ServerboundSelectBundleItem packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         processNonMovementReceiveAfterPlayGate(event, player);
     }
 
     @CultPacketHandler
-    public void onContainerClose(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClosePacket packet) {
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    public void onPlayerAbilities(PacketReceiveEvent<ServerboundPlayerAbilities> event, CultPlayer player, ServerboundPlayerAbilities packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
-        processClientTickEndReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onSignUpdate(PacketReceiveEvent event, CultPlayer player, ServerboundSignUpdatePacket packet) {
-        processInterveningReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onPlayerAbilities(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerAbilitiesPacket packet) {
+    public void onKeepAlive(PacketReceiveEvent<ServerboundKeepAlive> event, CultPlayer player, ServerboundKeepAlive packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onKeepAlive(PacketReceiveEvent event, CultPlayer player, ServerboundKeepAlivePacket packet) {
+    public void onTeleportToEntity(PacketReceiveEvent<ServerboundTeleportToEntity> event, CultPlayer player, ServerboundTeleportToEntity packet) {
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onTeleportToEntity(PacketReceiveEvent event, CultPlayer player, ServerboundTeleportToEntityPacket packet) {
-        processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         // PacketEntityAction runs immediately before this listener. Its rejected
         // glide starts used to terminate at the pre-Via boundary, so they must
         // not enter the ordinary check route. Keep every other ordinary-phase
         // cancellation on the existing same-phase semantics.
         if (event.isCancelled()
-                && packet.getAction() == ServerboundPlayerCommandPacket.Action.START_FALL_FLYING) {
+                && packet.action() == PlayerCommandAction.START_FLYING_WITH_ELYTRA) {
             return;
         }
         processGenericReceive(event, player);
     }
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent event, CultPlayer player, ServerboundClientCommandPacket packet) {
+    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         processGenericReceive(event, player);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPunchPacket")
-    public void onPunch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSwing(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSwingPacket")
-    public void onSwing(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         processGenericReceive(event, player);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket")
-    public void onPlayerLoaded(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        processPlayerLoadedReceive(event, player);
     }
 
     private void processPlayerLoadedReceive(PacketReceiveEvent event, CultPlayer player) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         // TODO: This packet is skipped if the client ticks more than 60 times without loading in
         player.packetStateData.playerLoadedIntoLevel = true;
         processNonMovementReceiveAfterPlayGate(event, player);
     }
 
     private void processGenericReceive(PacketReceiveEvent event, CultPlayer player) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         processNonMovementReceiveAfterPlayGate(event, player);
     }
 
-    private void processInterveningReceive(PacketReceiveEvent event, CultPlayer player) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    public void processInterveningReceive(PacketReceiveEvent event, CultPlayer player) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         clearPendingVehicleMoveForInterveningPacket(player);
         player.checkManager.dispatchDecodedReceiveObservers(event);
-        player.checkManager.dispatchOrderedReceive(event);
+        player.checkManager.dispatchNonAsyncReceive(event);
     }
 
     private void processNonMovementReceiveAfterPlayGate(PacketReceiveEvent event, CultPlayer player) {
@@ -498,17 +344,16 @@ public class CheckManagerListener {
         clearTransientPacketState(player);
     }
 
-    private void processMovePlayerReceive(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    private void processMovePlayerReceive(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         if (player.isBedrockMovement() && player.packetStateData.bedrockServerResponse) {
             if (packet.hasPosition()) player.getSetbackTeleportUtil().setBedrockPaperVisiblePosition(
-                    new Vec3(packet.getX(player.x), packet.getY(player.y), packet.getZ(player.z)));
+                    new Vec3(packet.xOr(player.x), packet.yOr(player.y), packet.zOr(player.z)));
             return;
         }
 
-
         if (player.isBedrockMovement()
-                && packet instanceof ServerboundMovePlayerPacket.Rot
+                && packet.rotationOnly()
                 && player.compensatedEntities.vehicles.hasPlayerPassengerState()) {
             // Geyser sends vehicle movement before rider rotation. Expire an
             // unused decision here if it omitted the vehicle move.
@@ -520,14 +365,14 @@ public class CheckManagerListener {
         }
 
         Vec3 position = VectorUtils.clampVector(new Vec3(
-                packet.getX(player.x),
-                packet.getY(player.y),
-                packet.getZ(player.z)
+                packet.xOr(player.x),
+                packet.yOr(player.y),
+                packet.zOr(player.z)
         ));
 
         if (player.isBedrockMovement()
                 && player.compensatedEntities.vehicles.hasPlayerPassengerState()
-                && !(packet instanceof ServerboundMovePlayerPacket.Rot)) {
+                && !(packet.rotationOnly())) {
             // Mounted Bedrock movement may only project rotation here.
             event.setCancelled(true);
             player.getSetbackTeleportUtil().executeForceResync("bedrock mounted player movement");
@@ -540,9 +385,10 @@ public class CheckManagerListener {
             player.checkManager.getListener(SetbackBlocker.class)
                     .onTranslatedBedrockMove(event, packet);
             dispatchReceiveHandlers(event, player);
-            if (!event.isCancelled() && event.getNmsPacket() instanceof ServerboundMovePlayerPacket projected && projected.hasPosition()) {
+            if (!event.isCancelled() && event.getPacket().hasPosition()) {
+                var projected = event.getPacket();
                 player.getSetbackTeleportUtil().setBedrockPaperVisiblePosition(new Vec3(
-                        projected.getX(player.x), projected.getY(player.y), projected.getZ(player.z)));
+                        projected.xOr(player.x), projected.yOr(player.y), projected.zOr(player.z)));
             }
             clearTransientPacketState(player);
             return;
@@ -559,10 +405,10 @@ public class CheckManagerListener {
                     || player.getSetbackTeleportUtil().hasIdlessJavaPositionTeleport()
                     ? player.getSetbackTeleportUtil().checkTeleportQueue(movementPosition.x, movementPosition.y, movementPosition.z)
                     : new TeleportAcceptData();
-        } else if (packet instanceof ServerboundMovePlayerPacket.Rot) {
+        } else if (packet.rotationOnly()) {
             teleportData = player.getSetbackTeleportUtil().checkRotationTeleportQueue(
-                    packet.getYRot(player.xRot),
-                    packet.getXRot(player.yRot)
+                    packet.yawOr(player.xRot),
+                    packet.pitchOr(player.yRot)
             );
         } else {
             teleportData = new TeleportAcceptData();
@@ -574,8 +420,7 @@ public class CheckManagerListener {
             // server movement packet. Forward the accepted target, never the
             // client's near-match coordinates, including for relative teleports.
             movementPosition = teleportData.getTeleportData().getLocation();
-            event.setNmsPacket(NmsPacketUtil.positionedPacket(packet, movementPosition, player, false));
-            event.markForReEncode(true);
+            event.replace(packet.withPosition(movementPosition.x, movementPosition.y, movementPosition.z, false));
         }
 
         boolean mountedTeleportPosRot = packet.hasPosition() && teleportData.isTeleport()
@@ -589,7 +434,7 @@ public class CheckManagerListener {
                 packet.hasRotation(),
                 player.compensatedEntities.getSelf().inVehicle(),
                 player.packetStateData.packetPlayerOnGround,
-                packet.isOnGround(),
+                packet.onGround(),
                 player.packetStateData.clientSidePosition,
                 movementPosition,
                 player.getMovementThreshold()
@@ -601,7 +446,7 @@ public class CheckManagerListener {
         }
 
         // LocalPlayer#tick emits Rot, never StatusOnly, while mounted.
-        boolean passengerRotationTickPacket = packet instanceof ServerboundMovePlayerPacket.Rot
+        boolean passengerRotationTickPacket = packet.rotationOnly()
                 && (player.compensatedEntities.getSelf().inVehicle()
                 || player.compensatedEntities.vehicles.canCurrentPlayerControlServerVehicleForClientTickMovement()
                 || player.compensatedEntities.vehicles.hasPlayerPassengerState()
@@ -632,7 +477,7 @@ public class CheckManagerListener {
         }
 
         if (mountedTeleportPosRot) {
-            applyTeleportResponse(player, teleportData, packet.getYRot(player.xRot), packet.getXRot(player.yRot));
+            applyTeleportResponse(player, teleportData, packet.yawOr(player.xRot), packet.pitchOr(player.yRot));
             dispatchReceiveHandlers(event, player);
             clearTransientPacketState(player);
             return;
@@ -644,11 +489,11 @@ public class CheckManagerListener {
                     movementPosition.x,
                     movementPosition.y,
                     movementPosition.z,
-                    packet.getYRot(player.yRot),
-                    packet.getXRot(player.xRot),
+                    packet.yawOr(player.yRot),
+                    packet.pitchOr(player.xRot),
                     packet.hasPosition(),
                     packet.hasRotation(),
-                    packet.isOnGround(),
+                    packet.onGround(),
                     teleportData
             );
         }
@@ -684,12 +529,13 @@ public class CheckManagerListener {
                 && !player.compensatedEntities.vehicles.hasPlayerPassengerState();
     }
 
-    private void processMoveVehicleReceive(PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehiclePacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    private void processMoveVehicleReceive(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         if (player.isBedrockMovement() && player.packetStateData.bedrockServerResponse) return;
 
-        NmsPacketUtil.MoveVehicleData vehiclePacket = NmsPacketUtil.readMoveVehicle(packet);
-        Vec3 newPos = VectorUtils.clampVector(vehiclePacket.position());
+        ServerboundMoveVehicle vehiclePacket = packet;
+        Vec3d position = vehiclePacket.position();
+        Vec3 newPos = VectorUtils.clampVector(new Vec3(position.x(), position.y(), position.z()));
         if (player.isBedrockMovement()) {
             var controlledVehicle = BedrockVehicleControl.controlledVehicle(player);
             Integer serverVehicle = player.compensatedEntities.vehicles.serverPlayerVehicle;
@@ -914,7 +760,7 @@ public class CheckManagerListener {
             CultPlayer player,
             PacketEntity packetRoot,
             Vec3 position,
-            NmsPacketUtil.MoveVehicleData vehiclePacket,
+            ServerboundMoveVehicle vehiclePacket,
             TeleportAcceptData teleportData
     ) {
         VehicleTeleportData vehicleTeleportData = teleportData.getVehicleTeleportData();
@@ -988,33 +834,33 @@ public class CheckManagerListener {
                 && player.compensatedEntities.vehicles.canClientAuthoritativelyMoveVisibleRoot(root);
     }
 
-    private void processPlayerActionReceive(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
-        Action action = packet.getAction();
-        if (action == Action.START_DESTROY_BLOCK || action == Action.STOP_DESTROY_BLOCK) {
+    private void processPlayerActionReceive(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
+        PlayerAction action = packet.action();
+        if (action == PlayerAction.START_DESTROY_BLOCK || action == PlayerAction.STOP_DESTROY_BLOCK) {
             player.compensatedWorld.advanceClientPredictionSequence();
         }
         clearPendingVehicleMoveForInterveningPacket(player);
         dispatchPrePredictionReceive(event, player);
 
-        BlockPos blockPosition = packet.getPos();
+        BlockPos blockPosition = SpigotConversionUtil.toNmsBlockPos(packet.position());
         BlockData block = player.compensatedWorld.getBlockDataAt(blockPosition);
 
         if (player.debugBreaks && isBlockBreakAction(action)) {
             player.sendMessage("Break: action=" + action + " state=" + block.getAsString(false) + " at " + blockPosition);
         }
 
-        if (action == Action.STOP_DESTROY_BLOCK) {
+        if (action == PlayerAction.STOP_DESTROY_BLOCK) {
             // Not unbreakable
             if (NmsBlockTags.toNmsState(block).getDestroySpeed(player.compensatedWorld, blockPosition) != -1.0f) {
                 player.compensatedWorld.startPredicting();
                 applyClientBreakPrediction(player, blockPosition);
                 player.checkManager.getCheck(AirLiquidPlace.class).handleBlockBreak(blockPosition.immutable());
-                player.compensatedWorld.stopPredicting(packet);
+                player.compensatedWorld.stopPredicting(packet.sequence());
             }
         }
 
-        if (action == Action.START_DESTROY_BLOCK) {
+        if (action == PlayerAction.START_DESTROY_BLOCK) {
             double damage = BlockBreakSpeed.getBlockDamage(player, blockPosition);
 
             //Instant breaking, no damage means it is unbreakable by creative players (with swords)
@@ -1022,7 +868,7 @@ public class CheckManagerListener {
                 player.compensatedWorld.startPredicting();
                 player.checkManager.getListener(AirLiquidPlace.class).handleBlockBreak(blockPosition.immutable());
                 applyClientBreakPrediction(player, blockPosition);
-                player.compensatedWorld.stopPredicting(packet);
+                player.compensatedWorld.stopPredicting(packet.sequence());
             } else if (player.debugBreaks) {
                 player.sendMessage("Break start has no immediate world change: damage=" + damage);
             }
@@ -1032,22 +878,22 @@ public class CheckManagerListener {
         clearTransientPacketState(player);
     }
 
-    private void processUseItemOnReceive(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    private void processUseItemOnReceive(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         player.compensatedWorld.advanceClientPredictionSequence();
         clearPendingVehicleMoveForInterveningPacket(player);
         dispatchPrePredictionReceive(event, player);
 
-        NmsPacketUtil.UseItemOnData use = NmsPacketUtil.readUseItemOn(packet);
-        BlockPos clickedBlock = use.blockPosition();
-        Vec3 cursor = use.cursor();
-        BlockFace blockFace = use.blockFace();
+        BlockPos clickedBlock = SpigotConversionUtil.toNmsBlockPos(packet.blockPosition());
+        Vec3 cursor = SpigotConversionUtil.toNmsVec(packet.cursor());
+        BlockFace blockFace = SpigotConversionUtil.toBukkitFace(packet.blockFace());
+        InteractionHand hand = SpigotConversionUtil.toNmsHand(packet.hand());
         player.lastBlockPlaceUseItem = System.currentTimeMillis();
 
-        ItemStack placedWith = player.getInventory().getHandItem(use.hand());
+        ItemStack placedWith = player.getInventory().getHandItem(hand);
 
-        BlockPlace blockPlace = new BlockPlace(player, use.hand(), clickedBlock, blockFace, placedWith,
-                TraverseBlocks.getNearestHitResult(player, null, true), use.sequence());
+        BlockPlace blockPlace = new BlockPlace(player, hand, clickedBlock, blockFace, placedWith,
+                TraverseBlocks.getNearestHitResult(player, null, true), packet.sequence());
         blockPlace.setCursor(cursor);
 
         // Deny fun stuff like teleport bridging
@@ -1083,17 +929,17 @@ public class CheckManagerListener {
                 player.onPacketCancel();
             }
 
-            BlockPredictionAckSender.sendAck(player, use.sequence());
+            BlockPredictionAckSender.sendAck(player, packet.sequence());
 
             // Stop inventory desync from cancelling place
             if (player.bukkitPlayer != null) {
                 // TODO: Is this unsafe enough to have to run on the main thread?
-                if (use.hand() == InteractionHand.MAIN_HAND) {
+                if (hand == InteractionHand.MAIN_HAND) {
                     ItemStack mainHand = ItemUtil.copy(player.bukkitPlayer.getInventory().getItemInHand());
-                    player.user.sendPacket(new ClientboundContainerSetSlotPacket(0, player.getInventory().stateID, 36 + player.packetStateData.lastSlotSelected, SpigotConversionUtil.toNmsItemStack(mainHand)));
+                    player.user.write(new Slot(0, player.getInventory().stateID, 36 + player.packetStateData.lastSlotSelected, mainHand));
                 } else {
                     ItemStack offHand = ItemUtil.copy(player.bukkitPlayer.getInventory().getItemInOffHand());
-                    player.user.sendPacket(new ClientboundContainerSetSlotPacket(0, player.getInventory().stateID, 45, SpigotConversionUtil.toNmsItemStack(offHand)));
+                    player.user.write(new Slot(0, player.getInventory().stateID, 45, offHand));
                 }
             }
 
@@ -1105,8 +951,8 @@ public class CheckManagerListener {
         clearTransientPacketState(player);
     }
 
-    private void processUseItemReceive(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    private void processUseItemReceive(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         player.compensatedWorld.advanceClientPredictionSequence();
         clearPendingVehicleMoveForInterveningPacket(player);
         dispatchPrePredictionReceive(event, player);
@@ -1118,8 +964,8 @@ public class CheckManagerListener {
         clearTransientPacketState(player);
     }
 
-    private void processClientTickEndReceive(PacketReceiveEvent event, CultPlayer player) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) return;
+    public void processClientTickEndReceive(PacketReceiveEvent event, CultPlayer player) {
+        if (event.getPhase() != ConnectionPhase.PLAY) return;
         dispatchPrePredictionReceive(event, player);
         dispatchReceiveHandlers(event, player);
 
@@ -1313,32 +1159,32 @@ public class CheckManagerListener {
         NmsBlockBreakResolver.applyBlockBreak(player, blockPosition);
     }
 
-    private static boolean isBlockBreakAction(Action action) {
-        return action == Action.START_DESTROY_BLOCK
-                || action == Action.STOP_DESTROY_BLOCK
-                || action == Action.ABORT_DESTROY_BLOCK;
+    private static boolean isBlockBreakAction(PlayerAction action) {
+        return action == PlayerAction.START_DESTROY_BLOCK
+                || action == PlayerAction.STOP_DESTROY_BLOCK
+                || action == PlayerAction.ABORT_DESTROY_BLOCK;
     }
 
-    private static void dispatchPlaySend(PacketSendEvent event, CultPlayer player) {
-        if (event.getConnectionState() != ConnectionProtocol.PLAY) {
+    private static void dispatchPlaySend(PacketSendEvent<?> event, CultPlayer player) {
+        if (event.getPhase() != ConnectionPhase.PLAY) {
             return;
         }
 
         player.checkManager.dispatchSendHandlers(event);
     }
 
-    private static final class CheckManagerEarlyReceiveForwarder implements PacketReceiveHandler<Packet<?>> {
+    private static final class CheckManagerEarlyReceiveForwarder implements PacketReceiveHandler<Object> {
         @Override
-        public void handle(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-            if (event.getConnectionState() == ConnectionProtocol.PLAY) {
+        public void handle(PacketReceiveEvent event, CultPlayer player, Object packet) {
+            if (event.getPhase() == ConnectionPhase.PLAY) {
                 player.checkManager.dispatchEarlyReceive(event);
             }
         }
     }
 
-    private static final class CheckManagerSendForwarder implements PacketSendHandler<Packet<?>> {
+    private static final class CheckManagerSendForwarder implements PacketSendHandler<Object> {
         @Override
-        public void handle(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
+        public void handle(PacketSendEvent<Object> event, CultPlayer player, Object packet) {
             dispatchPlaySend(event, player);
         }
     }

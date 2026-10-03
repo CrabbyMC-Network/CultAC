@@ -1,5 +1,6 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -7,7 +8,7 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 
 @CheckData(name = "BadPacketsF", stableKey = "cult.badpackets.duplicate_sprint", description = "Sent duplicate sprinting status")
 public class BadPacketsF extends Check implements CheckListener {
@@ -21,8 +22,8 @@ public class BadPacketsF extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
-        if (packet.getAction() == ServerboundPlayerCommandPacket.Action.START_SPRINTING) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+        if (packet.action() == PlayerCommandAction.START_SPRINTING) {
             if (lastSprinting) {
                 if (exemptNext) {
                     exemptNext = false;
@@ -36,7 +37,7 @@ public class BadPacketsF extends Check implements CheckListener {
             }
 
             lastSprinting = true;
-        } else if (packet.getAction() == ServerboundPlayerCommandPacket.Action.STOP_SPRINTING) {
+        } else if (packet.action() == PlayerCommandAction.STOP_SPRINTING) {
             if (!lastSprinting) {
                 if (exemptNext) {
                     exemptNext = false;

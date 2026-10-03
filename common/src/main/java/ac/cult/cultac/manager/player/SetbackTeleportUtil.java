@@ -1,5 +1,6 @@
 package ac.cult.cultac.manager.player;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
@@ -32,8 +33,6 @@ import ac.cult.cultac.checks.impl.badpackets.BadPacketsB;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.UncertaintyHelper;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.events.packets.patch.ResyncWorldUtil;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
-import ac.cult.cultac.network.packet.ServerSetbackPosition;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
@@ -52,10 +51,13 @@ import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import net.minecraft.world.phys.Vec3;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerPosition;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundTeleportEntity;
+import ac.cult.cultac.protocol.value.Relative;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundEntityMotion;
+import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.network.CultWrite;
 import org.bukkit.GameMode;
 
 import java.util.Collections;
@@ -67,6 +69,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.TimeUnit;
 
 public class SetbackTeleportUtil extends CultProcessor implements PostPredictionListener {
+    private ServerboundMovePlayer pendingServerMove;
+    public void setPendingServerMove(ServerboundMovePlayer move) { pendingServerMove = move; }
+    public ServerboundMovePlayer takePendingServerMove() {
+        var move = pendingServerMove; pendingServerMove = null; return move;
+    }
+
     private static final class Channels {
         private static final GrimTeleportEvent.Channel TELEPORT =
                 CultAPI.INSTANCE.getEventBus().get(GrimTeleportEvent.class);
@@ -510,15 +518,16 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
                                 player.xRot, player.yRot, data.isExpectedOnGround(), transaction, data.getProfileState());
                     }
                 } else {
-                    player.user.sendPacket(NmsPacketUtil.clientboundMoveVehiclePacket(position, player.xRot, player.yRot));
+                    player.user.write(new CultWrite(new ClientboundMoveVehicle(
+                            new Vec3d(position.x, position.y, position.z), player.xRot, player.yRot), false));
                 }
             } else {
                 bedrockVehicleSetback = null;
                 // Track the correction before sending; its outbound packet is silenced below.
                 if (!player.isBedrockMovement()) addSentTeleport(position, data.getTeleportData().getTransaction(), new RelativeFlag(0b11000), false, teleportId);
                 // Receive the player's position packet to make setbacks appear smooth for other players (and to stop vanilla ac setbacks)
-                player.user.receivePacketSilently(ServerSetbackPosition.wrap(NmsPacketUtil.positionPacket(
-                        position.x, position.y, position.z, data.isExpectedOnGround(), false)));
+                player.user.execute(() -> setPendingServerMove(new ServerboundMovePlayer(
+                        position.x, position.y, position.z, 0, 0, data.isExpectedOnGround(), false, true, false)));
                 if (player.isBedrockMovement()) {
                     requiredSetBack = data;
                     GeyserBedrockBridgeRuntime.sendPlayerTeleport(player.user, position, player.xRot, player.yRot,
@@ -541,10 +550,10 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
             final KnockbackHandler knockbackHandler = player.checkManager.getKnockbackHandler();
             if (!bedrockVehicle && data.getVelocity() != null && (dismounted || data.getVelocity().lengthSqr() > 0 || vehicleEntityId != Integer.MIN_VALUE)) {
                 knockbackHandler.setSetbackVal(true);
-                player.user.sendPacket(new ClientboundSetEntityMotionPacket(
+                player.user.write(new CultWrite(new ClientboundEntityMotion(
                         vehicleEntityId == Integer.MIN_VALUE ? player.entityID : vehicleEntityId,
-                        data.getVelocity()
-                ));
+                        new Vec3d(data.getVelocity().x, data.getVelocity().y, data.getVelocity().z)
+                ), false));
                 knockbackHandler.setSetbackVal(false);
             } else {
                 player.sendTransaction();
@@ -555,29 +564,19 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
     }
 
     private void sendPlayerSetbackPackets(int teleportId, Vec3 position, int relativeMask, boolean onGround) {
-        Packet<?> positionPacket = NmsPacketUtil.playerPositionPacket(
-                teleportId, position.x, position.y, position.z, 0.0F, 0.0F, relativeMask);
-        Packet<?> selfTeleport = null;
-        // Keep the mirror paired with the correction in a Java bundle.
-        // else the client begins to interpolate itself
-        // Geyser converts this packet to a regular teleport, which neither helps nor hurts us
-        if (!player.isBedrockMovement() && player.supportsBundles()) {
-            selfTeleport = NmsPacketUtil.modernEntityTeleportPacket(
-                    player.entityID, position.x, position.y, position.z, 0.0F, 0.0F, relativeMask, onGround);
-        }
-        if (selfTeleport == null) {
-            player.user.sendPacketSilently(positionPacket);
+        var point = new Vec3d(position.x, position.y, position.z);
+        var relatives = Relative.unpack(relativeMask);
+        var correction = new CultWrite(new ClientboundPlayerPosition(teleportId, point, Vec3d.ZERO, 0.0F, 0.0F, relatives), true);
+        if (player.isBedrockMovement() || !player.supportsBundles()) {
+            player.user.write(correction);
             return;
         }
 
         // ClientPacketListener#handleBundlePacket processes both packets before movement.
         // Apply the correction first so the mirror targets the corrected position.
-        @SuppressWarnings("unchecked")
-        ClientboundBundlePacket bundle = new ClientboundBundlePacket(List.of(
-                (Packet<? super ClientGamePacketListener>) positionPacket,
-                (Packet<? super ClientGamePacketListener>) selfTeleport));
-        // Only the correction was registered by addSentTeleport. The self packet must reach listeners.
-        player.user.sendPacketWithSilentPackets(bundle, List.of(positionPacket));
+        // Only the correction was registered by addSentTeleport; the mirror reaches listeners.
+        var mirror = new CultWrite(new ClientboundTeleportEntity(player.entityID, point, Vec3d.ZERO, 0.0F, 0.0F, relatives, onGround), false);
+        player.user.write(List.of(correction, mirror), true);
     }
 
     private int resolveSetbackVehicleId() {

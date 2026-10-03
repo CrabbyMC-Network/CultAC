@@ -5,11 +5,10 @@ import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.impl.exploit.ExploitC;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import lombok.Getter;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 import org.bukkit.entity.Player;
 
 import java.util.HashSet;
@@ -23,18 +22,18 @@ public class PluginChannelManager extends CultProcessor implements CheckListener
     private String brand = null;
 
     @CultPacketHandler
-    public void onCustomPayload(PacketReceiveEvent event, CultPlayer player, ServerboundCustomPayloadPacket packet) {
+    public void onCustomPayload(PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
         if (event.isCancelled()) {
             return;
         }
-        String channel = NmsPacketUtil.payloadChannel(NmsPacketUtil.payload(packet));
+        String channel = packet.channel();
         if (channel == null) {
             return;
         }
         if (!"minecraft:brand".equals(channel) && !"MC|Brand".equals(channel)) {
             handleChannelRegistered(channel);
         }
-        handle(channel, NmsPacketUtil.payloadData(event), event);
+        handle(channel, event.getPacket().data(), event);
     }
 
     public void handle(String channelName, byte[] payload, PacketReceiveEvent event) {

@@ -1,5 +1,6 @@
 package ac.cult.cultac.checks.impl.prediction.checks;
 
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
@@ -11,7 +12,7 @@ import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.nmsutil.IsUsingItem;
 import org.bukkit.GameMode;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import lombok.Setter;
 
 //@CheckData(name = "NoSlow", stableKey = "cult.movement.noslow")
@@ -75,8 +76,8 @@ public class NoSlow extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        if (packet.getAction() == ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM && !player.settingMetaData) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (packet.action() == PlayerAction.RELEASE_USE_ITEM && !player.settingMetaData) {
             shouldCheck = true;
         }
     }

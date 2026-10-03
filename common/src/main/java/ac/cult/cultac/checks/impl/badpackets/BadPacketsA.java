@@ -7,7 +7,7 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
 
 @CheckData(name = "BadPacketsA", stableKey = "cult.badpackets.duplicate_slot", description = "Sent duplicate slot id")
 public class BadPacketsA extends Check implements CheckListener {
@@ -20,8 +20,8 @@ public class BadPacketsA extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
-        final int slot = packet.getSlot();
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+        final int slot = packet.slot();
 
         if (slot == lastSlot && flag(V.write(verbose()).sint(slot)) && shouldModifyPackets()) {
             event.setCancelled(true);

@@ -7,7 +7,7 @@ import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCommandSuggestion;
 
 @CheckData(name = "CrashH", stableKey = "cult.crash.invalid_tab_complete", description = "Sent a tab complete request with invalid or excessive length")
 public class CrashH extends Check implements CheckListener {
@@ -18,8 +18,8 @@ public class CrashH extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCommandSuggestion(PacketReceiveEvent event, CultPlayer player, ServerboundCommandSuggestionPacket packet) {
-        String text = (String) ac.cult.cultac.network.packet.NmsPacketUtil.invokeNoArg(packet, "command", "getCommand");
+    public void onCommandSuggestion(PacketReceiveEvent<ServerboundCommandSuggestion> event, CultPlayer player, ServerboundCommandSuggestion packet) {
+        String text = packet.command();
         final int length = text.length();
         // general length limit
         if (length > (!player.canUseGameMasterBlocks() ? 256 : 32500)) {

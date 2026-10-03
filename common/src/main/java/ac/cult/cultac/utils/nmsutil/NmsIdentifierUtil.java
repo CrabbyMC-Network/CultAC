@@ -24,10 +24,6 @@ public final class NmsIdentifierUtil {
         return asString(invokeNoArg(resourceKey, "identifier", "location"));
     }
 
-    public static String cooldownGroup(Object packet) {
-        return asString(invokeNoArg(packet, "cooldownGroup"));
-    }
-
     public static String payloadId(Object payloadOrType) {
         return asString(invokeNoArg(payloadOrType, "id"));
     }
@@ -50,16 +46,23 @@ public final class NmsIdentifierUtil {
         }
     }
 
-    public static String attributeModifierId(Object modifier) {
-        return asString(invokeNoArg(modifier, "id"));
-    }
-
     public static <T> T registryValue(Registry<T> registry, String identifier) {
         return lookupRegistry(registry, identifier, "getValue");
     }
 
     public static <T> Optional<T> registryOptional(Registry<T> registry, String identifier) {
         return lookupRegistry(registry, identifier, "getOptional");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> ResourceKey<T> resourceKey(ResourceKey<? extends Registry<T>> registry, String identifier) {
+        try {
+            Class<?> keyType = Registry.class.getMethod("getKey", Object.class).getReturnType();
+            Object key = keyType.getMethod("parse", String.class).invoke(null, identifier);
+            return (ResourceKey<T>) ResourceKey.class.getMethod("create", ResourceKey.class, keyType).invoke(null, registry, key);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Resource key lookup failed for " + identifier, exception);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -84,10 +87,6 @@ public final class NmsIdentifierUtil {
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Registry lookup failed for " + identifier, exception);
         }
-    }
-
-    public static int cooldownDuration(Object packet) {
-        return (int) invokeNoArg(packet, "duration");
     }
 
     public static String useCooldownGroup(Object useCooldown, String fallback) {

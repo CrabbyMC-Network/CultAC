@@ -10,10 +10,8 @@ import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NativeBlockCollisionHelper;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import ac.cult.cultac.utils.nmsutil.NmsPalettedContainerUtil;
 import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.BlockFace;
@@ -24,16 +22,10 @@ import net.minecraft.core.BlockPos;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
-import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.material.FluidState;
@@ -87,7 +79,6 @@ public class CompensatedWorld implements BlockGetter {
     // Blocks the client changed while placing or breaking blocks
     private List<BlockPos> currentlyChangedBlocks = new LinkedList<>();
     private final Map<Integer, List<BlockPos>> serverIsCurrentlyProcessingThesePredictions = new HashMap<>();
-    private final Object2ObjectLinkedOpenHashMap<Pair<BlockPos, Action>, Vec3> unackedActions = new Object2ObjectLinkedOpenHashMap<>();
     private int clientPredictionSequence;
     private boolean isCurrentlyPredicting = false;
     // Read and toggled only on this player's packet executor.
@@ -374,24 +365,6 @@ public class CompensatedWorld implements BlockGetter {
         }
     }
 
-    public void handleBlockBreakAck(BlockPos blockPos, int blockState, Action action, boolean accepted) {
-        if (!accepted || action != Action.START_DESTROY_BLOCK || !unackedActions.containsKey(new Pair<>(blockPos, action))) {
-            player.sendTransaction(); // This packet actually matters
-            player.latencyUtils.addRealTimeTaskNow(() -> { if (unackedActions.containsKey(new Pair<>(blockPos, action))) {
-                    Vec3 playerPos = unackedActions.remove(new Pair<>(blockPos, action));
-                    handleAck(blockPos, blockState, playerPos);
-                }
-            });
-        } else {
-            unackedActions.remove(new Pair<>(blockPos, action));
-        }
-
-        player.latencyUtils.addRealTimeTaskNow(() -> { while (unackedActions.size() >= 50) {
-                this.unackedActions.removeFirst();
-            }
-        });
-    }
-
     public void handleServerBlockUpdate(BlockPos pos, BlockState state, CultPlayer.TrackedTransaction transaction) {
         player.latencyUtils.addRealTimeTask(transaction.transaction(), () -> handleServerBlockUpdate(pos, state, transaction.transaction()));
     }
@@ -463,22 +436,6 @@ public class CompensatedWorld implements BlockGetter {
                 player.boundingBox = GetBoundingBox.getCollisionBoxForPlayer(player, player.x, player.y, player.z);
             }
         }
-    }
-
-    public void handleBlockBreakPrediction(NmsPacketUtil.PlayerActionData digging) {
-        // Current runtime does not use the legacy delayed block-break ack path.
-    }
-
-    public void stopPredicting(ServerboundUseItemOnPacket packet) {
-        stopPredicting(NmsPacketUtil.readUseItemOn(packet).sequence());
-    }
-
-    public void stopPredicting(ServerboundUseItemPacket packet) {
-        stopPredicting(NmsPacketUtil.readUseItem(packet).sequence());
-    }
-
-    public void stopPredicting(ServerboundPlayerActionPacket packet) {
-        stopPredicting(NmsPacketUtil.readPlayerAction(packet).sequence());
     }
 
     public void stopPredicting(int ignoredWireSequence) {
@@ -1316,24 +1273,24 @@ public class CompensatedWorld implements BlockGetter {
         return lastClientboundDimension;
     }
 
-    public boolean isLastClientboundDimensionChange(CommonPlayerSpawnInfo spawnInfo) {
-        return !lastClientboundDimension.dimension().equals(NmsIdentifierUtil.resourceKey(spawnInfo.dimension()));
+    public boolean isLastClientboundDimensionChange(String dimension) {
+        return !lastClientboundDimension.dimension().equals(dimension);
     }
 
-    public void setLastClientboundDimension(CommonPlayerSpawnInfo spawnInfo) {
-        int minY = spawnInfo.dimensionType().value().minY();
+    public void setLastClientboundDimension(String dimension, net.minecraft.world.level.dimension.DimensionType type) {
+        int minY = type.minY();
         lastClientboundDimension = new ClientboundDimensionData(
-                NmsIdentifierUtil.resourceKey(spawnInfo.dimension()),
+                dimension,
                 minY,
-                minY + spawnInfo.dimensionType().value().height()
+                minY + type.height()
         );
     }
 
-    public void setDimension(CommonPlayerSpawnInfo spawnInfo) {
-        visibleDimension = NmsIdentifierUtil.resourceKey(spawnInfo.dimension());
-        minHeight = spawnInfo.dimensionType().value().minY();
-        maxHeight = minHeight + spawnInfo.dimensionType().value().height();
-        fastLava = dimensionHasFastLava(spawnInfo.dimensionType().value());
+    public void setDimension(String dimension, net.minecraft.world.level.dimension.DimensionType type) {
+        visibleDimension = dimension;
+        minHeight = type.minY();
+        maxHeight = minHeight + type.height();
+        fastLava = dimensionHasFastLava(type);
     }
 
     private static boolean dimensionHasFastLava(net.minecraft.world.level.dimension.DimensionType dimension) {

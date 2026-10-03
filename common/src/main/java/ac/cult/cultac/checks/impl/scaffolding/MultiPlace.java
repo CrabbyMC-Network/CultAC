@@ -1,13 +1,13 @@
 package ac.cult.cultac.checks.impl.scaffolding;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
@@ -15,8 +15,7 @@ import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.block.BlockFace;
 
@@ -72,16 +71,16 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
 
     // isTickPacket (guide §"Removed Check helpers"): a non-teleport movement packet ends the client tick
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.cameraEntity.isSelf() || !player.packetStateData.lastPacketWasTeleport) {
             hasPlaced = false;
         }
     }
 
     // isTickPacket: the 1.21.2+ end-of-tick packet also ends the client tick when no movement was received
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!player.cameraEntity.isSelf()
                 || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 && !player.packetStateData.receivedMovementThisClientTick)) {

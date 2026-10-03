@@ -1,5 +1,6 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.bedrock.prediction.BedrockPredictionResult;
@@ -37,9 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
 import org.bukkit.GameMode;
@@ -83,7 +82,7 @@ public final class OfflineBedrockReplayRunnerTest {
         }
     }
 
-    private static final Path SCENARIOS = Path.of("/home/hunter/Downloads/CultAC/bedrock-smoketest-scenarios");
+    private static final Path SCENARIOS = Path.of(System.getProperty("bedrockReplayRoot", "bedrock-smoketest-scenarios"));
     private static final UUID PLAYER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String SMALL_REPLAY_INJECTION_DOMAIN = "cultac-bedrock-small-replay-injection/v1:1";
     private static final String SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN = SMALL_REPLAY_INJECTION_DOMAIN + ":vertical";
@@ -140,8 +139,7 @@ public final class OfflineBedrockReplayRunnerTest {
         player.z = 20.0D;
         player.getSetbackTeleportUtil().hasFullyLoaded = true;
         player.getSetbackTeleportUtil().hasFullyJoined = true;
-        ServerboundMovePlayerPacket.Pos translatedMove = new ServerboundMovePlayerPacket.Pos(
-                10.25D, 64.0D, 20.0D, true, false);
+        ServerboundMovePlayer translatedMove = new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
 
         PacketReceiveEvent outOfOrder = translatedMovementEvent(player, translatedMove);
         new CheckManagerListener().onMovePlayer(outOfOrder, player, translatedMove);
@@ -175,7 +173,7 @@ public final class OfflineBedrockReplayRunnerTest {
             player.getSetbackTeleportUtil().hasFullyLoaded = true;
             player.getSetbackTeleportUtil().hasFullyJoined = true;
             player.packetStateData.bedrockTranslatedMovement.allowVehicle(71);
-            var packet = new ServerboundMovePlayerPacket.Pos(2, 64, 3, true, false);
+            var packet = new ServerboundMovePlayer(2, 64, 3, 0, 0, true, false, true, false);
             var event = translatedMovementEvent(player, packet);
             new CheckManagerListener().onMovePlayer(event, player, packet);
             assertTrue(event.isCancelled());
@@ -194,7 +192,7 @@ public final class OfflineBedrockReplayRunnerTest {
             teleports.hasFullyLoaded = true;
             teleports.hasFullyJoined = true;
             Vec3 anchor = new Vec3(10, 64, 20);
-            var packet = new ServerboundMovePlayerPacket.Pos(10.25, 64, 20, true, false);
+            var packet = new ServerboundMovePlayer(10.25, 64, 20, 0, 0, true, false, true, false);
             player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
             teleports.addImmediateBedrockTransportTeleport(anchor, true);
             assertTrue(teleports.mustAcknowledgeBedrockTransportTeleport());
@@ -225,13 +223,13 @@ public final class OfflineBedrockReplayRunnerTest {
         player.getSetbackTeleportUtil().hasFullyJoined = true;
         CheckManagerListener listener = new CheckManagerListener();
 
-        List<ServerboundMovePlayerPacket> geyserProjectionShapes = List.of(
-                new ServerboundMovePlayerPacket.Pos(10.25D, 64.0D, 20.0D, true, false),
-                new ServerboundMovePlayerPacket.PosRot(10.25D, 64.0D, 20.0D, 45.0F, 10.0F, true, false),
-                new ServerboundMovePlayerPacket.Rot(45.0F, 10.0F, true, false),
-                new ServerboundMovePlayerPacket.StatusOnly(true, false));
+        List<ServerboundMovePlayer> geyserProjectionShapes = List.of(
+                new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false),
+                new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 45.0F, 10.0F, true, false, true, true),
+                new ServerboundMovePlayer(0, 0, 0, 45.0F, 10.0F, true, false, false, true),
+                new ServerboundMovePlayer(0, 0, 0, 0, 0, true, false, false, false));
 
-        for (ServerboundMovePlayerPacket projection : geyserProjectionShapes) {
+        for (ServerboundMovePlayer projection : geyserProjectionShapes) {
             player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
             PacketReceiveEvent permitted = translatedMovementEvent(player, projection);
             listener.onMovePlayer(permitted, player, projection);
@@ -243,14 +241,12 @@ public final class OfflineBedrockReplayRunnerTest {
         }
 
         player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
-        ServerboundMovePlayerPacket.Rot rotation = new ServerboundMovePlayerPacket.Rot(
-                90.0F, 15.0F, true, false);
+        ServerboundMovePlayer rotation = new ServerboundMovePlayer(0, 0, 0, 90.0F, 15.0F, true, false, false, true);
         PacketReceiveEvent permittedRotation = translatedMovementEvent(player, rotation);
         listener.onMovePlayer(permittedRotation, player, rotation);
         assertFalse(permittedRotation.isCancelled());
 
-        ServerboundMovePlayerPacket.Pos positionAfterRotation = new ServerboundMovePlayerPacket.Pos(
-                10.5D, 64.0D, 20.0D, true, false);
+        ServerboundMovePlayer positionAfterRotation = new ServerboundMovePlayer(10.5D, 64.0D, 20.0D, 0, 0, true, false, true, false);
         PacketReceiveEvent secondProjection = translatedMovementEvent(player, positionAfterRotation);
         listener.onMovePlayer(secondProjection, player, positionAfterRotation);
         assertTrue(secondProjection.isCancelled());
@@ -268,15 +264,11 @@ public final class OfflineBedrockReplayRunnerTest {
         player.getSetbackTeleportUtil().hasFullyJoined = true;
         player.bedrockState.setSetbacksEnabled(false);
         CheckManagerListener listener = new CheckManagerListener();
-        ServerboundMovePlayerPacket.Pos translatedMove = new ServerboundMovePlayerPacket.Pos(
-                10.25D, 64.0D, 20.0D, true, false);
+        ServerboundMovePlayer translatedMove = new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
 
         player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
-        PacketReceiveEvent tickEnd = new PacketReceiveEvent(
-                player.user,
-                ServerboundClientTickEndPacket.INSTANCE,
-                ConnectionProtocol.PLAY);
-        listener.onClientTickEnd(tickEnd, player, ServerboundClientTickEndPacket.INSTANCE);
+        var tickEnd = RecordReceiveTestEvents.tickEnd(player);
+        listener.processClientTickEndReceive(tickEnd, player);
 
         PacketReceiveEvent afterTickEnd = translatedMovementEvent(player, translatedMove);
         listener.onMovePlayer(afterTickEnd, player, translatedMove);
@@ -293,15 +285,15 @@ public final class OfflineBedrockReplayRunnerTest {
         for (boolean canonicalGround : new boolean[]{false, true}) {
             for (boolean noModify : new boolean[]{false, true}) {
                 player.noModifyPacketPermission = noModify;
-                var projection = new ServerboundMovePlayerPacket.StatusOnly(!canonicalGround, false);
+                var projection = new ServerboundMovePlayer(0, 0, 0, 0, 0, !canonicalGround, false, false, false);
                 player.packetStateData.bedrockTranslatedMovement.allowPlayer(canonicalGround);
                 PacketReceiveEvent event = translatedMovementEvent(player, projection);
                 new CheckManagerListener().onMovePlayer(event, player, projection);
 
                 assertFalse(event.isCancelled());
-                assertEquals(!noModify, event.shouldReEncode());
+                assertEquals(!noModify, event.getPacket() != projection);
                 assertEquals(noModify ? !canonicalGround : canonicalGround,
-                        ((ServerboundMovePlayerPacket) event.getNmsPacket()).isOnGround());
+                        ((ServerboundMovePlayer) event.getPacket()).onGround());
                 assertFalse(player.packetStateData.bedrockTranslatedMovement.hasPending());
             }
         }
@@ -615,7 +607,7 @@ public final class OfflineBedrockReplayRunnerTest {
         if (channel instanceof EmbeddedChannel embeddedChannel) {
             embeddedChannel.runPendingTasks();
             embeddedChannel.runScheduledPendingTasks();
-            embeddedChannel.close();
+            embeddedChannel.finishAndReleaseAll();
         }
     }
 
@@ -696,11 +688,11 @@ public final class OfflineBedrockReplayRunnerTest {
                 : builder.rawInputFlagsHigh(1L << (ordinal - Long.SIZE));
     }
 
-    private static PacketReceiveEvent translatedMovementEvent(
+    private static PacketReceiveEvent<ServerboundMovePlayer> translatedMovementEvent(
             CultPlayer player,
-            ServerboundMovePlayerPacket packet
+            ServerboundMovePlayer packet
     ) {
-        return new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+        return RecordReceiveTestEvents.movement(player, packet);
     }
 
     private static ReplayFrames applyImpossibleMovementInjection(String replayName, List<BedrockAuthInputFrame> frames) {
@@ -998,12 +990,7 @@ public final class OfflineBedrockReplayRunnerTest {
     static CultPlayer offlinePlayer() {
         BedrockPlayerState state = new BedrockPlayerState(PLAYER_UUID);
         state.setSetbacksEnabled(true);
-        User user = new User(
-                new User.Profile(PLAYER_UUID, ".Replay_Client"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = OfflineCultTestBootstrap.wireUser(new User.Profile(PLAYER_UUID, ".Replay_Client"));
         CultPlayer player = new CultPlayer(user, MovementPlatform.BEDROCK, state);
         player.gamemode = GameMode.CREATIVE;
         player.canFly = false;

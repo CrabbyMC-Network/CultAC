@@ -1,6 +1,6 @@
 package ac.cult.cultac.events.packets.blockplace;
 
-import ac.cult.cultac.network.packet.NmsPacketUtil;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.blockplace.NmsBlockPlaceResolver;
@@ -11,25 +11,17 @@ import ac.cult.cultac.utils.nmsutil.TraverseBlocks;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import org.bukkit.GameMode;
 import net.minecraft.world.InteractionHand;
 
 public class PlaceHandler {
-    public static void handleQueuedUseItem(CultPlayer player, ServerboundUseItemPacket packet) {
-        handleNativeUseItem(player, NmsPacketUtil.readUseItem(packet));
-    }
-
-    public static void handleNativeUseItem(CultPlayer player, NmsPacketUtil.UseItemData place) {
+    public static void handleQueuedUseItem(CultPlayer player, ServerboundUseItem place) {
         handleQueuedPlace(player, true, place.yaw(), place.pitch(), place.sequence(), () -> handleUseItem(player, place));
     }
 
-    public static void handleQueuedUseItemOn(CultPlayer player, ServerboundUseItemOnPacket packet) {
-        handleNativeUseItemOn(player, NmsPacketUtil.readUseItemOn(packet));
-    }
-
-    public static void handleNativeUseItemOn(CultPlayer player, NmsPacketUtil.UseItemOnData place) {
+    public static void handleQueuedUseItemOn(CultPlayer player, ServerboundUseItemOn place) {
         handleQueuedPlace(player, false, 0, 0, place.sequence(), () -> handleUseItemOn(player, place));
     }
 
@@ -78,22 +70,24 @@ public class PlaceHandler {
         }
     }
 
-    private static void handleUseItem(CultPlayer player, NmsPacketUtil.UseItemData place) {
+    private static void handleUseItem(CultPlayer player, ServerboundUseItem place) {
         if (player.gamemode == GameMode.SPECTATOR || player.gamemode == GameMode.ADVENTURE) return;
 
-        ItemStack placedWith = player.getInventory().getHandItem(place.hand());
-        UseItemHandler.handleUseItem(player, placedWith, place.hand());
+        InteractionHand hand = SpigotConversionUtil.toNmsHand(place.hand());
+        ItemStack placedWith = player.getInventory().getHandItem(hand);
+        UseItemHandler.handleUseItem(player, placedWith, hand);
     }
 
-    private static void handleUseItemOn(CultPlayer player, NmsPacketUtil.UseItemOnData place) {
+    private static void handleUseItemOn(CultPlayer player, ServerboundUseItemOn place) {
         // Check for interactable first (door, etc)
-        ItemStack placedWith = player.getInventory().getHandItem(place.hand());
+        InteractionHand hand = SpigotConversionUtil.toNmsHand(place.hand());
+        ItemStack placedWith = player.getInventory().getHandItem(hand);
         ItemStack offhand = player.getInventory().getOffHand();
 
         boolean onlyAir = placedWith.isEmpty() && offhand.isEmpty();
 
         // The offhand is unable to interact with blocks like this... try to stop some desync points before they happen
-        if ((!player.isSneaking || onlyAir) && place.hand() == InteractionHand.MAIN_HAND) {
+        if ((!player.isSneaking || onlyAir) && hand == InteractionHand.MAIN_HAND) {
             BlockPlace blockPlace = createUseItemOnBlockPlace(player, place, placedWith);
 
             boolean consumesPlace = NmsBlockPlaceResolver.applyBlockUse(player, blockPlace);
@@ -119,7 +113,7 @@ public class PlaceHandler {
         if (placedWith.getType() == Material.POWDER_SNOW_BUCKET) {
             var before = ac.cult.cultac.utils.blockplace.PlacementSnapshot.capture(player, blockPlace);
             if (NmsBlockPlaceResolver.applyBlockPlace(player, blockPlace)) {
-                if (player.gamemode != GameMode.CREATIVE) UseItemHandler.setPlayerItem(player, place.hand(), Material.BUCKET);
+                if (player.gamemode != GameMode.CREATIVE) UseItemHandler.setPlayerItem(player, hand, Material.BUCKET);
                 NmsBlockPlaceResolver.applyAfterUseOn(player, before);
             } else {
                 NmsBlockPlaceResolver.applyWorldModifyingUseItem(player, blockPlace);
@@ -137,16 +131,16 @@ public class PlaceHandler {
         NmsBlockPlaceResolver.applyWorldModifyingUseItem(player, blockPlace);
     }
 
-    private static BlockPlace createUseItemOnBlockPlace(CultPlayer player, NmsPacketUtil.UseItemOnData place, ItemStack placedWith) {
+    private static BlockPlace createUseItemOnBlockPlace(CultPlayer player, ServerboundUseItemOn place, ItemStack placedWith) {
         BlockPlace blockPlace = new BlockPlace(
                 player,
-                place.hand(),
-                place.blockPosition(),
-                place.blockFace(),
+                SpigotConversionUtil.toNmsHand(place.hand()),
+                SpigotConversionUtil.toNmsBlockPos(place.blockPosition()),
+                SpigotConversionUtil.toBukkitFace(place.blockFace()),
                 placedWith,
                 TraverseBlocks.getNearestHitResult(player, null, true),
                 place.sequence());
-        blockPlace.setCursor(place.cursor());
+        blockPlace.setCursor(SpigotConversionUtil.toNmsVec(place.cursor()));
         blockPlace.setInside(place.insideBlock());
         return blockPlace;
     }

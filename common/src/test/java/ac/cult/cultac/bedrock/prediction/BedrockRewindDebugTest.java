@@ -30,7 +30,7 @@ public class BedrockRewindDebugTest {
         OfflineCultTestBootstrap.installConfig();
         EmbeddedChannel channel = new EmbeddedChannel();
         UUID uuid = UUID.randomUUID();
-        var player = new CultPlayer(new User(new User.Profile(uuid, ".Rewind_Test"), null, null, null, channel),
+        var player = new CultPlayer(ac.cult.cultac.network.TestUsers.create(new User.Profile(uuid, ".Rewind_Test"), channel),
                 MovementPlatform.BEDROCK, new BedrockPlayerState(uuid));
         try {
             var debug = player.checkManager.getDebugHandler();

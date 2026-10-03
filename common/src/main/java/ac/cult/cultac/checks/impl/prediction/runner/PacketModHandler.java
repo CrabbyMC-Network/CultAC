@@ -14,9 +14,6 @@ import ac.cult.cultac.utils.data.TeleportData;
 import ac.cult.cultac.utils.data.TransactionVel;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import org.bukkit.GameMode;
 import net.minecraft.world.phys.Vec3;
 import lombok.Getter;
@@ -250,22 +247,21 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         return MovementProfiles.forPlayer(player).shouldUseBundledPacketProof(player);
     }
 
-    protected CultPlayer.TrackedTransaction bundlePacketWithTrailingTransaction(PacketSendEvent event, Packet<? super ClientGamePacketListener> packet) {
+    protected <R extends ac.cult.cultac.protocol.packet.clientbound.ClientboundPacket>
+    CultPlayer.TrackedTransaction bundlePacketWithTrailingTransaction(PacketSendEvent<R> event, R packet) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
-        if (transaction == null) {
-            return null;
-        }
+        if (transaction == null) return null;
+        // The original record must keep its bytes: legacy velocity quantization is lossy.
 
-        // MCP-Reborn processes ClientboundBundlePacket children in order on the
-        // packet processor; the trailing ping proves every earlier child in this
-        // bundle, including the velocity/explosion packet, has been handled before
-        // any later LocalPlayer#tick movement can consume it.
-        event.setNmsPacket(new ClientboundBundlePacket(List.of(packet, transaction.packet())));
+        if (packet != event.getOriginalPacket()) event.replace(packet);
+        // ClientPacketListener processes bundle children in order. The trailing
+        // ping proves the velocity/explosion was handled before later movement.
+        event.getWritesAfterSend().add(transaction.packet());
         event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
         return transaction;
     }
 
-    protected int handleEvent(Vec3 playerVelocity, boolean isVel, PacketSendEvent event, int sourceEntityId) {
+    protected int handleEvent(Vec3 playerVelocity, boolean isVel, PacketSendEvent<?> event, int sourceEntityId) {
         // Wrap velocity between two transactions, matching Cult3.0-clean's
         // uncertainty model for clients where the packet is not bundle-proven.
         int transaction = registerTransactionSandwich(playerVelocity, isVel, sourceEntityId);
@@ -277,44 +273,6 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         player.sendTransaction();
         int transaction = registerTransactionSandwich(playerVelocity, isVel, sourceEntityId);
         player.sendTransaction();
-        return transaction;
-    }
-
-    public int handleDebugDirectPacketEvent(
-            Vec3 playerVelocity,
-            boolean isVel,
-            int sourceEntityId,
-            Packet<? super ClientGamePacketListener> packet
-    ) {
-        CultPlayer.TrackedTransaction transaction = shouldUseBundledProof()
-                ? player.createTrackedTransactionPacketForBundle()
-                : null;
-        if (transaction != null) {
-            player.user.sendPacket(new ClientboundBundlePacket(List.of(packet, transaction.packet())));
-            player.markTrackedTransactionPacketSent(transaction);
-            handleEventAfterTransaction(playerVelocity, isVel, transaction.transaction(), sourceEntityId);
-            return transaction.transaction();
-        }
-
-        CultPlayer.TrackedTransaction firstProof = sendDirectTrackedTransaction();
-        if (firstProof == null) {
-            player.user.sendPacket(packet);
-            return -1;
-        }
-        int sandwichTransaction = registerTransactionSandwich(playerVelocity, isVel, sourceEntityId);
-        player.user.sendPacket(packet);
-        sendDirectTrackedTransaction();
-        return sandwichTransaction;
-    }
-
-    private CultPlayer.TrackedTransaction sendDirectTrackedTransaction() {
-        CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForDeferredSend();
-        if (transaction == null) {
-            return null;
-        }
-
-        player.user.sendPacket(transaction.packet());
-        player.markTrackedTransactionPacketSent(transaction);
         return transaction;
     }
 

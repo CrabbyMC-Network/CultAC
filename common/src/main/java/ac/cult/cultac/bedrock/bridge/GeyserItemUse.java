@@ -1,11 +1,15 @@
 package ac.cult.cultac.bedrock.bridge;
 
 import ac.cult.cultac.events.packets.blockplace.PlaceHandler;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.value.BlockPos;
+import ac.cult.cultac.protocol.value.Direction;
+import ac.cult.cultac.protocol.value.Hand;
+import ac.cult.cultac.protocol.value.Vec3d;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.BlockFace;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
 import org.cloudburstmc.protocol.bedrock.packet.InventoryTransactionPacket;
 import org.geysermc.geyser.session.GeyserSession;
@@ -23,7 +27,7 @@ final class GeyserItemUse {
             throw new IllegalStateException("Unsupported Geyser prediction sequence", failure);
         }
     }
-    private static final BlockFace[] FACES = {BlockFace.DOWN, BlockFace.UP, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST};
+    private static final Direction[] FACES = Direction.values();
 
     static boolean allow(GeyserSession session, CultPlayer player, InventoryTransactionPacket packet) {
         if (packet.getTransactionType() != InventoryTransactionType.ITEM_USE || packet.getActionType() != 0) return true;
@@ -31,7 +35,7 @@ final class GeyserItemUse {
         var position = packet.getBlockPosition();
         BlockUtils.restoreCorrectBlock(session, position, packet.getHotbarSlot());
         if (packet.getBlockFace() >= 0 && packet.getBlockFace() < FACES.length) {
-            var face = FACES[packet.getBlockFace()];
+            var face = SpigotConversionUtil.toBukkitFace(FACES[packet.getBlockFace()]);
             BlockUtils.restoreCorrectBlock(session, position.add(face.getModX(), face.getModY(), face.getModZ()), packet.getHotbarSlot());
         }
         return false;
@@ -49,15 +53,16 @@ final class GeyserItemUse {
                     var pos = packet.getBlockPosition();
                     var cursor = packet.getClickPosition();
                     player.compensatedWorld.advanceClientPredictionSequence();
-                    PlaceHandler.handleNativeUseItemOn(player, new NmsPacketUtil.UseItemOnData(InteractionHand.MAIN_HAND,
-                            GeyserBedrockBridgeRuntime.worldBlock(session, pos), FACES[packet.getBlockFace()],
-                            new Vec3(cursor.getX(), cursor.getY(), cursor.getZ()), false, sequence));
+                    var worldPos = GeyserBedrockBridgeRuntime.worldBlock(session, pos);
+                    PlaceHandler.handleQueuedUseItemOn(player, new ServerboundUseItemOn(Hand.MAIN_HAND,
+                            new BlockPos(worldPos.getX(), worldPos.getY(), worldPos.getZ()), FACES[packet.getBlockFace()],
+                            new Vec3d(cursor.getX(), cursor.getY(), cursor.getZ()), false, false, sequence));
                 }
                 if (packet.getActionType() == 1 || sequence - previousSequence > 1) {
                     float yaw = session.getPlayerEntity().getJavaYaw();
                     float pitch = session.getPlayerEntity().getPitch();
                     player.compensatedWorld.advanceClientPredictionSequence();
-                    PlaceHandler.handleNativeUseItem(player, new NmsPacketUtil.UseItemData(InteractionHand.MAIN_HAND, sequence, yaw, pitch));
+                    PlaceHandler.handleQueuedUseItem(player, new ServerboundUseItem(Hand.MAIN_HAND, sequence, yaw, pitch));
                     player.actionManager.useItem(InteractionHand.MAIN_HAND);
                     player.getInventory().useItem(InteractionHand.MAIN_HAND, yaw, pitch);
                 }

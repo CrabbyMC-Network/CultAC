@@ -1,5 +1,9 @@
 package ac.cult.cultac.events.packets;
 
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderLerpSize;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderSize;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderCenter;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundInitializeBorder;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
@@ -8,10 +12,6 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket;
-import net.minecraft.network.protocol.game.ClientboundSetBorderCenterPacket;
-import net.minecraft.network.protocol.game.ClientboundSetBorderLerpSizePacket;
-import net.minecraft.network.protocol.game.ClientboundSetBorderSizePacket;
 
 public class PacketWorldBorder extends CultProcessor implements CheckListener, ClientTickEndListener {
     private static final ClientVersion SERVER_VERSION =
@@ -71,29 +71,29 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
     }
 
     @CultPacketHandler
-    public void onInitializeBorder(PacketSendEvent event, CultPlayer player, ClientboundInitializeBorderPacket packet) {
+    public void onInitializeBorder(PacketSendEvent<ClientboundInitializeBorder> event, CultPlayer player, ClientboundInitializeBorder packet) {
         player.sendTransaction();
-        setCenter(packet.getNewCenterX(), packet.getNewCenterZ());
-        setLerp(packet.getOldSize(), packet.getNewSize(), packet.getLerpTime());
-        setAbsoluteMaxSize(packet.getNewAbsoluteMaxSize());
+        setCenter(packet.centerX(), packet.centerZ());
+        setLerp(packet.oldSize(), packet.newSize(), packet.lerpTime());
+        setAbsoluteMaxSize(packet.absoluteMaxSize());
     }
 
     @CultPacketHandler
-    public void onSetBorderCenter(PacketSendEvent event, CultPlayer player, ClientboundSetBorderCenterPacket packet) {
+    public void onSetBorderCenter(PacketSendEvent<ClientboundSetBorderCenter> event, CultPlayer player, ClientboundSetBorderCenter packet) {
         player.sendTransaction();
-        setCenter(packet.getNewCenterX(), packet.getNewCenterZ());
+        setCenter(packet.centerX(), packet.centerZ());
     }
 
     @CultPacketHandler
-    public void onSetBorderSize(PacketSendEvent event, CultPlayer player, ClientboundSetBorderSizePacket packet) {
+    public void onSetBorderSize(PacketSendEvent<ClientboundSetBorderSize> event, CultPlayer player, ClientboundSetBorderSize packet) {
         player.sendTransaction();
-        setSize(packet.getSize());
+        setSize(packet.size());
     }
 
     @CultPacketHandler
-    public void onSetBorderLerpSize(PacketSendEvent event, CultPlayer player, ClientboundSetBorderLerpSizePacket packet) {
+    public void onSetBorderLerpSize(PacketSendEvent<ClientboundSetBorderLerpSize> event, CultPlayer player, ClientboundSetBorderLerpSize packet) {
         player.sendTransaction();
-        setLerp(packet.getOldSize(), packet.getNewSize(), packet.getLerpTime());
+        setLerp(packet.oldSize(), packet.newSize(), packet.lerpTime());
     }
 
     private void setCenter(double x, double z) {

@@ -21,18 +21,15 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundAttackPacket;
-import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.Vec3;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -53,7 +50,7 @@ public final class ReachabilityOrderingParityTest {
             BadPacketsW badPacketsW = player.checkManager.getListener(BadPacketsW.class);
             player.setExperimentalChecks(true);
             badPacketsW.setEnabled(true);
-            PacketReceiveEvent event = receiveEvent(player, new ServerboundAttackPacket(1_000_000));
+            PacketReceiveEvent event = RecordReceiveTestEvents.attack(player, 1_000_000);
             int[] ordinaryCalls = {0};
 
             dispatchThroughReceivePipeline(
@@ -76,8 +73,7 @@ public final class ReachabilityOrderingParityTest {
             BadPacketsW badPacketsW = player.checkManager.getListener(BadPacketsW.class);
             player.setExperimentalChecks(true);
             badPacketsW.setEnabled(true);
-            ServerboundAttackPacket packet = new ServerboundAttackPacket(1_000_000);
-            PacketReceiveEvent event = receiveEvent(player, packet);
+            PacketReceiveEvent event = RecordReceiveTestEvents.attack(player, 1_000_000);
             int[] ordinaryCalls = {0};
             PacketPlayerAttack attackListener = new PacketPlayerAttack();
 
@@ -85,7 +81,7 @@ public final class ReachabilityOrderingParityTest {
                     player,
                     event,
                     (receiveEvent, routedPlayer, routedPacket) ->
-                            attackListener.onAttack(receiveEvent, routedPlayer, routedPacket),
+                            attackListener.onInteract(receiveEvent, routedPlayer, (ServerboundInteract) routedPacket),
                     (receiveEvent, routedPlayer, routedPacket) -> ordinaryCalls[0]++);
 
             assertFalse(event.isCancelled());
@@ -110,7 +106,7 @@ public final class ReachabilityOrderingParityTest {
 
             PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
             new PacketEntityAction().onPlayerCommand(
-                    event, player, (ServerboundPlayerCommandPacket) event.getNmsPacket());
+                    event, player, (ServerboundPlayerCommand) event.getPacket());
 
             assertTrue(event.isCancelled());
             assertEquals(0, elytraA.calls);
@@ -129,7 +125,7 @@ public final class ReachabilityOrderingParityTest {
 
             PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
             new PacketEntityAction().onPlayerCommand(
-                    event, player, (ServerboundPlayerCommandPacket) event.getNmsPacket());
+                    event, player, (ServerboundPlayerCommand) event.getPacket());
 
             assertEquals(1, elytraA.calls);
             assertFalse(elytraA.cancelledAtCall);
@@ -140,20 +136,25 @@ public final class ReachabilityOrderingParityTest {
     }
 
     @Test
-    public void bedrockGlideActionSkipsElytraAButRetainsEquipmentRejection() {
+    public void bedrockTranslatedGlideCommandPreservesAuthInputState() {
         CultPlayer player = offlineBedrockPlayer();
         try {
             TrackingElytraA elytraA = installTrackingElytraA(player);
             player.onGround = false;
             player.lastOnGround = false;
 
-            PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
-            new PacketEntityAction().onPlayerCommand(
-                    event, player, (ServerboundPlayerCommandPacket) event.getNmsPacket());
+            // The preserved G0 handler ignores translated Bedrock commands:
+            // their actions belong to the preceding Bedrock movement phase.
+            for (boolean gliding : new boolean[]{false, true}) {
+                player.isGliding = gliding;
+                PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
+                new PacketEntityAction().onPlayerCommand(
+                        event, player, (ServerboundPlayerCommand) event.getPacket());
 
-            assertEquals(0, elytraA.calls);
-            assertTrue(event.isCancelled());
-            assertFalse(player.isGliding);
+                assertEquals(0, elytraA.calls);
+                assertFalse(event.isCancelled());
+                assertEquals(gliding, player.isGliding);
+            }
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
         }
@@ -200,7 +201,7 @@ public final class ReachabilityOrderingParityTest {
         try {
             player.onGround = false;
             player.lastOnGround = false;
-            ServerboundPlayerCommandPacket packet = glideStartPacket();
+            ServerboundPlayerCommand packet = glideStartPacket();
             PacketReceiveEvent event = receiveEvent(player, packet);
             // PacketEntityAction hands accepted starts to the manager as an
             // uncancelled command. Exercise that boundary without constructing
@@ -324,8 +325,8 @@ public final class ReachabilityOrderingParityTest {
             setLongField(timer, "lastMovementPlayerClock", now - 2_000_000_000L);
             long initial = longField(timer, "timerBalanceRealTime");
 
-            ServerboundMoveVehiclePacket packet =
-                    new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(Vec3.ZERO, 0.0F, 0.0F), false);
+            ServerboundMoveVehicle packet =
+                    new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
             PacketReceiveEvent event = receiveEvent(player, packet);
             new CheckManagerListener().onMoveVehicle(event, player, packet);
 
@@ -342,8 +343,8 @@ public final class ReachabilityOrderingParityTest {
         try {
             TrackingVehicleTimer timer = new TrackingVehicleTimer(player);
             player.checkManager.allChecks.put(VehicleTimer.class, timer);
-            ServerboundMoveVehiclePacket packet =
-                    new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(Vec3.ZERO, 0.0F, 0.0F), false);
+            ServerboundMoveVehicle packet =
+                    new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
             PacketReceiveEvent event = receiveEvent(player, packet);
 
             new CheckManagerListener().onMoveVehicle(event, player, packet);
@@ -372,48 +373,38 @@ public final class ReachabilityOrderingParityTest {
         return check;
     }
 
-    private static ServerboundPlayerCommandPacket glideStartPacket() {
-        return new ServerboundPlayerCommandPacket(
-                Mockito.mock(Entity.class),
-                ServerboundPlayerCommandPacket.Action.START_FALL_FLYING,
+    private static ServerboundPlayerCommand glideStartPacket() {
+        return new ServerboundPlayerCommand(0,
+                PlayerCommandAction.START_FLYING_WITH_ELYTRA,
                 0);
     }
 
-    private static PacketReceiveEvent receiveEvent(CultPlayer player, Packet<?> packet) {
-        return new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+    private static PacketReceiveEvent<ServerboundMoveVehicle> receiveEvent(CultPlayer player, ServerboundMoveVehicle packet) {
+        return RecordReceiveTestEvents.vehicle(player, packet);
     }
+
+    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(CultPlayer player, ServerboundPlayerCommand packet) {
+        return RecordReceiveTestEvents.playerCommand(player, packet);
+    }
+
 
     @SafeVarargs
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void dispatchThroughReceivePipeline(
             CultPlayer player,
             PacketReceiveEvent event,
-            PacketReceiveHandler<Packet<?>>... ordinaryHandlers
+            PacketReceiveHandler<Object>... ordinaryHandlers
     ) throws ReflectiveOperationException {
-        Class<?> pipeline = Class.forName("ac.cult.cultac.network.PacketReceivePipeline");
-        Method dispatch = pipeline.getDeclaredMethod(
-                "dispatch",
-                PacketReceiveRoute.class,
-                PacketReceiveRoute.class,
-                PacketReceiveRoute.class,
-                PacketReceiveEvent.class,
-                CultPlayer.class,
-                Packet.class);
-        dispatch.setAccessible(true);
-        PacketReceiveHandler<Packet<?>> earlyManager =
+        PacketReceiveHandler<Object> earlyManager =
                 (receiveEvent, routedPlayer, packet) -> routedPlayer.checkManager.dispatchEarlyReceive(receiveEvent);
-        dispatch.invoke(
-                null,
+        new ac.cult.cultac.network.PacketDispatcher.ReceiveRoute(
                 PacketReceiveRoute.of(new PacketReceiveHandler[]{earlyManager}),
                 PacketReceiveRoute.of(ordinaryHandlers),
-                PacketReceiveRoute.EMPTY,
-                event,
-                player,
-                event.getNmsPacket());
+                PacketReceiveRoute.EMPTY).dispatch(event, player);
     }
 
     private static PacketReceiveEvent dispatchGlideStartThroughManagers(CultPlayer player) {
-        ServerboundPlayerCommandPacket packet = glideStartPacket();
+        ServerboundPlayerCommand packet = glideStartPacket();
         PacketReceiveEvent event = receiveEvent(player, packet);
         new PacketEntityAction().onPlayerCommand(event, player, packet);
         new CheckManagerListener().onPlayerCommand(event, player, packet);
@@ -472,24 +463,14 @@ public final class ReachabilityOrderingParityTest {
     private static CultPlayer offlineJavaPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = new User(
-                new User.Profile(playerId, ".Reachability_Order_Test"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Reachability_Order_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 
     private static CultPlayer offlineBedrockPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = new User(
-                new User.Profile(playerId, ".Reachability_Bedrock_Test"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Reachability_Bedrock_Test"), new EmbeddedChannel());
         return new CultPlayer(user, MovementPlatform.BEDROCK, new BedrockPlayerState(playerId));
     }
 
@@ -540,7 +521,7 @@ public final class ReachabilityOrderingParityTest {
         public void onMoveVehicle(
                 PacketReceiveEvent event,
                 CultPlayer player,
-                ServerboundMoveVehiclePacket packet
+                ServerboundMoveVehicle packet
         ) {
             calls++;
         }

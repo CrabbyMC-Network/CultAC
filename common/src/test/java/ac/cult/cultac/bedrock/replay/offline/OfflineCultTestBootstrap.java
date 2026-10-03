@@ -39,9 +39,12 @@ import org.bukkit.plugin.java.JavaPluginLoader;
 import org.mockito.Mockito;
 
 public final class OfflineCultTestBootstrap {
+    private static boolean networkConfigured;
+
     private static boolean installed;
     private static UnsafeValues unsafeValues;
     private static PluginManager pluginManager;
+    private static net.minecraft.core.RegistryAccess.Frozen worldRegistries;
     private static final Map<String, Double> DOUBLE_CONFIG_OVERRIDES = new ConcurrentHashMap<>();
 
     private OfflineCultTestBootstrap() {
@@ -49,9 +52,11 @@ public final class OfflineCultTestBootstrap {
 
     public static void installConfig() {
         if (installed) {
+            initializeProtocolRuntime();
             return;
         }
         SpongeSchematicCompensatedWorldLoader.bootstrapMinecraft();
+        initializeProtocolRuntime();
         initializePaperGlobalConfiguration();
         installBukkitServer();
         installCultPlugin();
@@ -82,6 +87,35 @@ public final class OfflineCultTestBootstrap {
         }
     }
 
+    private static void initializeProtocolRuntime() {
+        var manager = CultAPI.INSTANCE.getNetworkManager();
+        if (!networkConfigured) {
+            networkConfigured = true;
+            manager.configureTransport(ac.cult.cultac.network.TestProtocolRuntime.create(
+                    ac.cult.cultac.protocol.data.ProtocolData.load(ac.cult.cultac.protocol.ProtocolVersion.of(
+                            net.minecraft.SharedConstants.getProtocolVersion()))), () -> { }, () -> java.util.concurrent.CompletableFuture.completedFuture(null));
+        }
+    }
+
+    /** Offline state tests still encode authored records through the real transport. */
+    static ac.cult.cultac.network.protocol.player.User wireUser(ac.cult.cultac.network.protocol.player.User.Profile profile) {
+        var runtime = CultAPI.INSTANCE.getNetworkManager().dispatcher().scanner().runtime();
+        var channel = new io.netty.channel.embedded.EmbeddedChannel();
+        channel.pipeline().addLast("splitter", new io.netty.channel.ChannelInboundHandlerAdapter());
+        channel.pipeline().addLast("decoder", new io.netty.channel.ChannelInboundHandlerAdapter());
+        channel.pipeline().addLast("prepender", new io.netty.channel.ChannelOutboundHandlerAdapter());
+        channel.pipeline().addLast("encoder", new io.netty.channel.ChannelOutboundHandlerAdapter());
+        // Offline tests invoke consumers directly. Routes are empty so authored
+        // packets are encoded without running those consumers a second time.
+        var routes = new ac.cult.cultac.network.PacketDispatcher(runtime);
+        var transport = new ac.cult.cultac.network.CultConnection(channel, routes, ignored -> null);
+        ac.cult.cultac.protocol.paper.CultDecoder.install(transport);
+        ac.cult.cultac.protocol.paper.CultEncoder.install(transport);
+        for (var direction : ac.cult.cultac.protocol.PacketDirection.values()) transport.phase(direction, ac.cult.cultac.protocol.ConnectionPhase.PLAY);
+        var user = new ac.cult.cultac.network.protocol.player.User(profile, transport);
+        return user;
+    }
+
     static void setDoubleConfigOverride(String key, double value) {
         DOUBLE_CONFIG_OVERRIDES.put(key, value);
     }
@@ -101,10 +135,48 @@ public final class OfflineCultTestBootstrap {
             var base = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
             var world = net.minecraft.resources.RegistryDataLoader.load(resources, base.listRegistries().toList(),
                     net.minecraft.resources.RegistryDataLoader.WORLD_REGISTRIES, Runnable::run).join();
+            worldRegistries = world;
             var context = net.minecraft.core.HolderLookup.Provider.create(java.util.stream.Stream.concat(
                     base.listRegistries(), world.listRegistries()));
             BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(context).forEach(pending -> pending.apply());
         }
+    }
+
+    public static void initializePaperItemEncoder() throws ReflectiveOperationException {
+        installConfig();
+        // Paper's sanitizer initializes its enchantment defaults from the running server.
+        // Supply the loaded vanilla registries for that initialization; the item encoder
+        // and sanitizer themselves still execute their real implementations.
+        if (net.minecraft.server.MinecraftServer.getServer() == null) {
+            var server = Mockito.mock(net.minecraft.server.MinecraftServer.class);
+            Mockito.when(server.registryAccess()).thenReturn(worldRegistries);
+            var current = net.minecraft.server.MinecraftServer.class.getDeclaredField("SERVER");
+            current.setAccessible(true);
+            current.set(null, server);
+            try {
+                Class.forName("io.papermc.paper.util.sanitizer.ItemComponentSanitizer");
+            } finally {
+                current.set(null, null);
+            }
+        } else {
+            Class.forName("io.papermc.paper.util.sanitizer.ItemComponentSanitizer");
+        }
+    }
+
+    /** Dynamic registry IDs in login/respawn use the server encoder's registry. */
+    public static net.minecraft.core.RegistryAccess.Frozen vanillaRegistries() {
+        installConfig();
+        return worldRegistries;
+    }
+
+    public static AutoCloseable withServerRegistries(net.minecraft.core.RegistryAccess.Frozen registries) throws ReflectiveOperationException {
+        var current = net.minecraft.server.MinecraftServer.class.getDeclaredField("SERVER");
+        current.setAccessible(true);
+        Object previous = current.get(null);
+        var server = Mockito.mock(net.minecraft.server.MinecraftServer.class);
+        Mockito.when(server.registryAccess()).thenReturn(registries);
+        current.set(null, server);
+        return () -> current.set(null, previous);
     }
 
     private static void installCultPlugin() {
@@ -151,14 +223,16 @@ public final class OfflineCultTestBootstrap {
             Class<?> globalConfigurationClass = Class.forName("io.papermc.paper.configuration.GlobalConfiguration");
             java.lang.reflect.Method getMethod = globalConfigurationClass.getDeclaredMethod("get");
             Object current = getMethod.invoke(null);
-            if (current != null) {
-                return;
+            Object globalConfiguration = current == null ? globalConfigurationClass.getConstructor().newInstance() : current;
+            // Paper's Connection static initializer reads Misc.maxJoinsPerTick; its
+            // constructor reads PacketLimiter. Supply the same defaults as Paper.
+            for (String field : new String[]{"unsupportedSettings", "misc", "packetLimiter"}) {
+                java.lang.reflect.Field configField = globalConfigurationClass.getField(field);
+                if (configField.get(globalConfiguration) == null) {
+                    Object defaults = configField.getType().getConstructor(globalConfigurationClass).newInstance(globalConfiguration);
+                    configField.set(globalConfiguration, defaults);
+                }
             }
-
-            Object globalConfiguration = globalConfigurationClass.getConstructor().newInstance();
-            Class<?> unsupportedSettingsClass = Class.forName("io.papermc.paper.configuration.GlobalConfiguration$UnsupportedSettings");
-            Object unsupportedSettings = unsupportedSettingsClass.getConstructor(globalConfigurationClass).newInstance(globalConfiguration);
-            globalConfigurationClass.getField("unsupportedSettings").set(globalConfiguration, unsupportedSettings);
 
             java.lang.reflect.Method setMethod = globalConfigurationClass.getDeclaredMethod("set", globalConfigurationClass);
             setMethod.setAccessible(true);

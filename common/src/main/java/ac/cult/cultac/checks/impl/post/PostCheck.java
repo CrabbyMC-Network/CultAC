@@ -1,24 +1,38 @@
 package ac.cult.cultac.checks.impl.post;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSwingAnimation;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundAnimate;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.value.SwingKind;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.network.protocol.ClientVersion;
 
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.network.packet.PacketCodecUtil;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.lists.EvictingQueue;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
 
 //@CheckData(name = "Post")
 public class PostCheck extends Check implements CheckListener, PostPredictionListener {
@@ -30,10 +44,10 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
     public PostCheck(CultPlayer playerData) { super(playerData, CheckInfo.builder().name("Post").build()); }
 
     @CultPacketHandler
-    public void onAnimate(PacketSendEvent event, CultPlayer player, ClientboundAnimatePacket packet) {
+    public void onAnimate(PacketSendEvent<ClientboundAnimate> event, CultPlayer player, ClientboundAnimate packet) {
         if (ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion()).isOlderThan(ClientVersion.V_26_3)
-                && packet.getId() == player.entityID) {
-            int action = PacketCodecUtil.decodeUnsignedByte(packet.getAction());
+                && packet.entityId() == player.entityID) {
+            int action = packet.action();
             if (action == 0 ||
                     action == 3) {
                 isExemptFromSwingingCheck = player.lastTransactionSent.get();
@@ -41,9 +55,9 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
         }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundSwingAnimationPacket")
-    public void onSwingAnimation(PacketSendEvent event, CultPlayer player, net.minecraft.network.protocol.Packet<?> packet) {
-        if (ac.cult.cultac.network.packet.NmsPacketUtil.intValue(packet, "entityId") == player.entityID) {
+    @CultPacketHandler
+    public void onSwingAnimation(PacketSendEvent<ClientboundSwingAnimation> event, CultPlayer player, ClientboundSwingAnimation packet) {
+        if (packet.entityId() == player.entityID) {
             isExemptFromSwingingCheck = player.lastTransactionSent.get();
         }
     }
@@ -78,123 +92,105 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
         sentFlying = false;
     }
 
-    private void recordPostPacket(Object packet) {
+    private void recordPostPacket(ServerboundPacket packet) {
         if (sentFlying && post == null) {
             post = packetName(packet);
         }
     }
 
-    private void handleSwing(Packet<?> packet) {
+    private void handleSwing(ServerboundSwing packet) {
         if (sentFlying && post == null && isExemptFromSwingingCheck < player.lastTransactionReceived.get()) {
-            post = packetName(packet);
+            post = packet.kind() == SwingKind.PUNCH ? "punch" : "swing";
         }
     }
 
-    private void handlePlayerCommand(ServerboundPlayerCommandPacket packet) {
+    private void handlePlayerCommand(ServerboundPlayerCommand packet) {
         if (!sentFlying) {
             return;
         }
-        Action action = packet.getAction();
+        PlayerCommandAction action = packet.action();
         boolean riding = player.compensatedEntities.getSelf().getRiding() != null;
         // Vanilla LocalPlayer#tick sends passenger Rot/MoveVehicle before sendIsSprintingIfNeeded().
-        if (riding && (action == Action.START_SPRINTING || action == Action.STOP_SPRINTING)) {
+        if (riding && (action == PlayerCommandAction.START_SPRINTING || action == PlayerCommandAction.STOP_SPRINTING)) {
             return;
         }
-        if ((action != Action.START_FALL_FLYING || !riding) && post == null) {
+        if ((action != PlayerCommandAction.START_FLYING_WITH_ELYTRA || !riding) && post == null) {
             post = packetName(packet);
         }
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer();
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket")
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         handleClientTickEnd();
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         if (event.isAcceptedTransactionResponse()) {
             handleClientTickEnd();
         }
     }
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerAbilitiesPacket packet) {
+    public void onPlayerAbilities(PacketReceiveEvent<ServerboundPlayerAbilities> event, CultPlayer player, ServerboundPlayerAbilities packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        recordPostPacket(packet);
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        if ((packet.action() == ac.cult.cultac.protocol.value.InteractAction.ATTACK && event.getUser().getCultConnection().runtime().data().version().atLeast(ac.cult.cultac.protocol.ProtocolVersion.V26_1))) {
+            if (sentFlying && post == null) post = "attack";
+        } else {
+            recordPostPacket(packet);
+        }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        recordPostPacket(packet);
-    }
 
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemOnPacket packet) {
+    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         recordPostPacket(packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundPunchPacket")
-    public void onPunch(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSwing(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSwingPacket")
-    public void onSwing(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         handleSwing(packet);
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         handlePlayerCommand(packet);
     }
 
     // TODO: Move to a utility class?
-    private static String packetName(Object packet) {
-        String packetName = packet.getClass().getSimpleName();
-        if (packetName.startsWith("Serverbound")) {
-            packetName = packetName.substring("Serverbound".length());
-        } else if (packetName.startsWith("Clientbound")) {
-            packetName = packetName.substring("Clientbound".length());
-        }
-        if (packetName.endsWith("Packet")) {
-            packetName = packetName.substring(0, packetName.length() - "Packet".length());
-        }
+    private static String packetName(ServerboundPacket packet) {
+        String packetName = packet.getClass().getSimpleName().substring("Serverbound".length());
 
         StringBuilder builder = new StringBuilder(packetName.length() + 4);
         for (int i = 0; i < packetName.length(); i++) {

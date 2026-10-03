@@ -1,5 +1,7 @@
 package ac.cult.cultac.utils.latency;
 
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundKeepAlive;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundKeepAlive;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.impl.ping.PingA;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -10,8 +12,6 @@ import ac.cult.cultac.utils.maps.EvictingMap;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import lombok.Getter;
-import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
 
 public class KeepAliveProcessor extends CultProcessor implements CheckListener {
 
@@ -22,8 +22,8 @@ public class KeepAliveProcessor extends CultProcessor implements CheckListener {
     public long lastKeepAlivePing = -1;
 
     @CultPacketHandler
-    public void onKeepAlive(PacketReceiveEvent event, CultPlayer player, ServerboundKeepAlivePacket packet) {
-        acceptResponse(packet.getId());
+    public void onKeepAlive(PacketReceiveEvent<ServerboundKeepAlive> event, CultPlayer player, ServerboundKeepAlive packet) {
+        acceptResponse(packet.id());
     }
 
     public void acceptResponse(long id) {
@@ -46,8 +46,8 @@ public class KeepAliveProcessor extends CultProcessor implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onKeepAlive(PacketSendEvent event, CultPlayer player, ClientboundKeepAlivePacket packet) {
-        long id = packet.getId();
+    public void onKeepAlive(PacketSendEvent<ClientboundKeepAlive> event, CultPlayer player, ClientboundKeepAlive packet) {
+        long id = packet.id();
         final KeepAliveData keepAliveData = new KeepAliveData(id, System.currentTimeMillis());
         this.pingMap.put(id, keepAliveData);
         //sandwich the keep alive packet

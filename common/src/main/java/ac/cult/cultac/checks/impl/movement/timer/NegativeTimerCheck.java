@@ -1,18 +1,16 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.DeadCheck;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerSlotStateChangedPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
 import org.bukkit.GameMode;
 
 //@CheckData(name = "NegativeTimer", configName = "NegativeTimer", setback = 10)
@@ -51,7 +49,7 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
         }
     }
 
-    private void recordNegativeMovePlayerPacket(final PacketReceiveEvent event, ServerboundMovePlayerPacket packet) {
+    private void recordNegativeMovePlayerPacket(final PacketReceiveEvent event, ServerboundMovePlayer packet) {
         recordTimerEvent(event, false, shouldCountMovePlayerForTimer());
         handleMovePlayer(packet);
         clampTimerBalanceToDrift();
@@ -73,11 +71,11 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
         this.timerBalanceRealTime = Math.min(this.timerBalanceRealTime, System.nanoTime() + this.clockDrift);
     }
 
-    private void handleMovePlayer(ServerboundMovePlayerPacket movePacket) {
-        NmsPacketUtil.MovePlayerData flying = NmsPacketUtil.readMovePlayer(movePacket, player);
+    private void handleMovePlayer(ServerboundMovePlayer movePacket) {
+        ServerboundMovePlayer flying = movePacket;
 
-        float newXRot = flying.hasRotationChanged() ? flying.yaw() : lastXRot;
-        float newYRot = flying.hasRotationChanged() ? flying.pitch() : lastYRot;
+        float newXRot = flying.hasRotation() ? flying.yaw() : lastXRot;
+        float newYRot = flying.hasRotation() ? flying.pitch() : lastYRot;
         this.lastTransactionReceivedLastTick = player.lastTransactionReceived.get();
 
         if (newXRot != this.lastXRot || newYRot != this.lastYRot) {
@@ -97,26 +95,26 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.isBedrockMovement()) {
             return;
         }
         recordNegativeMovePlayerPacket(event, packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket")
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, net.minecraft.network.protocol.Packet<?> packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         recordNegativeClientTickEndPacket(event);
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         recordNegativeTransactionResponse(event);
     }
 
-    @CultPacketHandler
-    public void onContainerSlotStateChanged(PacketReceiveEvent event, CultPlayer player, ServerboundContainerSlotStateChangedPacket packet) {
+    @CultPacketHandler("serverbound.container_slot_state_changed")
+    public void onContainerSlotStateChanged(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         recordNegativeTransactionResponse(event);
     }
 

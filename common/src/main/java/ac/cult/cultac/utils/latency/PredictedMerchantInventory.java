@@ -1,5 +1,7 @@
 package ac.cult.cultac.utils.latency;
 
+import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
+
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.slot.Slot;
@@ -17,7 +19,7 @@ final class PredictedMerchantInventory {
     private PredictedMerchantInventory() {
     }
 
-    static void mirrorTrade(AbstractContainerMenu menu, List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers, int selectedTrade) {
+    static void mirrorTrade(AbstractContainerMenu menu, List<MerchantOffer> offers, int selectedTrade) {
         if (menu == null || offers == null || menu.getSlots().size() < PLAYER_SLOT_END) {
             return;
         }
@@ -25,7 +27,7 @@ final class PredictedMerchantInventory {
         updateResultSlot(menu, offers, selectedTrade);
     }
 
-    static void mirrorTradeSelection(AbstractContainerMenu menu, List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers, int selectedTrade) {
+    static void mirrorTradeSelection(AbstractContainerMenu menu, List<MerchantOffer> offers, int selectedTrade) {
         if (menu == null || offers == null || menu.getSlots().size() < PLAYER_SLOT_END) {
             return;
         }
@@ -41,7 +43,7 @@ final class PredictedMerchantInventory {
             }
 
             if (isEmpty(menu.getSlot(PAYMENT_A_SLOT).getItem()) && isEmpty(menu.getSlot(PAYMENT_B_SLOT).getItem())) {
-                PredictedResultSlotValidator.MerchantOfferSnapshot offer = offers.get(selectedTrade);
+                MerchantOffer offer = offers.get(selectedTrade);
                 moveFromInventoryToPaymentSlot(menu, PAYMENT_A_SLOT, offer.costA());
                 if (!isEmpty(offer.costB())) {
                     moveFromInventoryToPaymentSlot(menu, PAYMENT_B_SLOT, offer.costB());
@@ -54,7 +56,7 @@ final class PredictedMerchantInventory {
 
     static boolean matchesResult(
             List<ItemStack> slots,
-            List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers,
+            List<MerchantOffer> offers,
             int selectedTrade,
             ItemStack result
     ) {
@@ -62,7 +64,7 @@ final class PredictedMerchantInventory {
             return false;
         }
 
-        PredictedResultSlotValidator.MerchantOfferSnapshot offer = findSatisfiedOffer(
+        MerchantOffer offer = findSatisfiedOffer(
                 offers, slots.get(PAYMENT_A_SLOT), slots.get(PAYMENT_B_SLOT), selectedTrade);
         if (offer == null) {
             offer = findSatisfiedOffer(
@@ -182,7 +184,7 @@ final class PredictedMerchantInventory {
         }
     }
 
-    private static void updateResultSlot(AbstractContainerMenu menu, List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers, int selectedTrade) {
+    private static void updateResultSlot(AbstractContainerMenu menu, List<MerchantOffer> offers, int selectedTrade) {
         Slot resultSlot = menu.getSlot(RESULT_SLOT);
         if (resultSlot == null) {
             return;
@@ -198,7 +200,7 @@ final class PredictedMerchantInventory {
             buyB = menu.getSlot(PAYMENT_B_SLOT).getItem();
         }
 
-        PredictedResultSlotValidator.MerchantOfferSnapshot offer = findSatisfiedOffer(offers, buyA, buyB, selectedTrade);
+        MerchantOffer offer = findSatisfiedOffer(offers, buyA, buyB, selectedTrade);
         if (offer == null) {
             offer = findSatisfiedOffer(offers, buyB, buyA, selectedTrade);
         }
@@ -206,8 +208,8 @@ final class PredictedMerchantInventory {
         resultSlot.set(offer == null ? ItemStack.empty() : ItemUtil.copy(offer.result()));
     }
 
-    private static PredictedResultSlotValidator.MerchantOfferSnapshot findSatisfiedOffer(
-            List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers,
+    private static MerchantOffer findSatisfiedOffer(
+            List<MerchantOffer> offers,
             ItemStack buyA,
             ItemStack buyB,
             int selectedTrade
@@ -217,14 +219,14 @@ final class PredictedMerchantInventory {
     }
 
     private static int findSatisfiedOfferIndex(
-            List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers,
+            List<MerchantOffer> offers,
             ItemStack buyA,
             ItemStack buyB,
             int selectedTrade
     ) {
         // Vanilla treats hint 0 as "search all offers" and only pins positive hints.
         if (selectedTrade > 0 && selectedTrade < offers.size()) {
-            PredictedResultSlotValidator.MerchantOfferSnapshot offer = offers.get(selectedTrade);
+            MerchantOffer offer = offers.get(selectedTrade);
             return satisfiedBy(offer, buyA, buyB) ? selectedTrade : -1;
         }
 
@@ -236,7 +238,7 @@ final class PredictedMerchantInventory {
         return -1;
     }
 
-    private static boolean satisfiedBy(PredictedResultSlotValidator.MerchantOfferSnapshot offer, ItemStack buyA, ItemStack buyB) {
+    private static boolean satisfiedBy(MerchantOffer offer, ItemStack buyA, ItemStack buyB) {
         if (offer == null
                 || offer.outOfStock()
                 || !PredictedResultSlotValidator.costMatches(offer.costA(), buyA)

@@ -1,15 +1,15 @@
 package ac.cult.cultac.checks.impl.combat;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 
 @CheckData(name = "SelfInteract", stableKey = "cult.badpackets.self_hit", description = "Interacted with self")
 public class SelfInteract extends Check implements CheckListener {
@@ -18,30 +18,18 @@ public class SelfInteract extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteractEntity(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
+    public void onInteractEntity(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (!DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
-        NmsPacketUtil.InteractData data = NmsPacketUtil.readInteract(packet);
-        onInteract(event, data.entityId());
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        if (!DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
-        NmsPacketUtil.InteractData data = NmsPacketUtil.readAttack(packet);
-        onInteract(event, data.entityId());
+        onInteract(event, packet.entityId());
     }
 
 
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+
+    @CultPacketHandler
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         if (!DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
-        NmsPacketUtil.spectatorEntityId(packet).ifPresent(entityId -> onInteract(event, entityId));
+        packet.target().ifPresent(entityId -> onInteract(event, entityId));
     }
 
     // TODO: should check for camera entity id instead of player entity id?

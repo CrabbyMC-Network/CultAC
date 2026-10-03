@@ -11,7 +11,7 @@ public class ClientVersionSetter implements Tickable {
         for (CultPlayer player : CultAPI.INSTANCE.getPlayerDataManager().getEntries()) {
             // channel was somehow closed without us getting a disconnect event
             if (!ChannelHelper.isOpen(player.user.getChannel())) {
-                CultAPI.INSTANCE.getPlayerDataManager().onDisconnect(player.user);
+                CultAPI.INSTANCE.getNetworkManager().disconnect(player.user);
                 continue;
             }
 

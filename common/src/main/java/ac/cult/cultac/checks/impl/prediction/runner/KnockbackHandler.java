@@ -9,7 +9,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.TransactionVel;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundEntityMotion;
 
 // Player velocity packets use a bundle proof when available, otherwise the Cult3.0-clean transaction sandwich.
 //@CheckData(name = "AntiKB", alternativeName = "AntiKnockback", configName = "Knockback", setback = 4, decay = 0.025)
@@ -25,12 +25,12 @@ public class KnockbackHandler extends PacketModHandler implements PostPrediction
             .decay(0.025)
             .build()); }
 
-    public int handleEntityVelocity(PacketSendEvent event, ClientboundSetEntityMotionPacket velocity) {
+    public int handleEntityVelocity(PacketSendEvent<ClientboundEntityMotion> event, ClientboundEntityMotion velocity) {
         if (player.isBedrockMovement()) {
             // The Geyser wire observer owns Bedrock motion and its receipt proof.
             return -1;
         }
-        var motion = ac.cult.cultac.network.packet.NmsPacketUtil.readEntityMotion(velocity);
+        var motion = velocity;
         PacketEntity vehicle = player.compensatedEntities.vehicles.getVelocityMovementVehicle();
         int movementEntityId = vehicle != null ? vehicle.getEntityId() : player.entityID;
         if (motion.entityId() != movementEntityId) {
@@ -41,7 +41,8 @@ public class KnockbackHandler extends PacketModHandler implements PostPrediction
             return -1;
         }
 
-        Vec3 playerVelocity = PacketCodecUtil.quantizeClientboundVelocity(player.getClientVersion(), motion.movement());
+        Vec3 playerVelocity = PacketCodecUtil.quantizeClientboundVelocity(player.getClientVersion(),
+                new Vec3(motion.velocity().x(), motion.velocity().y(), motion.velocity().z()));
         if (vehicle != null) {
             return -1;
         }

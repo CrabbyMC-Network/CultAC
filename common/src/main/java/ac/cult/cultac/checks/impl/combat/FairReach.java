@@ -1,5 +1,7 @@
 package ac.cult.cultac.checks.impl.combat;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -8,21 +10,18 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
 import net.minecraft.world.phys.Vec3;
 import io.netty.util.concurrent.ScheduledFuture;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.AllArgsConstructor;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundAddEntity;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundRemoveEntities;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,16 +53,16 @@ public class FairReach extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onAddEntity(PacketSendEvent event, CultPlayer player, ClientboundAddEntityPacket packet) {
-        if (packet.getType() == EntityTypesCompat.PLAYER) {
-            addEntity(packet.getId(), new net.minecraft.world.phys.Vec3(packet.getX(), packet.getY(), packet.getZ()));
+    public void onAddEntity(PacketSendEvent<ClientboundAddEntity> event, CultPlayer player, ClientboundAddEntity packet) {
+        if (packet.entityType().equals("minecraft:player")) {
+            addEntity(packet.entityId(), new Vec3(packet.position().x(), packet.position().y(), packet.position().z()));
         }
     }
 
     @CultPacketHandler
-    public void onRemoveEntities(PacketSendEvent event, CultPlayer player, ClientboundRemoveEntitiesPacket packet) {
+    public void onRemoveEntities(PacketSendEvent<ClientboundRemoveEntities> event, CultPlayer player, ClientboundRemoveEntities packet) {
         // Server won't process destroyed entity hits anyway... might as well remove them immediately
-        for (int entityId : ac.cult.cultac.network.packet.NmsPacketUtil.removedEntityIds(packet)) {
+        for (int entityId : packet.entityIds()) {
             targetPlayers.remove(entityId);
         }
     }
@@ -80,7 +79,7 @@ public class FairReach extends Check implements CheckListener {
         targetPlayers.put(entityId, new FairReachEntity(entityId, new Vec3(spawnPosition.x, spawnPosition.y, spawnPosition.z)));
     }
 
-    private void handleInteract(final PacketReceiveEvent event, NmsPacketUtil.InteractData attack) {
+    private void handleInteract(final PacketReceiveEvent event, ServerboundInteract attack) {
         // The server entity position will temporarily desync from the player
         // If it exceeds the defined limit, 3.1, from the optimal reach angle, we will cancel the hit
         if (!player.isDisabled() && attack != null) {
@@ -91,7 +90,7 @@ public class FairReach extends Check implements CheckListener {
             if (player.compensatedEntities.getSelf().inVehicle()) return;
             if (reachTarget != null && reachTarget.riding != null) return;
             if (target == null) return;
-            if (attack.action() != NmsPacketUtil.InteractAction.ATTACK) return;
+            if (attack.action() != InteractAction.ATTACK) return;
 
             if (target.getMinDistanceForReach() > max_reach) {
                 player.onPacketCancel();
@@ -102,17 +101,14 @@ public class FairReach extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        handleInteract(event, NmsPacketUtil.readInteract(packet));
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        handleInteract(event, packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        handleInteract(event, NmsPacketUtil.readAttack(packet));
-    }
 
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         // 15 ms is both min and max both ways, but...
         // We will force the player to tick at least every 50 ms + 15 ms
         // Ticks before 50 ms means we tick at 50 - 15 ms

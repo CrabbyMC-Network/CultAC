@@ -1,6 +1,5 @@
 package ac.cult.cultac.events.packets.listeners;
 
-import ac.cult.cultac.network.packet.PacketCodecUtil;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.ShulkerData;
@@ -8,7 +7,7 @@ import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import org.bukkit.block.data.BlockData;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
 
 // If a player doesn't get this packet, then they don't know the shulker box is currently opened
 // Meaning if a player enters a chunk with an opened shulker box, they see the shulker box as closed.
@@ -20,15 +19,15 @@ public class PacketBlockAction {
     //HIGH
 
     @CultPacketHandler
-    public void onBlockEvent(PacketSendEvent event, CultPlayer player, ClientboundBlockEventPacket packet) {
-        BlockPos blockPos = packet.getPos();
+    public void onBlockEvent(PacketSendEvent<ClientboundBlockEvent> event, CultPlayer player, ClientboundBlockEvent packet) {
+        BlockPos blockPos = new BlockPos(packet.position().x(), packet.position().y(), packet.position().z());
 
         // The client ignores the state sent to the client.
         player.latencyUtils.addRealTimeTaskNow(() -> { BlockData existing = player.compensatedWorld.getBlockDataAt(blockPos);
             if (NmsBlockTags.isShulkerBox(existing.getMaterial())) {
                 // Param is the number of viewers of the shulker box.
                 // Hashset with .equals() set to be position
-                int action = PacketCodecUtil.decodeUnsignedByte(packet.getB0());
+                int action = packet.action();
                 if (action == 1) {
                     final ShulkerData openedBox = new ShulkerData(blockPos, player.lastTransactionSent.get(), false);
                     player.compensatedWorld.openShulkerBoxes.remove(openedBox);

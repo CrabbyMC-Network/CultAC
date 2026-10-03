@@ -1,7 +1,8 @@
 package ac.cult.cultac.checks.impl.breaking;
 
+import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.type.PostFlyingBlockBreakListener;
@@ -13,7 +14,6 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.Pair;
 import ac.cult.cultac.utils.nmsutil.Ray;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import org.bukkit.block.BlockFace;
 import org.bukkit.util.Vector;
 
@@ -37,13 +37,13 @@ public class RotationBreak extends Check implements BlockBreakListener, PostFlyi
         if (!player.cameraEntity.isSelf())
             return; // you don't send flying packets when spectating entities
         if (player.inVehicle()) return; // falses
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK) return; // PE DiggingAction.CANCELLED_DIGGING; falses
+        if (blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) return; // PE DiggingAction.CANCELLED_DIGGING; falses
 
         if (flagBuffer > 0 && !didRayTraceHit(blockBreak)) {
             ignorePost = true;
             // If the player hit and has flagged this check recently
             if (flag(V.write(verbose()).bool(true)
-                    .uint(VerboseTags.enumId(blockBreak.action))) && shouldModifyPackets()) {
+                    .uint(VerboseCodecs.digging(blockBreak.action))) && shouldModifyPackets()) {
                 blockBreak.cancel();
             }
         }
@@ -53,7 +53,7 @@ public class RotationBreak extends Check implements BlockBreakListener, PostFlyi
         if (!player.cameraEntity.isSelf())
             return; // you don't send flying packets when spectating entities
         if (player.inVehicle()) return; // falses
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK) return; // PE DiggingAction.CANCELLED_DIGGING; falses
+        if (blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) return; // PE DiggingAction.CANCELLED_DIGGING; falses
 
         // Don't flag twice
         if (ignorePost) {
@@ -66,7 +66,7 @@ public class RotationBreak extends Check implements BlockBreakListener, PostFlyi
         } else {
             flagBuffer = 1;
             flag(V.write(verbose()).bool(false)
-                    .uint(VerboseTags.enumId(blockBreak.action)));
+                    .uint(VerboseCodecs.digging(blockBreak.action)));
         }
     }
 

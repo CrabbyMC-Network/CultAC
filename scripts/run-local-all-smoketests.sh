@@ -4,11 +4,20 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cultac_root="$(cd "$script_dir/.." && pwd)"
 default_smoketest_root="$cultac_root/../mcp-client-smoketest"
+if [[ ! -x "$default_smoketest_root/gradlew" && -x "$cultac_root/../cultac-asm-validation/harness-26-3-release/gradlew" ]]; then
+  default_smoketest_root="$cultac_root/../cultac-asm-validation/harness-26-3-release"
+fi
 smoketest_root="${SMOKETEST_REPO:-$default_smoketest_root}"
 
 time_budget_minutes="${SMOKETEST_TIME_BUDGET_MINUTES:-60}"
 base_port="${SMOKETEST_BASE_PORT:-25580}"
-mcp_ref="${SMOKETEST_MCP_REF:-26.2}"
+mcp_ref="${SMOKETEST_MCP_REF:-26.3}"
+workspace_manifest="${SMOKETEST_WORKSPACE_MANIFEST:-}"
+bedrock_root="${BEDROCK_REPLAY_REPO:-$cultac_root/../BedrockPacketReplay}"
+bedrock_scenarios="${BEDROCK_SMOKETEST_SCENARIOS:-$cultac_root/../bedrock-smoketest-scenarios/scenarios}"
+bedrock_runtime="${BEDROCK_RUNTIME_LOCK:-$bedrock_root/runtime-lock.json}"
+bedrock_replay_runtime="${BEDROCK_REPLAY_RUNTIME_LOCK:-}"
+bedrock_seed="${BEDROCK_MUTATION_SEED:-42}"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 artifact_root="${SMOKETEST_ARTIFACT_ROOT:-$smoketest_root/.real-validation/runs/local-all-smoketests-$timestamp}"
 setup_client="${SMOKETEST_SETUP_CLIENT:-auto}"
@@ -32,11 +41,12 @@ Runs the local all-smoketests workflow without GitHub Actions minutes.
 
 Options:
   --smoketest-root PATH       Path to the standalone mcp-client-smoketest repo.
-                              Default: ../mcp-client-smoketest
+                              Default: ../mcp-client-smoketest, with the recovered 26.3 harness as fallback
   --artifact-root PATH        Root directory for all validation artifacts.
   --base-port PORT            First local Paper server port. Default: 25580
   --time-budget-minutes N     Overall wall-clock budget. Default: 60
-  --mcp-ref REF               MCP-Reborn ref for setup. Default: 26.2
+  --mcp-ref REF               MCP-Reborn ref for setup. Default: 26.3
+  --workspace-manifest PATH   Reuse a prepared, independently verified client/server workspace.
   --setup-client MODE         auto, always, or never. Default: auto
                               auto reuses an existing prepared MCP-Reborn client.
   --max-workers N             Gradle worker cap. Default: 2
@@ -59,7 +69,10 @@ Environment overrides match the long option names:
   SMOKETEST_JVM_HEAP, REAL_VALIDATION_SERVER_JVM_XMS,
   REAL_VALIDATION_SERVER_JVM_HEAP, SMOKETEST_SKIP_CULTAC_BUILD,
   SMOKETEST_STOP_GRADLE_DAEMONS, SMOKETEST_PLUGIN_JAR,
-  SMOKETEST_USE_XVFB.
+  SMOKETEST_USE_XVFB, SMOKETEST_WORKSPACE_MANIFEST, BEDROCK_REPLAY_REPO,
+  BEDROCK_SMOKETEST_SCENARIOS, BEDROCK_RUNTIME_LOCK, BEDROCK_REPLAY_RUNTIME_LOCK,
+  BEDROCK_MUTATION_SEED. BEDROCK_RUNTIME_LOCK verifies historical capture
+  provenance; BEDROCK_REPLAY_RUNTIME_LOCK optionally pins a separate native 26.3 target.
 EOF
 }
 
@@ -93,6 +106,11 @@ while [[ $# -gt 0 ]]; do
     --mcp-ref)
       [[ $# -ge 2 ]] || fail "--mcp-ref requires a ref"
       mcp_ref="$2"
+      shift 2
+      ;;
+    --workspace-manifest)
+      [[ $# -ge 2 ]] || fail "--workspace-manifest requires a path"
+      workspace_manifest="$(realpath "$2")"
       shift 2
       ;;
     --setup-client)
@@ -187,6 +205,7 @@ case "$stop_gradle_daemons" in
 esac
 
 mkdir -p "$artifact_root"
+artifact_root="$(cd "$artifact_root" && pwd)"
 log_file="$artifact_root/local-all-smoketests.log"
 summary_file="$artifact_root/local-all-smoketests-summary.txt"
 touch "$log_file"
@@ -269,7 +288,27 @@ run_real_client_gradle_phase() {
   fi
 }
 
-mcp_client_jar="$smoketest_root/.real-validation/toolchains/MCP-Reborn/projects/mcp/build/mcp/stripClient/output.jar"
+client_checkout="$smoketest_root/.real-validation/toolchains/MCP-Reborn"
+if [[ -z "$workspace_manifest" && -f "$smoketest_root/.real-validation/smoketest-workspace.properties" ]]; then
+  if rg -q "^smoketest.paper.version=$mcp_ref$" "$smoketest_root/.real-validation/smoketest-workspace.properties"; then
+    workspace_manifest="$smoketest_root/.real-validation/smoketest-workspace.properties"
+  fi
+fi
+if [[ -n "$workspace_manifest" ]]; then
+  [[ "$setup_client" != "always" ]] || fail "a prepared manifest cannot be combined with --setup-client always"
+  [[ -f "$workspace_manifest" ]] || fail "workspace manifest is missing: $workspace_manifest"
+  client_checkout="$(python3 - "$workspace_manifest" "$mcp_ref" <<'PY_WORKSPACE'
+from pathlib import Path
+import sys
+values = dict(line.split('=', 1) for line in Path(sys.argv[1]).read_text().splitlines() if line and not line.startswith('#') and '=' in line)
+if values.get('smoketest.paper.version') != sys.argv[2]:
+    raise ValueError('Paper workspace version does not match requested client')
+print(values['smoketest.mcp.checkoutDir'].replace('\\:', ':').replace('\\ ', ' '))
+PY_WORKSPACE
+)" || fail "prepared workspace identity is invalid"
+  setup_client="never"
+fi
+mcp_client_jar="$client_checkout/projects/mcp/build/mcp/stripClient/output.jar"
 client_setup_needed="false"
 if [[ "$setup_client" == "always" || ( "$setup_client" == "auto" && ! -f "$mcp_client_jar" ) ]]; then
   client_setup_needed="true"
@@ -279,7 +318,7 @@ if [[ "$setup_client" == "never" && ! -f "$mcp_client_jar" ]]; then
 fi
 if [[ -f "$mcp_client_jar" && "$setup_client" != "always" ]]; then
   if ! python3 "$script_dir/verify-smoketest-client.py" \
-      "$smoketest_root/.real-validation/toolchains/MCP-Reborn" "$mcp_ref" \
+      "$client_checkout" "$mcp_ref" \
       > "$artifact_root/client-identity.json"; then
     [[ "$setup_client" != "never" ]] || fail "cached client identity does not match --mcp-ref $mcp_ref"
     client_setup_needed="true"
@@ -338,7 +377,7 @@ else
 fi
 
 python3 "$script_dir/verify-smoketest-client.py" \
-  "$smoketest_root/.real-validation/toolchains/MCP-Reborn" "$mcp_ref" \
+  "$client_checkout" "$mcp_ref" \
   > "$artifact_root/client-identity.json" || fail "client setup did not produce the requested client"
 
 if [[ "$skip_cultac_build" == "true" ]]; then
@@ -370,18 +409,26 @@ common_gradle_args=(
   -Psmoketest.cultac.repoRoot="$cultac_root"
 )
 
+if [[ -n "$workspace_manifest" ]]; then
+  cp "$workspace_manifest" "$artifact_root/smoketest-workspace.properties"
+  workspace_manifest="$artifact_root/smoketest-workspace.properties"
+  phase_summaries+=("prepare smoketest server workspace: REUSE VERIFIED MANIFEST")
+else
 run_phase "prepare smoketest server workspace" \
   "${gradle_env_cmd[@]}" \
   "$smoketest_root/gradlew" -p "$smoketest_root" setupSmoketestServer writeSmoketestWorkspaceManifest "${common_gradle_args[@]}"
 
 [[ "$last_phase_status" -eq 0 ]] || fail "smoketest workspace setup failed"
+  workspace_manifest="$smoketest_root/.real-validation/smoketest-workspace.properties"
+fi
 # Older standalone checkouts ignore the Gradle path overrides when writing this manifest.
 # Pin the actual runtime jar explicitly so every phase validates the jar hashed above.
-python3 - "$smoketest_root/.real-validation/smoketest-workspace.properties" "$cult_dev_jar" "$cultac_root" <<'PY_MANIFEST'
+python3 - "$workspace_manifest" "$cult_dev_jar" "$cultac_root" <<'PY_MANIFEST'
 from pathlib import Path
-import sys
+import sys, hashlib
 path = Path(sys.argv[1])
-overrides = {'smoketest.grim.devJar': sys.argv[2], 'smoketest.cultac.repoRoot': sys.argv[3]}
+overrides = {'smoketest.grim.devJar': sys.argv[2], 'smoketest.cultac.repoRoot': sys.argv[3],
+             'smoketest.cult.sha256': hashlib.sha256(Path(sys.argv[2]).read_bytes()).hexdigest()}
 lines = [line for line in path.read_text().splitlines()
          if line.split('=', 1)[0] not in overrides]
 for key, value in overrides.items():
@@ -389,6 +436,8 @@ for key, value in overrides.items():
     lines.append(key + '=' + value)
 path.write_text('\n'.join(lines) + '\n')
 PY_MANIFEST
+
+common_gradle_args+=(--init-script "$script_dir/smoketest-workspace.init.gradle" -Psmoketest.workspaceManifest="$workspace_manifest")
 
 run_phase "harness guardrails" \
   "${gradle_env_cmd[@]}" \
@@ -411,6 +460,24 @@ run_real_client_gradle_phase "full Java movement smoketest" \
   -Psmoketest.suite=ci-full \
   -Psmoketest.basePort="$((base_port + 20))" \
   -Psmoketest.artifactRoot="$artifact_root/java-movement"
+
+
+# Historical capture integrity and the selected replay runtime are independently
+# pinned. The runner executes three replays in four rounds without skipping failures.
+[[ -x "$bedrock_root/gradlew" ]] || fail "missing Bedrock replay checkout: $bedrock_root"
+[[ -f "$bedrock_runtime" ]] || fail "missing Bedrock runtime lock: $bedrock_runtime"
+bedrock_runtime_args=(--runtime-lock "$bedrock_runtime")
+if [[ -n "$bedrock_replay_runtime" ]]; then
+  [[ -f "$bedrock_replay_runtime" ]] || fail "missing Bedrock replay runtime lock: $bedrock_replay_runtime"
+  bedrock_runtime_args+=(--replay-runtime-lock "$bedrock_replay_runtime")
+fi
+run_phase "build Bedrock replay tooling" "$bedrock_root/gradlew" -p "$bedrock_root" build --no-daemon --console=plain --max-workers="$max_workers"
+if [[ "$last_phase_status" -eq 0 ]]; then
+  run_phase "twelve Bedrock movement rounds" python3 "$bedrock_root/scripts/run-movement-regressions.py" \
+    --seed "$bedrock_seed" --scenarios "$bedrock_scenarios" --cultac-jar "$cult_dev_jar" \
+    --server-dir "$artifact_root/bedrock-server" --artifacts "$artifact_root/bedrock" \
+    "${bedrock_runtime_args[@]}" --java-port "$((base_port + 40))"
+fi
 
 {
   echo "totalElapsedSeconds=$(elapsed_seconds)"

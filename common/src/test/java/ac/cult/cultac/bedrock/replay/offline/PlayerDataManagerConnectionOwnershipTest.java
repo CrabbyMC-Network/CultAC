@@ -70,11 +70,6 @@ public final class PlayerDataManagerConnectionOwnershipTest {
     }
 
     private static User user(String name) {
-        return new User(
-                new User.Profile(SHARED_UUID, name),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        return ac.cult.cultac.network.TestUsers.create(new User.Profile(SHARED_UUID, name), new EmbeddedChannel());
     }
 }

@@ -5,19 +5,17 @@ import ac.cult.cultac.checks.impl.misc.ClientBrand;
 import ac.cult.cultac.checks.impl.chat.ChatD;
 import ac.cult.cultac.manager.player.PluginChannelManager;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
-import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientInformation;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 
 public class PacketConfigurationListener {
 
     @CultPacketHandler
-    public void onCustomPayload(PacketReceiveEvent event, CultPlayer player, ServerboundCustomPayloadPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.CONFIGURATION) {
+    public void onCustomPayload(PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
+        if (event.getPhase() != ConnectionPhase.CONFIGURATION) {
             return;
         }
         if (event.isCancelled()) {
@@ -29,9 +27,8 @@ public class PacketConfigurationListener {
             return;
         }
 
-        CustomPacketPayload payload = packet.payload();
-        String channelName = NmsPacketUtil.payloadChannel(payload);
-        byte[] data = NmsPacketUtil.payloadData(event);
+        String channelName = packet.channel();
+        byte[] data = event.getPacket().data();
         if (channelName == null) {
             return;
         }
@@ -47,8 +44,8 @@ public class PacketConfigurationListener {
     }
 
     @CultPacketHandler
-    public void onClientInformation(PacketReceiveEvent event, CultPlayer player, ServerboundClientInformationPacket packet) {
-        if (event.getConnectionState() != ConnectionProtocol.CONFIGURATION) {
+    public void onClientInformation(PacketReceiveEvent<ServerboundClientInformation> event, CultPlayer player, ServerboundClientInformation packet) {
+        if (event.getPhase() != ConnectionPhase.CONFIGURATION) {
             return;
         }
         // PreViaCheckManagerListener dispatched configuration CLIENT_SETTINGS to ChatD.

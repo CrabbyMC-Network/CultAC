@@ -1,12 +1,13 @@
 package ac.cult.cultac.events.packets;
 
+import ac.cult.cultac.protocol.value.GameEventType;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import org.bukkit.GameMode;
 
 public class PacketChangeGameState extends CultProcessor implements CheckListener {
@@ -15,14 +16,14 @@ public class PacketChangeGameState extends CultProcessor implements CheckListene
     }
 
     @CultPacketHandler
-    public void onGameEvent(PacketSendEvent event, CultPlayer player, ClientboundGameEventPacket packet) {
-        if (packet.getEvent() != ClientboundGameEventPacket.CHANGE_GAME_MODE) {
+    public void onGameEvent(PacketSendEvent<ClientboundGameEvent> event, CultPlayer player, ClientboundGameEvent packet) {
+        if (packet.event() != GameEventType.CHANGE_GAME_MODE) {
             return;
         }
 
         player.sendTransaction();
         player.latencyUtils.addRealTimeTaskNow(() -> { GameMode previous = player.gamemode;
-            int gamemode = (int) packet.getParam();
+            int gamemode = (int) packet.param();
             player.gamemode = switch (gamemode) {
                 case 1 -> GameMode.CREATIVE;
                 case 2 -> GameMode.ADVENTURE;

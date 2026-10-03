@@ -1,21 +1,17 @@
 package ac.cult.cultac.network.event;
 
 import ac.cult.cultac.network.protocol.player.User;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.PacketDirection;
+import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 
-public final class PacketReceiveEvent extends PacketEvent {
+public final class PacketReceiveEvent<R extends ServerboundPacket> extends PacketEvent<R> {
     private boolean acceptedTransactionResponse;
-
-    public PacketReceiveEvent(User user, Packet<?> packet, ConnectionProtocol connectionState) {
-        super(user, packet, connectionState);
+    public PacketReceiveEvent(User user, ConnectionPhase phase, PacketType<R> type, R packet) {
+        super(user, phase, type, packet);
+        if (type.direction() != PacketDirection.SERVERBOUND) throw new IllegalArgumentException("Receive event requires serverbound packet");
     }
-
-    public boolean isAcceptedTransactionResponse() {
-        return acceptedTransactionResponse;
-    }
-
-    public void setAcceptedTransactionResponse(boolean acceptedTransactionResponse) {
-        this.acceptedTransactionResponse = acceptedTransactionResponse;
-    }
+    public boolean isAcceptedTransactionResponse() { return acceptedTransactionResponse; }
+    public void setAcceptedTransactionResponse(boolean accepted) { acceptedTransactionResponse = accepted; }
 }

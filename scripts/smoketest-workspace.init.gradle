@@ -1,0 +1,7 @@
+// Reuse the exact verified workspace instead of a harness checkout's defaults.
+gradle.projectsEvaluated {
+    def manifest = gradle.rootProject.property("smoketest.workspaceManifest")
+    gradle.rootProject.tasks.withType(JavaExec).configureEach {
+        systemProperty("smoketest.workspace.manifest", manifest)
+    }
+}

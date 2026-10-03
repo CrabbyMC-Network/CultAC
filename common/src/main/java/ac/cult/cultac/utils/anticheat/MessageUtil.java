@@ -8,6 +8,9 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.webhook.discord.CompiledDiscordTemplate;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundDisconnect;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -28,6 +31,14 @@ public class MessageUtil {
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + '§' + "[0-9A-FK-ORX]");
     private final Pattern HEX_PATTERN = Pattern.compile("([&§]#[A-Fa-f0-9]{6})|([&§]x([&§][A-Fa-f0-9]){6})");
     private final char PLACEHOLDER_ESCAPE_CHAR = '\uFFFF'; // this specific character holds no significance
+
+    /** Preserve Cult's existing disconnect conversion: plain text or an argument-free key. */
+    public ClientboundDisconnect disconnectPacket(Component reason) {
+        if (reason instanceof TranslatableComponent translated) {
+            return ClientboundDisconnect.translatable(translated.key());
+        }
+        return ClientboundDisconnect.literal(stripColor(LegacyComponentSerializer.legacySection().serialize(reason)));
+    }
 
     public @NotNull String toUnlabledString(@Nullable Vec3 vec) {
         return vec == null ? "null" : vec.x + ", " + vec.y + ", " + vec.z;

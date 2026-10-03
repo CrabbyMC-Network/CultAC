@@ -6,13 +6,13 @@ import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.world.phys.Vec3;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.value.Vec3d;
 
 import java.util.Optional;
 
@@ -39,22 +39,21 @@ public class BadPacketsT extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(final PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
+    public void onInteract(final PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (!isApplicable()) return;
 
-        final NmsPacketUtil.InteractData data = NmsPacketUtil.readInteract(packet);
         // Only INTERACT_AT actually has an interaction vector
-        if (data.action() != NmsPacketUtil.InteractAction.INTERACT_AT) return;
-        final Optional<Vec3> target = data.target();
+        if (packet.action() != InteractAction.INTERACT_AT) return;
+        final Optional<Vec3d> target = packet.target();
         if (target.isEmpty()) return; // shouldn't ever happen, but whatever
-        final Vec3 targetVector = target.get();
+        final Vec3d targetVector = target.get();
 
-        if (!Double.isFinite(targetVector.x) || !Double.isFinite(targetVector.y) || !Double.isFinite(targetVector.z)) {
-            flag(V.write(verbose()).f64(targetVector.x).f64(targetVector.y).f64(targetVector.z));
+        if (!Double.isFinite(targetVector.x()) || !Double.isFinite(targetVector.y()) || !Double.isFinite(targetVector.z())) {
+            flag(V.write(verbose()).f64(targetVector.x()).f64(targetVector.y()).f64(targetVector.z()));
             return;
         }
 
-        final PacketEntity packetEntity = player.compensatedEntities.getEntity(data.entityId());
+        final PacketEntity packetEntity = player.compensatedEntities.getEntity(packet.entityId());
         // Don't continue if the compensated entity hasn't been resolved
         if (packetEntity == null) {
             return;
@@ -68,14 +67,14 @@ public class BadPacketsT extends Check implements CheckListener {
 
 
         final float scale = packetEntity.scale;
-        if (targetVector.y > (minVerticalDisplacement * scale) && targetVector.y < (maxVerticalDisplacement * scale)
-                && Math.abs(targetVector.x) < (maxHorizontalDisplacement * scale)
-                && Math.abs(targetVector.z) < (maxHorizontalDisplacement * scale)) {
+        if (targetVector.y() > (minVerticalDisplacement * scale) && targetVector.y() < (maxVerticalDisplacement * scale)
+                && Math.abs(targetVector.x()) < (maxHorizontalDisplacement * scale)
+                && Math.abs(targetVector.z()) < (maxHorizontalDisplacement * scale)) {
             return;
         }
 
         // Log the vector
         // We could pretty much ban the player at this point
-        flag(V.write(verbose()).f64(targetVector.x).f64(targetVector.y).f64(targetVector.z));
+        flag(V.write(verbose()).f64(targetVector.x()).f64(targetVector.y()).f64(targetVector.z()));
     }
 }

@@ -11,11 +11,11 @@ import ac.cult.cultac.utils.data.TeleportAcceptData;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityTrackXRot;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
-import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerPosition;
+import ac.cult.cultac.protocol.value.Relative;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundAcceptTeleportation;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
 import net.minecraft.world.phys.Vec3;
 
 public class PacketServerTeleport {
@@ -24,20 +24,19 @@ public class PacketServerTeleport {
     //LOW
 
     @CultPacketHandler
-    public void onAcceptTeleportation(PacketReceiveEvent event, CultPlayer player, ServerboundAcceptTeleportationPacket packet) {
+    public void onAcceptTeleportation(PacketReceiveEvent<ServerboundAcceptTeleportation> event, CultPlayer player, ServerboundAcceptTeleportation ack) {
         if (player.isBedrockMovement()) {
             // Geyser's Java acknowledgement does not prove Bedrock processed the teleport.
             return;
         }
-        // The native packet is ID-only through 26.2 and carries position in
-        // 26.3. A translator presents the server's native packet shape here.
-        NmsPacketUtil.TeleportAcknowledgement ack = NmsPacketUtil.readTeleportAcknowledgement(packet);
+        // The wire packet is ID-only through 26.2 and carries position in
+        // 26.3. Translation presents the server's wire format here.
         if (ack.position() == null) {
             return;
         }
 
         TeleportAcceptData accepted = player.getSetbackTeleportUtil()
-                .checkExactJavaTeleportQueue(ack.position().x, ack.position().y, ack.position().z, ack.id());
+                .checkExactJavaTeleportQueue(ack.position().x(), ack.position().y(), ack.position().z(), ack.id());
         if (!accepted.isTeleport()) {
             // In 26.3 Paper applies these coordinates as movement after the ID.
             // A mismatched or transaction-unproven receipt must never reach it.
@@ -48,33 +47,31 @@ public class PacketServerTeleport {
     }
 
     @CultPacketHandler
-    public void onPlayerPosition(PacketSendEvent event, CultPlayer player, ClientboundPlayerPositionPacket packet) {
+    public void onPlayerPosition(PacketSendEvent<ClientboundPlayerPosition> event, CultPlayer player, ClientboundPlayerPosition packet) {
         if (player.isBedrockMovement()) return;
         handlePlayerPosition(event, player, packet);
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundPlayerRotationPacket")
-    public void onPlayerRotation(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onPlayerRotation(PacketSendEvent<ClientboundPlayerRotation> event, CultPlayer player, ClientboundPlayerRotation packet) {
         if (player.isBedrockMovement()) return;
         handlePlayerRotation(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onMoveVehicle(PacketSendEvent event, CultPlayer player, ClientboundMoveVehiclePacket packet) {
+    public void onMoveVehicle(PacketSendEvent<ClientboundMoveVehicle> event, CultPlayer player, ClientboundMoveVehicle packet) {
         if (player.isBedrockMovement()) return;
         handleMoveVehicle(event, player, packet);
     }
 
-    private void handlePlayerPosition(PacketSendEvent event, CultPlayer player, ClientboundPlayerPositionPacket teleport) {
-        PlayerPositionData change = readPlayerPosition(teleport);
-        Vec3 nativePos = change.position();
-        Vec3 pos = new Vec3(nativePos.x, nativePos.y, nativePos.z);
-        Vec3 deltaMovement = change.deltaMovement();
-        RelativeFlag flags = change.flags();
+    private void handlePlayerPosition(PacketSendEvent<ClientboundPlayerPosition> event, CultPlayer player, ClientboundPlayerPosition teleport) {
+        Vec3 pos = new Vec3(teleport.position().x(), teleport.position().y(), teleport.position().z());
+        Vec3 deltaMovement = new Vec3(teleport.delta().x(), teleport.delta().y(), teleport.delta().z());
+        RelativeFlag flags = new RelativeFlag(Relative.pack(teleport.relatives()));
         float sourceYaw = player.xRot;
         float sourcePitch = player.yRot;
-        float finalYaw = calculateRotation(sourceYaw, change.yRot(), flags, RelativeFlag.Y_ROT);
-        float finalPitch = clamp(calculateRotation(sourcePitch, change.xRot(), flags, RelativeFlag.X_ROT), -90.0F, 90.0F);
+        float finalYaw = calculateRotation(sourceYaw, teleport.yaw(), flags, RelativeFlag.Y_ROT);
+        float finalPitch = clamp(calculateRotation(sourcePitch, teleport.pitch(), flags, RelativeFlag.X_ROT), -90.0F, 90.0F);
         boolean initialSpawnTeleport = player.getSetbackTeleportUtil().getRequiredSetBack() == null;
 
         // This is the first packet sent to the client which we need to track
@@ -99,72 +96,21 @@ public class PacketServerTeleport {
         // Both the old PosRot and the 26.3 acknowledgement follow its pong.
         CultPlayer.TrackedTransaction proof = player.createTrackedTransactionPacketForDeferredSend();
         if (proof != null) {
-            event.getPacketsBeforeSend().add(proof.packet());
+            event.getWritesBeforeSend().add(proof.packet());
             event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(proof));
         }
         int lastTransactionSent = proof == null ? player.lastTransactionSent.get() : proof.transaction();
         event.getTasksAfterSend().add(player::sendTransaction);
 
-        player.getSetbackTeleportUtil().addSentTeleport(pos, deltaMovement, lastTransactionSent, flags, true, change.teleportId(), sourceYaw, sourcePitch, finalYaw, finalPitch);
+        player.getSetbackTeleportUtil().addSentTeleport(pos, deltaMovement, lastTransactionSent, flags, true, teleport.teleportId(), sourceYaw, sourcePitch, finalYaw, finalPitch);
     }
 
-    private static PlayerPositionData readPlayerPosition(Packet<?> packet) {
-        try {
-            packet.getClass().getMethod("change");
-            Object value = NmsPacketUtil.invokeNoArg(packet, "change");
-            return new PlayerPositionData(
-                    NmsPacketUtil.intValue(packet, "id"),
-                    (Vec3) NmsPacketUtil.invokeNoArg(value, "position"),
-                    (Vec3) NmsPacketUtil.invokeNoArg(value, "deltaMovement"),
-                    NmsPacketUtil.floatValue(value, "yRot"),
-                    NmsPacketUtil.floatValue(value, "xRot"),
-                    new RelativeFlag(relativeMask((Iterable<?>) NmsPacketUtil.invokeNoArg(packet, "relatives")))
-            );
-        } catch (NoSuchMethodException ignored) {
-            Vec3 position = new Vec3(
-                    ((Number) NmsPacketUtil.invokeNoArg(packet, "getX")).doubleValue(),
-                    ((Number) NmsPacketUtil.invokeNoArg(packet, "getY")).doubleValue(),
-                    ((Number) NmsPacketUtil.invokeNoArg(packet, "getZ")).doubleValue()
-            );
-            return new PlayerPositionData(
-                    NmsPacketUtil.intValue(packet, "getId"),
-                    position,
-                    Vec3.ZERO,
-                    NmsPacketUtil.floatValue(packet, "getYRot"),
-                    NmsPacketUtil.floatValue(packet, "getXRot"),
-                    new RelativeFlag(relativeMask((Iterable<?>) NmsPacketUtil.invokeNoArg(packet, "getRelativeArguments")))
-            );
-        }
-    }
-
-    private static int relativeMask(Iterable<?> relatives) {
-        int mask = 0;
-        for (Object relative : relatives) {
-            if (!(relative instanceof Enum<?> value)) {
-                continue;
-            }
-            mask |= switch (value.name()) {
-                case "X" -> RelativeFlag.X.getMask();
-                case "Y" -> RelativeFlag.Y.getMask();
-                case "Z" -> RelativeFlag.Z.getMask();
-                case "Y_ROT" -> RelativeFlag.Y_ROT.getMask();
-                case "X_ROT" -> RelativeFlag.X_ROT.getMask();
-                case "DELTA_X" -> RelativeFlag.DELTA_X.getMask();
-                case "DELTA_Y" -> RelativeFlag.DELTA_Y.getMask();
-                case "DELTA_Z" -> RelativeFlag.DELTA_Z.getMask();
-                case "ROTATE_DELTA" -> RelativeFlag.ROTATE_DELTA.getMask();
-                default -> 0;
-            };
-        }
-        return mask;
-    }
-
-    private void handlePlayerRotation(PacketSendEvent event, CultPlayer player, Packet<?> rotation) {
+    private void handlePlayerRotation(PacketSendEvent<ClientboundPlayerRotation> event, CultPlayer player, ClientboundPlayerRotation rotation) {
         RelativeFlag flags = rotationTeleportFlags(rotation);
         float sourceYaw = player.xRot;
         float sourcePitch = player.yRot;
-        float finalYaw = calculateRotation(sourceYaw, NmsPacketUtil.floatValue(rotation, "yRot"), flags, RelativeFlag.Y_ROT);
-        float finalPitch = clamp(calculateRotation(sourcePitch, NmsPacketUtil.floatValue(rotation, "xRot"), flags, RelativeFlag.X_ROT), -90.0F, 90.0F);
+        float finalYaw = calculateRotation(sourceYaw, rotation.yaw(), flags, RelativeFlag.Y_ROT);
+        float finalPitch = clamp(calculateRotation(sourcePitch, rotation.pitch(), flags, RelativeFlag.X_ROT), -90.0F, 90.0F);
         int proofTransaction = appendTrailingProofTransaction(event, player);
 
         player.getSetbackTeleportUtil().addImmediatePlayerRotationTeleport(
@@ -177,15 +123,13 @@ public class PacketServerTeleport {
         );
     }
 
-    private void handleMoveVehicle(PacketSendEvent event, CultPlayer player, ClientboundMoveVehiclePacket vehicleMove) {
+    private void handleMoveVehicle(PacketSendEvent<ClientboundMoveVehicle> event, CultPlayer player, ClientboundMoveVehicle vehicleMove) {
         PacketEntity controlledRoot = clientVisibleLocalAuthoritativeVehicleRoot(player);
         if (controlledRoot == null) return;
 
-        NmsPacketUtil.MoveVehicleData vehicleData = NmsPacketUtil.readMoveVehicle(vehicleMove);
-        Vec3 vehiclePos = vehicleData.position();
-        Vec3 finalPos = new Vec3(vehiclePos.x, vehiclePos.y, vehiclePos.z);
-        float finalYaw = vehicleData.yaw();
-        float finalPitch = vehicleData.pitch();
+        Vec3 finalPos = new Vec3(vehicleMove.position().x(), vehicleMove.position().y(), vehicleMove.position().z());
+        float finalYaw = vehicleMove.yaw();
+        float finalPitch = vehicleMove.pitch();
         int rootVehicleId = controlledRoot.getEntityId();
         Vec3 currentSerializedPosition = currentSerializedVehiclePosition(controlledRoot);
         boolean snaps = clientboundMoveVehicleSnaps(currentSerializedPosition, finalPos);
@@ -281,40 +225,30 @@ public class PacketServerTeleport {
         return (flags.isSet(relativeFlag.getMask()) ? current : 0.0F) + change;
     }
 
-    private static RelativeFlag rotationTeleportFlags(Packet<?> rotation) {
+    private static RelativeFlag rotationTeleportFlags(ClientboundPlayerRotation rotation) {
         int mask = RelativeFlag.X.getMask() | RelativeFlag.Y.getMask() | RelativeFlag.Z.getMask();
         // 1.21.2-1.21.3 rotations are always absolute and expose only yRot/xRot.
-        if (NmsPacketUtil.booleanValueOrDefault(rotation, false, "relativeY")) {
+        if (rotation.relativeYaw()) {
             mask |= RelativeFlag.Y_ROT.getMask();
         }
-        if (NmsPacketUtil.booleanValueOrDefault(rotation, false, "relativeX")) {
+        if (rotation.relativePitch()) {
             mask |= RelativeFlag.X_ROT.getMask();
         }
         return new RelativeFlag(mask);
     }
 
-    private static int appendTrailingProofTransaction(PacketSendEvent event, CultPlayer player) {
+    private static int appendTrailingProofTransaction(PacketSendEvent<?> event, CultPlayer player) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForDeferredSend();
         if (transaction == null) {
             return -1;
         }
 
-        event.getPacketsAfterSend().add(transaction.packet());
+        event.getWritesAfterSend().add(transaction.packet());
         event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
         return transaction.transaction();
     }
 
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
-    }
-
-    private record PlayerPositionData(
-            int teleportId,
-            Vec3 position,
-            Vec3 deltaMovement,
-            float yRot,
-            float xRot,
-            RelativeFlag flags
-    ) {
     }
 }

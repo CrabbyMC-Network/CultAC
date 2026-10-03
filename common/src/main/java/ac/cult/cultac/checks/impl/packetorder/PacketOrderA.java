@@ -5,11 +5,10 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import ac.cult.cultac.utils.inventory.InventoryClick;
 
 @CheckData(name = "PacketOrderA", stableKey = "cult.packetorder.window_click_order", description = "Sent pickup and quick-move inventory clicks in an invalid order", experimental = true)
 public class PacketOrderA extends Check implements PostPredictionListener {
@@ -20,8 +19,8 @@ public class PacketOrderA extends Check implements PostPredictionListener {
     private int invalid;
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
-        final WindowClickType clickType = NmsPacketUtil.readContainerClick(packet).clickType();
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) {
+        final WindowClickType clickType = packet.clickType();
 
         if ((clickType == WindowClickType.PICKUP || clickType == WindowClickType.PICKUP_ALL) && player.packetOrderProcessor.isQuickMoveClicking()
                 || clickType == WindowClickType.QUICK_MOVE && player.packetOrderProcessor.isPickUpClicking()) {

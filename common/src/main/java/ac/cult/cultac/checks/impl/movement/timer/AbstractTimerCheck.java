@@ -6,13 +6,13 @@ import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.protocol.packet.ServerboundPackets;
 
 //@CheckData(name = "Timer", configName = "TimerA", setback = 10)
 public abstract class AbstractTimerCheck extends Check implements CheckListener {
     private static final long ONE_CLIENT_TICK = 50_000_000L;
-    private static final boolean SERVER_SUPPORTS_CLIENT_TICK_END = classExists(
-            "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket"
-    );
+    private final boolean serverSupportsClientTickEnd;
 
     long timerBalanceRealTime = 0;
 
@@ -54,7 +54,10 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
     //
     // We then take the last transaction before this to increase stability with these lag spikes and
     // to guarantee that we are at least 50 ms back before adding the time
-    public AbstractTimerCheck(CultPlayer cultPlayer, CheckInfo info) { super(cultPlayer, info); }
+    public AbstractTimerCheck(CultPlayer cultPlayer, CheckInfo info) {
+        super(cultPlayer, info);
+        serverSupportsClientTickEnd = CultAPI.INSTANCE.getNetworkManager().dispatcher().runtime().supports(ServerboundPackets.CLIENT_TICK_END);
+    }
 
     public void resetTimerWindow() {
         long now = System.nanoTime() - ONE_CLIENT_TICK;
@@ -165,18 +168,9 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
         // ViaVersion cannot carry the 1.21.2 tick-end packet through an older
         // backend protocol. In that case the backend receives the traditional
         // one-movement-per-tick clock and must use that observable boundary.
-        return SERVER_SUPPORTS_CLIENT_TICK_END
+        return serverSupportsClientTickEnd
                 && !player.isBedrockMovement()
                 && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2);
-    }
-
-    private static boolean classExists(String className) {
-        try {
-            Class.forName(className, false, AbstractTimerCheck.class.getClassLoader());
-            return true;
-        } catch (ClassNotFoundException | LinkageError ignored) {
-            return false;
-        }
     }
 
     @Override

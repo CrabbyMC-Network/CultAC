@@ -1,24 +1,24 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.nmsutil.RiptideUtil;
 import net.minecraft.core.BlockPos;
 import org.bukkit.inventory.ItemStack;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import net.minecraft.world.InteractionHand;
 
 public class PacketPlayerDigging {
     //LOW
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
-        InteractionHand hand = NmsPacketUtil.readUseItem(packet).hand();
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
+        InteractionHand hand = SpigotConversionUtil.toNmsHand(packet.hand());
         ItemStack item = player.getInventory().getHandItem(hand);
         if (RiptideUtil.getRiptideLevel(item) > 0) {
             player.packetStateData.riptideUseHand = hand;
@@ -29,8 +29,8 @@ public class PacketPlayerDigging {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        if (packet.getAction() == Action.RELEASE_USE_ITEM) {
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (packet.action() == PlayerAction.RELEASE_USE_ITEM) {
             InteractionHand hand = player.packetStateData.riptideUseHand;
             ItemStack item = hand == null ? null : player.getInventory().getHandItem(hand);
             int j = RiptideUtil.getRiptideLevel(item);
@@ -46,12 +46,11 @@ public class PacketPlayerDigging {
         }
 
         // Cancellation prevents post-flying checks but not movement prediction or resync.
-        Action action = packet.getAction();
-        if (action == Action.START_DESTROY_BLOCK || action == Action.STOP_DESTROY_BLOCK || action == Action.ABORT_DESTROY_BLOCK) {
-            BlockPos blockPosition = packet.getPos();
-            NmsPacketUtil.PlayerActionData actionData = NmsPacketUtil.readPlayerAction(packet);
-            BlockBreak blockBreak = new BlockBreak(player, blockPosition, actionData.blockFace(),
-                    packet.getDirection().get3DDataValue(), action, packet.getSequence(),
+        PlayerAction action = packet.action();
+        if (action == PlayerAction.START_DESTROY_BLOCK || action == PlayerAction.STOP_DESTROY_BLOCK || action == PlayerAction.ABORT_DESTROY_BLOCK) {
+            BlockPos blockPosition = SpigotConversionUtil.toNmsBlockPos(packet.position());
+            BlockBreak blockBreak = new BlockBreak(player, blockPosition, SpigotConversionUtil.toBukkitFace(packet.direction()),
+                    packet.direction().ordinal(), action, packet.sequence(),
                     player.compensatedWorld.getBlockStateAt(blockPosition));
 
             player.checkManager.onBlockBreak(blockBreak);
@@ -59,7 +58,7 @@ public class PacketPlayerDigging {
             if (blockBreak.isCancelled()) {
                 event.setCancelled(true);
                 player.onPacketCancel();
-                player.getResyncHandler().resyncPosition(blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), packet.getSequence());
+                player.getResyncHandler().resyncPosition(blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), packet.sequence());
                 return;
             }
 
@@ -68,8 +67,8 @@ public class PacketPlayerDigging {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
-        selectHotbarSlot(player, packet.getSlot());
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+        selectHotbarSlot(player, packet.slot());
     }
 
     public static void selectHotbarSlot(CultPlayer player, int slotId) {

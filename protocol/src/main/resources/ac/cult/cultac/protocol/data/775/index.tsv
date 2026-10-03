@@ -1,0 +1,1657 @@
+cult-protocol	1	775	26.1
+packet	configuration	clientbound	0	minecraft:cookie_request
+packet	configuration	clientbound	1	minecraft:custom_payload
+packet	configuration	clientbound	2	minecraft:disconnect
+packet	configuration	clientbound	3	minecraft:finish_configuration
+packet	configuration	clientbound	4	minecraft:keep_alive
+packet	configuration	clientbound	5	minecraft:ping
+packet	configuration	clientbound	6	minecraft:reset_chat
+packet	configuration	clientbound	7	minecraft:registry_data
+packet	configuration	clientbound	8	minecraft:resource_pack_pop
+packet	configuration	clientbound	9	minecraft:resource_pack_push
+packet	configuration	clientbound	10	minecraft:store_cookie
+packet	configuration	clientbound	11	minecraft:transfer
+packet	configuration	clientbound	12	minecraft:update_enabled_features
+packet	configuration	clientbound	13	minecraft:update_tags
+packet	configuration	clientbound	14	minecraft:select_known_packs
+packet	configuration	clientbound	15	minecraft:custom_report_details
+packet	configuration	clientbound	16	minecraft:server_links
+packet	configuration	clientbound	17	minecraft:clear_dialog
+packet	configuration	clientbound	18	minecraft:show_dialog
+packet	configuration	clientbound	19	minecraft:code_of_conduct
+packet	configuration	serverbound	0	minecraft:client_information
+packet	configuration	serverbound	1	minecraft:cookie_response
+packet	configuration	serverbound	2	minecraft:custom_payload
+packet	configuration	serverbound	3	minecraft:finish_configuration
+packet	configuration	serverbound	4	minecraft:keep_alive
+packet	configuration	serverbound	5	minecraft:pong
+packet	configuration	serverbound	6	minecraft:resource_pack
+packet	configuration	serverbound	7	minecraft:select_known_packs
+packet	configuration	serverbound	8	minecraft:custom_click_action
+packet	configuration	serverbound	9	minecraft:accept_code_of_conduct
+packet	handshake	serverbound	0	minecraft:intention
+packet	login	clientbound	0	minecraft:login_disconnect
+packet	login	clientbound	1	minecraft:hello
+packet	login	clientbound	2	minecraft:login_finished
+packet	login	clientbound	3	minecraft:login_compression
+packet	login	clientbound	4	minecraft:custom_query
+packet	login	clientbound	5	minecraft:cookie_request
+packet	login	serverbound	0	minecraft:hello
+packet	login	serverbound	1	minecraft:key
+packet	login	serverbound	2	minecraft:custom_query_answer
+packet	login	serverbound	3	minecraft:login_acknowledged
+packet	login	serverbound	4	minecraft:cookie_response
+packet	play	clientbound	0	minecraft:bundle_delimiter
+packet	play	clientbound	1	minecraft:add_entity
+packet	play	clientbound	2	minecraft:animate
+packet	play	clientbound	3	minecraft:award_stats
+packet	play	clientbound	4	minecraft:block_changed_ack
+packet	play	clientbound	5	minecraft:block_destruction
+packet	play	clientbound	6	minecraft:block_entity_data
+packet	play	clientbound	7	minecraft:block_event
+packet	play	clientbound	8	minecraft:block_update
+packet	play	clientbound	9	minecraft:boss_event
+packet	play	clientbound	10	minecraft:change_difficulty
+packet	play	clientbound	11	minecraft:chunk_batch_finished
+packet	play	clientbound	12	minecraft:chunk_batch_start
+packet	play	clientbound	13	minecraft:chunks_biomes
+packet	play	clientbound	14	minecraft:clear_titles
+packet	play	clientbound	15	minecraft:command_suggestions
+packet	play	clientbound	16	minecraft:commands
+packet	play	clientbound	17	minecraft:container_close
+packet	play	clientbound	18	minecraft:container_set_content
+packet	play	clientbound	19	minecraft:container_set_data
+packet	play	clientbound	20	minecraft:container_set_slot
+packet	play	clientbound	21	minecraft:cookie_request
+packet	play	clientbound	22	minecraft:cooldown
+packet	play	clientbound	23	minecraft:custom_chat_completions
+packet	play	clientbound	24	minecraft:custom_payload
+packet	play	clientbound	25	minecraft:damage_event
+packet	play	clientbound	26	minecraft:debug/block_value
+packet	play	clientbound	27	minecraft:debug/chunk_value
+packet	play	clientbound	28	minecraft:debug/entity_value
+packet	play	clientbound	29	minecraft:debug/event
+packet	play	clientbound	30	minecraft:debug_sample
+packet	play	clientbound	31	minecraft:delete_chat
+packet	play	clientbound	32	minecraft:disconnect
+packet	play	clientbound	33	minecraft:disguised_chat
+packet	play	clientbound	34	minecraft:entity_event
+packet	play	clientbound	35	minecraft:entity_position_sync
+packet	play	clientbound	36	minecraft:explode
+packet	play	clientbound	37	minecraft:forget_level_chunk
+packet	play	clientbound	38	minecraft:game_event
+packet	play	clientbound	39	minecraft:game_rule_values
+packet	play	clientbound	40	minecraft:game_test_highlight_pos
+packet	play	clientbound	41	minecraft:mount_screen_open
+packet	play	clientbound	42	minecraft:hurt_animation
+packet	play	clientbound	43	minecraft:initialize_border
+packet	play	clientbound	44	minecraft:keep_alive
+packet	play	clientbound	45	minecraft:level_chunk_with_light
+packet	play	clientbound	46	minecraft:level_event
+packet	play	clientbound	47	minecraft:level_particles
+packet	play	clientbound	48	minecraft:light_update
+packet	play	clientbound	49	minecraft:login
+packet	play	clientbound	50	minecraft:low_disk_space_warning
+packet	play	clientbound	51	minecraft:map_item_data
+packet	play	clientbound	52	minecraft:merchant_offers
+packet	play	clientbound	53	minecraft:move_entity_pos
+packet	play	clientbound	54	minecraft:move_entity_pos_rot
+packet	play	clientbound	55	minecraft:move_minecart_along_track
+packet	play	clientbound	56	minecraft:move_entity_rot
+packet	play	clientbound	57	minecraft:move_vehicle
+packet	play	clientbound	58	minecraft:open_book
+packet	play	clientbound	59	minecraft:open_screen
+packet	play	clientbound	60	minecraft:open_sign_editor
+packet	play	clientbound	61	minecraft:ping
+packet	play	clientbound	62	minecraft:pong_response
+packet	play	clientbound	63	minecraft:place_ghost_recipe
+packet	play	clientbound	64	minecraft:player_abilities
+packet	play	clientbound	65	minecraft:player_chat
+packet	play	clientbound	66	minecraft:player_combat_end
+packet	play	clientbound	67	minecraft:player_combat_enter
+packet	play	clientbound	68	minecraft:player_combat_kill
+packet	play	clientbound	69	minecraft:player_info_remove
+packet	play	clientbound	70	minecraft:player_info_update
+packet	play	clientbound	71	minecraft:player_look_at
+packet	play	clientbound	72	minecraft:player_position
+packet	play	clientbound	73	minecraft:player_rotation
+packet	play	clientbound	74	minecraft:recipe_book_add
+packet	play	clientbound	75	minecraft:recipe_book_remove
+packet	play	clientbound	76	minecraft:recipe_book_settings
+packet	play	clientbound	77	minecraft:remove_entities
+packet	play	clientbound	78	minecraft:remove_mob_effect
+packet	play	clientbound	79	minecraft:reset_score
+packet	play	clientbound	80	minecraft:resource_pack_pop
+packet	play	clientbound	81	minecraft:resource_pack_push
+packet	play	clientbound	82	minecraft:respawn
+packet	play	clientbound	83	minecraft:rotate_head
+packet	play	clientbound	84	minecraft:section_blocks_update
+packet	play	clientbound	85	minecraft:select_advancements_tab
+packet	play	clientbound	86	minecraft:server_data
+packet	play	clientbound	87	minecraft:set_action_bar_text
+packet	play	clientbound	88	minecraft:set_border_center
+packet	play	clientbound	89	minecraft:set_border_lerp_size
+packet	play	clientbound	90	minecraft:set_border_size
+packet	play	clientbound	91	minecraft:set_border_warning_delay
+packet	play	clientbound	92	minecraft:set_border_warning_distance
+packet	play	clientbound	93	minecraft:set_camera
+packet	play	clientbound	94	minecraft:set_chunk_cache_center
+packet	play	clientbound	95	minecraft:set_chunk_cache_radius
+packet	play	clientbound	96	minecraft:set_cursor_item
+packet	play	clientbound	97	minecraft:set_default_spawn_position
+packet	play	clientbound	98	minecraft:set_display_objective
+packet	play	clientbound	99	minecraft:set_entity_data
+packet	play	clientbound	100	minecraft:set_entity_link
+packet	play	clientbound	101	minecraft:set_entity_motion
+packet	play	clientbound	102	minecraft:set_equipment
+packet	play	clientbound	103	minecraft:set_experience
+packet	play	clientbound	104	minecraft:set_health
+packet	play	clientbound	105	minecraft:set_held_slot
+packet	play	clientbound	106	minecraft:set_objective
+packet	play	clientbound	107	minecraft:set_passengers
+packet	play	clientbound	108	minecraft:set_player_inventory
+packet	play	clientbound	109	minecraft:set_player_team
+packet	play	clientbound	110	minecraft:set_score
+packet	play	clientbound	111	minecraft:set_simulation_distance
+packet	play	clientbound	112	minecraft:set_subtitle_text
+packet	play	clientbound	113	minecraft:set_time
+packet	play	clientbound	114	minecraft:set_title_text
+packet	play	clientbound	115	minecraft:set_titles_animation
+packet	play	clientbound	116	minecraft:sound_entity
+packet	play	clientbound	117	minecraft:sound
+packet	play	clientbound	118	minecraft:start_configuration
+packet	play	clientbound	119	minecraft:stop_sound
+packet	play	clientbound	120	minecraft:store_cookie
+packet	play	clientbound	121	minecraft:system_chat
+packet	play	clientbound	122	minecraft:tab_list
+packet	play	clientbound	123	minecraft:tag_query
+packet	play	clientbound	124	minecraft:take_item_entity
+packet	play	clientbound	125	minecraft:teleport_entity
+packet	play	clientbound	126	minecraft:test_instance_block_status
+packet	play	clientbound	127	minecraft:ticking_state
+packet	play	clientbound	128	minecraft:ticking_step
+packet	play	clientbound	129	minecraft:transfer
+packet	play	clientbound	130	minecraft:update_advancements
+packet	play	clientbound	131	minecraft:update_attributes
+packet	play	clientbound	132	minecraft:update_mob_effect
+packet	play	clientbound	133	minecraft:update_recipes
+packet	play	clientbound	134	minecraft:update_tags
+packet	play	clientbound	135	minecraft:projectile_power
+packet	play	clientbound	136	minecraft:custom_report_details
+packet	play	clientbound	137	minecraft:server_links
+packet	play	clientbound	138	minecraft:waypoint
+packet	play	clientbound	139	minecraft:clear_dialog
+packet	play	clientbound	140	minecraft:show_dialog
+packet	play	serverbound	0	minecraft:accept_teleportation
+packet	play	serverbound	1	minecraft:attack
+packet	play	serverbound	2	minecraft:block_entity_tag_query
+packet	play	serverbound	3	minecraft:bundle_item_selected
+packet	play	serverbound	4	minecraft:change_difficulty
+packet	play	serverbound	5	minecraft:change_game_mode
+packet	play	serverbound	6	minecraft:chat_ack
+packet	play	serverbound	7	minecraft:chat_command
+packet	play	serverbound	8	minecraft:chat_command_signed
+packet	play	serverbound	9	minecraft:chat
+packet	play	serverbound	10	minecraft:chat_session_update
+packet	play	serverbound	11	minecraft:chunk_batch_received
+packet	play	serverbound	12	minecraft:client_command
+packet	play	serverbound	13	minecraft:client_tick_end
+packet	play	serverbound	14	minecraft:client_information
+packet	play	serverbound	15	minecraft:command_suggestion
+packet	play	serverbound	16	minecraft:configuration_acknowledged
+packet	play	serverbound	17	minecraft:container_button_click
+packet	play	serverbound	18	minecraft:container_click
+packet	play	serverbound	19	minecraft:container_close
+packet	play	serverbound	20	minecraft:container_slot_state_changed
+packet	play	serverbound	21	minecraft:cookie_response
+packet	play	serverbound	22	minecraft:custom_payload
+packet	play	serverbound	23	minecraft:debug_subscription_request
+packet	play	serverbound	24	minecraft:edit_book
+packet	play	serverbound	25	minecraft:entity_tag_query
+packet	play	serverbound	26	minecraft:interact
+packet	play	serverbound	27	minecraft:jigsaw_generate
+packet	play	serverbound	28	minecraft:keep_alive
+packet	play	serverbound	29	minecraft:lock_difficulty
+packet	play	serverbound	30	minecraft:move_player_pos
+packet	play	serverbound	31	minecraft:move_player_pos_rot
+packet	play	serverbound	32	minecraft:move_player_rot
+packet	play	serverbound	33	minecraft:move_player_status_only
+packet	play	serverbound	34	minecraft:move_vehicle
+packet	play	serverbound	35	minecraft:paddle_boat
+packet	play	serverbound	36	minecraft:pick_item_from_block
+packet	play	serverbound	37	minecraft:pick_item_from_entity
+packet	play	serverbound	38	minecraft:ping_request
+packet	play	serverbound	39	minecraft:place_recipe
+packet	play	serverbound	40	minecraft:player_abilities
+packet	play	serverbound	41	minecraft:player_action
+packet	play	serverbound	42	minecraft:player_command
+packet	play	serverbound	43	minecraft:player_input
+packet	play	serverbound	44	minecraft:player_loaded
+packet	play	serverbound	45	minecraft:pong
+packet	play	serverbound	46	minecraft:recipe_book_change_settings
+packet	play	serverbound	47	minecraft:recipe_book_seen_recipe
+packet	play	serverbound	48	minecraft:rename_item
+packet	play	serverbound	49	minecraft:resource_pack
+packet	play	serverbound	50	minecraft:seen_advancements
+packet	play	serverbound	51	minecraft:select_trade
+packet	play	serverbound	52	minecraft:set_beacon
+packet	play	serverbound	53	minecraft:set_carried_item
+packet	play	serverbound	54	minecraft:set_command_block
+packet	play	serverbound	55	minecraft:set_command_minecart
+packet	play	serverbound	56	minecraft:set_creative_mode_slot
+packet	play	serverbound	57	minecraft:set_game_rule
+packet	play	serverbound	58	minecraft:set_jigsaw_block
+packet	play	serverbound	59	minecraft:set_structure_block
+packet	play	serverbound	60	minecraft:set_test_block
+packet	play	serverbound	61	minecraft:sign_update
+packet	play	serverbound	62	minecraft:spectate_entity
+packet	play	serverbound	63	minecraft:swing
+packet	play	serverbound	64	minecraft:teleport_to_entity
+packet	play	serverbound	65	minecraft:test_instance_block_action
+packet	play	serverbound	66	minecraft:use_item_on
+packet	play	serverbound	67	minecraft:use_item
+packet	play	serverbound	68	minecraft:custom_click_action
+packet	status	clientbound	0	minecraft:status_response
+packet	status	clientbound	1	minecraft:pong_response
+packet	status	serverbound	0	minecraft:status_request
+packet	status	serverbound	1	minecraft:ping_request
+registry	minecraft:attribute	0	minecraft:armor
+registry	minecraft:attribute	1	minecraft:armor_toughness
+registry	minecraft:attribute	2	minecraft:attack_damage
+registry	minecraft:attribute	3	minecraft:attack_knockback
+registry	minecraft:attribute	4	minecraft:attack_speed
+registry	minecraft:attribute	5	minecraft:block_break_speed
+registry	minecraft:attribute	6	minecraft:block_interaction_range
+registry	minecraft:attribute	7	minecraft:burning_time
+registry	minecraft:attribute	8	minecraft:camera_distance
+registry	minecraft:attribute	9	minecraft:explosion_knockback_resistance
+registry	minecraft:attribute	10	minecraft:entity_interaction_range
+registry	minecraft:attribute	11	minecraft:fall_damage_multiplier
+registry	minecraft:attribute	12	minecraft:flying_speed
+registry	minecraft:attribute	13	minecraft:follow_range
+registry	minecraft:attribute	14	minecraft:gravity
+registry	minecraft:attribute	15	minecraft:jump_strength
+registry	minecraft:attribute	16	minecraft:knockback_resistance
+registry	minecraft:attribute	17	minecraft:luck
+registry	minecraft:attribute	18	minecraft:max_absorption
+registry	minecraft:attribute	19	minecraft:max_health
+registry	minecraft:attribute	20	minecraft:mining_efficiency
+registry	minecraft:attribute	21	minecraft:movement_efficiency
+registry	minecraft:attribute	22	minecraft:movement_speed
+registry	minecraft:attribute	23	minecraft:oxygen_bonus
+registry	minecraft:attribute	24	minecraft:safe_fall_distance
+registry	minecraft:attribute	25	minecraft:scale
+registry	minecraft:attribute	26	minecraft:sneaking_speed
+registry	minecraft:attribute	27	minecraft:spawn_reinforcements
+registry	minecraft:attribute	28	minecraft:step_height
+registry	minecraft:attribute	29	minecraft:submerged_mining_speed
+registry	minecraft:attribute	30	minecraft:sweeping_damage_ratio
+registry	minecraft:attribute	31	minecraft:tempt_range
+registry	minecraft:attribute	32	minecraft:water_movement_efficiency
+registry	minecraft:attribute	33	minecraft:waypoint_transmit_range
+registry	minecraft:attribute	34	minecraft:waypoint_receive_range
+registry	minecraft:block	0	minecraft:air
+registry	minecraft:block	1	minecraft:stone
+registry	minecraft:block	2	minecraft:granite
+registry	minecraft:block	3	minecraft:polished_granite
+registry	minecraft:block	4	minecraft:diorite
+registry	minecraft:block	5	minecraft:polished_diorite
+registry	minecraft:block	6	minecraft:andesite
+registry	minecraft:block	7	minecraft:polished_andesite
+registry	minecraft:block	8	minecraft:grass_block
+registry	minecraft:block	9	minecraft:dirt
+registry	minecraft:block	10	minecraft:coarse_dirt
+registry	minecraft:block	11	minecraft:podzol
+registry	minecraft:block	12	minecraft:cobblestone
+registry	minecraft:block	13	minecraft:oak_planks
+registry	minecraft:block	14	minecraft:spruce_planks
+registry	minecraft:block	15	minecraft:birch_planks
+registry	minecraft:block	16	minecraft:jungle_planks
+registry	minecraft:block	17	minecraft:acacia_planks
+registry	minecraft:block	18	minecraft:cherry_planks
+registry	minecraft:block	19	minecraft:dark_oak_planks
+registry	minecraft:block	20	minecraft:pale_oak_wood
+registry	minecraft:block	21	minecraft:pale_oak_planks
+registry	minecraft:block	22	minecraft:mangrove_planks
+registry	minecraft:block	23	minecraft:bamboo_planks
+registry	minecraft:block	24	minecraft:bamboo_mosaic
+registry	minecraft:block	25	minecraft:oak_sapling
+registry	minecraft:block	26	minecraft:spruce_sapling
+registry	minecraft:block	27	minecraft:birch_sapling
+registry	minecraft:block	28	minecraft:jungle_sapling
+registry	minecraft:block	29	minecraft:acacia_sapling
+registry	minecraft:block	30	minecraft:cherry_sapling
+registry	minecraft:block	31	minecraft:dark_oak_sapling
+registry	minecraft:block	32	minecraft:pale_oak_sapling
+registry	minecraft:block	33	minecraft:mangrove_propagule
+registry	minecraft:block	34	minecraft:bedrock
+registry	minecraft:block	35	minecraft:water
+registry	minecraft:block	36	minecraft:lava
+registry	minecraft:block	37	minecraft:sand
+registry	minecraft:block	38	minecraft:suspicious_sand
+registry	minecraft:block	39	minecraft:red_sand
+registry	minecraft:block	40	minecraft:gravel
+registry	minecraft:block	41	minecraft:suspicious_gravel
+registry	minecraft:block	42	minecraft:gold_ore
+registry	minecraft:block	43	minecraft:deepslate_gold_ore
+registry	minecraft:block	44	minecraft:iron_ore
+registry	minecraft:block	45	minecraft:deepslate_iron_ore
+registry	minecraft:block	46	minecraft:coal_ore
+registry	minecraft:block	47	minecraft:deepslate_coal_ore
+registry	minecraft:block	48	minecraft:nether_gold_ore
+registry	minecraft:block	49	minecraft:oak_log
+registry	minecraft:block	50	minecraft:spruce_log
+registry	minecraft:block	51	minecraft:birch_log
+registry	minecraft:block	52	minecraft:jungle_log
+registry	minecraft:block	53	minecraft:acacia_log
+registry	minecraft:block	54	minecraft:cherry_log
+registry	minecraft:block	55	minecraft:dark_oak_log
+registry	minecraft:block	56	minecraft:pale_oak_log
+registry	minecraft:block	57	minecraft:mangrove_log
+registry	minecraft:block	58	minecraft:mangrove_roots
+registry	minecraft:block	59	minecraft:muddy_mangrove_roots
+registry	minecraft:block	60	minecraft:bamboo_block
+registry	minecraft:block	61	minecraft:stripped_spruce_log
+registry	minecraft:block	62	minecraft:stripped_birch_log
+registry	minecraft:block	63	minecraft:stripped_jungle_log
+registry	minecraft:block	64	minecraft:stripped_acacia_log
+registry	minecraft:block	65	minecraft:stripped_cherry_log
+registry	minecraft:block	66	minecraft:stripped_dark_oak_log
+registry	minecraft:block	67	minecraft:stripped_pale_oak_log
+registry	minecraft:block	68	minecraft:stripped_oak_log
+registry	minecraft:block	69	minecraft:stripped_mangrove_log
+registry	minecraft:block	70	minecraft:stripped_bamboo_block
+registry	minecraft:block	71	minecraft:oak_wood
+registry	minecraft:block	72	minecraft:spruce_wood
+registry	minecraft:block	73	minecraft:birch_wood
+registry	minecraft:block	74	minecraft:jungle_wood
+registry	minecraft:block	75	minecraft:acacia_wood
+registry	minecraft:block	76	minecraft:cherry_wood
+registry	minecraft:block	77	minecraft:dark_oak_wood
+registry	minecraft:block	78	minecraft:mangrove_wood
+registry	minecraft:block	79	minecraft:stripped_oak_wood
+registry	minecraft:block	80	minecraft:stripped_spruce_wood
+registry	minecraft:block	81	minecraft:stripped_birch_wood
+registry	minecraft:block	82	minecraft:stripped_jungle_wood
+registry	minecraft:block	83	minecraft:stripped_acacia_wood
+registry	minecraft:block	84	minecraft:stripped_cherry_wood
+registry	minecraft:block	85	minecraft:stripped_dark_oak_wood
+registry	minecraft:block	86	minecraft:stripped_pale_oak_wood
+registry	minecraft:block	87	minecraft:stripped_mangrove_wood
+registry	minecraft:block	88	minecraft:oak_leaves
+registry	minecraft:block	89	minecraft:spruce_leaves
+registry	minecraft:block	90	minecraft:birch_leaves
+registry	minecraft:block	91	minecraft:jungle_leaves
+registry	minecraft:block	92	minecraft:acacia_leaves
+registry	minecraft:block	93	minecraft:cherry_leaves
+registry	minecraft:block	94	minecraft:dark_oak_leaves
+registry	minecraft:block	95	minecraft:pale_oak_leaves
+registry	minecraft:block	96	minecraft:mangrove_leaves
+registry	minecraft:block	97	minecraft:azalea_leaves
+registry	minecraft:block	98	minecraft:flowering_azalea_leaves
+registry	minecraft:block	99	minecraft:sponge
+registry	minecraft:block	100	minecraft:wet_sponge
+registry	minecraft:block	101	minecraft:glass
+registry	minecraft:block	102	minecraft:lapis_ore
+registry	minecraft:block	103	minecraft:deepslate_lapis_ore
+registry	minecraft:block	104	minecraft:lapis_block
+registry	minecraft:block	105	minecraft:dispenser
+registry	minecraft:block	106	minecraft:sandstone
+registry	minecraft:block	107	minecraft:chiseled_sandstone
+registry	minecraft:block	108	minecraft:cut_sandstone
+registry	minecraft:block	109	minecraft:note_block
+registry	minecraft:block	110	minecraft:white_bed
+registry	minecraft:block	111	minecraft:orange_bed
+registry	minecraft:block	112	minecraft:magenta_bed
+registry	minecraft:block	113	minecraft:light_blue_bed
+registry	minecraft:block	114	minecraft:yellow_bed
+registry	minecraft:block	115	minecraft:lime_bed
+registry	minecraft:block	116	minecraft:pink_bed
+registry	minecraft:block	117	minecraft:gray_bed
+registry	minecraft:block	118	minecraft:light_gray_bed
+registry	minecraft:block	119	minecraft:cyan_bed
+registry	minecraft:block	120	minecraft:purple_bed
+registry	minecraft:block	121	minecraft:blue_bed
+registry	minecraft:block	122	minecraft:brown_bed
+registry	minecraft:block	123	minecraft:green_bed
+registry	minecraft:block	124	minecraft:red_bed
+registry	minecraft:block	125	minecraft:black_bed
+registry	minecraft:block	126	minecraft:powered_rail
+registry	minecraft:block	127	minecraft:detector_rail
+registry	minecraft:block	128	minecraft:sticky_piston
+registry	minecraft:block	129	minecraft:cobweb
+registry	minecraft:block	130	minecraft:short_grass
+registry	minecraft:block	131	minecraft:fern
+registry	minecraft:block	132	minecraft:dead_bush
+registry	minecraft:block	133	minecraft:bush
+registry	minecraft:block	134	minecraft:short_dry_grass
+registry	minecraft:block	135	minecraft:tall_dry_grass
+registry	minecraft:block	136	minecraft:seagrass
+registry	minecraft:block	137	minecraft:tall_seagrass
+registry	minecraft:block	138	minecraft:piston
+registry	minecraft:block	139	minecraft:piston_head
+registry	minecraft:block	140	minecraft:white_wool
+registry	minecraft:block	141	minecraft:orange_wool
+registry	minecraft:block	142	minecraft:magenta_wool
+registry	minecraft:block	143	minecraft:light_blue_wool
+registry	minecraft:block	144	minecraft:yellow_wool
+registry	minecraft:block	145	minecraft:lime_wool
+registry	minecraft:block	146	minecraft:pink_wool
+registry	minecraft:block	147	minecraft:gray_wool
+registry	minecraft:block	148	minecraft:light_gray_wool
+registry	minecraft:block	149	minecraft:cyan_wool
+registry	minecraft:block	150	minecraft:purple_wool
+registry	minecraft:block	151	minecraft:blue_wool
+registry	minecraft:block	152	minecraft:brown_wool
+registry	minecraft:block	153	minecraft:green_wool
+registry	minecraft:block	154	minecraft:red_wool
+registry	minecraft:block	155	minecraft:black_wool
+registry	minecraft:block	156	minecraft:moving_piston
+registry	minecraft:block	157	minecraft:dandelion
+registry	minecraft:block	158	minecraft:golden_dandelion
+registry	minecraft:block	159	minecraft:torchflower
+registry	minecraft:block	160	minecraft:poppy
+registry	minecraft:block	161	minecraft:blue_orchid
+registry	minecraft:block	162	minecraft:allium
+registry	minecraft:block	163	minecraft:azure_bluet
+registry	minecraft:block	164	minecraft:red_tulip
+registry	minecraft:block	165	minecraft:orange_tulip
+registry	minecraft:block	166	minecraft:white_tulip
+registry	minecraft:block	167	minecraft:pink_tulip
+registry	minecraft:block	168	minecraft:oxeye_daisy
+registry	minecraft:block	169	minecraft:cornflower
+registry	minecraft:block	170	minecraft:wither_rose
+registry	minecraft:block	171	minecraft:lily_of_the_valley
+registry	minecraft:block	172	minecraft:brown_mushroom
+registry	minecraft:block	173	minecraft:red_mushroom
+registry	minecraft:block	174	minecraft:gold_block
+registry	minecraft:block	175	minecraft:iron_block
+registry	minecraft:block	176	minecraft:bricks
+registry	minecraft:block	177	minecraft:tnt
+registry	minecraft:block	178	minecraft:bookshelf
+registry	minecraft:block	179	minecraft:chiseled_bookshelf
+registry	minecraft:block	180	minecraft:acacia_shelf
+registry	minecraft:block	181	minecraft:bamboo_shelf
+registry	minecraft:block	182	minecraft:birch_shelf
+registry	minecraft:block	183	minecraft:cherry_shelf
+registry	minecraft:block	184	minecraft:crimson_shelf
+registry	minecraft:block	185	minecraft:dark_oak_shelf
+registry	minecraft:block	186	minecraft:jungle_shelf
+registry	minecraft:block	187	minecraft:mangrove_shelf
+registry	minecraft:block	188	minecraft:oak_shelf
+registry	minecraft:block	189	minecraft:pale_oak_shelf
+registry	minecraft:block	190	minecraft:spruce_shelf
+registry	minecraft:block	191	minecraft:warped_shelf
+registry	minecraft:block	192	minecraft:mossy_cobblestone
+registry	minecraft:block	193	minecraft:obsidian
+registry	minecraft:block	194	minecraft:torch
+registry	minecraft:block	195	minecraft:wall_torch
+registry	minecraft:block	196	minecraft:fire
+registry	minecraft:block	197	minecraft:soul_fire
+registry	minecraft:block	198	minecraft:spawner
+registry	minecraft:block	199	minecraft:creaking_heart
+registry	minecraft:block	200	minecraft:oak_stairs
+registry	minecraft:block	201	minecraft:chest
+registry	minecraft:block	202	minecraft:redstone_wire
+registry	minecraft:block	203	minecraft:diamond_ore
+registry	minecraft:block	204	minecraft:deepslate_diamond_ore
+registry	minecraft:block	205	minecraft:diamond_block
+registry	minecraft:block	206	minecraft:crafting_table
+registry	minecraft:block	207	minecraft:wheat
+registry	minecraft:block	208	minecraft:farmland
+registry	minecraft:block	209	minecraft:furnace
+registry	minecraft:block	210	minecraft:oak_sign
+registry	minecraft:block	211	minecraft:spruce_sign
+registry	minecraft:block	212	minecraft:birch_sign
+registry	minecraft:block	213	minecraft:acacia_sign
+registry	minecraft:block	214	minecraft:cherry_sign
+registry	minecraft:block	215	minecraft:jungle_sign
+registry	minecraft:block	216	minecraft:dark_oak_sign
+registry	minecraft:block	217	minecraft:pale_oak_sign
+registry	minecraft:block	218	minecraft:mangrove_sign
+registry	minecraft:block	219	minecraft:bamboo_sign
+registry	minecraft:block	220	minecraft:oak_door
+registry	minecraft:block	221	minecraft:ladder
+registry	minecraft:block	222	minecraft:rail
+registry	minecraft:block	223	minecraft:cobblestone_stairs
+registry	minecraft:block	224	minecraft:oak_wall_sign
+registry	minecraft:block	225	minecraft:spruce_wall_sign
+registry	minecraft:block	226	minecraft:birch_wall_sign
+registry	minecraft:block	227	minecraft:acacia_wall_sign
+registry	minecraft:block	228	minecraft:cherry_wall_sign
+registry	minecraft:block	229	minecraft:jungle_wall_sign
+registry	minecraft:block	230	minecraft:dark_oak_wall_sign
+registry	minecraft:block	231	minecraft:pale_oak_wall_sign
+registry	minecraft:block	232	minecraft:mangrove_wall_sign
+registry	minecraft:block	233	minecraft:bamboo_wall_sign
+registry	minecraft:block	234	minecraft:oak_hanging_sign
+registry	minecraft:block	235	minecraft:spruce_hanging_sign
+registry	minecraft:block	236	minecraft:birch_hanging_sign
+registry	minecraft:block	237	minecraft:acacia_hanging_sign
+registry	minecraft:block	238	minecraft:cherry_hanging_sign
+registry	minecraft:block	239	minecraft:jungle_hanging_sign
+registry	minecraft:block	240	minecraft:dark_oak_hanging_sign
+registry	minecraft:block	241	minecraft:pale_oak_hanging_sign
+registry	minecraft:block	242	minecraft:crimson_hanging_sign
+registry	minecraft:block	243	minecraft:warped_hanging_sign
+registry	minecraft:block	244	minecraft:mangrove_hanging_sign
+registry	minecraft:block	245	minecraft:bamboo_hanging_sign
+registry	minecraft:block	246	minecraft:oak_wall_hanging_sign
+registry	minecraft:block	247	minecraft:spruce_wall_hanging_sign
+registry	minecraft:block	248	minecraft:birch_wall_hanging_sign
+registry	minecraft:block	249	minecraft:acacia_wall_hanging_sign
+registry	minecraft:block	250	minecraft:cherry_wall_hanging_sign
+registry	minecraft:block	251	minecraft:jungle_wall_hanging_sign
+registry	minecraft:block	252	minecraft:dark_oak_wall_hanging_sign
+registry	minecraft:block	253	minecraft:pale_oak_wall_hanging_sign
+registry	minecraft:block	254	minecraft:mangrove_wall_hanging_sign
+registry	minecraft:block	255	minecraft:crimson_wall_hanging_sign
+registry	minecraft:block	256	minecraft:warped_wall_hanging_sign
+registry	minecraft:block	257	minecraft:bamboo_wall_hanging_sign
+registry	minecraft:block	258	minecraft:lever
+registry	minecraft:block	259	minecraft:stone_pressure_plate
+registry	minecraft:block	260	minecraft:iron_door
+registry	minecraft:block	261	minecraft:oak_pressure_plate
+registry	minecraft:block	262	minecraft:spruce_pressure_plate
+registry	minecraft:block	263	minecraft:birch_pressure_plate
+registry	minecraft:block	264	minecraft:jungle_pressure_plate
+registry	minecraft:block	265	minecraft:acacia_pressure_plate
+registry	minecraft:block	266	minecraft:cherry_pressure_plate
+registry	minecraft:block	267	minecraft:dark_oak_pressure_plate
+registry	minecraft:block	268	minecraft:pale_oak_pressure_plate
+registry	minecraft:block	269	minecraft:mangrove_pressure_plate
+registry	minecraft:block	270	minecraft:bamboo_pressure_plate
+registry	minecraft:block	271	minecraft:redstone_ore
+registry	minecraft:block	272	minecraft:deepslate_redstone_ore
+registry	minecraft:block	273	minecraft:redstone_torch
+registry	minecraft:block	274	minecraft:redstone_wall_torch
+registry	minecraft:block	275	minecraft:stone_button
+registry	minecraft:block	276	minecraft:snow
+registry	minecraft:block	277	minecraft:ice
+registry	minecraft:block	278	minecraft:snow_block
+registry	minecraft:block	279	minecraft:cactus
+registry	minecraft:block	280	minecraft:cactus_flower
+registry	minecraft:block	281	minecraft:clay
+registry	minecraft:block	282	minecraft:sugar_cane
+registry	minecraft:block	283	minecraft:jukebox
+registry	minecraft:block	284	minecraft:oak_fence
+registry	minecraft:block	285	minecraft:netherrack
+registry	minecraft:block	286	minecraft:soul_sand
+registry	minecraft:block	287	minecraft:soul_soil
+registry	minecraft:block	288	minecraft:basalt
+registry	minecraft:block	289	minecraft:polished_basalt
+registry	minecraft:block	290	minecraft:soul_torch
+registry	minecraft:block	291	minecraft:soul_wall_torch
+registry	minecraft:block	292	minecraft:copper_torch
+registry	minecraft:block	293	minecraft:copper_wall_torch
+registry	minecraft:block	294	minecraft:glowstone
+registry	minecraft:block	295	minecraft:nether_portal
+registry	minecraft:block	296	minecraft:carved_pumpkin
+registry	minecraft:block	297	minecraft:jack_o_lantern
+registry	minecraft:block	298	minecraft:cake
+registry	minecraft:block	299	minecraft:repeater
+registry	minecraft:block	300	minecraft:white_stained_glass
+registry	minecraft:block	301	minecraft:orange_stained_glass
+registry	minecraft:block	302	minecraft:magenta_stained_glass
+registry	minecraft:block	303	minecraft:light_blue_stained_glass
+registry	minecraft:block	304	minecraft:yellow_stained_glass
+registry	minecraft:block	305	minecraft:lime_stained_glass
+registry	minecraft:block	306	minecraft:pink_stained_glass
+registry	minecraft:block	307	minecraft:gray_stained_glass
+registry	minecraft:block	308	minecraft:light_gray_stained_glass
+registry	minecraft:block	309	minecraft:cyan_stained_glass
+registry	minecraft:block	310	minecraft:purple_stained_glass
+registry	minecraft:block	311	minecraft:blue_stained_glass
+registry	minecraft:block	312	minecraft:brown_stained_glass
+registry	minecraft:block	313	minecraft:green_stained_glass
+registry	minecraft:block	314	minecraft:red_stained_glass
+registry	minecraft:block	315	minecraft:black_stained_glass
+registry	minecraft:block	316	minecraft:oak_trapdoor
+registry	minecraft:block	317	minecraft:spruce_trapdoor
+registry	minecraft:block	318	minecraft:birch_trapdoor
+registry	minecraft:block	319	minecraft:jungle_trapdoor
+registry	minecraft:block	320	minecraft:acacia_trapdoor
+registry	minecraft:block	321	minecraft:cherry_trapdoor
+registry	minecraft:block	322	minecraft:dark_oak_trapdoor
+registry	minecraft:block	323	minecraft:pale_oak_trapdoor
+registry	minecraft:block	324	minecraft:mangrove_trapdoor
+registry	minecraft:block	325	minecraft:bamboo_trapdoor
+registry	minecraft:block	326	minecraft:stone_bricks
+registry	minecraft:block	327	minecraft:mossy_stone_bricks
+registry	minecraft:block	328	minecraft:cracked_stone_bricks
+registry	minecraft:block	329	minecraft:chiseled_stone_bricks
+registry	minecraft:block	330	minecraft:packed_mud
+registry	minecraft:block	331	minecraft:mud_bricks
+registry	minecraft:block	332	minecraft:infested_stone
+registry	minecraft:block	333	minecraft:infested_cobblestone
+registry	minecraft:block	334	minecraft:infested_stone_bricks
+registry	minecraft:block	335	minecraft:infested_mossy_stone_bricks
+registry	minecraft:block	336	minecraft:infested_cracked_stone_bricks
+registry	minecraft:block	337	minecraft:infested_chiseled_stone_bricks
+registry	minecraft:block	338	minecraft:brown_mushroom_block
+registry	minecraft:block	339	minecraft:red_mushroom_block
+registry	minecraft:block	340	minecraft:mushroom_stem
+registry	minecraft:block	341	minecraft:iron_bars
+registry	minecraft:block	342	minecraft:copper_bars
+registry	minecraft:block	343	minecraft:exposed_copper_bars
+registry	minecraft:block	344	minecraft:weathered_copper_bars
+registry	minecraft:block	345	minecraft:oxidized_copper_bars
+registry	minecraft:block	346	minecraft:waxed_copper_bars
+registry	minecraft:block	347	minecraft:waxed_exposed_copper_bars
+registry	minecraft:block	348	minecraft:waxed_weathered_copper_bars
+registry	minecraft:block	349	minecraft:waxed_oxidized_copper_bars
+registry	minecraft:block	350	minecraft:iron_chain
+registry	minecraft:block	351	minecraft:copper_chain
+registry	minecraft:block	352	minecraft:exposed_copper_chain
+registry	minecraft:block	353	minecraft:weathered_copper_chain
+registry	minecraft:block	354	minecraft:oxidized_copper_chain
+registry	minecraft:block	355	minecraft:waxed_copper_chain
+registry	minecraft:block	356	minecraft:waxed_exposed_copper_chain
+registry	minecraft:block	357	minecraft:waxed_weathered_copper_chain
+registry	minecraft:block	358	minecraft:waxed_oxidized_copper_chain
+registry	minecraft:block	359	minecraft:glass_pane
+registry	minecraft:block	360	minecraft:pumpkin
+registry	minecraft:block	361	minecraft:melon
+registry	minecraft:block	362	minecraft:attached_pumpkin_stem
+registry	minecraft:block	363	minecraft:attached_melon_stem
+registry	minecraft:block	364	minecraft:pumpkin_stem
+registry	minecraft:block	365	minecraft:melon_stem
+registry	minecraft:block	366	minecraft:vine
+registry	minecraft:block	367	minecraft:glow_lichen
+registry	minecraft:block	368	minecraft:resin_clump
+registry	minecraft:block	369	minecraft:oak_fence_gate
+registry	minecraft:block	370	minecraft:brick_stairs
+registry	minecraft:block	371	minecraft:stone_brick_stairs
+registry	minecraft:block	372	minecraft:mud_brick_stairs
+registry	minecraft:block	373	minecraft:mycelium
+registry	minecraft:block	374	minecraft:lily_pad
+registry	minecraft:block	375	minecraft:resin_block
+registry	minecraft:block	376	minecraft:resin_bricks
+registry	minecraft:block	377	minecraft:resin_brick_stairs
+registry	minecraft:block	378	minecraft:resin_brick_slab
+registry	minecraft:block	379	minecraft:resin_brick_wall
+registry	minecraft:block	380	minecraft:chiseled_resin_bricks
+registry	minecraft:block	381	minecraft:nether_bricks
+registry	minecraft:block	382	minecraft:nether_brick_fence
+registry	minecraft:block	383	minecraft:nether_brick_stairs
+registry	minecraft:block	384	minecraft:nether_wart
+registry	minecraft:block	385	minecraft:enchanting_table
+registry	minecraft:block	386	minecraft:brewing_stand
+registry	minecraft:block	387	minecraft:cauldron
+registry	minecraft:block	388	minecraft:water_cauldron
+registry	minecraft:block	389	minecraft:lava_cauldron
+registry	minecraft:block	390	minecraft:powder_snow_cauldron
+registry	minecraft:block	391	minecraft:end_portal
+registry	minecraft:block	392	minecraft:end_portal_frame
+registry	minecraft:block	393	minecraft:end_stone
+registry	minecraft:block	394	minecraft:dragon_egg
+registry	minecraft:block	395	minecraft:redstone_lamp
+registry	minecraft:block	396	minecraft:cocoa
+registry	minecraft:block	397	minecraft:sandstone_stairs
+registry	minecraft:block	398	minecraft:emerald_ore
+registry	minecraft:block	399	minecraft:deepslate_emerald_ore
+registry	minecraft:block	400	minecraft:ender_chest
+registry	minecraft:block	401	minecraft:tripwire_hook
+registry	minecraft:block	402	minecraft:tripwire
+registry	minecraft:block	403	minecraft:emerald_block
+registry	minecraft:block	404	minecraft:spruce_stairs
+registry	minecraft:block	405	minecraft:birch_stairs
+registry	minecraft:block	406	minecraft:jungle_stairs
+registry	minecraft:block	407	minecraft:command_block
+registry	minecraft:block	408	minecraft:beacon
+registry	minecraft:block	409	minecraft:cobblestone_wall
+registry	minecraft:block	410	minecraft:mossy_cobblestone_wall
+registry	minecraft:block	411	minecraft:flower_pot
+registry	minecraft:block	412	minecraft:potted_torchflower
+registry	minecraft:block	413	minecraft:potted_oak_sapling
+registry	minecraft:block	414	minecraft:potted_spruce_sapling
+registry	minecraft:block	415	minecraft:potted_birch_sapling
+registry	minecraft:block	416	minecraft:potted_jungle_sapling
+registry	minecraft:block	417	minecraft:potted_acacia_sapling
+registry	minecraft:block	418	minecraft:potted_cherry_sapling
+registry	minecraft:block	419	minecraft:potted_dark_oak_sapling
+registry	minecraft:block	420	minecraft:potted_pale_oak_sapling
+registry	minecraft:block	421	minecraft:potted_mangrove_propagule
+registry	minecraft:block	422	minecraft:potted_fern
+registry	minecraft:block	423	minecraft:potted_dandelion
+registry	minecraft:block	424	minecraft:potted_golden_dandelion
+registry	minecraft:block	425	minecraft:potted_poppy
+registry	minecraft:block	426	minecraft:potted_blue_orchid
+registry	minecraft:block	427	minecraft:potted_allium
+registry	minecraft:block	428	minecraft:potted_azure_bluet
+registry	minecraft:block	429	minecraft:potted_red_tulip
+registry	minecraft:block	430	minecraft:potted_orange_tulip
+registry	minecraft:block	431	minecraft:potted_white_tulip
+registry	minecraft:block	432	minecraft:potted_pink_tulip
+registry	minecraft:block	433	minecraft:potted_oxeye_daisy
+registry	minecraft:block	434	minecraft:potted_cornflower
+registry	minecraft:block	435	minecraft:potted_lily_of_the_valley
+registry	minecraft:block	436	minecraft:potted_wither_rose
+registry	minecraft:block	437	minecraft:potted_red_mushroom
+registry	minecraft:block	438	minecraft:potted_brown_mushroom
+registry	minecraft:block	439	minecraft:potted_dead_bush
+registry	minecraft:block	440	minecraft:potted_cactus
+registry	minecraft:block	441	minecraft:carrots
+registry	minecraft:block	442	minecraft:potatoes
+registry	minecraft:block	443	minecraft:oak_button
+registry	minecraft:block	444	minecraft:spruce_button
+registry	minecraft:block	445	minecraft:birch_button
+registry	minecraft:block	446	minecraft:jungle_button
+registry	minecraft:block	447	minecraft:acacia_button
+registry	minecraft:block	448	minecraft:cherry_button
+registry	minecraft:block	449	minecraft:dark_oak_button
+registry	minecraft:block	450	minecraft:pale_oak_button
+registry	minecraft:block	451	minecraft:mangrove_button
+registry	minecraft:block	452	minecraft:bamboo_button
+registry	minecraft:block	453	minecraft:skeleton_skull
+registry	minecraft:block	454	minecraft:skeleton_wall_skull
+registry	minecraft:block	455	minecraft:wither_skeleton_skull
+registry	minecraft:block	456	minecraft:wither_skeleton_wall_skull
+registry	minecraft:block	457	minecraft:zombie_head
+registry	minecraft:block	458	minecraft:zombie_wall_head
+registry	minecraft:block	459	minecraft:player_head
+registry	minecraft:block	460	minecraft:player_wall_head
+registry	minecraft:block	461	minecraft:creeper_head
+registry	minecraft:block	462	minecraft:creeper_wall_head
+registry	minecraft:block	463	minecraft:dragon_head
+registry	minecraft:block	464	minecraft:dragon_wall_head
+registry	minecraft:block	465	minecraft:piglin_head
+registry	minecraft:block	466	minecraft:piglin_wall_head
+registry	minecraft:block	467	minecraft:anvil
+registry	minecraft:block	468	minecraft:chipped_anvil
+registry	minecraft:block	469	minecraft:damaged_anvil
+registry	minecraft:block	470	minecraft:trapped_chest
+registry	minecraft:block	471	minecraft:light_weighted_pressure_plate
+registry	minecraft:block	472	minecraft:heavy_weighted_pressure_plate
+registry	minecraft:block	473	minecraft:comparator
+registry	minecraft:block	474	minecraft:daylight_detector
+registry	minecraft:block	475	minecraft:redstone_block
+registry	minecraft:block	476	minecraft:nether_quartz_ore
+registry	minecraft:block	477	minecraft:hopper
+registry	minecraft:block	478	minecraft:quartz_block
+registry	minecraft:block	479	minecraft:chiseled_quartz_block
+registry	minecraft:block	480	minecraft:quartz_pillar
+registry	minecraft:block	481	minecraft:quartz_stairs
+registry	minecraft:block	482	minecraft:activator_rail
+registry	minecraft:block	483	minecraft:dropper
+registry	minecraft:block	484	minecraft:white_terracotta
+registry	minecraft:block	485	minecraft:orange_terracotta
+registry	minecraft:block	486	minecraft:magenta_terracotta
+registry	minecraft:block	487	minecraft:light_blue_terracotta
+registry	minecraft:block	488	minecraft:yellow_terracotta
+registry	minecraft:block	489	minecraft:lime_terracotta
+registry	minecraft:block	490	minecraft:pink_terracotta
+registry	minecraft:block	491	minecraft:gray_terracotta
+registry	minecraft:block	492	minecraft:light_gray_terracotta
+registry	minecraft:block	493	minecraft:cyan_terracotta
+registry	minecraft:block	494	minecraft:purple_terracotta
+registry	minecraft:block	495	minecraft:blue_terracotta
+registry	minecraft:block	496	minecraft:brown_terracotta
+registry	minecraft:block	497	minecraft:green_terracotta
+registry	minecraft:block	498	minecraft:red_terracotta
+registry	minecraft:block	499	minecraft:black_terracotta
+registry	minecraft:block	500	minecraft:white_stained_glass_pane
+registry	minecraft:block	501	minecraft:orange_stained_glass_pane
+registry	minecraft:block	502	minecraft:magenta_stained_glass_pane
+registry	minecraft:block	503	minecraft:light_blue_stained_glass_pane
+registry	minecraft:block	504	minecraft:yellow_stained_glass_pane
+registry	minecraft:block	505	minecraft:lime_stained_glass_pane
+registry	minecraft:block	506	minecraft:pink_stained_glass_pane
+registry	minecraft:block	507	minecraft:gray_stained_glass_pane
+registry	minecraft:block	508	minecraft:light_gray_stained_glass_pane
+registry	minecraft:block	509	minecraft:cyan_stained_glass_pane
+registry	minecraft:block	510	minecraft:purple_stained_glass_pane
+registry	minecraft:block	511	minecraft:blue_stained_glass_pane
+registry	minecraft:block	512	minecraft:brown_stained_glass_pane
+registry	minecraft:block	513	minecraft:green_stained_glass_pane
+registry	minecraft:block	514	minecraft:red_stained_glass_pane
+registry	minecraft:block	515	minecraft:black_stained_glass_pane
+registry	minecraft:block	516	minecraft:acacia_stairs
+registry	minecraft:block	517	minecraft:cherry_stairs
+registry	minecraft:block	518	minecraft:dark_oak_stairs
+registry	minecraft:block	519	minecraft:pale_oak_stairs
+registry	minecraft:block	520	minecraft:mangrove_stairs
+registry	minecraft:block	521	minecraft:bamboo_stairs
+registry	minecraft:block	522	minecraft:bamboo_mosaic_stairs
+registry	minecraft:block	523	minecraft:slime_block
+registry	minecraft:block	524	minecraft:barrier
+registry	minecraft:block	525	minecraft:light
+registry	minecraft:block	526	minecraft:iron_trapdoor
+registry	minecraft:block	527	minecraft:prismarine
+registry	minecraft:block	528	minecraft:prismarine_bricks
+registry	minecraft:block	529	minecraft:dark_prismarine
+registry	minecraft:block	530	minecraft:prismarine_stairs
+registry	minecraft:block	531	minecraft:prismarine_brick_stairs
+registry	minecraft:block	532	minecraft:dark_prismarine_stairs
+registry	minecraft:block	533	minecraft:prismarine_slab
+registry	minecraft:block	534	minecraft:prismarine_brick_slab
+registry	minecraft:block	535	minecraft:dark_prismarine_slab
+registry	minecraft:block	536	minecraft:sea_lantern
+registry	minecraft:block	537	minecraft:hay_block
+registry	minecraft:block	538	minecraft:white_carpet
+registry	minecraft:block	539	minecraft:orange_carpet
+registry	minecraft:block	540	minecraft:magenta_carpet
+registry	minecraft:block	541	minecraft:light_blue_carpet
+registry	minecraft:block	542	minecraft:yellow_carpet
+registry	minecraft:block	543	minecraft:lime_carpet
+registry	minecraft:block	544	minecraft:pink_carpet
+registry	minecraft:block	545	minecraft:gray_carpet
+registry	minecraft:block	546	minecraft:light_gray_carpet
+registry	minecraft:block	547	minecraft:cyan_carpet
+registry	minecraft:block	548	minecraft:purple_carpet
+registry	minecraft:block	549	minecraft:blue_carpet
+registry	minecraft:block	550	minecraft:brown_carpet
+registry	minecraft:block	551	minecraft:green_carpet
+registry	minecraft:block	552	minecraft:red_carpet
+registry	minecraft:block	553	minecraft:black_carpet
+registry	minecraft:block	554	minecraft:terracotta
+registry	minecraft:block	555	minecraft:coal_block
+registry	minecraft:block	556	minecraft:packed_ice
+registry	minecraft:block	557	minecraft:sunflower
+registry	minecraft:block	558	minecraft:lilac
+registry	minecraft:block	559	minecraft:rose_bush
+registry	minecraft:block	560	minecraft:peony
+registry	minecraft:block	561	minecraft:tall_grass
+registry	minecraft:block	562	minecraft:large_fern
+registry	minecraft:block	563	minecraft:white_banner
+registry	minecraft:block	564	minecraft:orange_banner
+registry	minecraft:block	565	minecraft:magenta_banner
+registry	minecraft:block	566	minecraft:light_blue_banner
+registry	minecraft:block	567	minecraft:yellow_banner
+registry	minecraft:block	568	minecraft:lime_banner
+registry	minecraft:block	569	minecraft:pink_banner
+registry	minecraft:block	570	minecraft:gray_banner
+registry	minecraft:block	571	minecraft:light_gray_banner
+registry	minecraft:block	572	minecraft:cyan_banner
+registry	minecraft:block	573	minecraft:purple_banner
+registry	minecraft:block	574	minecraft:blue_banner
+registry	minecraft:block	575	minecraft:brown_banner
+registry	minecraft:block	576	minecraft:green_banner
+registry	minecraft:block	577	minecraft:red_banner
+registry	minecraft:block	578	minecraft:black_banner
+registry	minecraft:block	579	minecraft:white_wall_banner
+registry	minecraft:block	580	minecraft:orange_wall_banner
+registry	minecraft:block	581	minecraft:magenta_wall_banner
+registry	minecraft:block	582	minecraft:light_blue_wall_banner
+registry	minecraft:block	583	minecraft:yellow_wall_banner
+registry	minecraft:block	584	minecraft:lime_wall_banner
+registry	minecraft:block	585	minecraft:pink_wall_banner
+registry	minecraft:block	586	minecraft:gray_wall_banner
+registry	minecraft:block	587	minecraft:light_gray_wall_banner
+registry	minecraft:block	588	minecraft:cyan_wall_banner
+registry	minecraft:block	589	minecraft:purple_wall_banner
+registry	minecraft:block	590	minecraft:blue_wall_banner
+registry	minecraft:block	591	minecraft:brown_wall_banner
+registry	minecraft:block	592	minecraft:green_wall_banner
+registry	minecraft:block	593	minecraft:red_wall_banner
+registry	minecraft:block	594	minecraft:black_wall_banner
+registry	minecraft:block	595	minecraft:red_sandstone
+registry	minecraft:block	596	minecraft:chiseled_red_sandstone
+registry	minecraft:block	597	minecraft:cut_red_sandstone
+registry	minecraft:block	598	minecraft:red_sandstone_stairs
+registry	minecraft:block	599	minecraft:oak_slab
+registry	minecraft:block	600	minecraft:spruce_slab
+registry	minecraft:block	601	minecraft:birch_slab
+registry	minecraft:block	602	minecraft:jungle_slab
+registry	minecraft:block	603	minecraft:acacia_slab
+registry	minecraft:block	604	minecraft:cherry_slab
+registry	minecraft:block	605	minecraft:dark_oak_slab
+registry	minecraft:block	606	minecraft:pale_oak_slab
+registry	minecraft:block	607	minecraft:mangrove_slab
+registry	minecraft:block	608	minecraft:bamboo_slab
+registry	minecraft:block	609	minecraft:bamboo_mosaic_slab
+registry	minecraft:block	610	minecraft:stone_slab
+registry	minecraft:block	611	minecraft:smooth_stone_slab
+registry	minecraft:block	612	minecraft:sandstone_slab
+registry	minecraft:block	613	minecraft:cut_sandstone_slab
+registry	minecraft:block	614	minecraft:petrified_oak_slab
+registry	minecraft:block	615	minecraft:cobblestone_slab
+registry	minecraft:block	616	minecraft:brick_slab
+registry	minecraft:block	617	minecraft:stone_brick_slab
+registry	minecraft:block	618	minecraft:mud_brick_slab
+registry	minecraft:block	619	minecraft:nether_brick_slab
+registry	minecraft:block	620	minecraft:quartz_slab
+registry	minecraft:block	621	minecraft:red_sandstone_slab
+registry	minecraft:block	622	minecraft:cut_red_sandstone_slab
+registry	minecraft:block	623	minecraft:purpur_slab
+registry	minecraft:block	624	minecraft:smooth_stone
+registry	minecraft:block	625	minecraft:smooth_sandstone
+registry	minecraft:block	626	minecraft:smooth_quartz
+registry	minecraft:block	627	minecraft:smooth_red_sandstone
+registry	minecraft:block	628	minecraft:spruce_fence_gate
+registry	minecraft:block	629	minecraft:birch_fence_gate
+registry	minecraft:block	630	minecraft:jungle_fence_gate
+registry	minecraft:block	631	minecraft:acacia_fence_gate
+registry	minecraft:block	632	minecraft:cherry_fence_gate
+registry	minecraft:block	633	minecraft:dark_oak_fence_gate
+registry	minecraft:block	634	minecraft:pale_oak_fence_gate
+registry	minecraft:block	635	minecraft:mangrove_fence_gate
+registry	minecraft:block	636	minecraft:bamboo_fence_gate
+registry	minecraft:block	637	minecraft:spruce_fence
+registry	minecraft:block	638	minecraft:birch_fence
+registry	minecraft:block	639	minecraft:jungle_fence
+registry	minecraft:block	640	minecraft:acacia_fence
+registry	minecraft:block	641	minecraft:cherry_fence
+registry	minecraft:block	642	minecraft:dark_oak_fence
+registry	minecraft:block	643	minecraft:pale_oak_fence
+registry	minecraft:block	644	minecraft:mangrove_fence
+registry	minecraft:block	645	minecraft:bamboo_fence
+registry	minecraft:block	646	minecraft:spruce_door
+registry	minecraft:block	647	minecraft:birch_door
+registry	minecraft:block	648	minecraft:jungle_door
+registry	minecraft:block	649	minecraft:acacia_door
+registry	minecraft:block	650	minecraft:cherry_door
+registry	minecraft:block	651	minecraft:dark_oak_door
+registry	minecraft:block	652	minecraft:pale_oak_door
+registry	minecraft:block	653	minecraft:mangrove_door
+registry	minecraft:block	654	minecraft:bamboo_door
+registry	minecraft:block	655	minecraft:end_rod
+registry	minecraft:block	656	minecraft:chorus_plant
+registry	minecraft:block	657	minecraft:chorus_flower
+registry	minecraft:block	658	minecraft:purpur_block
+registry	minecraft:block	659	minecraft:purpur_pillar
+registry	minecraft:block	660	minecraft:purpur_stairs
+registry	minecraft:block	661	minecraft:end_stone_bricks
+registry	minecraft:block	662	minecraft:torchflower_crop
+registry	minecraft:block	663	minecraft:pitcher_crop
+registry	minecraft:block	664	minecraft:pitcher_plant
+registry	minecraft:block	665	minecraft:beetroots
+registry	minecraft:block	666	minecraft:dirt_path
+registry	minecraft:block	667	minecraft:end_gateway
+registry	minecraft:block	668	minecraft:repeating_command_block
+registry	minecraft:block	669	minecraft:chain_command_block
+registry	minecraft:block	670	minecraft:frosted_ice
+registry	minecraft:block	671	minecraft:magma_block
+registry	minecraft:block	672	minecraft:nether_wart_block
+registry	minecraft:block	673	minecraft:red_nether_bricks
+registry	minecraft:block	674	minecraft:bone_block
+registry	minecraft:block	675	minecraft:structure_void
+registry	minecraft:block	676	minecraft:observer
+registry	minecraft:block	677	minecraft:shulker_box
+registry	minecraft:block	678	minecraft:white_shulker_box
+registry	minecraft:block	679	minecraft:orange_shulker_box
+registry	minecraft:block	680	minecraft:magenta_shulker_box
+registry	minecraft:block	681	minecraft:light_blue_shulker_box
+registry	minecraft:block	682	minecraft:yellow_shulker_box
+registry	minecraft:block	683	minecraft:lime_shulker_box
+registry	minecraft:block	684	minecraft:pink_shulker_box
+registry	minecraft:block	685	minecraft:gray_shulker_box
+registry	minecraft:block	686	minecraft:light_gray_shulker_box
+registry	minecraft:block	687	minecraft:cyan_shulker_box
+registry	minecraft:block	688	minecraft:purple_shulker_box
+registry	minecraft:block	689	minecraft:blue_shulker_box
+registry	minecraft:block	690	minecraft:brown_shulker_box
+registry	minecraft:block	691	minecraft:green_shulker_box
+registry	minecraft:block	692	minecraft:red_shulker_box
+registry	minecraft:block	693	minecraft:black_shulker_box
+registry	minecraft:block	694	minecraft:white_glazed_terracotta
+registry	minecraft:block	695	minecraft:orange_glazed_terracotta
+registry	minecraft:block	696	minecraft:magenta_glazed_terracotta
+registry	minecraft:block	697	minecraft:light_blue_glazed_terracotta
+registry	minecraft:block	698	minecraft:yellow_glazed_terracotta
+registry	minecraft:block	699	minecraft:lime_glazed_terracotta
+registry	minecraft:block	700	minecraft:pink_glazed_terracotta
+registry	minecraft:block	701	minecraft:gray_glazed_terracotta
+registry	minecraft:block	702	minecraft:light_gray_glazed_terracotta
+registry	minecraft:block	703	minecraft:cyan_glazed_terracotta
+registry	minecraft:block	704	minecraft:purple_glazed_terracotta
+registry	minecraft:block	705	minecraft:blue_glazed_terracotta
+registry	minecraft:block	706	minecraft:brown_glazed_terracotta
+registry	minecraft:block	707	minecraft:green_glazed_terracotta
+registry	minecraft:block	708	minecraft:red_glazed_terracotta
+registry	minecraft:block	709	minecraft:black_glazed_terracotta
+registry	minecraft:block	710	minecraft:white_concrete
+registry	minecraft:block	711	minecraft:orange_concrete
+registry	minecraft:block	712	minecraft:magenta_concrete
+registry	minecraft:block	713	minecraft:light_blue_concrete
+registry	minecraft:block	714	minecraft:yellow_concrete
+registry	minecraft:block	715	minecraft:lime_concrete
+registry	minecraft:block	716	minecraft:pink_concrete
+registry	minecraft:block	717	minecraft:gray_concrete
+registry	minecraft:block	718	minecraft:light_gray_concrete
+registry	minecraft:block	719	minecraft:cyan_concrete
+registry	minecraft:block	720	minecraft:purple_concrete
+registry	minecraft:block	721	minecraft:blue_concrete
+registry	minecraft:block	722	minecraft:brown_concrete
+registry	minecraft:block	723	minecraft:green_concrete
+registry	minecraft:block	724	minecraft:red_concrete
+registry	minecraft:block	725	minecraft:black_concrete
+registry	minecraft:block	726	minecraft:white_concrete_powder
+registry	minecraft:block	727	minecraft:orange_concrete_powder
+registry	minecraft:block	728	minecraft:magenta_concrete_powder
+registry	minecraft:block	729	minecraft:light_blue_concrete_powder
+registry	minecraft:block	730	minecraft:yellow_concrete_powder
+registry	minecraft:block	731	minecraft:lime_concrete_powder
+registry	minecraft:block	732	minecraft:pink_concrete_powder
+registry	minecraft:block	733	minecraft:gray_concrete_powder
+registry	minecraft:block	734	minecraft:light_gray_concrete_powder
+registry	minecraft:block	735	minecraft:cyan_concrete_powder
+registry	minecraft:block	736	minecraft:purple_concrete_powder
+registry	minecraft:block	737	minecraft:blue_concrete_powder
+registry	minecraft:block	738	minecraft:brown_concrete_powder
+registry	minecraft:block	739	minecraft:green_concrete_powder
+registry	minecraft:block	740	minecraft:red_concrete_powder
+registry	minecraft:block	741	minecraft:black_concrete_powder
+registry	minecraft:block	742	minecraft:kelp
+registry	minecraft:block	743	minecraft:kelp_plant
+registry	minecraft:block	744	minecraft:dried_kelp_block
+registry	minecraft:block	745	minecraft:turtle_egg
+registry	minecraft:block	746	minecraft:sniffer_egg
+registry	minecraft:block	747	minecraft:dried_ghast
+registry	minecraft:block	748	minecraft:dead_tube_coral_block
+registry	minecraft:block	749	minecraft:dead_brain_coral_block
+registry	minecraft:block	750	minecraft:dead_bubble_coral_block
+registry	minecraft:block	751	minecraft:dead_fire_coral_block
+registry	minecraft:block	752	minecraft:dead_horn_coral_block
+registry	minecraft:block	753	minecraft:tube_coral_block
+registry	minecraft:block	754	minecraft:brain_coral_block
+registry	minecraft:block	755	minecraft:bubble_coral_block
+registry	minecraft:block	756	minecraft:fire_coral_block
+registry	minecraft:block	757	minecraft:horn_coral_block
+registry	minecraft:block	758	minecraft:dead_tube_coral
+registry	minecraft:block	759	minecraft:dead_brain_coral
+registry	minecraft:block	760	minecraft:dead_bubble_coral
+registry	minecraft:block	761	minecraft:dead_fire_coral
+registry	minecraft:block	762	minecraft:dead_horn_coral
+registry	minecraft:block	763	minecraft:tube_coral
+registry	minecraft:block	764	minecraft:brain_coral
+registry	minecraft:block	765	minecraft:bubble_coral
+registry	minecraft:block	766	minecraft:fire_coral
+registry	minecraft:block	767	minecraft:horn_coral
+registry	minecraft:block	768	minecraft:dead_tube_coral_fan
+registry	minecraft:block	769	minecraft:dead_brain_coral_fan
+registry	minecraft:block	770	minecraft:dead_bubble_coral_fan
+registry	minecraft:block	771	minecraft:dead_fire_coral_fan
+registry	minecraft:block	772	minecraft:dead_horn_coral_fan
+registry	minecraft:block	773	minecraft:tube_coral_fan
+registry	minecraft:block	774	minecraft:brain_coral_fan
+registry	minecraft:block	775	minecraft:bubble_coral_fan
+registry	minecraft:block	776	minecraft:fire_coral_fan
+registry	minecraft:block	777	minecraft:horn_coral_fan
+registry	minecraft:block	778	minecraft:dead_tube_coral_wall_fan
+registry	minecraft:block	779	minecraft:dead_brain_coral_wall_fan
+registry	minecraft:block	780	minecraft:dead_bubble_coral_wall_fan
+registry	minecraft:block	781	minecraft:dead_fire_coral_wall_fan
+registry	minecraft:block	782	minecraft:dead_horn_coral_wall_fan
+registry	minecraft:block	783	minecraft:tube_coral_wall_fan
+registry	minecraft:block	784	minecraft:brain_coral_wall_fan
+registry	minecraft:block	785	minecraft:bubble_coral_wall_fan
+registry	minecraft:block	786	minecraft:fire_coral_wall_fan
+registry	minecraft:block	787	minecraft:horn_coral_wall_fan
+registry	minecraft:block	788	minecraft:sea_pickle
+registry	minecraft:block	789	minecraft:blue_ice
+registry	minecraft:block	790	minecraft:conduit
+registry	minecraft:block	791	minecraft:bamboo_sapling
+registry	minecraft:block	792	minecraft:bamboo
+registry	minecraft:block	793	minecraft:potted_bamboo
+registry	minecraft:block	794	minecraft:void_air
+registry	minecraft:block	795	minecraft:cave_air
+registry	minecraft:block	796	minecraft:bubble_column
+registry	minecraft:block	797	minecraft:polished_granite_stairs
+registry	minecraft:block	798	minecraft:smooth_red_sandstone_stairs
+registry	minecraft:block	799	minecraft:mossy_stone_brick_stairs
+registry	minecraft:block	800	minecraft:polished_diorite_stairs
+registry	minecraft:block	801	minecraft:mossy_cobblestone_stairs
+registry	minecraft:block	802	minecraft:end_stone_brick_stairs
+registry	minecraft:block	803	minecraft:stone_stairs
+registry	minecraft:block	804	minecraft:smooth_sandstone_stairs
+registry	minecraft:block	805	minecraft:smooth_quartz_stairs
+registry	minecraft:block	806	minecraft:granite_stairs
+registry	minecraft:block	807	minecraft:andesite_stairs
+registry	minecraft:block	808	minecraft:red_nether_brick_stairs
+registry	minecraft:block	809	minecraft:polished_andesite_stairs
+registry	minecraft:block	810	minecraft:diorite_stairs
+registry	minecraft:block	811	minecraft:polished_granite_slab
+registry	minecraft:block	812	minecraft:smooth_red_sandstone_slab
+registry	minecraft:block	813	minecraft:mossy_stone_brick_slab
+registry	minecraft:block	814	minecraft:polished_diorite_slab
+registry	minecraft:block	815	minecraft:mossy_cobblestone_slab
+registry	minecraft:block	816	minecraft:end_stone_brick_slab
+registry	minecraft:block	817	minecraft:smooth_sandstone_slab
+registry	minecraft:block	818	minecraft:smooth_quartz_slab
+registry	minecraft:block	819	minecraft:granite_slab
+registry	minecraft:block	820	minecraft:andesite_slab
+registry	minecraft:block	821	minecraft:red_nether_brick_slab
+registry	minecraft:block	822	minecraft:polished_andesite_slab
+registry	minecraft:block	823	minecraft:diorite_slab
+registry	minecraft:block	824	minecraft:brick_wall
+registry	minecraft:block	825	minecraft:prismarine_wall
+registry	minecraft:block	826	minecraft:red_sandstone_wall
+registry	minecraft:block	827	minecraft:mossy_stone_brick_wall
+registry	minecraft:block	828	minecraft:granite_wall
+registry	minecraft:block	829	minecraft:stone_brick_wall
+registry	minecraft:block	830	minecraft:mud_brick_wall
+registry	minecraft:block	831	minecraft:nether_brick_wall
+registry	minecraft:block	832	minecraft:andesite_wall
+registry	minecraft:block	833	minecraft:red_nether_brick_wall
+registry	minecraft:block	834	minecraft:sandstone_wall
+registry	minecraft:block	835	minecraft:end_stone_brick_wall
+registry	minecraft:block	836	minecraft:diorite_wall
+registry	minecraft:block	837	minecraft:scaffolding
+registry	minecraft:block	838	minecraft:loom
+registry	minecraft:block	839	minecraft:barrel
+registry	minecraft:block	840	minecraft:smoker
+registry	minecraft:block	841	minecraft:blast_furnace
+registry	minecraft:block	842	minecraft:cartography_table
+registry	minecraft:block	843	minecraft:fletching_table
+registry	minecraft:block	844	minecraft:grindstone
+registry	minecraft:block	845	minecraft:lectern
+registry	minecraft:block	846	minecraft:smithing_table
+registry	minecraft:block	847	minecraft:stonecutter
+registry	minecraft:block	848	minecraft:bell
+registry	minecraft:block	849	minecraft:lantern
+registry	minecraft:block	850	minecraft:soul_lantern
+registry	minecraft:block	851	minecraft:copper_lantern
+registry	minecraft:block	852	minecraft:exposed_copper_lantern
+registry	minecraft:block	853	minecraft:weathered_copper_lantern
+registry	minecraft:block	854	minecraft:oxidized_copper_lantern
+registry	minecraft:block	855	minecraft:waxed_copper_lantern
+registry	minecraft:block	856	minecraft:waxed_exposed_copper_lantern
+registry	minecraft:block	857	minecraft:waxed_weathered_copper_lantern
+registry	minecraft:block	858	minecraft:waxed_oxidized_copper_lantern
+registry	minecraft:block	859	minecraft:campfire
+registry	minecraft:block	860	minecraft:soul_campfire
+registry	minecraft:block	861	minecraft:sweet_berry_bush
+registry	minecraft:block	862	minecraft:warped_stem
+registry	minecraft:block	863	minecraft:stripped_warped_stem
+registry	minecraft:block	864	minecraft:warped_hyphae
+registry	minecraft:block	865	minecraft:stripped_warped_hyphae
+registry	minecraft:block	866	minecraft:warped_nylium
+registry	minecraft:block	867	minecraft:warped_fungus
+registry	minecraft:block	868	minecraft:warped_wart_block
+registry	minecraft:block	869	minecraft:warped_roots
+registry	minecraft:block	870	minecraft:nether_sprouts
+registry	minecraft:block	871	minecraft:crimson_stem
+registry	minecraft:block	872	minecraft:stripped_crimson_stem
+registry	minecraft:block	873	minecraft:crimson_hyphae
+registry	minecraft:block	874	minecraft:stripped_crimson_hyphae
+registry	minecraft:block	875	minecraft:crimson_nylium
+registry	minecraft:block	876	minecraft:crimson_fungus
+registry	minecraft:block	877	minecraft:shroomlight
+registry	minecraft:block	878	minecraft:weeping_vines
+registry	minecraft:block	879	minecraft:weeping_vines_plant
+registry	minecraft:block	880	minecraft:twisting_vines
+registry	minecraft:block	881	minecraft:twisting_vines_plant
+registry	minecraft:block	882	minecraft:crimson_roots
+registry	minecraft:block	883	minecraft:crimson_planks
+registry	minecraft:block	884	minecraft:warped_planks
+registry	minecraft:block	885	minecraft:crimson_slab
+registry	minecraft:block	886	minecraft:warped_slab
+registry	minecraft:block	887	minecraft:crimson_pressure_plate
+registry	minecraft:block	888	minecraft:warped_pressure_plate
+registry	minecraft:block	889	minecraft:crimson_fence
+registry	minecraft:block	890	minecraft:warped_fence
+registry	minecraft:block	891	minecraft:crimson_trapdoor
+registry	minecraft:block	892	minecraft:warped_trapdoor
+registry	minecraft:block	893	minecraft:crimson_fence_gate
+registry	minecraft:block	894	minecraft:warped_fence_gate
+registry	minecraft:block	895	minecraft:crimson_stairs
+registry	minecraft:block	896	minecraft:warped_stairs
+registry	minecraft:block	897	minecraft:crimson_button
+registry	minecraft:block	898	minecraft:warped_button
+registry	minecraft:block	899	minecraft:crimson_door
+registry	minecraft:block	900	minecraft:warped_door
+registry	minecraft:block	901	minecraft:crimson_sign
+registry	minecraft:block	902	minecraft:warped_sign
+registry	minecraft:block	903	minecraft:crimson_wall_sign
+registry	minecraft:block	904	minecraft:warped_wall_sign
+registry	minecraft:block	905	minecraft:structure_block
+registry	minecraft:block	906	minecraft:jigsaw
+registry	minecraft:block	907	minecraft:test_block
+registry	minecraft:block	908	minecraft:test_instance_block
+registry	minecraft:block	909	minecraft:composter
+registry	minecraft:block	910	minecraft:target
+registry	minecraft:block	911	minecraft:bee_nest
+registry	minecraft:block	912	minecraft:beehive
+registry	minecraft:block	913	minecraft:honey_block
+registry	minecraft:block	914	minecraft:honeycomb_block
+registry	minecraft:block	915	minecraft:netherite_block
+registry	minecraft:block	916	minecraft:ancient_debris
+registry	minecraft:block	917	minecraft:crying_obsidian
+registry	minecraft:block	918	minecraft:respawn_anchor
+registry	minecraft:block	919	minecraft:potted_crimson_fungus
+registry	minecraft:block	920	minecraft:potted_warped_fungus
+registry	minecraft:block	921	minecraft:potted_crimson_roots
+registry	minecraft:block	922	minecraft:potted_warped_roots
+registry	minecraft:block	923	minecraft:lodestone
+registry	minecraft:block	924	minecraft:blackstone
+registry	minecraft:block	925	minecraft:blackstone_stairs
+registry	minecraft:block	926	minecraft:blackstone_wall
+registry	minecraft:block	927	minecraft:blackstone_slab
+registry	minecraft:block	928	minecraft:polished_blackstone
+registry	minecraft:block	929	minecraft:polished_blackstone_bricks
+registry	minecraft:block	930	minecraft:cracked_polished_blackstone_bricks
+registry	minecraft:block	931	minecraft:chiseled_polished_blackstone
+registry	minecraft:block	932	minecraft:polished_blackstone_brick_slab
+registry	minecraft:block	933	minecraft:polished_blackstone_brick_stairs
+registry	minecraft:block	934	minecraft:polished_blackstone_brick_wall
+registry	minecraft:block	935	minecraft:gilded_blackstone
+registry	minecraft:block	936	minecraft:polished_blackstone_stairs
+registry	minecraft:block	937	minecraft:polished_blackstone_slab
+registry	minecraft:block	938	minecraft:polished_blackstone_pressure_plate
+registry	minecraft:block	939	minecraft:polished_blackstone_button
+registry	minecraft:block	940	minecraft:polished_blackstone_wall
+registry	minecraft:block	941	minecraft:chiseled_nether_bricks
+registry	minecraft:block	942	minecraft:cracked_nether_bricks
+registry	minecraft:block	943	minecraft:quartz_bricks
+registry	minecraft:block	944	minecraft:candle
+registry	minecraft:block	945	minecraft:white_candle
+registry	minecraft:block	946	minecraft:orange_candle
+registry	minecraft:block	947	minecraft:magenta_candle
+registry	minecraft:block	948	minecraft:light_blue_candle
+registry	minecraft:block	949	minecraft:yellow_candle
+registry	minecraft:block	950	minecraft:lime_candle
+registry	minecraft:block	951	minecraft:pink_candle
+registry	minecraft:block	952	minecraft:gray_candle
+registry	minecraft:block	953	minecraft:light_gray_candle
+registry	minecraft:block	954	minecraft:cyan_candle
+registry	minecraft:block	955	minecraft:purple_candle
+registry	minecraft:block	956	minecraft:blue_candle
+registry	minecraft:block	957	minecraft:brown_candle
+registry	minecraft:block	958	minecraft:green_candle
+registry	minecraft:block	959	minecraft:red_candle
+registry	minecraft:block	960	minecraft:black_candle
+registry	minecraft:block	961	minecraft:candle_cake
+registry	minecraft:block	962	minecraft:white_candle_cake
+registry	minecraft:block	963	minecraft:orange_candle_cake
+registry	minecraft:block	964	minecraft:magenta_candle_cake
+registry	minecraft:block	965	minecraft:light_blue_candle_cake
+registry	minecraft:block	966	minecraft:yellow_candle_cake
+registry	minecraft:block	967	minecraft:lime_candle_cake
+registry	minecraft:block	968	minecraft:pink_candle_cake
+registry	minecraft:block	969	minecraft:gray_candle_cake
+registry	minecraft:block	970	minecraft:light_gray_candle_cake
+registry	minecraft:block	971	minecraft:cyan_candle_cake
+registry	minecraft:block	972	minecraft:purple_candle_cake
+registry	minecraft:block	973	minecraft:blue_candle_cake
+registry	minecraft:block	974	minecraft:brown_candle_cake
+registry	minecraft:block	975	minecraft:green_candle_cake
+registry	minecraft:block	976	minecraft:red_candle_cake
+registry	minecraft:block	977	minecraft:black_candle_cake
+registry	minecraft:block	978	minecraft:amethyst_block
+registry	minecraft:block	979	minecraft:budding_amethyst
+registry	minecraft:block	980	minecraft:amethyst_cluster
+registry	minecraft:block	981	minecraft:large_amethyst_bud
+registry	minecraft:block	982	minecraft:medium_amethyst_bud
+registry	minecraft:block	983	minecraft:small_amethyst_bud
+registry	minecraft:block	984	minecraft:tuff
+registry	minecraft:block	985	minecraft:tuff_slab
+registry	minecraft:block	986	minecraft:tuff_stairs
+registry	minecraft:block	987	minecraft:tuff_wall
+registry	minecraft:block	988	minecraft:polished_tuff
+registry	minecraft:block	989	minecraft:polished_tuff_slab
+registry	minecraft:block	990	minecraft:polished_tuff_stairs
+registry	minecraft:block	991	minecraft:polished_tuff_wall
+registry	minecraft:block	992	minecraft:chiseled_tuff
+registry	minecraft:block	993	minecraft:tuff_bricks
+registry	minecraft:block	994	minecraft:tuff_brick_slab
+registry	minecraft:block	995	minecraft:tuff_brick_stairs
+registry	minecraft:block	996	minecraft:tuff_brick_wall
+registry	minecraft:block	997	minecraft:chiseled_tuff_bricks
+registry	minecraft:block	998	minecraft:calcite
+registry	minecraft:block	999	minecraft:tinted_glass
+registry	minecraft:block	1000	minecraft:powder_snow
+registry	minecraft:block	1001	minecraft:sculk_sensor
+registry	minecraft:block	1002	minecraft:calibrated_sculk_sensor
+registry	minecraft:block	1003	minecraft:sculk
+registry	minecraft:block	1004	minecraft:sculk_vein
+registry	minecraft:block	1005	minecraft:sculk_catalyst
+registry	minecraft:block	1006	minecraft:sculk_shrieker
+registry	minecraft:block	1007	minecraft:copper_block
+registry	minecraft:block	1008	minecraft:exposed_copper
+registry	minecraft:block	1009	minecraft:weathered_copper
+registry	minecraft:block	1010	minecraft:oxidized_copper
+registry	minecraft:block	1011	minecraft:copper_ore
+registry	minecraft:block	1012	minecraft:deepslate_copper_ore
+registry	minecraft:block	1013	minecraft:oxidized_cut_copper
+registry	minecraft:block	1014	minecraft:weathered_cut_copper
+registry	minecraft:block	1015	minecraft:exposed_cut_copper
+registry	minecraft:block	1016	minecraft:cut_copper
+registry	minecraft:block	1017	minecraft:oxidized_chiseled_copper
+registry	minecraft:block	1018	minecraft:weathered_chiseled_copper
+registry	minecraft:block	1019	minecraft:exposed_chiseled_copper
+registry	minecraft:block	1020	minecraft:chiseled_copper
+registry	minecraft:block	1021	minecraft:waxed_oxidized_chiseled_copper
+registry	minecraft:block	1022	minecraft:waxed_weathered_chiseled_copper
+registry	minecraft:block	1023	minecraft:waxed_exposed_chiseled_copper
+registry	minecraft:block	1024	minecraft:waxed_chiseled_copper
+registry	minecraft:block	1025	minecraft:oxidized_cut_copper_stairs
+registry	minecraft:block	1026	minecraft:weathered_cut_copper_stairs
+registry	minecraft:block	1027	minecraft:exposed_cut_copper_stairs
+registry	minecraft:block	1028	minecraft:cut_copper_stairs
+registry	minecraft:block	1029	minecraft:oxidized_cut_copper_slab
+registry	minecraft:block	1030	minecraft:weathered_cut_copper_slab
+registry	minecraft:block	1031	minecraft:exposed_cut_copper_slab
+registry	minecraft:block	1032	minecraft:cut_copper_slab
+registry	minecraft:block	1033	minecraft:waxed_copper_block
+registry	minecraft:block	1034	minecraft:waxed_weathered_copper
+registry	minecraft:block	1035	minecraft:waxed_exposed_copper
+registry	minecraft:block	1036	minecraft:waxed_oxidized_copper
+registry	minecraft:block	1037	minecraft:waxed_oxidized_cut_copper
+registry	minecraft:block	1038	minecraft:waxed_weathered_cut_copper
+registry	minecraft:block	1039	minecraft:waxed_exposed_cut_copper
+registry	minecraft:block	1040	minecraft:waxed_cut_copper
+registry	minecraft:block	1041	minecraft:waxed_oxidized_cut_copper_stairs
+registry	minecraft:block	1042	minecraft:waxed_weathered_cut_copper_stairs
+registry	minecraft:block	1043	minecraft:waxed_exposed_cut_copper_stairs
+registry	minecraft:block	1044	minecraft:waxed_cut_copper_stairs
+registry	minecraft:block	1045	minecraft:waxed_oxidized_cut_copper_slab
+registry	minecraft:block	1046	minecraft:waxed_weathered_cut_copper_slab
+registry	minecraft:block	1047	minecraft:waxed_exposed_cut_copper_slab
+registry	minecraft:block	1048	minecraft:waxed_cut_copper_slab
+registry	minecraft:block	1049	minecraft:copper_door
+registry	minecraft:block	1050	minecraft:exposed_copper_door
+registry	minecraft:block	1051	minecraft:oxidized_copper_door
+registry	minecraft:block	1052	minecraft:weathered_copper_door
+registry	minecraft:block	1053	minecraft:waxed_copper_door
+registry	minecraft:block	1054	minecraft:waxed_exposed_copper_door
+registry	minecraft:block	1055	minecraft:waxed_oxidized_copper_door
+registry	minecraft:block	1056	minecraft:waxed_weathered_copper_door
+registry	minecraft:block	1057	minecraft:copper_trapdoor
+registry	minecraft:block	1058	minecraft:exposed_copper_trapdoor
+registry	minecraft:block	1059	minecraft:oxidized_copper_trapdoor
+registry	minecraft:block	1060	minecraft:weathered_copper_trapdoor
+registry	minecraft:block	1061	minecraft:waxed_copper_trapdoor
+registry	minecraft:block	1062	minecraft:waxed_exposed_copper_trapdoor
+registry	minecraft:block	1063	minecraft:waxed_oxidized_copper_trapdoor
+registry	minecraft:block	1064	minecraft:waxed_weathered_copper_trapdoor
+registry	minecraft:block	1065	minecraft:copper_grate
+registry	minecraft:block	1066	minecraft:exposed_copper_grate
+registry	minecraft:block	1067	minecraft:weathered_copper_grate
+registry	minecraft:block	1068	minecraft:oxidized_copper_grate
+registry	minecraft:block	1069	minecraft:waxed_copper_grate
+registry	minecraft:block	1070	minecraft:waxed_exposed_copper_grate
+registry	minecraft:block	1071	minecraft:waxed_weathered_copper_grate
+registry	minecraft:block	1072	minecraft:waxed_oxidized_copper_grate
+registry	minecraft:block	1073	minecraft:copper_bulb
+registry	minecraft:block	1074	minecraft:exposed_copper_bulb
+registry	minecraft:block	1075	minecraft:weathered_copper_bulb
+registry	minecraft:block	1076	minecraft:oxidized_copper_bulb
+registry	minecraft:block	1077	minecraft:waxed_copper_bulb
+registry	minecraft:block	1078	minecraft:waxed_exposed_copper_bulb
+registry	minecraft:block	1079	minecraft:waxed_weathered_copper_bulb
+registry	minecraft:block	1080	minecraft:waxed_oxidized_copper_bulb
+registry	minecraft:block	1081	minecraft:copper_chest
+registry	minecraft:block	1082	minecraft:exposed_copper_chest
+registry	minecraft:block	1083	minecraft:weathered_copper_chest
+registry	minecraft:block	1084	minecraft:oxidized_copper_chest
+registry	minecraft:block	1085	minecraft:waxed_copper_chest
+registry	minecraft:block	1086	minecraft:waxed_exposed_copper_chest
+registry	minecraft:block	1087	minecraft:waxed_weathered_copper_chest
+registry	minecraft:block	1088	minecraft:waxed_oxidized_copper_chest
+registry	minecraft:block	1089	minecraft:copper_golem_statue
+registry	minecraft:block	1090	minecraft:exposed_copper_golem_statue
+registry	minecraft:block	1091	minecraft:weathered_copper_golem_statue
+registry	minecraft:block	1092	minecraft:oxidized_copper_golem_statue
+registry	minecraft:block	1093	minecraft:waxed_copper_golem_statue
+registry	minecraft:block	1094	minecraft:waxed_exposed_copper_golem_statue
+registry	minecraft:block	1095	minecraft:waxed_weathered_copper_golem_statue
+registry	minecraft:block	1096	minecraft:waxed_oxidized_copper_golem_statue
+registry	minecraft:block	1097	minecraft:lightning_rod
+registry	minecraft:block	1098	minecraft:exposed_lightning_rod
+registry	minecraft:block	1099	minecraft:weathered_lightning_rod
+registry	minecraft:block	1100	minecraft:oxidized_lightning_rod
+registry	minecraft:block	1101	minecraft:waxed_lightning_rod
+registry	minecraft:block	1102	minecraft:waxed_exposed_lightning_rod
+registry	minecraft:block	1103	minecraft:waxed_weathered_lightning_rod
+registry	minecraft:block	1104	minecraft:waxed_oxidized_lightning_rod
+registry	minecraft:block	1105	minecraft:pointed_dripstone
+registry	minecraft:block	1106	minecraft:dripstone_block
+registry	minecraft:block	1107	minecraft:cave_vines
+registry	minecraft:block	1108	minecraft:cave_vines_plant
+registry	minecraft:block	1109	minecraft:spore_blossom
+registry	minecraft:block	1110	minecraft:azalea
+registry	minecraft:block	1111	minecraft:flowering_azalea
+registry	minecraft:block	1112	minecraft:moss_carpet
+registry	minecraft:block	1113	minecraft:pink_petals
+registry	minecraft:block	1114	minecraft:wildflowers
+registry	minecraft:block	1115	minecraft:leaf_litter
+registry	minecraft:block	1116	minecraft:moss_block
+registry	minecraft:block	1117	minecraft:big_dripleaf
+registry	minecraft:block	1118	minecraft:big_dripleaf_stem
+registry	minecraft:block	1119	minecraft:small_dripleaf
+registry	minecraft:block	1120	minecraft:hanging_roots
+registry	minecraft:block	1121	minecraft:rooted_dirt
+registry	minecraft:block	1122	minecraft:mud
+registry	minecraft:block	1123	minecraft:deepslate
+registry	minecraft:block	1124	minecraft:cobbled_deepslate
+registry	minecraft:block	1125	minecraft:cobbled_deepslate_stairs
+registry	minecraft:block	1126	minecraft:cobbled_deepslate_slab
+registry	minecraft:block	1127	minecraft:cobbled_deepslate_wall
+registry	minecraft:block	1128	minecraft:polished_deepslate
+registry	minecraft:block	1129	minecraft:polished_deepslate_stairs
+registry	minecraft:block	1130	minecraft:polished_deepslate_slab
+registry	minecraft:block	1131	minecraft:polished_deepslate_wall
+registry	minecraft:block	1132	minecraft:deepslate_tiles
+registry	minecraft:block	1133	minecraft:deepslate_tile_stairs
+registry	minecraft:block	1134	minecraft:deepslate_tile_slab
+registry	minecraft:block	1135	minecraft:deepslate_tile_wall
+registry	minecraft:block	1136	minecraft:deepslate_bricks
+registry	minecraft:block	1137	minecraft:deepslate_brick_stairs
+registry	minecraft:block	1138	minecraft:deepslate_brick_slab
+registry	minecraft:block	1139	minecraft:deepslate_brick_wall
+registry	minecraft:block	1140	minecraft:chiseled_deepslate
+registry	minecraft:block	1141	minecraft:cracked_deepslate_bricks
+registry	minecraft:block	1142	minecraft:cracked_deepslate_tiles
+registry	minecraft:block	1143	minecraft:infested_deepslate
+registry	minecraft:block	1144	minecraft:smooth_basalt
+registry	minecraft:block	1145	minecraft:raw_iron_block
+registry	minecraft:block	1146	minecraft:raw_copper_block
+registry	minecraft:block	1147	minecraft:raw_gold_block
+registry	minecraft:block	1148	minecraft:potted_azalea_bush
+registry	minecraft:block	1149	minecraft:potted_flowering_azalea_bush
+registry	minecraft:block	1150	minecraft:ochre_froglight
+registry	minecraft:block	1151	minecraft:verdant_froglight
+registry	minecraft:block	1152	minecraft:pearlescent_froglight
+registry	minecraft:block	1153	minecraft:frogspawn
+registry	minecraft:block	1154	minecraft:reinforced_deepslate
+registry	minecraft:block	1155	minecraft:decorated_pot
+registry	minecraft:block	1156	minecraft:crafter
+registry	minecraft:block	1157	minecraft:trial_spawner
+registry	minecraft:block	1158	minecraft:vault
+registry	minecraft:block	1159	minecraft:heavy_core
+registry	minecraft:block	1160	minecraft:pale_moss_block
+registry	minecraft:block	1161	minecraft:pale_moss_carpet
+registry	minecraft:block	1162	minecraft:pale_hanging_moss
+registry	minecraft:block	1163	minecraft:open_eyeblossom
+registry	minecraft:block	1164	minecraft:closed_eyeblossom
+registry	minecraft:block	1165	minecraft:potted_open_eyeblossom
+registry	minecraft:block	1166	minecraft:potted_closed_eyeblossom
+registry	minecraft:block	1167	minecraft:firefly_bush
+registry	minecraft:entity_type	0	minecraft:acacia_boat
+registry	minecraft:entity_type	1	minecraft:acacia_chest_boat
+registry	minecraft:entity_type	2	minecraft:allay
+registry	minecraft:entity_type	3	minecraft:area_effect_cloud
+registry	minecraft:entity_type	4	minecraft:armadillo
+registry	minecraft:entity_type	5	minecraft:armor_stand
+registry	minecraft:entity_type	6	minecraft:arrow
+registry	minecraft:entity_type	7	minecraft:axolotl
+registry	minecraft:entity_type	8	minecraft:bamboo_chest_raft
+registry	minecraft:entity_type	9	minecraft:bamboo_raft
+registry	minecraft:entity_type	10	minecraft:bat
+registry	minecraft:entity_type	11	minecraft:bee
+registry	minecraft:entity_type	12	minecraft:birch_boat
+registry	minecraft:entity_type	13	minecraft:birch_chest_boat
+registry	minecraft:entity_type	14	minecraft:blaze
+registry	minecraft:entity_type	15	minecraft:block_display
+registry	minecraft:entity_type	16	minecraft:bogged
+registry	minecraft:entity_type	17	minecraft:breeze
+registry	minecraft:entity_type	18	minecraft:breeze_wind_charge
+registry	minecraft:entity_type	19	minecraft:camel
+registry	minecraft:entity_type	20	minecraft:camel_husk
+registry	minecraft:entity_type	21	minecraft:cat
+registry	minecraft:entity_type	22	minecraft:cave_spider
+registry	minecraft:entity_type	23	minecraft:cherry_boat
+registry	minecraft:entity_type	24	minecraft:cherry_chest_boat
+registry	minecraft:entity_type	25	minecraft:chest_minecart
+registry	minecraft:entity_type	26	minecraft:chicken
+registry	minecraft:entity_type	27	minecraft:cod
+registry	minecraft:entity_type	28	minecraft:copper_golem
+registry	minecraft:entity_type	29	minecraft:command_block_minecart
+registry	minecraft:entity_type	30	minecraft:cow
+registry	minecraft:entity_type	31	minecraft:creaking
+registry	minecraft:entity_type	32	minecraft:creeper
+registry	minecraft:entity_type	33	minecraft:dark_oak_boat
+registry	minecraft:entity_type	34	minecraft:dark_oak_chest_boat
+registry	minecraft:entity_type	35	minecraft:dolphin
+registry	minecraft:entity_type	36	minecraft:donkey
+registry	minecraft:entity_type	37	minecraft:dragon_fireball
+registry	minecraft:entity_type	38	minecraft:drowned
+registry	minecraft:entity_type	39	minecraft:egg
+registry	minecraft:entity_type	40	minecraft:elder_guardian
+registry	minecraft:entity_type	41	minecraft:enderman
+registry	minecraft:entity_type	42	minecraft:endermite
+registry	minecraft:entity_type	43	minecraft:ender_dragon
+registry	minecraft:entity_type	44	minecraft:ender_pearl
+registry	minecraft:entity_type	45	minecraft:end_crystal
+registry	minecraft:entity_type	46	minecraft:evoker
+registry	minecraft:entity_type	47	minecraft:evoker_fangs
+registry	minecraft:entity_type	48	minecraft:experience_bottle
+registry	minecraft:entity_type	49	minecraft:experience_orb
+registry	minecraft:entity_type	50	minecraft:eye_of_ender
+registry	minecraft:entity_type	51	minecraft:falling_block
+registry	minecraft:entity_type	52	minecraft:fireball
+registry	minecraft:entity_type	53	minecraft:firework_rocket
+registry	minecraft:entity_type	54	minecraft:fox
+registry	minecraft:entity_type	55	minecraft:frog
+registry	minecraft:entity_type	56	minecraft:furnace_minecart
+registry	minecraft:entity_type	57	minecraft:ghast
+registry	minecraft:entity_type	58	minecraft:happy_ghast
+registry	minecraft:entity_type	59	minecraft:giant
+registry	minecraft:entity_type	60	minecraft:glow_item_frame
+registry	minecraft:entity_type	61	minecraft:glow_squid
+registry	minecraft:entity_type	62	minecraft:goat
+registry	minecraft:entity_type	63	minecraft:guardian
+registry	minecraft:entity_type	64	minecraft:hoglin
+registry	minecraft:entity_type	65	minecraft:hopper_minecart
+registry	minecraft:entity_type	66	minecraft:horse
+registry	minecraft:entity_type	67	minecraft:husk
+registry	minecraft:entity_type	68	minecraft:illusioner
+registry	minecraft:entity_type	69	minecraft:interaction
+registry	minecraft:entity_type	70	minecraft:iron_golem
+registry	minecraft:entity_type	71	minecraft:item
+registry	minecraft:entity_type	72	minecraft:item_display
+registry	minecraft:entity_type	73	minecraft:item_frame
+registry	minecraft:entity_type	74	minecraft:jungle_boat
+registry	minecraft:entity_type	75	minecraft:jungle_chest_boat
+registry	minecraft:entity_type	76	minecraft:leash_knot
+registry	minecraft:entity_type	77	minecraft:lightning_bolt
+registry	minecraft:entity_type	78	minecraft:llama
+registry	minecraft:entity_type	79	minecraft:llama_spit
+registry	minecraft:entity_type	80	minecraft:magma_cube
+registry	minecraft:entity_type	81	minecraft:mangrove_boat
+registry	minecraft:entity_type	82	minecraft:mangrove_chest_boat
+registry	minecraft:entity_type	83	minecraft:mannequin
+registry	minecraft:entity_type	84	minecraft:marker
+registry	minecraft:entity_type	85	minecraft:minecart
+registry	minecraft:entity_type	86	minecraft:mooshroom
+registry	minecraft:entity_type	87	minecraft:mule
+registry	minecraft:entity_type	88	minecraft:nautilus
+registry	minecraft:entity_type	89	minecraft:oak_boat
+registry	minecraft:entity_type	90	minecraft:oak_chest_boat
+registry	minecraft:entity_type	91	minecraft:ocelot
+registry	minecraft:entity_type	92	minecraft:ominous_item_spawner
+registry	minecraft:entity_type	93	minecraft:painting
+registry	minecraft:entity_type	94	minecraft:pale_oak_boat
+registry	minecraft:entity_type	95	minecraft:pale_oak_chest_boat
+registry	minecraft:entity_type	96	minecraft:panda
+registry	minecraft:entity_type	97	minecraft:parched
+registry	minecraft:entity_type	98	minecraft:parrot
+registry	minecraft:entity_type	99	minecraft:phantom
+registry	minecraft:entity_type	100	minecraft:pig
+registry	minecraft:entity_type	101	minecraft:piglin
+registry	minecraft:entity_type	102	minecraft:piglin_brute
+registry	minecraft:entity_type	103	minecraft:pillager
+registry	minecraft:entity_type	104	minecraft:polar_bear
+registry	minecraft:entity_type	105	minecraft:splash_potion
+registry	minecraft:entity_type	106	minecraft:lingering_potion
+registry	minecraft:entity_type	107	minecraft:pufferfish
+registry	minecraft:entity_type	108	minecraft:rabbit
+registry	minecraft:entity_type	109	minecraft:ravager
+registry	minecraft:entity_type	110	minecraft:salmon
+registry	minecraft:entity_type	111	minecraft:sheep
+registry	minecraft:entity_type	112	minecraft:shulker
+registry	minecraft:entity_type	113	minecraft:shulker_bullet
+registry	minecraft:entity_type	114	minecraft:silverfish
+registry	minecraft:entity_type	115	minecraft:skeleton
+registry	minecraft:entity_type	116	minecraft:skeleton_horse
+registry	minecraft:entity_type	117	minecraft:slime
+registry	minecraft:entity_type	118	minecraft:small_fireball
+registry	minecraft:entity_type	119	minecraft:sniffer
+registry	minecraft:entity_type	120	minecraft:snowball
+registry	minecraft:entity_type	121	minecraft:snow_golem
+registry	minecraft:entity_type	122	minecraft:spawner_minecart
+registry	minecraft:entity_type	123	minecraft:spectral_arrow
+registry	minecraft:entity_type	124	minecraft:spider
+registry	minecraft:entity_type	125	minecraft:spruce_boat
+registry	minecraft:entity_type	126	minecraft:spruce_chest_boat
+registry	minecraft:entity_type	127	minecraft:squid
+registry	minecraft:entity_type	128	minecraft:stray
+registry	minecraft:entity_type	129	minecraft:strider
+registry	minecraft:entity_type	130	minecraft:tadpole
+registry	minecraft:entity_type	131	minecraft:text_display
+registry	minecraft:entity_type	132	minecraft:tnt
+registry	minecraft:entity_type	133	minecraft:tnt_minecart
+registry	minecraft:entity_type	134	minecraft:trader_llama
+registry	minecraft:entity_type	135	minecraft:trident
+registry	minecraft:entity_type	136	minecraft:tropical_fish
+registry	minecraft:entity_type	137	minecraft:turtle
+registry	minecraft:entity_type	138	minecraft:vex
+registry	minecraft:entity_type	139	minecraft:villager
+registry	minecraft:entity_type	140	minecraft:vindicator
+registry	minecraft:entity_type	141	minecraft:wandering_trader
+registry	minecraft:entity_type	142	minecraft:warden
+registry	minecraft:entity_type	143	minecraft:wind_charge
+registry	minecraft:entity_type	144	minecraft:witch
+registry	minecraft:entity_type	145	minecraft:wither
+registry	minecraft:entity_type	146	minecraft:wither_skeleton
+registry	minecraft:entity_type	147	minecraft:wither_skull
+registry	minecraft:entity_type	148	minecraft:wolf
+registry	minecraft:entity_type	149	minecraft:zoglin
+registry	minecraft:entity_type	150	minecraft:zombie
+registry	minecraft:entity_type	151	minecraft:zombie_horse
+registry	minecraft:entity_type	152	minecraft:zombie_nautilus
+registry	minecraft:entity_type	153	minecraft:zombie_villager
+registry	minecraft:entity_type	154	minecraft:zombified_piglin
+registry	minecraft:entity_type	155	minecraft:player
+registry	minecraft:entity_type	156	minecraft:fishing_bobber
+registry	minecraft:mob_effect	0	minecraft:speed
+registry	minecraft:mob_effect	1	minecraft:slowness
+registry	minecraft:mob_effect	2	minecraft:haste
+registry	minecraft:mob_effect	3	minecraft:mining_fatigue
+registry	minecraft:mob_effect	4	minecraft:strength
+registry	minecraft:mob_effect	5	minecraft:instant_health
+registry	minecraft:mob_effect	6	minecraft:instant_damage
+registry	minecraft:mob_effect	7	minecraft:jump_boost
+registry	minecraft:mob_effect	8	minecraft:nausea
+registry	minecraft:mob_effect	9	minecraft:regeneration
+registry	minecraft:mob_effect	10	minecraft:resistance
+registry	minecraft:mob_effect	11	minecraft:fire_resistance
+registry	minecraft:mob_effect	12	minecraft:water_breathing
+registry	minecraft:mob_effect	13	minecraft:invisibility
+registry	minecraft:mob_effect	14	minecraft:blindness
+registry	minecraft:mob_effect	15	minecraft:night_vision
+registry	minecraft:mob_effect	16	minecraft:hunger
+registry	minecraft:mob_effect	17	minecraft:weakness
+registry	minecraft:mob_effect	18	minecraft:poison
+registry	minecraft:mob_effect	19	minecraft:wither
+registry	minecraft:mob_effect	20	minecraft:health_boost
+registry	minecraft:mob_effect	21	minecraft:absorption
+registry	minecraft:mob_effect	22	minecraft:saturation
+registry	minecraft:mob_effect	23	minecraft:glowing
+registry	minecraft:mob_effect	24	minecraft:levitation
+registry	minecraft:mob_effect	25	minecraft:luck
+registry	minecraft:mob_effect	26	minecraft:unluck
+registry	minecraft:mob_effect	27	minecraft:slow_falling
+registry	minecraft:mob_effect	28	minecraft:conduit_power
+registry	minecraft:mob_effect	29	minecraft:dolphins_grace
+registry	minecraft:mob_effect	30	minecraft:bad_omen
+registry	minecraft:mob_effect	31	minecraft:hero_of_the_village
+registry	minecraft:mob_effect	32	minecraft:darkness
+registry	minecraft:mob_effect	33	minecraft:trial_omen
+registry	minecraft:mob_effect	34	minecraft:raid_omen
+registry	minecraft:mob_effect	35	minecraft:wind_charged
+registry	minecraft:mob_effect	36	minecraft:weaving
+registry	minecraft:mob_effect	37	minecraft:oozing
+registry	minecraft:mob_effect	38	minecraft:infested
+registry	minecraft:mob_effect	39	minecraft:breath_of_the_nautilus

@@ -9,12 +9,10 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
-import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
 
 @CheckData(name = "BadPacketsP", stableKey = "cult.badpackets.invalid_click", description = "Invalid window click packet", experimental = true)
 public class BadPacketsP extends Check implements CheckListener {
@@ -29,17 +27,15 @@ public class BadPacketsP extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onOpenScreen(final PacketSendEvent event, CultPlayer player, ClientboundOpenScreenPacket packet) {
-        this.containerType = MenuType.fromNms(packet.getType()).getId();
-        this.containerId = packet.getContainerId();
+    public void onOpenScreen(final PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
+        this.containerType = MenuType.fromRegistryKey(packet.menuType()).getId();
+        this.containerId = packet.containerId();
     }
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
-        final InventoryClick data = NmsPacketUtil.readContainerClick(packet);
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick data) {
         final WindowClickType clickType = data.clickType();
         final int button = data.button();
-
 
         boolean flag = switch (clickType) {
             case PICKUP, QUICK_MOVE, CLONE -> button > 2 || button < 0;

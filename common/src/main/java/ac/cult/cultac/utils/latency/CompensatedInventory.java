@@ -1,10 +1,15 @@
 package ac.cult.cultac.utils.latency;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectBundleItem;
+
 import ac.cult.cultac.utils.inventory.InventoryClick;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
@@ -28,22 +33,21 @@ import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import lombok.Getter;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import org.bukkit.GameMode;
-import net.minecraft.network.protocol.game.ClientboundContainerClosePacket;
-import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
-import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
-import net.minecraft.network.protocol.game.ClientboundMerchantOffersPacket;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSelectTradePacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.network.packet.InventoryPackets.Content;
+import ac.cult.cultac.network.packet.InventoryPackets;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundMountScreenOpen;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectTrade;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.network.packet.InventoryPackets.CreativeSlot;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.component.BundleContents;
@@ -64,7 +68,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     private static final int NMS_OFFHAND_SWAP_BUTTON = 40;
     public int openWindowID = 0;
     public int stateID = 0; // Player inventory state ID. Don't mess up the last sent state ID by changing it.
-    private List<PredictedResultSlotValidator.MerchantOfferSnapshot> merchantOffers = List.of();
+    private List<MerchantOffer> merchantOffers = List.of();
     private int selectedMerchantOffer = 0;
 
     public CompensatedInventory(CultPlayer playerData) {
@@ -92,7 +96,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         setClientCarried(item);
     }
 
-    private void deferClientboundInventoryTask(PacketSendEvent event, Runnable task) {
+    private void deferClientboundInventoryTask(PacketSendEvent<?> event, Runnable task) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForDeferredSend();
         if (transaction == null) {
             task.run();
@@ -105,16 +109,16 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             // enclosing vanilla bundle. Putting the proof in that group makes
             // ClientPacketListener#handleBundlePacket process the update and ping
             // together, before the client can emit another tick or inventory click.
-            event.getPacketsAfterSend().add(transaction.packet());
+            event.getWritesAfterSend().add(transaction.packet());
             event.getTasksAfterSend().add(() -> player.markTrackedTransactionPacketSent(transaction));
             return;
         }
 
-        // PacketSendEvent tasks run after the complete outbound group has been forwarded. Sending
+        // PacketSendEvent<?> tasks run after the complete outbound group has been forwarded. Sending
         // the proof there keeps a ping out of the middle of a vanilla bundle while still placing it
         // after the inventory packet on the ordered clientbound stream.
         event.getTasksAfterSend().add(() -> {
-            player.user.writePacket(transaction.packet());
+            player.user.write(transaction.packet());
             player.markTrackedTransactionPacketSent(transaction);
         });
     }
@@ -336,12 +340,12 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onContainerClick(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClickPacket packet) {
+    public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) {
         if (event.isCancelled()) {
             return;
         }
 
-        applyContainerClick(NmsPacketUtil.readContainerClick(packet));
+        applyContainerClick(packet);
     }
 
     public boolean applyContainerClick(InventoryClick click) {
@@ -438,7 +442,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         net.minecraft.world.item.ItemStack carried = SpigotConversionUtil.toNmsItemStack(carriedBefore);
 
         if (hasBundleContents(carried)) {
-            BundleContents.Mutable mutable = NmsPacketUtil.mutableBundle(carried.get(DataComponents.BUNDLE_CONTENTS));
+            BundleContents.Mutable mutable = SpigotConversionUtil.mutableBundle(carried.get(DataComponents.BUNDLE_CONTENTS));
             if (primary && !clicked.isEmpty()) {
                 mutable.tryInsert(clicked);
                 carried.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
@@ -462,7 +466,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         }
 
         if (hasBundleContents(clicked)) {
-            BundleContents.Mutable mutable = NmsPacketUtil.mutableBundle(clicked.get(DataComponents.BUNDLE_CONTENTS));
+            BundleContents.Mutable mutable = SpigotConversionUtil.mutableBundle(clicked.get(DataComponents.BUNDLE_CONTENTS));
             if (primary && !carried.isEmpty()) {
                 mutable.tryInsert(carried);
                 clicked.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
@@ -511,14 +515,14 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     private record BundleClickResult(ItemStack slot, ItemStack carried) {
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSelectBundleItemPacket")
-    public void onSelectBundleItem(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        selectBundleItem(NmsPacketUtil.intValue(packet, "slotId"), NmsPacketUtil.intValue(packet, "selectedItemIndex"));
+    @CultPacketHandler
+    public void onSelectBundleItem(PacketReceiveEvent<ServerboundSelectBundleItem> event, CultPlayer player, ServerboundSelectBundleItem packet) {
+        selectBundleItem(packet.slotId(), packet.selectedItemIndex());
     }
 
     @CultPacketHandler
-    public void onSelectTrade(PacketReceiveEvent event, CultPlayer player, ServerboundSelectTradePacket packet) {
-        if (!event.isCancelled()) selectTrade(packet.getItem());
+    public void onSelectTrade(PacketReceiveEvent<ServerboundSelectTrade> event, CultPlayer player, ServerboundSelectTrade packet) {
+        if (!event.isCancelled()) selectTrade(packet.offer());
     }
 
     public void selectTrade(int offer) {
@@ -528,13 +532,12 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         if (event.isCancelled()) {
             return;
         }
 
-        NmsPacketUtil.UseItemData item = NmsPacketUtil.readUseItem(packet);
-        useItem(item.hand(), item.yaw(), item.pitch());
+        useItem(SpigotConversionUtil.toNmsHand(packet.hand()), packet.yaw(), packet.pitch());
     }
 
     public void useItem(InteractionHand hand, float yaw, float pitch) {
@@ -543,26 +546,27 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
+    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (event.isCancelled()) {
             return;
         }
 
-        NmsPacketUtil.InteractData interact = NmsPacketUtil.readInteract(packet);
-        if (interact.action() == NmsPacketUtil.InteractAction.ATTACK) {
+        if (packet.action() == InteractAction.ATTACK) {
             return;
         }
 
-        mirrorEntityBucketInteraction(interact);
+        mirrorEntityBucketInteraction(packet);
     }
 
-    private void mirrorEntityBucketInteraction(NmsPacketUtil.InteractData interact) {
+    private void mirrorEntityBucketInteraction(ServerboundInteract interact) {
         PacketEntity entity = player.compensatedEntities.getEntity(interact.entityId());
         if (entity == null || entity.isDead) {
             return;
         }
 
-        ItemStack held = getHandItem(interact.hand());
+        InteractionHand hand = interact.hand() == ac.cult.cultac.protocol.value.Hand.MAIN_HAND
+                ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+        ItemStack held = getHandItem(hand);
         if (held == null || held.isEmpty()) {
             return;
         }
@@ -583,7 +587,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             addedItems = List.of(filledBucket);
         }
 
-        applyClientSideUseItemOnResult(interact.hand(), handAfter, addedItems);
+        applyClientSideUseItemOnResult(hand, handAfter, addedItems);
     }
 
     private ItemStack entityInteractionBucketResult(PacketEntity entity, Material heldType) {
@@ -689,9 +693,9 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        Action action = NmsPacketUtil.readPlayerAction(packet).action();
-        if (action == Action.DROP_ITEM || action == Action.DROP_ALL_ITEMS) dropHeldItem(action == Action.DROP_ALL_ITEMS);
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        PlayerAction action = packet.action();
+        if (action == PlayerAction.DROP_ITEM || action == PlayerAction.DROP_ALL_ITEMS) dropHeldItem(action == PlayerAction.DROP_ALL_ITEMS);
     }
 
     public void dropHeldItem(boolean wholeStack) {
@@ -705,8 +709,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent event, CultPlayer player, ServerboundSetCarriedItemPacket packet) {
-        selectHotbarSlot(packet.getSlot());
+    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+        selectHotbarSlot(packet.slot());
     }
 
     public void selectHotbarSlot(int slot) {
@@ -718,8 +722,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onSetCreativeModeSlot(PacketReceiveEvent event, CultPlayer player, ServerboundSetCreativeModeSlotPacket packet) {
-        if (!event.isCancelled()) setCreativeSlot(packet.slotNum(), SpigotConversionUtil.fromNmsItemStack(packet.itemStack()));
+    public void onSetCreativeModeSlot(PacketReceiveEvent<CreativeSlot> event, CultPlayer player, CreativeSlot packet) {
+        if (!event.isCancelled()) setCreativeSlot(packet.slot(), packet.item());
     }
 
     public void setCreativeSlot(int slot, ItemStack stack) {
@@ -728,8 +732,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         }
     }
 
-    @CultPacketHandler
-    public void onContainerClose(PacketReceiveEvent event, CultPlayer player, ServerboundContainerClosePacket packet) {
+    @CultPacketHandler("serverbound.container_close")
+    public void onContainerClose(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         closeContainer();
     }
 
@@ -866,53 +870,43 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onOpenScreen(PacketSendEvent event, CultPlayer player, ClientboundOpenScreenPacket packet) {
+    public void onOpenScreen(PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
         // Not 1:1 MCP, based on Wiki.VG to be simpler as we need less logic...
         // For example, we don't need permanent storage, only storing data until the client closes the window
         // We also don't need a lot of server-sided only logic
-        MenuType menuType = MenuType.fromNms(packet.getType());
+        MenuType menuType = MenuType.fromRegistryKey(packet.menuType());
         // There doesn't seem to be a check against using 0 as the window ID - let's consider that an invalid packet
         // It will probably mess up a TON of logic both client and server sided, so don't do that!
         deferClientboundInventoryTask(event, () -> {
             this.serverContainerType = menuType;
-            openWindowID = packet.getContainerId();
+            openWindowID = packet.containerId();
             menu = menuFromOpenScreenType(menuType);
             merchantOffers = List.of();
             selectedMerchantOffer = 0;
         });
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundHorseScreenOpenPacket")
-    public void onHorseScreenOpen(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-        onMountScreenOpen(event, player, packet);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundMountScreenOpenPacket")
-    public void onMountScreenOpen(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-        NmsPacketUtil.MountScreenOpenData data = NmsPacketUtil.readMountScreenOpen(packet);
+    @CultPacketHandler
+    public void onMountScreenOpen(PacketSendEvent<ClientboundMountScreenOpen> event, CultPlayer player, ClientboundMountScreenOpen packet) {
         deferClientboundInventoryTask(event, () -> {
-            PacketEntity mount = player.compensatedEntities.getEntity(data.entityId());
+            PacketEntity mount = player.compensatedEntities.getEntity(packet.entityId());
             if (mount == null || (!EntityTypeUtil.isHorseFamily(mount.type)
                     && !EntityTypeUtil.isType(mount.type, "nautilus")
                     && !EntityTypeUtil.isType(mount.type, "zombie_nautilus"))) {
                 return;
             }
             serverContainerType = MenuType.UNKNOWN;
-            menu = menuFromMountScreen(data.inventoryColumns());
-            openWindowID = data.containerId();
+            menu = menuFromMountScreen(packet.inventoryColumns());
+            openWindowID = packet.containerId();
             merchantOffers = List.of();
             selectedMerchantOffer = 0;
         });
     }
 
     @CultPacketHandler
-    public void onMerchantOffers(PacketSendEvent event, CultPlayer player, ClientboundMerchantOffersPacket packet) {
-        List<PredictedResultSlotValidator.MerchantOfferSnapshot> offers = new ArrayList<>(packet.getOffers().size());
-        for (net.minecraft.world.item.trading.MerchantOffer offer : packet.getOffers()) {
-            offers.add(PredictedResultSlotValidator.MerchantOfferSnapshot.fromNms(offer));
-        }
-        List<PredictedResultSlotValidator.MerchantOfferSnapshot> immutableOffers = List.copyOf(offers);
-        int containerId = packet.getContainerId();
+    public void onMerchantOffers(PacketSendEvent<InventoryPackets.Offers> event, CultPlayer player, InventoryPackets.Offers packet) {
+        List<MerchantOffer> immutableOffers = packet.offers();
+        int containerId = packet.windowId();
         deferClientboundInventoryTask(event, () -> {
             if (containerId == openWindowID && serverContainerType == MenuType.MERCHANT) {
                 merchantOffers = immutableOffers;
@@ -922,8 +916,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         });
     }
 
-    @CultPacketHandler
-    public void onContainerClose(PacketSendEvent event, CultPlayer player, ClientboundContainerClosePacket packet) {
+    @CultPacketHandler("clientbound.container_close")
+    public void onContainerClose(PacketSendEvent<Opaque> event, CultPlayer player, Opaque packet) {
         // Disregard provided window ID, client doesn't care...
         // We need to do this because the client doesn't send a packet when closing the window
         deferClientboundInventoryTask(event, () -> {
@@ -937,9 +931,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onContainerSetContent(PacketSendEvent event, CultPlayer player, ClientboundContainerSetContentPacket packet) {
-        NmsPacketUtil.ContainerSetContentData items = NmsPacketUtil.readContainerContents(packet);
-
+    public void onContainerSetContent(PacketSendEvent<Content> event, CultPlayer player, Content items) {
         List<ItemStack> slots = items.items();
         AbstractContainerMenu contentMenu = items.windowId() == 0 ? inventory : menuFromContentSlots(slots.size());
 
@@ -975,26 +967,25 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundSetPlayerInventoryPacket")
-    public void onSetPlayerInventory(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-        int storageSlot = directPlayerInventorySlotToStorageSlot(NmsPacketUtil.intValue(packet, "slot"));
+    @CultPacketHandler
+    public void onSetPlayerInventory(PacketSendEvent<InventoryPackets.PlayerInventory> event, CultPlayer player, InventoryPackets.PlayerInventory packet) {
+        int storageSlot = directPlayerInventorySlotToStorageSlot(packet.slot());
         if (storageSlot != -1) {
             deferClientboundInventoryTask(event, () -> inventory.getInventoryStorage().setItem(
                     storageSlot,
-                    SpigotConversionUtil.fromNmsItemStack((net.minecraft.world.item.ItemStack) NmsPacketUtil.invokeNoArg(packet, "contents"))));
+                    packet.item()));
         }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundSetCursorItemPacket")
-    public void onSetCursorItem(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
+    @CultPacketHandler
+    public void onSetCursorItem(PacketSendEvent<InventoryPackets.Cursor> event, CultPlayer player, InventoryPackets.Cursor packet) {
         deferClientboundInventoryTask(event, () ->
-                setClientCarried(SpigotConversionUtil.fromNmsItemStack(
-                        (net.minecraft.world.item.ItemStack) NmsPacketUtil.invokeNoArg(packet, "contents"))));
+                setClientCarried(packet.item()));
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket")
-    public void onSetHeldSlot(PacketSendEvent event, CultPlayer player, Packet<?> packet) {
-        int slot = NmsPacketUtil.intValue(packet, "slot", "getSlot");
+    @CultPacketHandler
+    public void onSetHeldSlot(PacketSendEvent<ClientboundSetHeldSlot> event, CultPlayer player, ClientboundSetHeldSlot packet) {
+        int slot = packet.slot();
         if (slot >= 0 && slot <= 8) {
             deferClientboundInventoryTask(event, () -> {
                 inventory.selected = slot;
@@ -1004,9 +995,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onContainerSetSlot(PacketSendEvent event, CultPlayer player, ClientboundContainerSetSlotPacket packet) {
-        NmsPacketUtil.ContainerSetSlotData slotData = NmsPacketUtil.readContainerSetSlot(packet);
-
+    public void onContainerSetSlot(PacketSendEvent<InventoryPackets.Slot> event, CultPlayer player, InventoryPackets.Slot slotData) {
         Runnable task = () -> {
             if (!isApplicableContainerMirror(slotData.windowId())) {
                 return;

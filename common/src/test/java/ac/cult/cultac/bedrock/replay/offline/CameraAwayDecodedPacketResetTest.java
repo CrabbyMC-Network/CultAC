@@ -1,5 +1,6 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsJ;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsX;
 import ac.cult.cultac.checks.impl.elytra.ElytraC;
@@ -11,15 +12,10 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.latency.CompensatedCameraEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
-import net.minecraft.world.entity.Entity;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
@@ -108,9 +104,8 @@ public final class CameraAwayDecodedPacketResetTest {
             setBooleanField(elytraC, "glideThisTick", true);
             setBooleanField(elytraC, "glideLastTick", true);
 
-            ServerboundSignUpdatePacket packet = new ServerboundSignUpdatePacket(
-                    BlockPos.ZERO, java.util.List.of("", "", "", ""), net.minecraft.world.level.block.entity.SignTextSlot.FRONT);
-            new CheckManagerListener().onSignUpdate(receiveEvent(player, packet), player, packet);
+            var packet = ac.cult.cultac.protocol.packet.ServerboundPackets.SIGN_UPDATE.opaqueValue();
+            new CheckManagerListener().processInterveningReceive(RecordReceiveTestEvents.signUpdate(player), player);
 
             assertEquals(0, intField(badPacketsJ, "rotations"));
             assertFalse(booleanField(badPacketsX, "sprint"));
@@ -131,9 +126,8 @@ public final class CameraAwayDecodedPacketResetTest {
             setBooleanField(elytraC, "glideThisTick", true);
             setBooleanField(elytraC, "glideLastTick", true);
 
-            ServerboundPlayerCommandPacket packet = new ServerboundPlayerCommandPacket(
-                    Mockito.mock(Entity.class),
-                    ServerboundPlayerCommandPacket.Action.START_FALL_FLYING,
+            ServerboundPlayerCommand packet = new ServerboundPlayerCommand(0,
+                    PlayerCommandAction.START_FLYING_WITH_ELYTRA,
                     0);
             PacketReceiveEvent event = receiveEvent(player, packet);
 
@@ -157,8 +151,13 @@ public final class CameraAwayDecodedPacketResetTest {
         assertFalse(player.cameraEntity.isSelf());
     }
 
-    private static PacketReceiveEvent receiveEvent(CultPlayer player, Packet<?> packet) {
-        return new PacketReceiveEvent(player.user, packet, ConnectionProtocol.PLAY);
+    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(CultPlayer player, ServerboundPlayerCommand packet) {
+        return RecordReceiveTestEvents.playerCommand(player, packet);
+    }
+
+    private static PacketReceiveEvent<ac.cult.cultac.protocol.packet.serverbound.ServerboundPong> receiveEvent(
+            CultPlayer player, ServerboundPongPacket packet) {
+        return RecordReceiveTestEvents.pong(player, packet.getId());
     }
 
     private static boolean booleanField(Object target, String name) throws ReflectiveOperationException {
@@ -188,12 +187,7 @@ public final class CameraAwayDecodedPacketResetTest {
     private static CultPlayer offlineJavaPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = new User(
-                new User.Profile(playerId, ".Camera_Away_Reset_Test"),
-                null,
-                null,
-                null,
-                new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Camera_Away_Reset_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 }

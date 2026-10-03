@@ -1,6 +1,5 @@
 package ac.cult.cultac.network.packet;
 
-import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsE;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsG;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsR;
@@ -11,6 +10,7 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.wire.Wire;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.connection.ProtocolInfo;
 import com.viaversion.viaversion.api.connection.UserConnection;
@@ -21,11 +21,6 @@ import com.viaversion.viaversion.api.protocol.packet.PacketType;
 import com.viaversion.viaversion.api.protocol.packet.State;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
-import io.netty.util.ReferenceCountUtil;
 
 import java.util.List;
 
@@ -33,19 +28,19 @@ import java.util.List;
  * Preserves the identity of legacy input packets before ViaBackwards maps them
  * onto the 1.21.2+ input bitset. Sneaking must follow these original packets:
  * Via's periodically synthesized on-foot input can arrive after movement.
+ * Via runs base protocols before translation, so this uses its protocol API
+ * without adding a third Netty handler. Removal clears the weak user binding;
+ * Via owns the passive protocol until its connection closes.
  */
-public final class LegacyViaInputBridge extends ChannelInboundHandlerAdapter {
-    public static final String HANDLER_NAME = "cult-legacy-via-input";
+public final class LegacyViaInputBridge extends com.viaversion.viaversion.protocol.AbstractSimpleProtocol {
 
     private static final String PLAYER_COMMAND = "PLAYER_COMMAND";
     private static final String PLAYER_INPUT = "PLAYER_INPUT";
 
-    private final User user;
-    private final UserConnection viaConnection;
+    private java.lang.ref.WeakReference<User> user;
 
-    private LegacyViaInputBridge(User user, UserConnection viaConnection) {
-        this.user = user;
-        this.viaConnection = viaConnection;
+    private LegacyViaInputBridge(User user) {
+        this.user = new java.lang.ref.WeakReference<>(user);
     }
 
     public static void install(User user) {
@@ -67,69 +62,57 @@ public final class LegacyViaInputBridge extends ChannelInboundHandlerAdapter {
     }
 
     public static void remove(User user) {
+        if (!ViaVersionUtil.isAvailable()) return;
         Channel channel = (Channel) user.getChannel();
-        if (channel == null) {
-            return;
-        }
-
         Runnable remove = () -> {
-            ChannelPipeline pipeline = channel.pipeline();
-            if (pipeline.get(HANDLER_NAME) != null) {
-                pipeline.remove(HANDLER_NAME);
+            var pipeline = viaPipeline(channel);
+            if (pipeline != null) {
+                var observer = pipeline.getProtocol(LegacyViaInputBridge.class);
+                if (observer != null && observer.user.get() == user) observer.user.clear();
             }
         };
-        if (channel.eventLoop().inEventLoop()) {
-            remove.run();
-        } else {
-            channel.eventLoop().execute(remove);
-        }
+        if (channel.eventLoop().inEventLoop()) remove.run(); else channel.eventLoop().execute(remove);
+    }
+
+    private static ProtocolPipeline viaPipeline(Channel channel) {
+        if (channel == null) return null;
+        var decoder = channel.pipeline().get(Via.getManager().getInjector().getDecoderName());
+        return decoder instanceof ViaChannelHandler via ? via.connection().getProtocolInfo().getPipeline() : null;
     }
 
     private static void installOnEventLoop(User user, Channel channel) {
-        ChannelPipeline pipeline = channel.pipeline();
-        if (pipeline.get(HANDLER_NAME) != null) {
-            return;
-        }
-
-        String decoderName = Via.getManager().getInjector().getDecoderName();
-        ChannelHandler decoder = pipeline.get(decoderName);
-        if (!(decoder instanceof ViaChannelHandler viaHandler)) {
-            return;
-        }
-
-        ProtocolPipeline protocolPipeline = viaHandler.connection().getProtocolInfo().getPipeline();
-        if (protocolPipeline == null || !protocolPipeline.hasNonBaseProtocols()) {
-            return;
-        }
-
-        pipeline.addBefore(decoderName, HANDLER_NAME, new LegacyViaInputBridge(user, viaHandler.connection()));
+        var pipeline = viaPipeline(channel);
+        if (pipeline == null || !pipeline.hasNonBaseProtocols()) return;
+        var observer = pipeline.getProtocol(LegacyViaInputBridge.class);
+        if (observer != null) observer.user = new java.lang.ref.WeakReference<>(user);
+        else pipeline.add(new LegacyViaInputBridge(user));
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext context, Object message) throws Exception {
-        boolean rejected = false;
-        if (message instanceof ByteBuf buffer) {
-            try {
-                rejected = inspect(buffer);
-            } catch (RuntimeException ignored) {
-                // Never interfere with Via or vanilla decoding on an unknown frame.
-            }
-        }
+    @Override public boolean isBaseProtocol() { return true; }
 
-        if (rejected) {
-            ReferenceCountUtil.release(message);
-            return;
-        }
-        context.fireChannelRead(message);
+    @Override public void transform(com.viaversion.viaversion.api.protocol.packet.Direction direction,
+                                    State state, com.viaversion.viaversion.api.protocol.packet.PacketWrapper wrapper)
+            throws com.viaversion.viaversion.exception.CancelException {
+        if (direction != com.viaversion.viaversion.api.protocol.packet.Direction.SERVERBOUND || state != State.PLAY) return;
+        User current = user.get();
+        if (current == null) return;
+        // Via's public add(baseProtocol) inserts this observer before translation.
+        // Peeking its input leaves wrapper values and all other protocols untouched.
+        if (!(wrapper instanceof com.viaversion.viaversion.protocol.packet.PacketWrapperImpl frame)) return;
+        boolean rejected;
+        try { rejected = inspect(current, wrapper.user(), wrapper.getId(), frame.getInputBuffer()); }
+        catch (RuntimeException unknownFrame) { return; }
+        if (rejected) { wrapper.cancel(); throw com.viaversion.viaversion.exception.CancelException.generate(); }
     }
 
-    private boolean inspect(ByteBuf original) {
+    private boolean inspect(User user, UserConnection viaConnection, int packetId, ByteBuf original) {
+        if (original == null) return false;
         ProtocolInfo protocolInfo = viaConnection.getProtocolInfo();
         if (protocolInfo == null || protocolInfo.getClientState() != State.PLAY) {
             return false;
         }
 
-        CultPlayer player = CultAPI.INSTANCE.getPlayerDataManager().getPlayer(user);
+        CultPlayer player = user.getCultPlayer();
         if (player == null || player.isBedrockMovement()
                 || protocolInfo.protocolVersion() == null
                 || protocolInfo.protocolVersion().getVersion()
@@ -138,7 +121,6 @@ public final class LegacyViaInputBridge extends ChannelInboundHandlerAdapter {
         }
 
         ByteBuf packet = original.duplicate();
-        int packetId = readVarInt(packet);
         String packetName = originalPacketName(protocolInfo.getPipeline(), packetId);
         if (PLAYER_INPUT.equals(packetName)) {
             // Legacy steer input is exactly two floats followed by one flags byte.
@@ -153,9 +135,9 @@ public final class LegacyViaInputBridge extends ChannelInboundHandlerAdapter {
             return false;
         }
 
-        readVarInt(packet); // entity id
-        int action = readVarInt(packet);
-        readVarInt(packet); // action data
+        Wire.readVarInt(packet); // entity id
+        int action = Wire.readVarInt(packet);
+        Wire.readVarInt(packet); // action data
         if (packet.isReadable() || action < 0 || action > 1) {
             return false;
         }
@@ -177,21 +159,6 @@ public final class LegacyViaInputBridge extends ChannelInboundHandlerAdapter {
         PacketType type = (PacketType) protocols.get(firstTranslation)
                 .getPacketTypesProvider().unmappedServerboundType(State.PLAY, packetId);
         return type == null ? null : type.getName();
-    }
-
-    private static int readVarInt(ByteBuf buffer) {
-        int result = 0;
-        for (int position = 0; position < 32; position += 7) {
-            if (!buffer.isReadable()) {
-                throw new IllegalArgumentException("Truncated VarInt");
-            }
-            byte current = buffer.readByte();
-            result |= (current & 0x7F) << position;
-            if ((current & 0x80) == 0) {
-                return result;
-            }
-        }
-        throw new IllegalArgumentException("VarInt is too large");
     }
 
     private static boolean handleLegacySteer(CultPlayer player, boolean sneaking) {

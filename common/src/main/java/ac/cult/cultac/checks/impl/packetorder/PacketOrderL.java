@@ -1,5 +1,8 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
@@ -8,8 +11,7 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 
 import java.util.ArrayDeque;
 
@@ -28,9 +30,9 @@ public class PacketOrderL extends Check implements PostPredictionListener {
 
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent event, CultPlayer player, ServerboundClientCommandPacket packet) {
+    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         // The 26.2 enum has no OPEN_INVENTORY_ACHIEVEMENT (removed in 1.12)
-        if (!packet.getAction().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) return;
+        if (!packet.action().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) return;
 
         if (player.packetOrderProcessor.isDropping()) {
             if (!player.canSkipTicks()) {
@@ -46,8 +48,8 @@ public class PacketOrderL extends Check implements PostPredictionListener {
 
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerActionPacket packet) {
-        if (packet.getAction() != ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND) return;
+    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (packet.action() != PlayerAction.SWAP_ITEM_WITH_OFFHAND) return;
 
         if (player.packetOrderProcessor.isDropping()) {
             if (!player.canSkipTicks()) {

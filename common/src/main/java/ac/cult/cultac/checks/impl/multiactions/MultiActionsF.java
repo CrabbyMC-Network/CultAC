@@ -1,13 +1,16 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
@@ -15,11 +18,8 @@ import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,24 +61,15 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
     }
 
     @CultPacketHandler
-    public void onInteractEntity(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        onEntityAction(event);
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+    public void onInteractEntity(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         onEntityAction(event);
     }
 
 
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+
+    @CultPacketHandler
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         onEntityAction(event);
     }
 
@@ -98,16 +89,16 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.packetStateData.lastPacketWasTeleport) {
             block = entity = false;
         }
     }
 
     // isTickPacket: tick end resets for 1.21.2+ clients when no movement arrived this client tick
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 && !player.packetStateData.receivedMovementThisClientTick) {
             block = entity = false;
@@ -115,7 +106,7 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK || blockBreak.action == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK) {
+        if (blockBreak.action == PlayerAction.START_DESTROY_BLOCK || blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK) {
             block = true;
             if (entity) {
                 if (!canSkipTicks()) {

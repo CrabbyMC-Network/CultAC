@@ -1,17 +1,16 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.CultPacketGroup;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundContainerSlotStateChangedPacket;
-import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPaddleBoatPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 
 //@CheckData(name = "Timer - Vehicle", configName = "TimerVehicle", setback = 10)
 public class VehicleTimer extends AbstractTimerCheck {
@@ -21,23 +20,23 @@ public class VehicleTimer extends AbstractTimerCheck {
     public VehicleTimer(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder().name("TimerVehicle").configName("TimerVehicle").setback(5).build()); }
 
     @CultPacketHandler
-    public void onMoveVehicle(PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehiclePacket packet) {
+    public void onMoveVehicle(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         recordTimerEvent(event, false, shouldCountMoveVehicleForTimer());
     }
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerInputPacket packet) {
+    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         recordTimerEvent(event, false, shouldCountVehicleInputForTimer());
     }
 
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent event, CultPlayer player, ServerboundPaddleBoatPacket packet) {
+    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         recordTimerEvent(event, false, shouldCountVehicleInputForTimer());
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!usesClientTickEndBoundary()) {
             // LocalPlayer#tick sends passenger input, then Rot, then the
             // locally-authoritative vehicle movement. Rot is the backend-
@@ -47,18 +46,18 @@ public class VehicleTimer extends AbstractTimerCheck {
         }
     }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket")
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, net.minecraft.network.protocol.Packet<?> packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         countedVehicleMovementThisClientTick = false;
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         recordTimerEvent(event, true, false);
     }
 
-    @CultPacketHandler
-    public void onContainerSlotStateChanged(PacketReceiveEvent event, CultPlayer player, ServerboundContainerSlotStateChangedPacket packet) {
+    @CultPacketHandler("serverbound.container_slot_state_changed")
+    public void onContainerSlotStateChanged(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         recordTimerEvent(event, true, false);
     }
 

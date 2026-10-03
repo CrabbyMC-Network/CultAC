@@ -1,13 +1,14 @@
 package ac.cult.cultac.checks.impl.verbose;
 
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.protocol.ProtocolVersion;
+import net.minecraft.SharedConstants;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.grim.grimac.api.storage.verbose.VerboseSchema;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
@@ -32,11 +33,16 @@ public final class VerboseCodecs {
 
     static {
         VerboseTags.registerEnum("face", BlockFace.values());
-        VerboseTags.registerEnum("digging", ServerboundPlayerActionPacket.Action.values());
-        VerboseTags.registerEnumLower("digging_lower", ServerboundPlayerActionPacket.Action.values());
+        var version = ProtocolVersion.of(SharedConstants.getProtocolVersion());
+        var digging = java.util.Arrays.stream(PlayerAction.values())
+                .filter(action -> (action != PlayerAction.CHANGE_DESTROY_DIRECTION || version.atLeast(ProtocolVersion.V26_3))
+                        && (action != PlayerAction.STAB || version.atLeast(ProtocolVersion.V1_21_11)))
+                .toArray(PlayerAction[]::new);
+        VerboseTags.registerEnum("digging", digging);
+        VerboseTags.registerEnumLower("digging_lower", digging);
         VerboseTags.registerEnum("clicktype", ac.cult.cultac.utils.inventory.inventory.WindowClickType.values());
         VerboseTags.registerEnumLower("clicktype_lower", ac.cult.cultac.utils.inventory.inventory.WindowClickType.values());
-        VerboseTags.registerEnum("entityaction", NmsPacketUtil.PlayerCommandAction.values());
+        VerboseTags.registerEnum("entityaction", PlayerCommandAction.values());
         VerboseTags.registerEnum("hand", InteractionHand.values());
         VerboseTags.register("block", List.of(VerboseSchema.TypeTag.ZZ),
                 (in, ctx, out, fmt) -> out.append(blockName(in.rzz())));
@@ -68,6 +74,11 @@ public final class VerboseCodecs {
         return VerboseTags.enumId(value);
     }
 
+    /** Keep stored action IDs aligned with the server's existing verbose decoder. */
+    public static int digging(@Nullable PlayerAction action) {
+        return action == null ? 0 : action.wireId(ProtocolVersion.of(SharedConstants.getProtocolVersion())) + 1;
+    }
+
     /**
      * Encoder for {@code {block}}: the protocol-defined per-version block id,
      * so any product following the MC protocol decodes the same name.
@@ -81,11 +92,6 @@ public final class VerboseCodecs {
     /** Encoder for {@code {item}}: the server's built-in registry item id. */
     public static int item(@NotNull Item type, @NotNull ClientVersion version) {
         return BuiltInRegistries.ITEM.getId(type);
-    }
-
-    /** Encoder for {@code {packet}}: the native packet-type identifier (e.g. {@code minecraft:move_player_pos}). */
-    public static String packet(@NotNull Packet<?> packet) {
-        return NmsIdentifierUtil.packetTypeId(packet.type());
     }
 
     /** Encoder for {@code {entity}}: the server's built-in registry entity-type id. */

@@ -1,5 +1,8 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHealth;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundLogin;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundRespawn;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsE;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsF;
@@ -17,10 +20,8 @@ import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.protocol.game.ClientboundLoginPacket;
-import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
-import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
-import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
@@ -30,22 +31,22 @@ public class PacketPlayerRespawn {
 
     //HIGH
     @CultPacketHandler
-    public void onSetHealth(PacketSendEvent event, CultPlayer player, ClientboundSetHealthPacket packet) {
+    public void onSetHealth(PacketSendEvent<ClientboundSetHealth> event, CultPlayer player, ClientboundSetHealth packet) {
         //
-        player.packetStateData.lastFood = packet.getFood();
-        player.packetStateData.lastHealth = packet.getHealth();
-        player.packetStateData.lastSaturation = packet.getSaturation();
+        player.packetStateData.lastFood = packet.food();
+        player.packetStateData.lastHealth = packet.health();
+        player.packetStateData.lastSaturation = packet.saturation();
 
         player.sendTransaction();
 
-        if (packet.getFood() == 20) { // Split so transaction before packet
+        if (packet.food() == 20) { // Split so transaction before packet
             player.latencyUtils.addRealTimeTask(player.lastTransactionReceived.get(), () -> player.food = 20);
         } else { // Split so transaction after packet
-            player.latencyUtils.addRealTimeTask(player.lastTransactionReceived.get() + 1, () -> player.food = packet.getFood());
+            player.latencyUtils.addRealTimeTask(player.lastTransactionReceived.get() + 1, () -> player.food = packet.food());
         }
 
         final PacketEntitySelf healthSelf = player.compensatedEntities.getSelf();
-        if (packet.getHealth() <= 0) {
+        if (packet.health() <= 0) {
             player.latencyUtils.addRealTimeTaskNow(() -> {
                 healthSelf.isDead = true;
                 player.checkManager.getListener(BadPacketsM.class).onDeath();
@@ -54,25 +55,22 @@ public class PacketPlayerRespawn {
             player.latencyUtils.addRealTimeTaskNext(() -> healthSelf.isDead = false);
         }
 
-        player.latencyUtils.addRealTimeTaskNext(() -> player.compensatedEntities.getSelf().setHealth(packet.getHealth()));
+        player.latencyUtils.addRealTimeTaskNext(() -> player.compensatedEntities.getSelf().setHealth(packet.health()));
 
         event.getTasksAfterSend().add(player::sendTransaction);
     }
 
     @CultPacketHandler
-    public void onLogin(PacketSendEvent event, CultPlayer player, ClientboundLoginPacket packet) {
+    public void onLogin(PacketSendEvent<ClientboundLogin> event, CultPlayer player, ClientboundLogin packet) {
         // for the purposes of detecting mineflayer stuff, send a transaction
         // handles transaction split between JOIN_GAME and server teleport
 
         player.packetStateData.showsDeathScreen = packet.showDeathScreen();
 
-        CommonPlayerSpawnInfo spawnInfo = packet.commonPlayerSpawnInfo();
-        player.gamemode = switch (spawnInfo.gameType()) {
-            case CREATIVE -> org.bukkit.GameMode.CREATIVE;
-            case ADVENTURE -> org.bukkit.GameMode.ADVENTURE;
-            case SPECTATOR -> org.bukkit.GameMode.SPECTATOR;
-            default -> org.bukkit.GameMode.SURVIVAL;
-        };
+        var spawnInfo = packet.spawnInfo();
+        var dimensionType = MinecraftServer.getServer().registryAccess()
+                .lookupOrThrow(Registries.DIMENSION_TYPE).byIdOrThrow(spawnInfo.dimensionTypeId());
+        player.gamemode = org.bukkit.GameMode.valueOf(spawnInfo.gameMode().name());
         player.entityID = player.bukkitPlayer == null ? packet.playerId() : player.bukkitPlayer.getEntityId();
         player.compensatedEntities.vehicles.clearServerVehicle();
         final PacketEntitySelf freshSelf = new PacketEntitySelf(player);
@@ -87,25 +85,27 @@ public class PacketPlayerRespawn {
         player.compensatedEntities.resetClientTickOrder();
         player.compensatedEntities.getSelf().setDefaultBlockInteractionRange(player.gamemode == org.bukkit.GameMode.CREATIVE);
         player.compensatedEntities.selfTrackedEntity = new TrackerData(0, 0, 0, 0, 0, EntityTypesCompat.PLAYER, player.lastTransactionSent.get());
-        player.dimension = spawnInfo.dimension();
-        player.world = NmsIdentifierUtil.resourceKey(spawnInfo.dimension());
-        player.compensatedWorld.setLastClientboundDimension(spawnInfo);
-        player.compensatedWorld.setDimension(spawnInfo);
+        player.dimension = NmsIdentifierUtil.resourceKey(Registries.DIMENSION, spawnInfo.dimension());
+        player.world = spawnInfo.dimension();
+        player.compensatedWorld.setLastClientboundDimension(player.world, dimensionType);
+        player.compensatedWorld.setDimension(player.world, dimensionType);
         player.compensatedWorld.resetClientPredictions();
         final long joinedAt = System.currentTimeMillis();
         player.lastJoinedWorld = joinedAt;
     }
 
     @CultPacketHandler
-    public void onRespawn(PacketSendEvent event, CultPlayer player, ClientboundRespawnPacket packet) {
-        CommonPlayerSpawnInfo spawnInfo = packet.commonPlayerSpawnInfo();
-        ResourceKey<Level> dimension = spawnInfo.dimension();
-        String worldName = NmsIdentifierUtil.resourceKey(spawnInfo.dimension());
+    public void onRespawn(PacketSendEvent<ClientboundRespawn> event, CultPlayer player, ClientboundRespawn packet) {
+        var spawnInfo = packet.spawnInfo();
+        ResourceKey<Level> dimension = NmsIdentifierUtil.resourceKey(Registries.DIMENSION, spawnInfo.dimension());
+        String worldName = spawnInfo.dimension();
+        var dimensionType = MinecraftServer.getServer().registryAccess()
+                .lookupOrThrow(Registries.DIMENSION_TYPE).byIdOrThrow(spawnInfo.dimensionTypeId());
         final List<Runnable> afterSend = event.getTasksAfterSend();
         afterSend.add(player::sendTransaction);
-        boolean worldChange = player.compensatedWorld.isLastClientboundDimensionChange(spawnInfo);
+        boolean worldChange = player.compensatedWorld.isLastClientboundDimensionChange(worldName);
         String previousClientboundDimension = player.compensatedWorld.getLastClientboundDimension().dimension();
-        player.compensatedWorld.setLastClientboundDimension(spawnInfo);
+        player.compensatedWorld.setLastClientboundDimension(worldName, dimensionType);
 
         // Force the player to accept a teleport before respawning
         // (We won't process movements until they accept a teleport, we won't let movements though either)
@@ -186,14 +186,9 @@ public class PacketPlayerRespawn {
             badPacketsF.lastSprinting = false;
             player.compensatedEntities.hasSprintingAttributeEnabled = false;
             player.refreshPlayerPose();
-            player.gamemode = switch (spawnInfo.gameType()) {
-                case CREATIVE -> org.bukkit.GameMode.CREATIVE;
-                case ADVENTURE -> org.bukkit.GameMode.ADVENTURE;
-                case SPECTATOR -> org.bukkit.GameMode.SPECTATOR;
-                default -> org.bukkit.GameMode.SURVIVAL;
-            };
+            player.gamemode = org.bukkit.GameMode.valueOf(spawnInfo.gameMode().name());
             player.compensatedEntities.getSelf().setDefaultBlockInteractionRange(player.gamemode == org.bukkit.GameMode.CREATIVE);
-            player.compensatedWorld.setDimension(spawnInfo);
+            player.compensatedWorld.setDimension(worldName, dimensionType);
         };
         player.latencyUtils.addRealTimeTaskNext(applyRespawnState);
     }

@@ -6,8 +6,8 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.common.ClientboundPingPacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
 
 public class PacketPingListener {
     public static boolean acceptBedrockResponse(CultPlayer player, int id) {
@@ -23,21 +23,21 @@ public class PacketPingListener {
     }
 
     @CultPacketHandler
-    public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
+    public void onPong(PacketReceiveEvent<ServerboundPong> event, CultPlayer player, ServerboundPong packet) {
         event.setAcceptedTransactionResponse(false);
-        if (player.addTransactionResponse(packet.getId())) {
+        if (player.addTransactionResponse(packet.id())) {
             event.setAcceptedTransactionResponse(true);
             boolean shouldCancel = !CultAPI.INSTANCE.getConfigManager().isDisablePongCancelling();
             // Not needed for vanilla as vanilla ignores this packet, needed for packet limiters
             event.setCancelled(shouldCancel);
-            Channels.RECEIVED.fire(player, packet.getId(), shouldCancel, event.getTimestamp());
+            Channels.RECEIVED.fire(player, packet.id(), shouldCancel, event.getTimestamp());
         }
     }
 
     @CultPacketHandler
-    public void onPing(PacketSendEvent event, CultPlayer player, ClientboundPingPacket packet) {
+    public void onPing(PacketSendEvent<ClientboundPing> event, CultPlayer player, ClientboundPing packet) {
         player.packetStateData.lastServerTransWasValid = false;
-        if (player.markTransactionPacketSent(packet, event.getTimestamp())) {
+        if (player.markTransactionPacketSent(packet.id(), event.getTimestamp())) {
             player.packetStateData.lastServerTransWasValid = true;
         }
     }

@@ -2,13 +2,11 @@ package ac.cult.cultac.checks.impl.movement.timer;
 
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.PositionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
 /** Caps movement backlog alongside the precise TimerA check. */
 public class DumbTimer extends CultProcessor implements PositionListener {
@@ -48,7 +46,7 @@ public class DumbTimer extends CultProcessor implements PositionListener {
         }
     }
 
-    private void handleMovePlayer(final PacketReceiveEvent event, ServerboundMovePlayerPacket packet) {
+    private void handleMovePlayer(final PacketReceiveEvent event, ServerboundMovePlayer packet) {
         if (!isServerTickingNormally()) {
             return;
         }
@@ -79,8 +77,8 @@ public class DumbTimer extends CultProcessor implements PositionListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet);
     }
 

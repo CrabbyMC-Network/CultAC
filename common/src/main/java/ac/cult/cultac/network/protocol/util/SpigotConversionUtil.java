@@ -19,8 +19,49 @@ public final class SpigotConversionUtil {
     private SpigotConversionUtil() {
     }
 
+    public static net.minecraft.world.InteractionHand toNmsHand(ac.cult.cultac.protocol.value.Hand hand) {
+        return switch (hand) {
+            case MAIN_HAND -> net.minecraft.world.InteractionHand.MAIN_HAND;
+            case OFF_HAND -> net.minecraft.world.InteractionHand.OFF_HAND;
+        };
+    }
+
+    public static net.minecraft.world.phys.Vec3 toNmsVec(ac.cult.cultac.protocol.value.Vec3d vector) {
+        return new net.minecraft.world.phys.Vec3(vector.x(), vector.y(), vector.z());
+    }
+
+    public static net.minecraft.core.BlockPos toNmsBlockPos(ac.cult.cultac.protocol.value.BlockPos position) {
+        return new net.minecraft.core.BlockPos(position.x(), position.y(), position.z());
+    }
+
+    public static org.bukkit.block.BlockFace toBukkitFace(ac.cult.cultac.protocol.value.Direction direction) {
+        return switch (direction) {
+            case DOWN -> org.bukkit.block.BlockFace.DOWN;
+            case UP -> org.bukkit.block.BlockFace.UP;
+            case NORTH -> org.bukkit.block.BlockFace.NORTH;
+            case SOUTH -> org.bukkit.block.BlockFace.SOUTH;
+            case WEST -> org.bukkit.block.BlockFace.WEST;
+            case EAST -> org.bukkit.block.BlockFace.EAST;
+        };
+    }
+
     public static net.minecraft.world.item.ItemStack toNmsItemStack(ItemStack stack) {
         return stack == null ? net.minecraft.world.item.ItemStack.EMPTY : CraftItemStack.asNMSCopy(stack);
+    }
+
+    public static net.minecraft.world.item.component.BundleContents.Mutable mutableBundle(
+            net.minecraft.world.item.component.BundleContents contents) {
+        try {
+            try {
+                return (net.minecraft.world.item.component.BundleContents.Mutable)
+                        contents.getClass().getMethod("asMutable").invoke(contents);
+            } catch (NoSuchMethodException legacy) {
+                return net.minecraft.world.item.component.BundleContents.Mutable.class
+                        .getConstructor(net.minecraft.world.item.component.BundleContents.class).newInstance(contents);
+            }
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Unable to copy bundle contents", failure);
+        }
     }
 
     /**

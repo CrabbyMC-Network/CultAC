@@ -1,5 +1,6 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -7,9 +8,8 @@ import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 
 @CheckData(name = "BadPacketsG", stableKey = "cult.badpackets.duplicate_sneak", description = "Sent duplicate sneaking status")
 public class BadPacketsG extends Check implements CheckListener {
@@ -22,21 +22,20 @@ public class BadPacketsG extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+        PlayerCommandAction action = packet.action();
 
-        NmsPacketUtil.PlayerCommandAction action = NmsPacketUtil.readPlayerCommand(packet).action();
-
-        if ((action == NmsPacketUtil.PlayerCommandAction.PRESS_SHIFT_KEY
-                || action == NmsPacketUtil.PlayerCommandAction.RELEASE_SHIFT_KEY)
+        if ((action == PlayerCommandAction.PRESS_SHIFT_KEY
+                || action == PlayerCommandAction.RELEASE_SHIFT_KEY)
                 && !DecodedPacketReliability.nativeInputFamilyReliable(player.getClientVersion())) {
             return;
         }
 
-        if (action == NmsPacketUtil.PlayerCommandAction.PRESS_SHIFT_KEY) {
+        if (action == PlayerCommandAction.PRESS_SHIFT_KEY) {
             if (handleLegacySneak(true)) {
                 event.setCancelled(true);
             }
-        } else if (action == NmsPacketUtil.PlayerCommandAction.RELEASE_SHIFT_KEY) {
+        } else if (action == PlayerCommandAction.RELEASE_SHIFT_KEY) {
             if (handleLegacySneak(false)) {
                 event.setCancelled(true);
             }

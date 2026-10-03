@@ -7,12 +7,12 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerAbilitiesPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerAbilities;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
 
-// The client can send ability packets out of order due to Mojang's excellent netcode design.
-// We must delay the second ability packet until the tick after the first is received
-// Else the player will fly for a tick, and we won't know about it, which is bad.
+// Apply server abilities at the existing transaction boundary.
+// Track the last sent permission separately from compensated state so a
+// revocation can schedule its timeout immediately.
 public class PacketPlayerAbilities extends CultProcessor implements CheckListener {
 
     public PacketPlayerAbilities(CultPlayer player) {
@@ -22,13 +22,13 @@ public class PacketPlayerAbilities extends CultProcessor implements CheckListene
     boolean lastSentPlayerCanFly = false;
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerAbilitiesPacket packet) {
+    public void onPlayerAbilities(PacketReceiveEvent<ServerboundPlayerAbilities> event, CultPlayer player, ServerboundPlayerAbilities packet) {
         if (player.isBedrockMovement()) return;
-        player.isFlying = packet.isFlying() && player.canFly;
+        player.isFlying = packet.flying() && player.canFly;
     }
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketSendEvent event, CultPlayer player, ClientboundPlayerAbilitiesPacket packet) {
+    public void onPlayerAbilities(PacketSendEvent<ClientboundPlayerAbilities> event, CultPlayer player, ClientboundPlayerAbilities packet) {
         player.sendTransaction();
 
         if (lastSentPlayerCanFly && !packet.canFly()) {
@@ -43,9 +43,9 @@ public class PacketPlayerAbilities extends CultProcessor implements CheckListene
         lastSentPlayerCanFly = packet.canFly();
 
         player.latencyUtils.addRealTimeTaskNow(() -> { player.canFly = packet.canFly();
-            player.isFlying = packet.isFlying();
-            player.canInstabuild = packet.canInstabuild();
-            player.flySpeed = packet.getFlyingSpeed();
+            player.isFlying = packet.flying();
+            player.canInstabuild = packet.instabuild();
+            player.flySpeed = packet.flyingSpeed();
         });
     }
 }

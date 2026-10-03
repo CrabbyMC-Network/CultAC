@@ -2,52 +2,54 @@ package ac.cult.cultac.bedrock.replay.offline;
 
 import ac.cult.cultac.events.packets.PacketServerPlayerRotation;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.packet.PreservedClientboundBundlePacket;
-import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundBundleDelimiterPacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerRotationPacket;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.packet.ClientboundPackets;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
+import ac.cult.cultac.protocol.ConnectionPhase;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.ArrayList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public final class PacketServerPlayerRotationParityTest {
     @Test
     public void standaloneRotationUsesHighLevelBundleWithoutNestedDelimiters() {
-        ClientboundPlayerRotationPacket rotation =
-                new ClientboundPlayerRotationPacket(30.0F, false, 20.0F, false);
-        PacketSendEvent event = new PacketSendEvent(null, rotation, ConnectionProtocol.PLAY);
+        var rotation = new ClientboundPlayerRotation(30, false, 20, false);
+        var event = event(rotation, false);
 
         new PacketServerPlayerRotation().onPlayerRotation(event, null, rotation);
 
-        assertTrue(event.getNmsPacket() instanceof PreservedClientboundBundlePacket);
-        List<Packet<?>> children = children(event.getNmsPacket());
-        assertEquals(List.of(rotation), children);
-        assertFalse(children.stream().anyMatch(ClientboundBundleDelimiterPacket.class::isInstance));
+        assertTrue(event.isBundleRequested());
+        assertTrue(event.getWritesBeforeSend().isEmpty());
+        assertTrue(event.getWritesAfterSend().isEmpty());
+        assertSame(rotation, event.getOriginalPacket());
     }
 
     @Test
     public void rotationAlreadyInsideBundleIsNotNested() {
-        ClientboundPlayerRotationPacket rotation =
-                new ClientboundPlayerRotationPacket(30.0F, false, 20.0F, false);
-        PacketSendEvent event = new PacketSendEvent(null, rotation, ConnectionProtocol.PLAY, true);
+        var rotation = new ClientboundPlayerRotation(30, false, 20, false);
+        var event = event(rotation, true);
 
         new PacketServerPlayerRotation().onPlayerRotation(event, null, rotation);
 
-        assertTrue(event.getNmsPacket() instanceof ClientboundPlayerRotationPacket);
+        assertFalse(event.isBundleRequested());
+        assertSame(rotation, event.getPacket());
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static List<Packet<?>> children(Packet<?> packet) {
-        List<Packet<?>> children = new ArrayList<>();
-        for (Object child : ((PreservedClientboundBundlePacket) packet).subPackets()) {
-            children.add((Packet<?>) child);
+    @Test
+    public void sanitizationPreservesRelativeFlagsAndFiniteAngles() {
+        for (float yaw : new float[]{30, Float.NaN, Float.POSITIVE_INFINITY}) {
+            for (float pitch : new float[]{-20, Float.NaN, Float.NEGATIVE_INFINITY}) {
+                var rotation = new ClientboundPlayerRotation(yaw, true, pitch, true);
+                var event = event(rotation, true);
+                new PacketServerPlayerRotation().onPlayerRotation(event, null, rotation);
+                assertEquals(new ClientboundPlayerRotation(Float.isFinite(yaw) ? yaw : 0, true,
+                        Float.isFinite(pitch) ? pitch : 0, true), event.getPacket());
+            }
         }
-        return children;
+    }
+
+    private static PacketSendEvent<ClientboundPlayerRotation> event(ClientboundPlayerRotation packet, boolean insideBundle) {
+        return new PacketSendEvent<>(null, ConnectionPhase.PLAY, ClientboundPackets.PLAYER_ROTATION, packet, insideBundle);
     }
 }

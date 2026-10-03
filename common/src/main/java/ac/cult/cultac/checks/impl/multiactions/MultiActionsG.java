@@ -1,5 +1,7 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
@@ -10,9 +12,8 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 
 @CheckData(name = "MultiActionsG", stableKey = "cult.multiactions.action_while_rowing", description = "Attacking or using items while rowing a boat", experimental = true)
 public class MultiActionsG extends BlockPlaceCheck {
@@ -38,32 +39,19 @@ public class MultiActionsG extends BlockPlaceCheck {
     }
 
     @CultPacketHandler
-    public void onInteractEntity(PacketReceiveEvent event, CultPlayer player, ServerboundInteractPacket packet) {
-        if (isCheckActive()
-                && flag(writeAction(ACTION_INTERACT)) && shouldModifyPackets()) {
-            event.setCancelled(true);
-            player.onPacketCancel();
-        }
-    }
-
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundAttackPacket")
-    public void onAttack(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        if (isCheckActive()
-                && flag(writeAction(ACTION_ATTACK)) && shouldModifyPackets()) {
+    public void onInteractEntity(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        int action = (packet.action() == ac.cult.cultac.protocol.value.InteractAction.ATTACK && net.minecraft.SharedConstants.getProtocolVersion() >= ac.cult.cultac.protocol.ProtocolVersion.V26_1.protocol()) ? ACTION_ATTACK : ACTION_INTERACT;
+        if (isCheckActive() && flag(writeAction(action)) && shouldModifyPackets()) {
             event.setCancelled(true);
             player.onPacketCancel();
         }
     }
 
 
-    // 26.1 uses a required entity id; 26.2 also permits a spectator action without a target.
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectateEntityPacket")
-    public void onSpectateEntity(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
-        onSpectatorAction(event, player, packet);
-    }
 
-    @CultPacketHandler(packetClass = "net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket")
-    public void onSpectatorAction(PacketReceiveEvent event, CultPlayer player, Packet<?> packet) {
+
+    @CultPacketHandler
+    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
         if (isCheckActive()
                 && flag(writeAction(ACTION_SPECTATE_ENTITY)) && shouldModifyPackets()) {
             event.setCancelled(true);
@@ -72,7 +60,7 @@ public class MultiActionsG extends BlockPlaceCheck {
     }
 
     @CultPacketHandler
-    public void onUseItem(PacketReceiveEvent event, CultPlayer player, ServerboundUseItemPacket packet) {
+    public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         if (isCheckActive()
                 && flag(writeAction(ACTION_USE)) && shouldModifyPackets()) {
             event.setCancelled(true);

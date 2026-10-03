@@ -1,5 +1,11 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+import ac.cult.cultac.protocol.value.ClientCommandAction;
+
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerCombatKill;
+import ac.cult.cultac.protocol.value.GameEventType;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
@@ -9,9 +15,6 @@ import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
-import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 
 @CheckData(name = "BadPacketsM", stableKey = "cult.badpackets.respawn_alive", description = "Tried to respawn while alive", experimental = true)
 public class BadPacketsM extends Check implements CheckListener {
@@ -28,8 +31,8 @@ public class BadPacketsM extends Check implements CheckListener {
     private boolean menu;
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent event, CultPlayer player, ServerboundClientCommandPacket packet) {
-        if (packet.getAction() != ServerboundClientCommandPacket.Action.PERFORM_RESPAWN) {
+    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
+        if (packet.action() != ClientCommandAction.PERFORM_RESPAWN) {
             return;
         }
 
@@ -47,19 +50,19 @@ public class BadPacketsM extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onGameEvent(PacketSendEvent event, CultPlayer player, ClientboundGameEventPacket packet) {
+    public void onGameEvent(PacketSendEvent<ClientboundGameEvent> event, CultPlayer player, ClientboundGameEvent packet) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8)) {
             return;
         }
 
-        if (packet.getEvent() == ClientboundGameEventPacket.WIN_GAME) {
-            if (packet.getParam() != 0 && packet.getParam() != 1) {
+        if (packet.event() == GameEventType.WIN_GAME) {
+            if (packet.param() != 0 && packet.param() != 1) {
                 return; // client ignores this
             }
 
             player.sendTransaction();
             player.latencyUtils.addRealTimeTaskNow(() -> {
-                // we COULD get a death combat packet while the credits are rolling, (IF packet.getParam() == 1)
+                // we COULD get a death combat packet while the credits are rolling, (IF packet.param() == 1)
                 // but this can only cause at most one false negative (for each of this packet sent)
                 exempt++;
                 menu = false;
@@ -67,21 +70,21 @@ public class BadPacketsM extends Check implements CheckListener {
         }
 
 
-        if (packet.getEvent() == ClientboundGameEventPacket.IMMEDIATE_RESPAWN) {
+        if (packet.event() == GameEventType.IMMEDIATE_RESPAWN) {
             if (player.getClientVersion().getProtocolVersion() < 573 // PE ClientVersion.V_1_15
                     || SERVER_VERSION.getProtocolVersion() < 573) { // PE ServerVersion.V_1_15
                 return;
             }
 
             player.sendTransaction();
-            final boolean enabled = packet.getParam() == 0f;
+            final boolean enabled = packet.param() == 0f;
             player.latencyUtils.addRealTimeTaskNow(() -> player.packetStateData.showsDeathScreen = enabled);
         }
     }
 
 
     @CultPacketHandler
-    public void onPlayerCombatKill(PacketSendEvent event, CultPlayer player, ClientboundPlayerCombatKillPacket packet) {
+    public void onPlayerCombatKill(PacketSendEvent<ClientboundPlayerCombatKill> event, CultPlayer player, ClientboundPlayerCombatKill packet) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8)) {
             return;
         }

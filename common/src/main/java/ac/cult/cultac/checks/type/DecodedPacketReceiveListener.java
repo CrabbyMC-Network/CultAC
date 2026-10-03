@@ -8,7 +8,7 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
  *
  * <p>This preserves legacy listener state transitions that apply to all packet
  * types without generating one {@code @CultPacketHandler} per concrete packet.
- * It is deliberately separate from the post-route ordered receive phase.</p>
+ * It is deliberately separate from the post-route non-async callback phase.</p>
  */
 public interface DecodedPacketReceiveListener extends CheckListener {
     void onDecodedPacketReceive(PacketReceiveEvent event);

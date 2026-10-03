@@ -1,21 +1,20 @@
 package ac.cult.cultac.checks.impl.elytra;
 
+import ac.cult.cultac.protocol.packet.Opaque;
+
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.DecodedPacketReceiveListener;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import net.minecraft.SharedConstants;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 
 @CheckData(name = "ElytraC", stableKey = "cult.elytra.too_frequent", description = "Started gliding too frequently")
 public class ElytraC extends Check implements PostPredictionListener, DecodedPacketReceiveListener {
@@ -43,13 +42,13 @@ public class ElytraC extends Check implements PostPredictionListener, DecodedPac
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent event, CultPlayer player, ServerboundPlayerCommandPacket packet) {
+    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             glideThisTick = glideLastTick = false;
         }
 
-        if (NmsPacketUtil.readPlayerCommand(packet).action() != NmsPacketUtil.PlayerCommandAction.START_FLYING_WITH_ELYTRA) return;
+        if (packet.action() != PlayerCommandAction.START_FLYING_WITH_ELYTRA) return;
         if (exempt) return;
 
         if (glideThisTick || glideLastTick) {
@@ -70,8 +69,8 @@ public class ElytraC extends Check implements PostPredictionListener, DecodedPac
 
     // isTickPacket: movement packets rotate unless they answered a teleport
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             glideThisTick = glideLastTick = false;
@@ -84,8 +83,8 @@ public class ElytraC extends Check implements PostPredictionListener, DecodedPac
     }
 
     // isTickPacket: tick end rotates for 1.21.2+ clients when no movement arrived this client tick
-    @CultPacketHandler
-    public void onClientTickEnd(PacketReceiveEvent event, CultPlayer player, ServerboundClientTickEndPacket packet) {
+    @CultPacketHandler("serverbound.client_tick_end")
+    public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             glideThisTick = glideLastTick = false;

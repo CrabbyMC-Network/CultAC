@@ -1,8 +1,8 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundAnimate;
 import ac.cult.cultac.checks.impl.prediction.checks.NoSlow;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.packet.PacketCodecUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.TrackerData;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityUtil;
@@ -11,10 +11,7 @@ import ac.cult.cultac.utils.data.SprintingState;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.SynchedEntityData;
+import ac.cult.cultac.network.packet.EntityMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,18 +23,18 @@ public class PacketSelfMetadataListener {
     //HIGH
 
     @CultPacketHandler
-    public void onSetEntityData(PacketSendEvent event, CultPlayer player, ClientboundSetEntityDataPacket packet) {
+    public void onSetEntityData(PacketSendEvent<EntityMetadata> event, CultPlayer player, EntityMetadata packet) {
         handleSetEntityData(event, player, packet);
     }
 
     @CultPacketHandler
-    public void onAnimate(PacketSendEvent event, CultPlayer player, ClientboundAnimatePacket packet) {
+    public void onAnimate(PacketSendEvent<ClientboundAnimate> event, CultPlayer player, ClientboundAnimate packet) {
         handleAnimate(event, player, packet);
     }
 
-    private void handleSetEntityData(PacketSendEvent event, CultPlayer player, ClientboundSetEntityDataPacket entityMetadataPacket) {
-        List<SynchedEntityData.DataValue<?>> packedItems = new ArrayList<>(entityMetadataPacket.packedItems());
-        List<SynchedEntityData.DataValue<?>> entityMetadata = packedItems;
+    private void handleSetEntityData(PacketSendEvent<EntityMetadata> event, CultPlayer player, EntityMetadata entityMetadataPacket) {
+        List<EntityMetadata.Entry> packedItems = new ArrayList<>(entityMetadataPacket.packedItems());
+        List<EntityMetadata.Entry> entityMetadata = packedItems;
         final boolean spoofHealth = player.spoofHealth;
 
         if (entityMetadataPacket.id() == player.entityID) {
@@ -66,10 +63,9 @@ public class PacketSelfMetadataListener {
                 // to the player on old servers... because the player just overrides this pose the very next tick
                 //
                 // It makes no sense to me why mojang is doing this, it has to be a bug.
-                changed |= packedItems.removeIf(element -> element.id() == WatchableIndexUtil.ENTITY_POSE.id());
-                entityMetadata.removeIf(element -> element.id() == WatchableIndexUtil.ENTITY_POSE.id());
+                changed |= packedItems.removeIf(element -> element.id() == WatchableIndexUtil.ENTITY_POSE);
 
-                SynchedEntityData.DataValue<?> watchable = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.ENTITY_SHARED_FLAGS);
+                EntityMetadata.Entry watchable = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.ENTITY_SHARED_FLAGS);
                 if (watchable != null) { Object zeroBitField = watchable.value();
                     if (zeroBitField instanceof Byte fieldByte) {
                         final byte field = fieldByte;
@@ -99,14 +95,14 @@ public class PacketSelfMetadataListener {
                     }
                 }
 
-                SynchedEntityData.DataValue<?> frozen = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.ENTITY_TICKS_FROZEN);
+                EntityMetadata.Entry frozen = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.ENTITY_TICKS_FROZEN);
                 if (frozen != null) {
                     if (!hasSendTransaction) player.sendTransaction();
                     hasSendTransaction = true;
                     player.latencyUtils.addRealTimeTaskNow(() -> player.powderSnowFrozenTicks = (int) frozen.value());
                 }
 
-                SynchedEntityData.DataValue<?> bedObject = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.LIVING_SLEEPING_POS);
+                EntityMetadata.Entry bedObject = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.LIVING_SLEEPING_POS);
                 if (bedObject != null) { Optional<BlockPos> bed = (Optional<BlockPos>) bedObject.value();
                     // The Bedrock actor's sleep flag is delivered separately by
                     // the bridge after the client acknowledges its own metadata.
@@ -128,7 +124,7 @@ public class PacketSelfMetadataListener {
                     addTaskAfterPacketProof(event, player, applyBedMetadata);
                 }
 
-                SynchedEntityData.DataValue<?> handState = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.LIVING_ENTITY_FLAGS);
+                EntityMetadata.Entry handState = WatchableIndexUtil.getIndex(entityMetadata, WatchableIndexUtil.LIVING_ENTITY_FLAGS);
 
                 // This one only present if it changed
                 if (handState != null && handState.value() instanceof Byte) {
@@ -163,13 +159,13 @@ public class PacketSelfMetadataListener {
                 }
 
                 if (changed) {
-                    event.setNmsPacket(new ClientboundSetEntityDataPacket(entityMetadataPacket.id(), packedItems));
+                    event.replace(new EntityMetadata(entityMetadataPacket.id(), packedItems));
                 }
             } else if (spoofHealth) {
                 boolean changed = false;
                 for (int i = 0; i < packedItems.size(); i++) {
-                    SynchedEntityData.DataValue<?> packedItem = packedItems.get(i);
-                    if (packedItem.id() == WatchableIndexUtil.LIVING_HEALTH.id() && packedItem.value() instanceof Float health) {
+                    EntityMetadata.Entry packedItem = packedItems.get(i);
+                    if (packedItem.id() == WatchableIndexUtil.LIVING_HEALTH && packedItem.value() instanceof Float health) {
                         if (health <= 0.0f) { break; } // don't spoof dead entities
                         TrackerData tracked = player.compensatedEntities.getTrackedEntity(entityMetadataPacket.id());
                         // don't spoof health of rideable entities if they aren't tracked
@@ -183,19 +179,20 @@ public class PacketSelfMetadataListener {
                         // don't spoof health of entities we're riding
                         if (player.getRidingVehicleId() == entityMetadataPacket.id()) break;
 
-                        packedItems.set(i, new SynchedEntityData.DataValue<>(WatchableIndexUtil.LIVING_HEALTH.id(), EntityDataSerializers.FLOAT, 1.0f));
+                        packedItems.set(i, EntityMetadata.Entry.health(1.0f));
                         changed = true;
                     }
                 }
                 if (changed) {
-                    event.setNmsPacket(new ClientboundSetEntityDataPacket(entityMetadataPacket.id(), packedItems));
+                    event.replace(new EntityMetadata(entityMetadataPacket.id(), packedItems));
                 }
             }
     }
 
-    private void handleAnimate(PacketSendEvent event, CultPlayer player, ClientboundAnimatePacket animation) {
-        int action = PacketCodecUtil.decodeUnsignedByte(animation.getAction());
-        if (player.entityID == animation.getId() && action == ClientboundAnimatePacket.WAKE_UP) {
+    private void handleAnimate(PacketSendEvent<ClientboundAnimate> event, CultPlayer player, ClientboundAnimate animation) {
+        int action = animation.action();
+        // The pinned original listener also compiles WAKE_UP to zero.
+        if (player.entityID == animation.entityId() && action == 0) {
             // Geyser's LEAVE_BED animation changes only the upstream pose. Its
             // movement translator continues dropping auth movement while the
             // entity bed position is non-null, so Bedrock release is owned by
@@ -213,7 +210,7 @@ public class PacketSelfMetadataListener {
     }
 
     private static void addTaskAfterPacketProof(
-            PacketSendEvent event,
+            PacketSendEvent<?> event,
             CultPlayer player,
             Runnable task
     ) {

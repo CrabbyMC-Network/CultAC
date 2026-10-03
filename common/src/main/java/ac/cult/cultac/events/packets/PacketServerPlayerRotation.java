@@ -2,41 +2,28 @@ package ac.cult.cultac.events.packets;
 
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.packet.PreservedClientboundBundlePacket;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundPlayerRotationPacket;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
 
-import java.util.List;
 
 /** Sanitizes server-forced rotations and preserves their atomic bundle boundary. */
 public class PacketServerPlayerRotation {
 
     @CultPacketHandler
-    public void onPlayerRotation(PacketSendEvent event, CultPlayer player, ClientboundPlayerRotationPacket packet) {
-        float yaw = packet.yRot();
-        float pitch = packet.xRot();
+    public void onPlayerRotation(PacketSendEvent<ClientboundPlayerRotation> event, CultPlayer player, ClientboundPlayerRotation packet) {
+        float yaw = packet.yaw();
+        float pitch = packet.pitch();
 
-        Packet<?> output = packet;
         if (!Float.isFinite(pitch) || !Float.isFinite(yaw)) {
             if (!Float.isFinite(pitch)) pitch = 0;
             if (!Float.isFinite(yaw)) yaw = 0;
-            output = NmsPacketUtil.withPlayerRotation(packet, yaw, pitch);
-            event.markForReEncode(true);
+            event.replace(new ClientboundPlayerRotation(yaw, packet.relativeYaw(), pitch, packet.relativePitch()));
         }
 
-        if (event.isInsideBundle()) {
-            event.setNmsPacket(output);
-            return;
-        }
+        if (event.isInsideBundle()) return;
 
-        // BundlerInfo adds the wire delimiters around this high-level bundle.
-        // Never place delimiter packets inside ClientboundBundlePacket itself.
-        @SuppressWarnings("unchecked")
-        Packet<? super ClientGamePacketListener> rotation =
-                (Packet<? super ClientGamePacketListener>) output;
-        event.setNmsPacket(new PreservedClientboundBundlePacket(List.of(rotation)));
+        // Keep the original bytes (or the sanitized replacement) inside the
+        // existing preserved group, without dispatching the child a second time.
+        event.bundle();
     }
 }

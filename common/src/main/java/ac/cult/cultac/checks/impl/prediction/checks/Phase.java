@@ -6,11 +6,8 @@ import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.impl.movement.GhostBlockMitigator;
 import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.network.CultPacketGroup;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.network.PacketGroup;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.packet.NmsPacketUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
@@ -19,7 +16,7 @@ import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.block.data.BlockData;
 
@@ -42,13 +39,13 @@ public class Phase extends Check implements PostPredictionListener {
 
     SimpleCollisionBox oldBox = null;
 
-    private void handleMovePlayer(ServerboundMovePlayerPacket packet) {
+    private void handleMovePlayer(ServerboundMovePlayer packet) {
         // Geyser projections must neither check movement nor replace auth-input history.
         if (player.isBedrockMovement()) return;
-        NmsPacketUtil.MovePlayerData flying = NmsPacketUtil.readMovePlayer(packet, player);
-        if (!flying.hasPositionChanged()) return;
+        ServerboundMovePlayer flying = packet;
+        if (!flying.hasPosition()) return;
 
-        checkMovement(flying.position(), false, player.packetStateData.lastPacketWasTeleport);
+        checkMovement(new Vec3(flying.x(), flying.y(), flying.z()), false, player.packetStateData.lastPacketWasTeleport);
     }
 
     @Override
@@ -136,8 +133,8 @@ public class Phase extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    @CultPacketGroup(PacketGroup.SERVERBOUND_PLAYER_MOVEMENT)
-    public void onMovePlayer(PacketReceiveEvent event, CultPlayer player, ServerboundMovePlayerPacket packet) {
+
+    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(packet);
     }
 }
