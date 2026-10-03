@@ -20,8 +20,7 @@ public final class BedrockPoseInputData {
     public static final String STOP_SWIMMING = "STOP_SWIMMING";
     public static final String SWIMMING = "SWIMMING";
 
-    private BedrockPoseInputData() {
-    }
+    private BedrockPoseInputData() {}
 
     public static boolean committedHorizontalPose(BedrockInputFrame frame) {
         return has(frame, HORIZONTAL_POSE);

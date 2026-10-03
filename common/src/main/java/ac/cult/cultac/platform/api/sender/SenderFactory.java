@@ -1,10 +1,9 @@
 package ac.cult.cultac.platform.api.sender;
 
-import net.kyori.adventure.text.Component;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Factory class to make a thread-safe sender instance

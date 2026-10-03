@@ -1,19 +1,18 @@
 package ac.cult.cultac.checks.impl.prediction.stage.uncertainty;
 
+import static ac.cult.cultac.utils.math.VectorUtils.LARGE_MOVEMENT;
+
 import ac.cult.cultac.checks.impl.prediction.PredVector;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.stage.UncertaintyPipeline;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.List;
-
-import static ac.cult.cultac.utils.math.VectorUtils.LARGE_MOVEMENT;
 
 // There are many things that can affect a user's movement
 // They range from blocks pushing the user out of them, to pistons pushing a user
@@ -21,33 +20,47 @@ import static ac.cult.cultac.utils.math.VectorUtils.LARGE_MOVEMENT;
 public class ValidMovements {
     PredVector initialStartingVel;
     transient CultPlayer player;
+
     @Getter
     PredictionResult result;
+
     PredictionResult lastResult;
+
     @Getter
     @Setter
     SimpleCollisionBox collisionIgnoredMaxStartingVelExtents = null;
+
     @Getter
     @Setter
     Vec3 closestToTarget = null;
+
     @Getter
     MovementTrace closestTrace = null;
+
     @Getter
     @Setter
     boolean canStep;
+
     @Getter
     @Setter
     boolean controlsVerticalMovement;
+
     @Getter
     @Setter
     boolean didTickSkipGravity;
+
     private final List<UncertaintyHandler> uncertaintyHandlers;
 
     public ValidMovements(PredVector initialStartingVel, CultPlayer player, PredictionResult result, boolean canStep) {
         this(initialStartingVel, player, result, canStep, UncertaintyPipeline.MODIFIERS);
     }
 
-    public ValidMovements(PredVector initialStartingVel, CultPlayer player, PredictionResult result, boolean canStep, List<UncertaintyHandler> uncertaintyHandlers) {
+    public ValidMovements(
+            PredVector initialStartingVel,
+            CultPlayer player,
+            PredictionResult result,
+            boolean canStep,
+            List<UncertaintyHandler> uncertaintyHandlers) {
         this.initialStartingVel = initialStartingVel;
         this.player = player;
         this.result = result;
@@ -66,14 +79,16 @@ public class ValidMovements {
         MovementTrace trace = MovementTrace.start(initialStartingVel);
 
         for (UncertaintyHandler handler : uncertaintyHandlers) {
-            trace = handler.handleMovementTrace(player, result.getValidMovements(), result, result.getSimulationContext(), lastResult, trace, end);
+            trace = handler.handleMovementTrace(
+                    player, result.getValidMovements(), result, result.getSimulationContext(), lastResult, trace, end);
         }
 
         return trace;
     }
 
     public ValidMovements computeExtents(PredictionResult lastResult) {
-        // closestToTarget will call the AABB, so just figure it out now. Also cache it, to prevent infinite recursion to the previous movement.
+        // closestToTarget will call the AABB, so just figure it out now. Also cache it, to prevent infinite recursion
+        // to the previous movement.
         SimpleCollisionBox vectorExtents = initialStartingVel.collisionIgnoredExtents(result.getTarget());
         this.collisionIgnoredMaxStartingVelExtents = vectorExtents == null ? computeAABB(lastResult) : vectorExtents;
         return this;
@@ -89,8 +104,11 @@ public class ValidMovements {
         // Select one complete movement with the existing uncertainty handlers.
         // In particular, Fireworks must share its radius between Y and X/Z.
         result.setCollideAxisData(new CollideAxisData(
-                new CollideAxisData.CollideResult(false, 0), null, null,
-                new CollideAxisData.CollideResult(false, 0), new java.util.ArrayList<>()));
+                new CollideAxisData.CollideResult(false, 0),
+                null,
+                null,
+                new CollideAxisData.CollideResult(false, 0),
+                new java.util.ArrayList<>()));
         computeClosest(lastResult);
         return closestToTarget;
     }
@@ -101,11 +119,12 @@ public class ValidMovements {
         MovementTrace movement = closestTrace;
         Vec3 base = movement.collisionBaseOffset();
         if (base.lengthSqr() > 1.0E-14) {
-            movement = movement.withPosition(movement.position().with(
-                    movement.position().subtract(base), "external movement collision base removed"));
+            movement = movement.withPosition(movement.position()
+                    .with(movement.position().subtract(base), "external movement collision base removed"));
         }
-        setClosestTrace(new CollisionModifier().handleMovementTrace(
-                player, this, result, result.getSimulationContext(), lastResult, movement, result.getTarget()));
+        setClosestTrace(new CollisionModifier()
+                .handleMovementTrace(
+                        player, this, result, result.getSimulationContext(), lastResult, movement, result.getTarget()));
     }
 
     public Vec3 getPositionOnlyDelta() {
@@ -133,12 +152,10 @@ public class ValidMovements {
     }
 
     public boolean isTestingMaxStartingVelExtents(Vec3 end) {
-        return Math.abs(end.x) == LARGE_MOVEMENT ||
-                Math.abs(end.y) == LARGE_MOVEMENT ||
-                Math.abs(end.z) == LARGE_MOVEMENT;
+        return Math.abs(end.x) == LARGE_MOVEMENT
+                || Math.abs(end.y) == LARGE_MOVEMENT
+                || Math.abs(end.z) == LARGE_MOVEMENT;
     }
 
-    public void addTransformers(UncertaintyPipeline uncertaintyPipeline) {
-
-    }
+    public void addTransformers(UncertaintyPipeline uncertaintyPipeline) {}
 }

@@ -1,22 +1,19 @@
 package ac.cult.cultac.utils.latency;
 
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.network.packet.WorldPackets.BlockUpdate;
-import net.minecraft.core.BlockPos;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockChangedAck;
 import ac.cult.cultac.network.CultWrite;
-import net.minecraft.world.level.block.state.BlockState;
-
+import ac.cult.cultac.network.packet.WorldPackets.BlockUpdate;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockChangedAck;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
 public final class BlockPredictionAckSender {
-    private BlockPredictionAckSender() {
-    }
+    private BlockPredictionAckSender() {}
 
-    public record TrackedBlockUpdate(BlockPos pos, BlockState state) {
-    }
+    public record TrackedBlockUpdate(BlockPos pos, BlockState state) {}
 
     public static void sendAck(CultPlayer player, int sequence) {
         sendAck(player, sequence, List.of());

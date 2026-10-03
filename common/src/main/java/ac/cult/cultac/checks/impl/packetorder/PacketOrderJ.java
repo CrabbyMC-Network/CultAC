@@ -6,11 +6,15 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-@CheckData(name = "PacketOrderJ", stableKey = "cult.packetorder.attack_interact_use_order", description = "Sent use item after attacking without the expected interaction packet", experimental = true)
+@CheckData(
+        name = "PacketOrderJ",
+        stableKey = "cult.packetorder.attack_interact_use_order",
+        description = "Sent use item after attacking without the expected interaction packet",
+        experimental = true)
 public class PacketOrderJ extends Check implements PostPredictionListener {
     public PacketOrderJ(final CultPlayer player) {
         super(player);
@@ -18,12 +22,11 @@ public class PacketOrderJ extends Check implements PostPredictionListener {
 
     private int invalid;
 
-
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
+    public void onUseItemOn(
+            PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         onUse(event, player);
     }
-
 
     @CultPacketHandler
     public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {

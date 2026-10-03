@@ -1,17 +1,17 @@
 package ac.cult.cultac.network.protocol.util;
 
+import java.lang.reflect.Method;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.Method;
-
 public final class SpigotReflectionUtil {
-    public static final Class<?> ENTITY_PLAYER_CLASS = resolveClass("net.minecraft.server.level.ServerPlayer", "net.minecraft.world.entity.player.Player");
-    public static final Class<?> NMS_ITEM_STACK_CLASS = resolveClass("net.minecraft.world.item.ItemStack", "net.minecraft.world.item.ItemStack");
+    public static final Class<?> ENTITY_PLAYER_CLASS =
+            resolveClass("net.minecraft.server.level.ServerPlayer", "net.minecraft.world.entity.player.Player");
+    public static final Class<?> NMS_ITEM_STACK_CLASS =
+            resolveClass("net.minecraft.world.item.ItemStack", "net.minecraft.world.item.ItemStack");
 
-    private SpigotReflectionUtil() {
-    }
+    private SpigotReflectionUtil() {}
 
     public static double getTPS() {
         try {
@@ -40,12 +40,7 @@ public final class SpigotReflectionUtil {
     }
 
     public static Class<?> getServerClass(String modernName, String legacyName) {
-        String[] candidates = {
-                "net.minecraft." + modernName,
-                "net.minecraft." + legacyName,
-                modernName,
-                legacyName
-        };
+        String[] candidates = {"net.minecraft." + modernName, "net.minecraft." + legacyName, modernName, legacyName};
         for (String candidate : candidates) {
             try {
                 return Class.forName(candidate);

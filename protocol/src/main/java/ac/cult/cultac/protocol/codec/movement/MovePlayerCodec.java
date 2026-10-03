@@ -5,12 +5,12 @@ import ac.cult.cultac.protocol.VariantCodec;
 import ac.cult.cultac.protocol.WritablePacketCodec;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import io.netty.buffer.ByteBuf;
-
 import java.util.Arrays;
 import java.util.List;
 
 /** All four variants use the flags byte introduced in 1.21.2. */
-public final class MovePlayerCodec implements WritablePacketCodec<ServerboundMovePlayer>, VariantCodec<ServerboundMovePlayer> {
+public final class MovePlayerCodec
+        implements WritablePacketCodec<ServerboundMovePlayer>, VariantCodec<ServerboundMovePlayer> {
     private enum Variant {
         POS("move_player_pos", true, false),
         POS_ROT("move_player_pos_rot", true, true),
@@ -29,10 +29,13 @@ public final class MovePlayerCodec implements WritablePacketCodec<ServerboundMov
     }
 
     private static final Variant[] VARIANTS = Variant.values();
-    private static final List<String> NAMES = Arrays.stream(VARIANTS).map(variant -> variant.wireName).toList();
+    private static final List<String> NAMES =
+            Arrays.stream(VARIANTS).map(variant -> variant.wireName).toList();
 
     @Override
-    public List<String> variants() { return NAMES; }
+    public List<String> variants() {
+        return NAMES;
+    }
 
     @Override
     public int variantOf(ServerboundMovePlayer packet) {

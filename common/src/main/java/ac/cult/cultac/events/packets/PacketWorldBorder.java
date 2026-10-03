@@ -1,17 +1,17 @@
 package ac.cult.cultac.events.packets;
 
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderLerpSize;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderSize;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderCenter;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundInitializeBorder;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundInitializeBorder;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderCenter;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderLerpSize;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetBorderSize;
+import ac.cult.cultac.utils.math.CultMath;
 
 public class PacketWorldBorder extends CultProcessor implements CheckListener, ClientTickEndListener {
     private static final ClientVersion SERVER_VERSION =
@@ -47,8 +47,10 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
             // 1.21.11/26.1 WorldBorder collision shapes use getMin/Max(0.0F):
             // the previous world-tick size, until MovingBorderExtent becomes static.
             long collisionTicks = !player.isBedrockMovement()
-                    && player.getClientVersion().isOlderThan(ac.cult.cultac.network.protocol.ClientVersion.V_26_2)
-                    ? Math.max(0L, lerpElapsedTicks - 1L) : lerpElapsedTicks;
+                            && player.getClientVersion()
+                                    .isOlderThan(ac.cult.cultac.network.protocol.ClientVersion.V_26_2)
+                    ? Math.max(0L, lerpElapsedTicks - 1L)
+                    : lerpElapsedTicks;
             double progress = Math.min(1.0D, (double) collisionTicks / (double) lerpDurationTicks);
             return CultMath.lerp(progress, oldDiameter, newDiameter);
         }
@@ -59,8 +61,9 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
     @Override
     public void onPlayerTickEnd(ac.cult.cultac.network.event.PacketReceiveEvent event) {
         // ClientLevel#tick advances the border only while world ticks run.
-        if (player.isBedrockMovement() || player.packetStateData.serverTicksFrozen
-                && player.packetStateData.serverFrozenTickStepsRemaining == 0) return;
+        if (player.isBedrockMovement()
+                || player.packetStateData.serverTicksFrozen
+                        && player.packetStateData.serverFrozenTickStepsRemaining == 0) return;
         if (tickBasedLerp && lerpElapsedTicks < lerpDurationTicks) {
             lerpElapsedTicks++;
             if (lerpElapsedTicks >= lerpDurationTicks) {
@@ -71,7 +74,8 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
     }
 
     @CultPacketHandler
-    public void onInitializeBorder(PacketSendEvent<ClientboundInitializeBorder> event, CultPlayer player, ClientboundInitializeBorder packet) {
+    public void onInitializeBorder(
+            PacketSendEvent<ClientboundInitializeBorder> event, CultPlayer player, ClientboundInitializeBorder packet) {
         player.sendTransaction();
         setCenter(packet.centerX(), packet.centerZ());
         setLerp(packet.oldSize(), packet.newSize(), packet.lerpTime());
@@ -79,31 +83,38 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
     }
 
     @CultPacketHandler
-    public void onSetBorderCenter(PacketSendEvent<ClientboundSetBorderCenter> event, CultPlayer player, ClientboundSetBorderCenter packet) {
+    public void onSetBorderCenter(
+            PacketSendEvent<ClientboundSetBorderCenter> event, CultPlayer player, ClientboundSetBorderCenter packet) {
         player.sendTransaction();
         setCenter(packet.centerX(), packet.centerZ());
     }
 
     @CultPacketHandler
-    public void onSetBorderSize(PacketSendEvent<ClientboundSetBorderSize> event, CultPlayer player, ClientboundSetBorderSize packet) {
+    public void onSetBorderSize(
+            PacketSendEvent<ClientboundSetBorderSize> event, CultPlayer player, ClientboundSetBorderSize packet) {
         player.sendTransaction();
         setSize(packet.size());
     }
 
     @CultPacketHandler
-    public void onSetBorderLerpSize(PacketSendEvent<ClientboundSetBorderLerpSize> event, CultPlayer player, ClientboundSetBorderLerpSize packet) {
+    public void onSetBorderLerpSize(
+            PacketSendEvent<ClientboundSetBorderLerpSize> event,
+            CultPlayer player,
+            ClientboundSetBorderLerpSize packet) {
         player.sendTransaction();
         setLerp(packet.oldSize(), packet.newSize(), packet.lerpTime());
     }
 
     private void setCenter(double x, double z) {
-        player.latencyUtils.addRealTimeTaskNow(() -> { centerX = x;
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            centerX = x;
             centerZ = z;
         });
     }
 
     private void setSize(double size) {
-        player.latencyUtils.addRealTimeTaskNow(() -> { oldDiameter = size;
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            oldDiameter = size;
             newDiameter = size;
             tickBasedLerp = false;
             lerpDurationTicks = 0L;
@@ -112,7 +123,8 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
     }
 
     private void setLerp(double oldDiameter, double newDiameter, long length) {
-        player.latencyUtils.addRealTimeTaskNow(() -> { this.oldDiameter = oldDiameter;
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            this.oldDiameter = oldDiameter;
             this.newDiameter = newDiameter;
             long clientLength = clientLerpDuration(SERVER_VERSION, player.getClientVersion(), length);
             this.tickBasedLerp = usesTickBasedLerp(player.getClientVersion(), oldDiameter, newDiameter, clientLength);
@@ -121,8 +133,8 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
                 this.lerpElapsedTicks = 0L;
             } else {
                 this.startTime = System.currentTimeMillis();
-                this.endTime = this.startTime + (player.isBedrockMovement()
-                        ? Math.max(0L, length) * 50L : Math.max(0L, clientLength));
+                this.endTime = this.startTime
+                        + (player.isBedrockMovement() ? Math.max(0L, length) * 50L : Math.max(0L, clientLength));
             }
         });
     }
@@ -139,14 +151,15 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
             ac.cult.cultac.network.protocol.ClientVersion version,
             double oldDiameter,
             double newDiameter,
-            long length
-    ) {
+            long length) {
         return version.isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_1_21_11)
-                && length > 0L && oldDiameter != newDiameter;
+                && length > 0L
+                && oldDiameter != newDiameter;
     }
 
     private void setAbsoluteMaxSize(double absoluteMaxSize) {
-        player.latencyUtils.addRealTimeTaskNow(() -> { this.absoluteMaxSize = absoluteMaxSize;
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            this.absoluteMaxSize = absoluteMaxSize;
         });
     }
 

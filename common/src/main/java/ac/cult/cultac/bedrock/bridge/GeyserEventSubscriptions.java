@@ -30,11 +30,15 @@ final class GeyserEventSubscriptions implements AutoCloseable {
             if (last) {
                 // Floodgate bundles another PostOrder. A direct reference may resolve to
                 // that copy and violate Geyser's method parameter loader constraint.
-                Class<?> order = Class.forName("org.geysermc.event.PostOrder", true, bus.getClass().getClassLoader());
-                Method subscribe = bus.getClass().getMethod("subscribe", Object.class, Class.class, Consumer.class, order);
-                subscribe.invoke(bus, owner, event, guarded, order.getField("LAST").get(null));
+                Class<?> order = Class.forName(
+                        "org.geysermc.event.PostOrder", true, bus.getClass().getClassLoader());
+                Method subscribe =
+                        bus.getClass().getMethod("subscribe", Object.class, Class.class, Consumer.class, order);
+                subscribe.invoke(
+                        bus, owner, event, guarded, order.getField("LAST").get(null));
             } else {
-                bus.getClass().getMethod("subscribe", Object.class, Class.class, Consumer.class)
+                bus.getClass()
+                        .getMethod("subscribe", Object.class, Class.class, Consumer.class)
                         .invoke(bus, owner, event, guarded);
             }
         } catch (ReflectiveOperationException failure) {
@@ -42,7 +46,8 @@ final class GeyserEventSubscriptions implements AutoCloseable {
         }
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         active = false;
         try {
             bus.getClass().getMethod("unregisterAll", Object.class).invoke(bus, owner);

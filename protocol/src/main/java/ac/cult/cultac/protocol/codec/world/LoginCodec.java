@@ -6,9 +6,9 @@
  */
 package ac.cult.cultac.protocol.codec.world;
 
-import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.PacketCodec;
 import ac.cult.cultac.protocol.ProtocolContext;
+import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundLogin;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
@@ -26,9 +26,14 @@ public final class LoginCodec implements PacketCodec<ClientboundLogin> {
         input.readBoolean(); // Reduced debug information
         boolean showDeathScreen = input.readBoolean();
         input.readBoolean(); // Limited crafting
-        return new ClientboundLogin(playerId, showDeathScreen,
+        return new ClientboundLogin(
+                playerId,
+                showDeathScreen,
                 SpawnInfoCodec.read(input, context.version().atLeast(ProtocolVersion.V26_3)));
     }
 
-    @Override public boolean readsEntirePayload() { return false; }
+    @Override
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

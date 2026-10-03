@@ -4,7 +4,6 @@ import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
 import ac.cult.cultac.protocol.ProtocolResolutionException;
 import ac.cult.cultac.protocol.ProtocolVersion;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,14 +20,16 @@ import java.util.Set;
 
 /** Checked-in data generated from the exact vanilla version's reports. */
 public final class ProtocolData {
-    private static final Set<String> REQUIRED_REGISTRIES = Set.of("minecraft:block", "minecraft:entity_type",
-            "minecraft:attribute", "minecraft:mob_effect");
+    private static final Set<String> REQUIRED_REGISTRIES =
+            Set.of("minecraft:block", "minecraft:entity_type", "minecraft:attribute", "minecraft:mob_effect");
     private final ProtocolVersion version;
     private final Map<ConnectionPhase, Map<PacketDirection, IdTable>> packets;
     private final Map<String, IdTable> registries;
 
-    private ProtocolData(ProtocolVersion version, Map<ConnectionPhase, Map<PacketDirection, IdTable>> packets,
-                         Map<String, IdTable> registries) {
+    private ProtocolData(
+            ProtocolVersion version,
+            Map<ConnectionPhase, Map<PacketDirection, IdTable>> packets,
+            Map<String, IdTable> registries) {
         this.version = version;
         this.packets = Map.copyOf(packets);
         this.registries = Map.copyOf(registries);
@@ -42,7 +43,8 @@ public final class ProtocolData {
             }
             return readIndex(version, new InputStreamReader(input, StandardCharsets.UTF_8));
         } catch (IOException failure) {
-            throw new ProtocolResolutionException("Cannot read protocol data for " + version + ": " + failure.getMessage());
+            throw new ProtocolResolutionException(
+                    "Cannot read protocol data for " + version + ": " + failure.getMessage());
         }
     }
 
@@ -55,7 +57,7 @@ public final class ProtocolData {
         Map<ConnectionPhase, Map<PacketDirection, List<String>>> packetNames = new EnumMap<>(ConnectionPhase.class);
         Map<String, List<String>> registryNames = new HashMap<>();
         int lineNumber = 1;
-        for (String line; (line = reader.readLine()) != null;) {
+        for (String line; (line = reader.readLine()) != null; ) {
             lineNumber++;
             String[] fields = line.split("\t", -1);
             try {
@@ -64,18 +66,23 @@ public final class ProtocolData {
                         requireFields(fields, 5);
                         ConnectionPhase phase = ConnectionPhase.valueOf(fields[1].toUpperCase(Locale.ROOT));
                         PacketDirection direction = PacketDirection.valueOf(fields[2].toUpperCase(Locale.ROOT));
-                        List<String> names = packetNames.computeIfAbsent(phase, key -> new EnumMap<>(PacketDirection.class))
+                        List<String> names = packetNames
+                                .computeIfAbsent(phase, key -> new EnumMap<>(PacketDirection.class))
                                 .computeIfAbsent(direction, key -> new ArrayList<>());
                         append(names, fields[3], fields[4]);
                     }
                     case "registry" -> {
                         requireFields(fields, 4);
-                        append(registryNames.computeIfAbsent(fields[1], key -> new ArrayList<>()), fields[2], fields[3]);
+                        append(
+                                registryNames.computeIfAbsent(fields[1], key -> new ArrayList<>()),
+                                fields[2],
+                                fields[3]);
                     }
                     default -> throw new IllegalArgumentException("Unknown index entry " + fields[0]);
                 }
             } catch (IllegalArgumentException failure) {
-                throw new ProtocolResolutionException("Invalid " + version + " index at line " + lineNumber + ": " + failure.getMessage());
+                throw new ProtocolResolutionException(
+                        "Invalid " + version + " index at line " + lineNumber + ": " + failure.getMessage());
             }
         }
         Map<ConnectionPhase, Map<PacketDirection, IdTable>> packets = new EnumMap<>(ConnectionPhase.class);
@@ -83,8 +90,10 @@ public final class ProtocolData {
             Map<PacketDirection, IdTable> flows = new EnumMap<>(PacketDirection.class);
             for (PacketDirection direction : PacketDirection.values()) {
                 List<String> names = packetNames.getOrDefault(phase, Map.of()).getOrDefault(direction, List.of());
-                if (names.isEmpty() && !(phase == ConnectionPhase.HANDSHAKE && direction == PacketDirection.CLIENTBOUND)) {
-                    throw new ProtocolResolutionException("Missing packet table " + version + "/" + phase + "/" + direction);
+                if (names.isEmpty()
+                        && !(phase == ConnectionPhase.HANDSHAKE && direction == PacketDirection.CLIENTBOUND)) {
+                    throw new ProtocolResolutionException(
+                            "Missing packet table " + version + "/" + phase + "/" + direction);
                 }
                 flows.put(direction, new IdTable(phase + "/" + direction, names));
             }
@@ -132,5 +141,4 @@ public final class ProtocolData {
     public Map<String, IdTable> registries() {
         return registries;
     }
-
 }

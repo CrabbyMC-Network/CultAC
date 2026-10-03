@@ -9,13 +9,20 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.VectorUtils;
 import ac.cult.cultac.utils.nmsutil.BlockProperties;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import org.bukkit.Material;
 import net.minecraft.world.phys.Vec3;
+import org.bukkit.Material;
 
 public class PointThree implements UncertaintyHandler {
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
         double offsetHorizontal = getOffsetHorizontal(player, start, context, lastResult);
         start = UncertaintyHelper.handleCircular(start, end, offsetHorizontal);
 
@@ -40,7 +47,10 @@ public class PointThree implements UncertaintyHandler {
         boolean canVerticalTickSkip = start.isTickSkip();
         boolean controlsVerticalMovement = canVerticalTickSkip && controlsVerticalMovement(player, result);
         boolean recoveringTickSkip = context.getLastTickSkip().getRaw() == 1;
-        boolean onGroundFuckery = player.checkManager.getSimulationProcessor().getLastOnGroundSkip().hasOccurredSince(1);
+        boolean onGroundFuckery = player.checkManager
+                .getSimulationProcessor()
+                .getLastOnGroundSkip()
+                .hasOccurredSince(1);
 
         if (controlsVerticalMovement) {
             result.getValidMovements().setControlsVerticalMovement(true);
@@ -55,10 +65,11 @@ public class PointThree implements UncertaintyHandler {
             if (start.y <= 0.0D && context.getEntities().getSlowFallingAmplifier() != null) {
                 gravity = Math.min(gravity, 0.01D);
             }
-            double verticalDrag = player.getClientVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_2)
-                    ? ac.cult.cultac.utils.nmsutil.Friction.computeModifiedFriction(0.98F,
-                    (float) player.compensatedEntities.getEntityInControl().airDragModifier)
-                    : 0.98F;
+            double verticalDrag =
+                    player.getClientVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_2)
+                            ? ac.cult.cultac.utils.nmsutil.Friction.computeModifiedFriction(
+                                    0.98F, (float) player.compensatedEntities.getEntityInControl().airDragModifier)
+                            : 0.98F;
             box.unionY((-gravity - threshold * 2) * verticalDrag);
             start = start.with(VectorUtils.cutBoxToVector(end, box), "gravity missing");
 
@@ -84,13 +95,16 @@ public class PointThree implements UncertaintyHandler {
 
         WorldData data = result.getSimulationContext().getWorldData();
         boolean isBounce = data.getOnBlock() == Material.SLIME_BLOCK || NmsBlockTags.isBed(data.getOnBlock());
-        return data.maybeInLiquid() || data.getClimbing().determineOptimistically() ||
-                result.getSimulationContext().usesFallFlyingMovement() || isBounce
+        return data.maybeInLiquid()
+                || data.getClimbing().determineOptimistically()
+                || result.getSimulationContext().usesFallFlyingMovement()
+                || isBounce
                 || player.checkManager.getKnockbackHandler().isCanTickSkip()
                 || player.checkManager.getExplosionHandler().isCanTickSkip();
     }
 
-    public double getOffsetHorizontal(CultPlayer player, PredVector vector, SimulationContext context, PredictionResult lastResult) {
+    public double getOffsetHorizontal(
+            CultPlayer player, PredVector vector, SimulationContext context, PredictionResult lastResult) {
         double normalThreshold = player.getMovementThreshold();
         double scaledThreshold = player.getMovementThreshold();
 
@@ -100,12 +114,16 @@ public class PointThree implements UncertaintyHandler {
         }
 
         // TODO: If we want to be TECHNICALLY correct on ALL edge cases, get the frictions and stuff around the player
-        Material onBlock = lastResult == null ? Material.STONE : lastResult.getSimulationContext().getWorldData().getOnBlock();
+        Material onBlock = lastResult == null
+                ? Material.STONE
+                : lastResult.getSimulationContext().getWorldData().getOnBlock();
 
         boolean recoveringFromLastTickSkip = context.getLastTickSkip().getRaw() == 1;
 
         // If we didn't tick skip after the knockback, it's just the threshold again
-        boolean lastKnockback = recoveringFromLastTickSkip && lastResult != null && lastResult.getInitialStartingVel().isKnockback();
+        boolean lastKnockback = recoveringFromLastTickSkip
+                && lastResult != null
+                && lastResult.getInitialStartingVel().isKnockback();
         boolean newVectorPointThree = context.getLastTickSkip().hasOccurredSince(0) && vector.isKnockback();
 
         if (newVectorPointThree || lastKnockback) {
@@ -128,7 +146,8 @@ public class PointThree implements UncertaintyHandler {
         }
 
         // Friction while gliding is 0.99 horizontally, very low
-        if (context.usesFallFlyingMovement() || (lastResult != null && lastResult.getSimulationContext().usesFallFlyingMovement())) {
+        if (context.usesFallFlyingMovement()
+                || (lastResult != null && lastResult.getSimulationContext().usesFallFlyingMovement())) {
             pointThree = (0.99 * (normalThreshold * 2)) + scaledThreshold;
         }
 

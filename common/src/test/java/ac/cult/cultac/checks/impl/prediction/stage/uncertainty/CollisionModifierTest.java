@@ -1,5 +1,9 @@
 package ac.cult.cultac.checks.impl.prediction.stage.uncertainty;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.checks.impl.prediction.DesyncStatus;
 import ac.cult.cultac.checks.impl.prediction.PredVector;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
@@ -7,14 +11,9 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
 import ac.cult.cultac.utils.enums.Pose;
+import java.util.ArrayList;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
-
-import java.util.ArrayList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class CollisionModifierTest {
     @Test
@@ -30,8 +29,7 @@ public class CollisionModifierTest {
         double probeClip = 0.200000147683717D;
         assertFalse(trueClip >= probeClip - SimpleCollisionBox.COLLISION_EPSILON);
 
-        PredVector start = new PredVector(
-                new Vec3(-0.26878598925804453D, 0.41999998688697815D, -0.2671391848841353D));
+        PredVector start = new PredVector(new Vec3(-0.26878598925804453D, 0.41999998688697815D, -0.2671391848841353D));
         CollideAxisData collide = new CollideAxisData(
                 new CollideAxisData.CollideResult(true, -0.2167751367791848D),
                 new CollideAxisData.CollideResult(true, probeClip),
@@ -40,8 +38,7 @@ public class CollisionModifierTest {
                 new ArrayList<>());
 
         PredVector clipped = CollisionModifier.transformWithCollisions(
-                context(), collide, start,
-                new Vec3(-0.2167751367791848D, trueClip, -0.3556917605745653D));
+                context(), collide, start, new Vec3(-0.2167751367791848D, trueClip, -0.3556917605745653D));
 
         assertEquals(probeClip, clipped.y, 1.0E-9D);
         assertTrue("ceiling clip must not keep the unclipped jump velocity", clipped.y < 0.21D);
@@ -76,19 +73,43 @@ public class CollisionModifierTest {
                 new CollideAxisData.CollideResult(false, 0.0D),
                 new ArrayList<>());
 
-        PredVector result = CollisionModifier.transformWithCollisions(
-                context(), collide, start, new Vec3(0.0D, clip, 0.0D));
+        PredVector result =
+                CollisionModifier.transformWithCollisions(context(), collide, start, new Vec3(0.0D, clip, 0.0D));
 
         assertEquals(clip, result.y, 1.0E-9D);
     }
 
     private static SimulationContext context() {
         return new SimulationContext(
-                Vec3.ZERO, Vec3.ZERO, Vec3.ZERO,
-                ClientVersion.V_1_21_11, null, null, null,
-                0.0F, 0.0F, 0.0F, 0.0F,
-                true, false, false, false,
-                null, 0.0F, 0, DesyncStatus.FALSE, 0, 0, 0,
-                null, false, null, false, null, null, Pose.STANDING, 1.0F);
+                Vec3.ZERO,
+                Vec3.ZERO,
+                Vec3.ZERO,
+                ClientVersion.V_1_21_11,
+                null,
+                null,
+                null,
+                0.0F,
+                0.0F,
+                0.0F,
+                0.0F,
+                true,
+                false,
+                false,
+                false,
+                null,
+                0.0F,
+                0,
+                DesyncStatus.FALSE,
+                0,
+                0,
+                0,
+                null,
+                false,
+                null,
+                false,
+                null,
+                null,
+                Pose.STANDING,
+                1.0F);
     }
 }

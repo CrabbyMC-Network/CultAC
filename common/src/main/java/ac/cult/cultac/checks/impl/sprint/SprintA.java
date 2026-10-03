@@ -1,6 +1,5 @@
 package ac.cult.cultac.checks.impl.sprint;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
@@ -8,8 +7,13 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "SprintA", stableKey = "cult.sprint.hunger", description = "Sprinting with too low hunger", setback = 0)
+@CheckData(
+        name = "SprintA",
+        stableKey = "cult.sprint.hunger",
+        description = "Sprinting with too low hunger",
+        setback = 0)
 public class SprintA extends Check implements PostPredictionListener {
     private static final Verbose V = Verbose.of("hunger={uint}");
 

@@ -1,30 +1,28 @@
 package ac.cult.cultac.checks.impl.combat;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundAddEntity;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundRemoveEntities;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
-import net.minecraft.world.phys.Vec3;
 import io.netty.util.concurrent.ScheduledFuture;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import lombok.AllArgsConstructor;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundAddEntity;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundRemoveEntities;
-
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.AllArgsConstructor;
+import net.minecraft.world.phys.Vec3;
 
 // We will verify the player's reach against what a lower ping/more stable player would see
 // By doing this we defeat a lot of ping-manipulation based reach cheats
@@ -43,24 +41,34 @@ public class FairReach extends Check implements CheckListener {
     int max_ping_compensation = 300;
     double max_reach = 3.1;
 
-
     ScheduledFuture<?> tickStartTask = null;
     ScheduledFuture<?> tickEndTask = null;
 
-
     public FairReach(CultPlayer player) {
-        super(player, CheckInfo.builder().name("FairReach").stableKey("cult.combat.fair_reach").build());
+        super(
+                player,
+                CheckInfo.builder()
+                        .name("FairReach")
+                        .stableKey("cult.combat.fair_reach")
+                        .build());
     }
 
     @CultPacketHandler
-    public void onAddEntity(PacketSendEvent<ClientboundAddEntity> event, CultPlayer player, ClientboundAddEntity packet) {
+    public void onAddEntity(
+            PacketSendEvent<ClientboundAddEntity> event, CultPlayer player, ClientboundAddEntity packet) {
         if (packet.entityType().equals("minecraft:player")) {
-            addEntity(packet.entityId(), new Vec3(packet.position().x(), packet.position().y(), packet.position().z()));
+            addEntity(
+                    packet.entityId(),
+                    new Vec3(
+                            packet.position().x(),
+                            packet.position().y(),
+                            packet.position().z()));
         }
     }
 
     @CultPacketHandler
-    public void onRemoveEntities(PacketSendEvent<ClientboundRemoveEntities> event, CultPlayer player, ClientboundRemoveEntities packet) {
+    public void onRemoveEntities(
+            PacketSendEvent<ClientboundRemoveEntities> event, CultPlayer player, ClientboundRemoveEntities packet) {
         // Server won't process destroyed entity hits anyway... might as well remove them immediately
         for (int entityId : packet.entityIds()) {
             targetPlayers.remove(entityId);
@@ -72,11 +80,13 @@ public class FairReach extends Check implements CheckListener {
 
         // Ensure the client has received this before MAX_PING_TIME, or apply them sooner if client responds in time
         player.latencyUtils.addRealTimeTaskNext(() -> applyChanges(entityId, x, y, z, hasAppliedChanges));
-        player.nettyScheduler.runTaskInMs(() -> applyChanges(entityId, x, y, z, hasAppliedChanges), max_ping_compensation);
+        player.nettyScheduler.runTaskInMs(
+                () -> applyChanges(entityId, x, y, z, hasAppliedChanges), max_ping_compensation);
     }
 
     private void addEntity(int entityId, net.minecraft.world.phys.Vec3 spawnPosition) {
-        targetPlayers.put(entityId, new FairReachEntity(entityId, new Vec3(spawnPosition.x, spawnPosition.y, spawnPosition.z)));
+        targetPlayers.put(
+                entityId, new FairReachEntity(entityId, new Vec3(spawnPosition.x, spawnPosition.y, spawnPosition.z)));
     }
 
     private void handleInteract(final PacketReceiveEvent event, ServerboundInteract attack) {
@@ -97,15 +107,13 @@ public class FairReach extends Check implements CheckListener {
                 event.setCancelled(true);
             }
         }
-
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         handleInteract(event, packet);
     }
-
-
 
     @CultPacketHandler("serverbound.client_tick_end")
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
@@ -120,7 +128,8 @@ public class FairReach extends Check implements CheckListener {
 
     private void tick() {
         // The player ticked too soon, we will wait until they may tick again
-        if (playerTickingStatus == TickingStatus.BEFORE_VALID_TICK || playerTickingStatus == TickingStatus.TICKED_BEFORE_MINIMUM) {
+        if (playerTickingStatus == TickingStatus.BEFORE_VALID_TICK
+                || playerTickingStatus == TickingStatus.TICKED_BEFORE_MINIMUM) {
             playerTickingStatus = TickingStatus.TICKED_BEFORE_MINIMUM;
             return;
         }
@@ -136,23 +145,27 @@ public class FairReach extends Check implements CheckListener {
         if (this.tickStartTask != null) this.tickStartTask.cancel(false);
         if (this.tickEndTask != null) this.tickEndTask.cancel(false);
 
-        this.tickStartTask = player.nettyScheduler.runTaskInMs(() -> {
-            // If the player ticked too soon... tick, and restart this process
-            // Otherwise, prepare for a valid tick
-            if (TickingStatus.TICKED_BEFORE_MINIMUM == playerTickingStatus) {
-                playerTickingStatus = TickingStatus.ALLOWED_TO_TICK;
-                tick();
-            } else {
-                playerTickingStatus = TickingStatus.ALLOWED_TO_TICK;
-            }
-        }, 50 - max_position_packet_jitter);
+        this.tickStartTask = player.nettyScheduler.runTaskInMs(
+                () -> {
+                    // If the player ticked too soon... tick, and restart this process
+                    // Otherwise, prepare for a valid tick
+                    if (TickingStatus.TICKED_BEFORE_MINIMUM == playerTickingStatus) {
+                        playerTickingStatus = TickingStatus.ALLOWED_TO_TICK;
+                        tick();
+                    } else {
+                        playerTickingStatus = TickingStatus.ALLOWED_TO_TICK;
+                    }
+                },
+                50 - max_position_packet_jitter);
 
-        this.tickEndTask = player.nettyScheduler.runTaskInMs(() -> {
-            // The player missed their chance at a valid tick, tick anyway for them
-            if (TickingStatus.ALLOWED_TO_TICK == playerTickingStatus) {
-                tick();
-            }
-        }, 50 + max_position_packet_jitter);
+        this.tickEndTask = player.nettyScheduler.runTaskInMs(
+                () -> {
+                    // The player missed their chance at a valid tick, tick anyway for them
+                    if (TickingStatus.ALLOWED_TO_TICK == playerTickingStatus) {
+                        tick();
+                    }
+                },
+                50 + max_position_packet_jitter);
     }
 
     private void applyChanges(int entityId, double x, double y, double z, AtomicBoolean hasAppliedChanges) {
@@ -183,8 +196,7 @@ public class FairReach extends Check implements CheckListener {
     }
 
     @AllArgsConstructor
-    static
-    class PendingEntityMove {
+    static class PendingEntityMove {
         int entityId;
         double x;
         double y;
@@ -210,7 +222,8 @@ public class FairReach extends Check implements CheckListener {
 
         private void tick() {
             if (lerpTicks > 0) {
-                currentPosition = currentPosition.add(targetPosition.subtract(currentPosition).scale(1d / lerpTicks));
+                currentPosition = currentPosition.add(
+                        targetPosition.subtract(currentPosition).scale(1d / lerpTicks));
                 lerpTicks--;
             }
         }
@@ -220,8 +233,7 @@ public class FairReach extends Check implements CheckListener {
             float width = trackedEntity == null ? 0.6f : BoundingBoxSize.getReachWidth(player, trackedEntity);
             float height = trackedEntity == null ? 1.8f : BoundingBoxSize.getReachHeight(player, trackedEntity);
             SimpleCollisionBox thisEntityBox = GetBoundingBox.getBoundingBoxFromPosAndSize(
-                    currentPosition.x, currentPosition.y, currentPosition.z,
-                    width, height);
+                    currentPosition.x, currentPosition.y, currentPosition.z, width, height);
 
             return ReachUtils.getMinReachToBox(player, thisEntityBox);
         }

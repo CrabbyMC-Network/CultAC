@@ -12,8 +12,7 @@ public final class BedrockMath {
     private static final float TRIG_HALF_PI_INDEX = 16384.0F;
     private static final List<Float> SIN_TABLE = buildSinTable();
 
-    private BedrockMath() {
-    }
+    private BedrockMath() {}
 
     public static double lookDirectionY(float pitchDegrees) {
         return -sin(pitchDegrees * DEGREES_TO_RADIANS);
@@ -23,11 +22,7 @@ public final class BedrockMath {
         float pitchRadians = frame.pitch() * DEGREES_TO_RADIANS;
         float yawRadians = frame.yaw() * DEGREES_TO_RADIANS;
         float cosPitch = cos(pitchRadians);
-        return new Vec3d(
-            -sin(yawRadians) * cosPitch,
-            -sin(pitchRadians),
-            cos(yawRadians) * cosPitch
-        );
+        return new Vec3d(-sin(yawRadians) * cosPitch, -sin(pitchRadians), cos(yawRadians) * cosPitch);
     }
 
     public static double f(double value) {

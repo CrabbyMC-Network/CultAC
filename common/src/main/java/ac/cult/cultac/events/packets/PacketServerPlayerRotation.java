@@ -5,12 +5,12 @@ import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
 
-
 /** Sanitizes server-forced rotations and preserves their atomic bundle boundary. */
 public class PacketServerPlayerRotation {
 
     @CultPacketHandler
-    public void onPlayerRotation(PacketSendEvent<ClientboundPlayerRotation> event, CultPlayer player, ClientboundPlayerRotation packet) {
+    public void onPlayerRotation(
+            PacketSendEvent<ClientboundPlayerRotation> event, CultPlayer player, ClientboundPlayerRotation packet) {
         float yaw = packet.yaw();
         float pitch = packet.pitch();
 

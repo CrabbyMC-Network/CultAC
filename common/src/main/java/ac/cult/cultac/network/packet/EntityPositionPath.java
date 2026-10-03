@@ -2,11 +2,10 @@ package ac.cult.cultac.network.packet;
 
 import ac.cult.cultac.protocol.value.EntityDelta;
 import ac.cult.cultac.protocol.value.PositionPath;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import net.minecraft.world.phys.Vec3;
 
 /** Client positions, independent of the server's PositionPath/VecDelta ABI. */
 public record EntityPositionPath(Vec3 endPosition, List<Step> steps) {
@@ -23,8 +22,15 @@ public record EntityPositionPath(Vec3 endPosition, List<Step> steps) {
         var position = path.endPosition();
         Vec3 end = new Vec3(position.x(), position.y(), position.z());
         if (path instanceof PositionPath.Linear) return linear(end);
-        var steps = ((PositionPath.Stepped) path).steps().stream().map(step -> new Step(
-                new Vec3(step.position().x(), step.position().y(), step.position().z()), step.tickOffset())).toList();
+        var steps = ((PositionPath.Stepped) path)
+                .steps().stream()
+                        .map(step -> new Step(
+                                new Vec3(
+                                        step.position().x(),
+                                        step.position().y(),
+                                        step.position().z()),
+                                step.tickOffset()))
+                        .toList();
         return new EntityPositionPath(end, steps);
     }
 

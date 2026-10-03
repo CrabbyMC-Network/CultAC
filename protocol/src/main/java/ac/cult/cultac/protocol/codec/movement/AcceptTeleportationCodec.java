@@ -8,7 +8,8 @@ import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
 
 public final class AcceptTeleportationCodec implements PacketCodec<ServerboundAcceptTeleportation> {
-    @Override public ServerboundAcceptTeleportation read(ByteBuf input, ProtocolContext context) {
+    @Override
+    public ServerboundAcceptTeleportation read(ByteBuf input, ProtocolContext context) {
         int id = Wire.readVarInt(input);
         if (!context.version().atLeast(ProtocolVersion.V26_3)) {
             return new ServerboundAcceptTeleportation(id, null, 0, 0);

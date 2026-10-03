@@ -36,7 +36,13 @@ public final class UseItemOnCodec implements PacketCodec<ServerboundUseItemOn> {
                 (position.x() + (double) input.readFloat()) - position.x(),
                 (position.y() + (double) input.readFloat()) - position.y(),
                 (position.z() + (double) input.readFloat()) - position.z());
-        return new ServerboundUseItemOn(hand, position, DIRECTIONS[face], cursor,
-                input.readBoolean(), input.readBoolean(), Wire.readVarInt(input));
+        return new ServerboundUseItemOn(
+                hand,
+                position,
+                DIRECTIONS[face],
+                cursor,
+                input.readBoolean(),
+                input.readBoolean(),
+                Wire.readVarInt(input));
     }
 }

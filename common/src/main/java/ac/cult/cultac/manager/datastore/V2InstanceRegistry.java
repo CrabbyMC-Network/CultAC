@@ -23,9 +23,6 @@ import ac.grim.grimac.api.storage.query.Page;
 import ac.grim.grimac.api.storage.query.Query;
 import ac.grim.grimac.internal.storage.checks.InMemoryCheckCatalogPersistence;
 import ac.grim.grimac.internal.storage.core.V2Routes;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,6 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final class V2InstanceRegistry {
 
@@ -60,9 +59,7 @@ final class V2InstanceRegistry {
     }
 
     static @Nullable V2InstanceRegistry create(
-            @NotNull DataStore store,
-            @NotNull V2Routes routes,
-            @NotNull Logger logger) {
+            @NotNull DataStore store, @NotNull V2Routes routes, @NotNull Logger logger) {
         V2Routes.Route<?> startups = routes.routeFor(STARTUPS);
         V2Routes.Route<?> sessions = routes.routeFor(Categories.SESSION);
         if (startups == null || sessions == null) return null;
@@ -112,20 +109,15 @@ final class V2InstanceRegistry {
         return closed;
     }
 
-    long recoverStaleStartups(
-            @NotNull UUID currentStartupId,
-            long now,
-            long staleThresholdMs) {
+    long recoverStaleStartups(@NotNull UUID currentStartupId, long now, long staleThresholdMs) {
         long closed = 0L;
         Cursor cursor = null;
         boolean stop = false;
         do {
-            Page<ServerStartupRecord> page = await(store.execute(new EntityOps.FindByIndexOp<>(
-                    STARTUPS,
-                    "by_open_heartbeat",
-                    ServerStartupRecord.OPEN,
-                    cursor,
-                    PAGE_SIZE)), "query stale server startups");
+            Page<ServerStartupRecord> page = await(
+                    store.execute(new EntityOps.FindByIndexOp<>(
+                            STARTUPS, "by_open_heartbeat", ServerStartupRecord.OPEN, cursor, PAGE_SIZE)),
+                    "query stale server startups");
             for (ServerStartupRecord row : page.items()) {
                 if (row.isClosed()) continue;
                 if (!isStale(row, now, staleThresholdMs)) {
@@ -163,21 +155,17 @@ final class V2InstanceRegistry {
         boolean reachedClosedRows;
         do {
             reachedClosedRows = false;
-            Page<SessionRecord> page = await(store.execute(new EntityOps.FindByIndexOp<>(
-                    Categories.SESSION,
-                    "by_startup_open",
-                    startupId,
-                    cursor,
-                    PAGE_SIZE)), "query open sessions for startup " + startupId);
+            Page<SessionRecord> page = await(
+                    store.execute(new EntityOps.FindByIndexOp<>(
+                            Categories.SESSION, "by_startup_open", startupId, cursor, PAGE_SIZE)),
+                    "query open sessions for startup " + startupId);
             for (SessionRecord session : page.items()) {
                 if (!startupId.equals(session.startupId())) continue;
                 if (session.isClosed()) {
                     reachedClosedRows = true;
                     continue;
                 }
-                long closeAt = closedAtEpochMs == SessionRecord.OPEN
-                        ? session.lastActivityEpochMs()
-                        : closedAtEpochMs;
+                long closeAt = closedAtEpochMs == SessionRecord.OPEN ? session.lastActivityEpochMs() : closedAtEpochMs;
                 closeSession(session, closeAt);
                 closed++;
             }
@@ -203,10 +191,7 @@ final class V2InstanceRegistry {
         }
     }
 
-    private void markStartupClosed(
-            @NotNull ServerStartupRecord source,
-            long closedAtEpochMs,
-            @NotNull String reason) {
+    private void markStartupClosed(@NotNull ServerStartupRecord source, long closedAtEpochMs, @NotNull String reason) {
         long closeAt = closedAtEpochMs == ServerStartupRecord.OPEN
                 ? Math.max(source.startedEpochMs(), source.lastHeartbeatEpochMs())
                 : closedAtEpochMs;
@@ -250,8 +235,8 @@ final class V2InstanceRegistry {
     }
 
     private @NotNull Optional<ServerStartupRecord> startupById(@NotNull UUID startupId) {
-        return await(store.execute(new EntityOps.GetByIdOp<>(
-                STARTUPS, startupId)), "query server startup " + startupId);
+        return await(
+                store.execute(new EntityOps.GetByIdOp<>(STARTUPS, startupId)), "query server startup " + startupId);
     }
 
     private static boolean isStale(@NotNull ServerStartupRecord row, long now, long staleThresholdMs) {
@@ -264,14 +249,12 @@ final class V2InstanceRegistry {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static <E> @NotNull StorageEventHandler<E> directWriter(
-            @NotNull V2Routes.Route<?> route,
-            @NotNull Category<E> category) {
+            @NotNull V2Routes.Route<?> route, @NotNull Category<E> category) {
         KindAdapter adapter = route.adapter();
         return adapter.writeHandler(route.storeId(), route.kind(), category);
     }
 
-    private static <T> T await(@NotNull java.util.concurrent.CompletionStage<T> stage,
-                               @NotNull String action) {
+    private static <T> T await(@NotNull java.util.concurrent.CompletionStage<T> stage, @NotNull String action) {
         try {
             return stage.toCompletableFuture().get();
         } catch (InterruptedException e) {
@@ -295,12 +278,8 @@ final class V2InstanceRegistry {
             @NotNull String warningMessage) {
 
         static @NotNull StartupClaim enabled(
-                @NotNull UUID startupId,
-                @NotNull UUID instanceId,
-                long sessionsClosed,
-                @NotNull String message) {
-            return new StartupClaim(true, false, startupId, instanceId, null,
-                    -1L, sessionsClosed, message);
+                @NotNull UUID startupId, @NotNull UUID instanceId, long sessionsClosed, @NotNull String message) {
+            return new StartupClaim(true, false, startupId, instanceId, null, -1L, sessionsClosed, message);
         }
 
         static @NotNull StartupClaim duplicate(
@@ -309,8 +288,8 @@ final class V2InstanceRegistry {
                 @NotNull UUID conflictingStartupId,
                 long heartbeatAgeMs,
                 @NotNull String message) {
-            return new StartupClaim(false, true, startupId, instanceId, conflictingStartupId,
-                    heartbeatAgeMs, 0L, message);
+            return new StartupClaim(
+                    false, true, startupId, instanceId, conflictingStartupId, heartbeatAgeMs, 0L, message);
         }
     }
 
@@ -318,22 +297,45 @@ final class V2InstanceRegistry {
     private static final class RouterSentinelBackend implements Backend {
         private final CheckCatalogPersistence checkCatalog = new InMemoryCheckCatalogPersistence();
 
-        @Override public @NotNull String id() { return "__v2_startup_registry"; }
-        @Override public @NotNull ApiVersion getApiVersion() { return ApiVersion.CURRENT; }
-        @Override public @NotNull EnumSet<Capability> capabilities() { return EnumSet.noneOf(Capability.class); }
-        @Override public @NotNull Set<Category<?>> supportedCategories() { return new HashSet<>(); }
-        @Override public void init(@NotNull BackendContext ctx) {}
-        @Override public @NotNull CheckCatalogPersistence checkCatalog() { return checkCatalog; }
+        @Override
+        public @NotNull String id() {
+            return "__v2_startup_registry";
+        }
+
+        @Override
+        public @NotNull ApiVersion getApiVersion() {
+            return ApiVersion.CURRENT;
+        }
+
+        @Override
+        public @NotNull EnumSet<Capability> capabilities() {
+            return EnumSet.noneOf(Capability.class);
+        }
+
+        @Override
+        public @NotNull Set<Category<?>> supportedCategories() {
+            return new HashSet<>();
+        }
+
+        @Override
+        public void init(@NotNull BackendContext ctx) {}
+
+        @Override
+        public @NotNull CheckCatalogPersistence checkCatalog() {
+            return checkCatalog;
+        }
 
         @Override
         public @NotNull CheckCatalogRepairResult repairCheckCatalog(
-                @NotNull Map<Integer, Integer> legacyToCatalogCheckIds,
-                @Nullable String introducedVersionReplacement) {
+                @NotNull Map<Integer, Integer> legacyToCatalogCheckIds, @Nullable String introducedVersionReplacement) {
             return new CheckCatalogRepairResult(0, 0L, 0L);
         }
 
-        @Override public void flush() {}
-        @Override public void close() {}
+        @Override
+        public void flush() {}
+
+        @Override
+        public void close() {}
 
         @Override
         public @NotNull <E> StorageEventHandler<E> eventHandlerFor(@NotNull Category<E> cat) throws BackendException {
@@ -350,6 +352,9 @@ final class V2InstanceRegistry {
             throw new BackendException("sentinel backend has no legacy delete path");
         }
 
-        @Override public long countViolationsInSession(@NotNull UUID sessionId) { return 0L; }
+        @Override
+        public long countViolationsInSession(@NotNull UUID sessionId) {
+            return 0L;
+        }
     }
 }

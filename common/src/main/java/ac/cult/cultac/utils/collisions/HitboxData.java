@@ -10,10 +10,10 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
 public final class HitboxData {
-    private HitboxData() {
-    }
+    private HitboxData() {}
 
-    public static CollisionBox getBlockHitbox(CultPlayer player, Material heldItem, BlockData block, int x, int y, int z) {
+    public static CollisionBox getBlockHitbox(
+            CultPlayer player, Material heldItem, BlockData block, int x, int y, int z) {
         if (player == null || player.compensatedWorld == null || block == null) {
             return NoCollisionBox.INSTANCE;
         }

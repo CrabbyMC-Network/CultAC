@@ -10,18 +10,15 @@ import ac.cult.cultac.utils.data.CollideAxisData;
 final class BedrockVerticalCollisionClassifier {
     private static final double EPSILON = 0.001D;
 
-    private BedrockVerticalCollisionClassifier() {
-    }
+    private BedrockVerticalCollisionClassifier() {}
 
     static BedrockVerticalCollisionVerdict classify(
-            PredictionResult result,
-            BedrockMovementState predictedState,
-            boolean claimedCollision
-    ) {
+            PredictionResult result, BedrockMovementState predictedState, boolean claimedCollision) {
         if (result == null) {
             return BedrockVerticalCollisionVerdict.LEGAL;
         }
-        if (result.getSimulationContext() != null && result.getSimulationContext().isBedrockTeleportTick()) {
+        if (result.getSimulationContext() != null
+                && result.getSimulationContext().isBedrockTeleportTick()) {
             // teleports skip movement and preserve collision flags
             return BedrockVerticalCollisionVerdict.LEGAL;
         }
@@ -46,8 +43,7 @@ final class BedrockVerticalCollisionClassifier {
             CollideAxisData collision,
             SimpleCollisionBox attemptedMovement,
             double targetY,
-            boolean canStep
-    ) {
+            boolean canStep) {
         if (collision == null) {
             return BedrockVerticalCollisionVerdict.LEGAL;
         }
@@ -71,12 +67,10 @@ final class BedrockVerticalCollisionClassifier {
             return BedrockVerticalCollisionVerdict.LEGAL;
         }
 
-        boolean requiresDownCollision = canCollideDown
-                && attemptedMovement.maxY + EPSILON < targetY
-                && down.getResult() + EPSILON >= targetY;
-        boolean requiresUpCollision = canCollideUp
-                && attemptedMovement.minY - EPSILON > targetY
-                && up.getResult() - EPSILON <= targetY;
+        boolean requiresDownCollision =
+                canCollideDown && attemptedMovement.maxY + EPSILON < targetY && down.getResult() + EPSILON >= targetY;
+        boolean requiresUpCollision =
+                canCollideUp && attemptedMovement.minY - EPSILON > targetY && up.getResult() - EPSILON <= targetY;
         return requiresDownCollision || requiresUpCollision
                 ? BedrockVerticalCollisionVerdict.MANUFACTURED_NON_COLLISION
                 : BedrockVerticalCollisionVerdict.LEGAL;

@@ -6,20 +6,22 @@ import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import java.util.Optional;
 
 public final class BedrockCollisionProjectionResolver {
-    private BedrockCollisionProjectionResolver() {
-    }
+    private BedrockCollisionProjectionResolver() {}
 
     public static Optional<Vec3d> supportPosition(BedrockMovementResult movementResult, Vec3d requestedDelta) {
         if (movementResult == null || requestedDelta == null) {
             return Optional.empty();
         }
-        BlockCollisionWorld blockWorld = movementResult.movementContext().worldState().blockCollisionWorld();
+        BlockCollisionWorld blockWorld =
+                movementResult.movementContext().worldState().blockCollisionWorld();
         if (blockWorld.isEmpty()) {
             return Optional.empty();
         }
         Vec3d feet = movementResult.previousState().physicalFeetPosition();
         BedrockCollisionSweep.MoveResult baseMove = BedrockCollisionSweep.sweep(
-                movementResult.previousState().collisionBox(movementResult.movementContext().playerDimensionsState()),
+                movementResult
+                        .previousState()
+                        .collisionBox(movementResult.movementContext().playerDimensionsState()),
                 requestedDelta,
                 BedrockCollisionSweep.collisionObstacles(blockWorld),
                 movementResult.previousState().coordinateFrame(),
@@ -33,7 +35,8 @@ public final class BedrockCollisionProjectionResolver {
         if (movementResult == null || requestedDelta == null) {
             return Optional.empty();
         }
-        BlockCollisionWorld blockWorld = movementResult.movementContext().worldState().blockCollisionWorld();
+        BlockCollisionWorld blockWorld =
+                movementResult.movementContext().worldState().blockCollisionWorld();
         Vec3d feet = movementResult.previousState().physicalFeetPosition();
         if (blockWorld.isEmpty()) {
             return Optional.empty();
@@ -56,17 +59,20 @@ public final class BedrockCollisionProjectionResolver {
 
     public static Optional<Vec3d> resolvedPosition(BedrockMovementResult movementResult, Vec3d requestedDelta) {
         if (movementResult != null
-                && movementResult.movementContext().worldState().blockCollisionWorld().isEmpty()) {
-            return Optional.of(movementResult.previousState().physicalFeetPosition().add(requestedDelta));
+                && movementResult
+                        .movementContext()
+                        .worldState()
+                        .blockCollisionWorld()
+                        .isEmpty()) {
+            return Optional.of(
+                    movementResult.previousState().physicalFeetPosition().add(requestedDelta));
         }
-        return resolve(movementResult, requestedDelta).map(projection -> projection.move().position());
+        return resolve(movementResult, requestedDelta)
+                .map(projection -> projection.move().position());
     }
 
     private static boolean downwardSupportCollision(
-            Vec3d feet,
-            Vec3d requestedDelta,
-            BedrockCollisionSweep.MoveResult move
-    ) {
+            Vec3d feet, Vec3d requestedDelta, BedrockCollisionSweep.MoveResult move) {
 
         return requestedDelta.y() < -BedrockCollisionSweep.EPSILON
                 && move.yCollision()
@@ -75,9 +81,7 @@ public final class BedrockCollisionProjectionResolver {
     }
 
     public record Projection(
-        Vec3d requestedDelta,
-        BedrockEntityMove.FinalizedMove move,
-        BedrockEntityMove.CollisionMove collisionMove
-    ) {
-    }
+            Vec3d requestedDelta,
+            BedrockEntityMove.FinalizedMove move,
+            BedrockEntityMove.CollisionMove collisionMove) {}
 }

@@ -3,7 +3,6 @@ package ac.cult.cultac.utils.latency;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,6 @@ public class CompensatedCameraEntity extends Check {
         super(player);
         reset();
     }
-
 
     public void onSetCamera(int camera) {
         player.sendTransaction();
@@ -57,5 +55,4 @@ public class CompensatedCameraEntity extends Check {
         entities.clear();
         entities.add(player.compensatedEntities.getSelf());
     }
-
 }

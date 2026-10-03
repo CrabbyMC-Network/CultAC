@@ -5,22 +5,20 @@ import ac.cult.cultac.events.packets.patch.ResyncWorldUtil;
 import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
-import ac.cult.cultac.utils.latency.SectionPool;
 import ac.cult.cultac.utils.blockplace.SmoketestPredictionSafety;
-import org.bukkit.Location;
-
+import ac.cult.cultac.utils.latency.SectionPool;
+import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import org.bukkit.Location;
 
 public final class SmoketestControlBridge {
     private static final String CHANNEL = "cult:smoketest_control";
     private static final int MAGIC = 0x47534D43; // GSMC
     private static final int VERSION = 1;
 
-    private SmoketestControlBridge() {
-    }
+    private SmoketestControlBridge() {}
 
     static boolean handle(CultPlayer player, String channel, byte[] data) {
         if (!CHANNEL.equals(channel)) {
@@ -96,14 +94,16 @@ public final class SmoketestControlBridge {
                 + " tryReinternSuccesses=" + SectionPool.tryReinternSuccessCounter.get()
                 + " poolCount=" + SectionPool.poolCount()
                 + " sectionReferences=" + SectionPool.totalReferences()
-                + " activeCultPlayers=" + CultAPI.INSTANCE.getPlayerDataManager().size()
+                + " activeCultPlayers="
+                + CultAPI.INSTANCE.getPlayerDataManager().size()
                 + " uniformSections=" + uniformSections
                 + " nonUniformSections=" + nonUniformSections
                 + " pooledUniqueSections=" + pooledUniqueSections
                 + " canonicalAirSections=" + canonicalAirSections
                 + " totalCanonicalSections=" + (canonicalAirSections + pooledUniqueSections)
                 + " deduplicatedSections=" + pooledUniqueSections
-                + " mutableCopies=" + ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection.mutableCopyCounter.get());
+                + " mutableCopies="
+                + ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection.mutableCopyCounter.get());
         for (SectionPool.DimensionStats stats : SectionPool.dimensionStats()) {
             LogUtil.info("SectionPool dimension stats: "
                     + "label=" + safeLabel(label)
@@ -143,27 +143,33 @@ public final class SmoketestControlBridge {
                 + " cached=" + player.compensatedWorld.isChunkLoaded(chunkX, chunkZ)
                 + " retained=" + player.compensatedWorld.hasRetainedChunk(chunkX, chunkZ)
                 + " cachedChunks=" + player.compensatedWorld.cachedChunkCount()
-                + " retainedChunks=" + player.compensatedWorld.sectionPoolLeases().retainedChunkCount());
+                + " retainedChunks="
+                + player.compensatedWorld.sectionPoolLeases().retainedChunkCount());
     }
 
     private static void resyncCurrentSection(CultPlayer player) {
         if (player.bukkitPlayer == null) {
             return;
         }
-        FoliaCompatUtil.runTaskForEntity(player.bukkitPlayer, CultAPI.INSTANCE.getPlugin(), () -> {
-            if (player.bukkitPlayer == null || !player.bukkitPlayer.isOnline()) {
-                return;
-            }
-            Location location = player.bukkitPlayer.getLocation();
-            int blockX = location.getBlockX();
-            int blockY = location.getBlockY();
-            int blockZ = location.getBlockZ();
-            int minX = blockX & ~15;
-            int minY = ((blockY - 2) >> 4) << 4;
-            int minZ = blockZ & ~15;
-            player.runSafely(() -> ResyncWorldUtil.resyncPositions(player, minX, minY, minZ,
-                    minX + 15, minY + 15, minZ + 15));
-        }, null, 0);
+        FoliaCompatUtil.runTaskForEntity(
+                player.bukkitPlayer,
+                CultAPI.INSTANCE.getPlugin(),
+                () -> {
+                    if (player.bukkitPlayer == null || !player.bukkitPlayer.isOnline()) {
+                        return;
+                    }
+                    Location location = player.bukkitPlayer.getLocation();
+                    int blockX = location.getBlockX();
+                    int blockY = location.getBlockY();
+                    int blockZ = location.getBlockZ();
+                    int minX = blockX & ~15;
+                    int minY = ((blockY - 2) >> 4) << 4;
+                    int minZ = blockZ & ~15;
+                    player.runSafely(() ->
+                            ResyncWorldUtil.resyncPositions(player, minX, minY, minZ, minX + 15, minY + 15, minZ + 15));
+                },
+                null,
+                0);
     }
 
     private static String safeLabel(String label) {
@@ -173,6 +179,5 @@ public final class SmoketestControlBridge {
         return label.replace(' ', '_');
     }
 
-    private record ControlRequest(String action, String target) {
-    }
+    private record ControlRequest(String action, String target) {}
 }

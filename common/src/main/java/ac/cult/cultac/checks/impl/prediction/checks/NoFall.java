@@ -9,7 +9,7 @@ import ac.cult.cultac.utils.anticheat.NumFormatter;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
 
-//@CheckData(name = "NoFall")
+// @CheckData(name = "NoFall")
 public class NoFall implements EngineCheck {
     private static final VanillaStepProof STEP_PROOF = new VanillaStepProof();
 
@@ -38,7 +38,9 @@ public class NoFall implements EngineCheck {
 
         SimpleCollisionBox valid = result.getValidMovements().getCollisionIgnoredMaxStartingVelExtents();
         // The player is off the ground and can collide to the ground
-        if (!result.getSimulationContext().isOnGround() && downCollide != null && downCollide.isLikelyCollide()
+        if (!result.getSimulationContext().isOnGround()
+                && downCollide != null
+                && downCollide.isLikelyCollide()
                 && valid.maxY + 0.001 < result.getTarget().y // And their valid Y is below their actual movement
                 && downCollide.inMovementSpace(result.getSimulationContext().getLastStuckSpeed().y) + 0.001
                         >= result.getTarget().y) { // And they recovered by colliding
@@ -50,7 +52,11 @@ public class NoFall implements EngineCheck {
         double targetY = result.getTarget().y;
         // > 0 resets fall damage, we must protect against this
         if (validY <= 0 && targetY > 0 && !result.getSimulationContext().isOnGround()) {
-            result.addFlag(noFallPseudo, () -> NumFormatter.formatNumberStandard(targetY) + " > " + NumFormatter.formatNumberStandard(validY), 0.1);
+            result.addFlag(
+                    noFallPseudo,
+                    () -> NumFormatter.formatNumberStandard(targetY) + " > "
+                            + NumFormatter.formatNumberStandard(validY),
+                    0.1);
             flaggedNoFall = true;
         }
 
@@ -60,20 +66,12 @@ public class NoFall implements EngineCheck {
     }
 
     private static void handleBedrockResult(
-            CultPlayer player,
-            PredictionResult result,
-            BedrockVerticalCollisionVerdict verdict
-    ) {
+            CultPlayer player, PredictionResult result, BedrockVerticalCollisionVerdict verdict) {
         if (verdict == BedrockVerticalCollisionVerdict.MANUFACTURED_COLLISION) {
-            result.addFlag(
-                    player.checkManager.getListener(NoFallPseudo.class),
-                    () -> "manufactured_collision",
-                    0.1D);
+            result.addFlag(player.checkManager.getListener(NoFallPseudo.class), () -> "manufactured_collision", 0.1D);
         } else if (verdict == BedrockVerticalCollisionVerdict.MANUFACTURED_NON_COLLISION) {
             result.addFlag(
-                    player.checkManager.getListener(NoFallPseudo.class),
-                    () -> "manufactured_non_collision",
-                    0.1D);
+                    player.checkManager.getListener(NoFallPseudo.class), () -> "manufactured_non_collision", 0.1D);
         }
     }
 }

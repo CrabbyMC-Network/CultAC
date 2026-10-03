@@ -1,7 +1,6 @@
 package ac.cult.cultac.platform.api.command;
 
 import ac.cult.cultac.platform.api.sender.Sender;
-
 import java.util.Collection;
 
 public interface PlayerSelector {

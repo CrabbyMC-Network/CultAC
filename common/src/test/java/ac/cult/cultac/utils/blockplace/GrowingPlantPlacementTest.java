@@ -1,6 +1,10 @@
 package ac.cult.cultac.utils.blockplace;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
@@ -18,11 +22,6 @@ import org.bukkit.Material;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.*;
-
 public final class GrowingPlantPlacementTest {
     private static final BlockPos PLACED = new BlockPos(0, 64, 0);
 
@@ -33,14 +32,18 @@ public final class GrowingPlantPlacementTest {
 
     @Test
     public void bothVinesPredictSupportedPlacementAndInventoryConsumption() {
-        for (boolean upward : new boolean[]{false, true}) {
+        for (boolean upward : new boolean[] {false, true}) {
             var access = new World();
             access.blocks.put(upward ? PLACED.below() : PLACED.above(), Blocks.STONE.defaultBlockState());
             var result = NmsBlockPlaceResolver.simulatePlace(access, snapshot(upward));
             assertTrue(result.getResyncReason(), result.isSuccess());
             assertTrue(result.isConsumeInventory());
             assertEquals(PLACED, result.getPrimaryPlacedPosition());
-            var head = result.getChangedBlocks().stream().filter(b -> b.position().equals(PLACED)).findFirst().orElseThrow().state();
+            var head = result.getChangedBlocks().stream()
+                    .filter(b -> b.position().equals(PLACED))
+                    .findFirst()
+                    .orElseThrow()
+                    .state();
             assertSame(upward ? Blocks.TWISTING_VINES : Blocks.WEEPING_VINES, head.getBlock());
             assertTrue(head.getValue(GrowingPlantHeadBlock.AGE) >= 0);
             assertTrue(head.getValue(GrowingPlantHeadBlock.AGE) < 25);
@@ -49,7 +52,7 @@ public final class GrowingPlantPlacementTest {
 
     @Test
     public void unsupportedVinesStillRejectPlacement() {
-        for (boolean upward : new boolean[]{false, true}) {
+        for (boolean upward : new boolean[] {false, true}) {
             var result = NmsBlockPlaceResolver.simulatePlace(new World(), snapshot(upward));
             assertFalse(result.isSuccess());
             assertTrue(result.getChangedBlocks().isEmpty());
@@ -59,7 +62,7 @@ public final class GrowingPlantPlacementTest {
 
     @Test
     public void extendingVinesConvertsPreviousHeadToBody() {
-        for (boolean upward : new boolean[]{false, true}) {
+        for (boolean upward : new boolean[] {false, true}) {
             var access = new World();
             Block head = upward ? Blocks.TWISTING_VINES : Blocks.WEEPING_VINES;
             Block body = upward ? Blocks.TWISTING_VINES_PLANT : Blocks.WEEPING_VINES_PLANT;
@@ -68,8 +71,10 @@ public final class GrowingPlantPlacementTest {
             access.blocks.put(upward ? previous.below() : previous.above(), Blocks.STONE.defaultBlockState());
             var result = NmsBlockPlaceResolver.simulatePlace(access, snapshot(upward));
             assertTrue(result.getResyncReason(), result.isSuccess());
-            assertTrue(result.getChangedBlocks().stream().anyMatch(b -> b.position().equals(previous) && b.state().is(body)));
-            assertTrue(result.getChangedBlocks().stream().anyMatch(b -> b.position().equals(PLACED) && b.state().is(head)));
+            assertTrue(result.getChangedBlocks().stream()
+                    .anyMatch(b -> b.position().equals(previous) && b.state().is(body)));
+            assertTrue(result.getChangedBlocks().stream()
+                    .anyMatch(b -> b.position().equals(PLACED) && b.state().is(head)));
         }
     }
 
@@ -77,7 +82,7 @@ public final class GrowingPlantPlacementTest {
     public void randomInitialAgesHaveIdenticalVineGeometryAndClimbability() {
         var access = new World();
         var level = PlacementWorldFactory.create(access, snapshot(true)).level();
-        for (Block block : new Block[]{Blocks.WEEPING_VINES, Blocks.TWISTING_VINES}) {
+        for (Block block : new Block[] {Blocks.WEEPING_VINES, Blocks.TWISTING_VINES}) {
             var base = block.defaultBlockState();
             for (int age = 0; age < 25; age++) {
                 var state = base.setValue(GrowingPlantHeadBlock.AGE, age);
@@ -93,26 +98,42 @@ public final class GrowingPlantPlacementTest {
         BlockPos clicked = PLACED.relative(face.getOpposite());
         double hitY = upward ? 1 : 0;
         Item item = upward ? Items.TWISTING_VINES : Items.WEEPING_VINES;
-        return PlacementSnapshot.of(InteractionHand.MAIN_HAND,
+        return PlacementSnapshot.of(
+                InteractionHand.MAIN_HAND,
                 new org.bukkit.inventory.ItemStack(upward ? Material.TWISTING_VINES : Material.WEEPING_VINES, 8),
-                new net.minecraft.world.item.ItemStack(item, 8), clicked, PLACED, face,
+                new net.minecraft.world.item.ItemStack(item, 8),
+                clicked,
+                PLACED,
+                face,
                 new Vec3(clicked.getX() + 0.5, clicked.getY() + hitY, clicked.getZ() + 0.5),
-                new Vec3(0.5, hitY, 0.5), false, new Vec3(0.5, 64, -3),
-                0, 0, Direction.SOUTH, false, GameMode.SURVIVAL, -64, 320, false);
+                new Vec3(0.5, hitY, 0.5),
+                false,
+                new Vec3(0.5, 64, -3),
+                0,
+                0,
+                Direction.SOUTH,
+                false,
+                GameMode.SURVIVAL,
+                -64,
+                320,
+                false);
     }
 
     private static final class World implements PlacementBlockAccess {
         private final Map<BlockPos, BlockState> blocks = new HashMap<>();
 
-        @Override public BlockState getBlockStateAt(BlockPos pos) {
+        @Override
+        public BlockState getBlockStateAt(BlockPos pos) {
             return blocks.getOrDefault(pos, Blocks.AIR.defaultBlockState());
         }
 
-        @Override public FluidState getFluidIfLoaded(BlockPos pos) {
+        @Override
+        public FluidState getFluidIfLoaded(BlockPos pos) {
             return getBlockStateAt(pos).getFluidState();
         }
 
-        @Override public boolean isChunkLoaded(int chunkX, int chunkZ) {
+        @Override
+        public boolean isChunkLoaded(int chunkX, int chunkZ) {
             return true;
         }
     }

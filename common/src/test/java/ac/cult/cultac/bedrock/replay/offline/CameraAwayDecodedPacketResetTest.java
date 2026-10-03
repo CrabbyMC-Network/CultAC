@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsJ;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsX;
@@ -8,22 +11,17 @@ import ac.cult.cultac.events.packets.listeners.CheckManagerListener;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.latency.CompensatedCameraEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import org.junit.Test;
-
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import net.minecraft.network.protocol.common.ServerboundPongPacket;
+import org.junit.Test;
 
 public final class CameraAwayDecodedPacketResetTest {
     @Test
@@ -126,9 +124,8 @@ public final class CameraAwayDecodedPacketResetTest {
             setBooleanField(elytraC, "glideThisTick", true);
             setBooleanField(elytraC, "glideLastTick", true);
 
-            ServerboundPlayerCommand packet = new ServerboundPlayerCommand(0,
-                    PlayerCommandAction.START_FLYING_WITH_ELYTRA,
-                    0);
+            ServerboundPlayerCommand packet =
+                    new ServerboundPlayerCommand(0, PlayerCommandAction.START_FLYING_WITH_ELYTRA, 0);
             PacketReceiveEvent event = receiveEvent(player, packet);
 
             player.checkManager.dispatchReceiveHandlers(event);
@@ -144,14 +141,14 @@ public final class CameraAwayDecodedPacketResetTest {
     private static void setExternalCamera(CultPlayer player) throws ReflectiveOperationException {
         Field entitiesField = CompensatedCameraEntity.class.getDeclaredField("entities");
         entitiesField.setAccessible(true);
-        ArrayDeque<PacketEntity> entities =
-                (ArrayDeque<PacketEntity>) entitiesField.get(player.cameraEntity);
+        ArrayDeque<PacketEntity> entities = (ArrayDeque<PacketEntity>) entitiesField.get(player.cameraEntity);
         entities.clear();
         entities.add(new PacketEntity(EntityTypesCompat.ZOMBIE, 99));
         assertFalse(player.cameraEntity.isSelf());
     }
 
-    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(CultPlayer player, ServerboundPlayerCommand packet) {
+    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(
+            CultPlayer player, ServerboundPlayerCommand packet) {
         return RecordReceiveTestEvents.playerCommand(player, packet);
     }
 
@@ -164,8 +161,7 @@ public final class CameraAwayDecodedPacketResetTest {
         return field(target, name).getBoolean(target);
     }
 
-    private static void setBooleanField(Object target, String name, boolean value)
-            throws ReflectiveOperationException {
+    private static void setBooleanField(Object target, String name, boolean value) throws ReflectiveOperationException {
         field(target, name).setBoolean(target, value);
     }
 
@@ -173,8 +169,7 @@ public final class CameraAwayDecodedPacketResetTest {
         return field(target, name).getInt(target);
     }
 
-    private static void setIntField(Object target, String name, int value)
-            throws ReflectiveOperationException {
+    private static void setIntField(Object target, String name, int value) throws ReflectiveOperationException {
         field(target, name).setInt(target, value);
     }
 
@@ -187,7 +182,8 @@ public final class CameraAwayDecodedPacketResetTest {
     private static CultPlayer offlineJavaPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Camera_Away_Reset_Test"), new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(
+                new User.Profile(playerId, ".Camera_Away_Reset_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 }

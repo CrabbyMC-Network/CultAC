@@ -1,22 +1,22 @@
 package ac.cult.cultac.utils.latency;
 
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class SectionPoolRegistry {
-    private static final ConcurrentHashMap<String, ConcurrentHashMap<SectionCoordinate, PoolEntry>> poolsByDimension = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<SectionCoordinate, PoolEntry>> poolsByDimension =
+            new ConcurrentHashMap<>();
 
-    private SectionPoolRegistry() {
-    }
+    private SectionPoolRegistry() {}
 
     static SectionPool forChunk(String dimension, int chunkX, int sectionIndex, int chunkZ) {
         SectionCoordinate coordinate = new SectionCoordinate(chunkX, sectionIndex, chunkZ);
         PoolEntry[] poolEntry = new PoolEntry[1];
         poolsByDimension.compute(dimension, (ignored, dimPools) -> {
-            ConcurrentHashMap<SectionCoordinate, PoolEntry> pools = dimPools == null ? new ConcurrentHashMap<>() : dimPools;
+            ConcurrentHashMap<SectionCoordinate, PoolEntry> pools =
+                    dimPools == null ? new ConcurrentHashMap<>() : dimPools;
             poolEntry[0] = pools.computeIfAbsent(coordinate, ignoredCoordinate -> new PoolEntry());
             return pools;
         });
@@ -25,7 +25,8 @@ final class SectionPoolRegistry {
 
     static void retainChunk(String dimension, int chunkX, int chunkZ, int sectionCount) {
         poolsByDimension.compute(dimension, (ignored, dimPools) -> {
-            ConcurrentHashMap<SectionCoordinate, PoolEntry> pools = dimPools == null ? new ConcurrentHashMap<>() : dimPools;
+            ConcurrentHashMap<SectionCoordinate, PoolEntry> pools =
+                    dimPools == null ? new ConcurrentHashMap<>() : dimPools;
             for (int sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++) {
                 pools.compute(new SectionCoordinate(chunkX, sectionIndex, chunkZ), (ignoredCoordinate, entry) -> {
                     PoolEntry retained = entry == null ? new PoolEntry() : entry;
@@ -42,17 +43,19 @@ final class SectionPoolRegistry {
     static void releaseChunk(String dimension, int chunkX, int chunkZ, int sectionCount) {
         poolsByDimension.computeIfPresent(dimension, (ignored, dimPools) -> {
             for (int sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++) {
-                dimPools.computeIfPresent(new SectionCoordinate(chunkX, sectionIndex, chunkZ), (ignoredCoordinate, entry) -> {
-                    synchronized (entry.pool) {
-                        return --entry.references <= 0 ? null : entry;
-                    }
-                });
+                dimPools.computeIfPresent(
+                        new SectionCoordinate(chunkX, sectionIndex, chunkZ), (ignoredCoordinate, entry) -> {
+                            synchronized (entry.pool) {
+                                return --entry.references <= 0 ? null : entry;
+                            }
+                        });
             }
             return dimPools.isEmpty() ? null : dimPools;
         });
     }
 
-    static boolean tryMakeExclusiveForMutation(String dimension, int chunkX, int sectionIndex, int chunkZ, CompensatedWorld.CachedSection section) {
+    static boolean tryMakeExclusiveForMutation(
+            String dimension, int chunkX, int sectionIndex, int chunkZ, CompensatedWorld.CachedSection section) {
         ConcurrentHashMap<SectionCoordinate, PoolEntry> dimPools = poolsByDimension.get(dimension);
         if (dimPools == null) return false;
 
@@ -64,7 +67,8 @@ final class SectionPoolRegistry {
         }
     }
 
-    static void releaseSectionReference(String dimension, int chunkX, int sectionIndex, int chunkZ, CompensatedWorld.CachedSection section) {
+    static void releaseSectionReference(
+            String dimension, int chunkX, int sectionIndex, int chunkZ, CompensatedWorld.CachedSection section) {
         ConcurrentHashMap<SectionCoordinate, PoolEntry> dimPools = poolsByDimension.get(dimension);
         if (dimPools == null) return;
 
@@ -129,6 +133,5 @@ final class SectionPoolRegistry {
         private int references;
     }
 
-    private record SectionCoordinate(int chunkX, int sectionIndex, int chunkZ) {
-    }
+    private record SectionCoordinate(int chunkX, int sectionIndex, int chunkZ) {}
 }

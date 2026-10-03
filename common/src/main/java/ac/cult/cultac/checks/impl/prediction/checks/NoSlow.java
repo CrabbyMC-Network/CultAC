@@ -1,6 +1,5 @@
 package ac.cult.cultac.checks.impl.prediction.checks;
 
-import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
@@ -8,27 +7,38 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.nmsutil.IsUsingItem;
-import org.bukkit.GameMode;
-import net.minecraft.world.phys.Vec3;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import lombok.Setter;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.GameMode;
 
-//@CheckData(name = "NoSlow", stableKey = "cult.movement.noslow")
+// @CheckData(name = "NoSlow", stableKey = "cult.movement.noslow")
 public class NoSlow extends Check implements PostPredictionListener {
     public NoSlow(CultPlayer cultPlayer) {
-        super(cultPlayer, CheckInfo.builder().name("NoSlow").stableKey("cult.movement.noslow").build());
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("NoSlow")
+                        .stableKey("cult.movement.noslow")
+                        .build());
     }
 
     boolean shouldCheck = false;
+
     @Setter
     boolean doneSettingMetadata = false;
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
 
-        if (predictionComplete.isTeleport() || predictionComplete.isExempt() || player.inVehicle() || player.gamemode == GameMode.CREATIVE || player.gamemode == GameMode.SPECTATOR) return;
+        if (predictionComplete.isTeleport()
+                || predictionComplete.isExempt()
+                || player.inVehicle()
+                || player.gamemode == GameMode.CREATIVE
+                || player.gamemode == GameMode.SPECTATOR) return;
         if (!IsUsingItem.isSlowDueToUsingItem(player)) {
             predictionComplete.getPredictionResult().setExceedsSlowedSpeed(false);
             shouldCheck = false;
@@ -37,17 +47,21 @@ public class NoSlow extends Check implements PostPredictionListener {
 
         boolean shouldFlag = true;
         double useSpeedScale = IsUsingItem.getUseItemSpeedMultiplier(player) / 0.2D;
-        for (PredictionResult predResult : predictionComplete.getPredictionResult().getRealities()) {
+        for (PredictionResult predResult :
+                predictionComplete.getPredictionResult().getRealities()) {
             // Let's check the speed of the player first as it's the simplest
             Vec3 closestForSpeed = predResult.getValidMovements().getClosestToTarget();
-            Vec3 horizDiffToTarget = predResult.getTarget().subtract(closestForSpeed).multiply(1, 0, 1);
+            Vec3 horizDiffToTarget =
+                    predResult.getTarget().subtract(closestForSpeed).multiply(1, 0, 1);
 
-            Vec3 minimumInputRequired = HorizontalAnalyzer.getBestTheoreticalPlayerInput(horizDiffToTarget, predResult.getSimulationContext().getXRot());
+            Vec3 minimumInputRequired = HorizontalAnalyzer.getBestTheoreticalPlayerInput(
+                    horizDiffToTarget, predResult.getSimulationContext().getXRot());
             minimumInputRequired = new Vec3(Math.abs(minimumInputRequired.x), 0, Math.abs(minimumInputRequired.z));
 
             float playerSpeed = predResult.getSimulationContext().getMaxSpeed(player);
             double maxDirLength = playerSpeed * 0.261 * useSpeedScale;
-            double speedFlagAmount = Math.max(minimumInputRequired.x - maxDirLength, minimumInputRequired.z - maxDirLength);
+            double speedFlagAmount =
+                    Math.max(minimumInputRequired.x - maxDirLength, minimumInputRequired.z - maxDirLength);
 
             if (speedFlagAmount < 0.001) {
                 shouldFlag = false;
@@ -68,7 +82,8 @@ public class NoSlow extends Check implements PostPredictionListener {
                 return;
             }
 
-            PredictionResult lastResult = player.checkManager.getSimulationProcessor().getLastPrediction();
+            PredictionResult lastResult =
+                    player.checkManager.getSimulationProcessor().getLastPrediction();
             if (lastResult.isExceedsSlowedSpeed()) {
                 flag();
             }
@@ -76,7 +91,8 @@ public class NoSlow extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         if (packet.action() == PlayerAction.RELEASE_USE_ITEM && !player.settingMetaData) {
             shouldCheck = true;
         }

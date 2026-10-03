@@ -1,15 +1,17 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.prediction.BedrockPredictionTrigger;
 import ac.cult.cultac.bedrock.prediction.integration.BedrockProfileState;
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class BedrockMovementExemptionTest {
-    @Test public void flyingExemptionFollowsObservationAndNormalChecksResume() throws Exception {
+    @Test
+    public void flyingExemptionFollowsObservationAndNormalChecksResume() throws Exception {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
@@ -25,7 +27,8 @@ public class BedrockMovementExemptionTest {
             var result = processor.processBedrockAuthInputFrame(frame, BedrockPredictionTrigger.OFFLINE_REPLAY);
             assertNotNull(result);
             assertTrue(result.isExempt());
-            var state = BedrockProfileState.previousState(processor.getCurrentPredictionCommit().carry());
+            var state = BedrockProfileState.previousState(
+                    processor.getCurrentPredictionCommit().carry());
             assertEquals(observed.x, state.physicalFeetPosition().x(), 0.001);
             assertEquals(observed.y, state.physicalFeetPosition().y(), 0.001);
             assertEquals(observed.z, state.physicalFeetPosition().z(), 0.001);
@@ -51,14 +54,25 @@ public class BedrockMovementExemptionTest {
             assertNotNull(checked);
             assertFalse(checked.isExempt());
             assertTrue(checked.getFlagSeverity() > 0);
-        } finally { OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player); }
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
     }
 
     private static BedrockAuthInputFrame frame(CultPlayer player, long tick, Vec3 position, Vec3 velocity) {
-        return BedrockAuthInputFrame.builder(player.user.getUUID()).protocolVersion(0).clientTick(tick)
-            .inputMode(1).playMode(2).deviceId(3).position(position)
-            .packetPosition(position.add(0, 1.62, 0)).delta(Vec3.ZERO)
-            .reportedEndOfTickVelocity(velocity).rotation(0, 0, 0).moveVector(0, 0)
-            .authorityMode("client-auth-input").build();
+        return BedrockAuthInputFrame.builder(player.user.getUUID())
+                .protocolVersion(0)
+                .clientTick(tick)
+                .inputMode(1)
+                .playMode(2)
+                .deviceId(3)
+                .position(position)
+                .packetPosition(position.add(0, 1.62, 0))
+                .delta(Vec3.ZERO)
+                .reportedEndOfTickVelocity(velocity)
+                .rotation(0, 0, 0)
+                .moveVector(0, 0)
+                .authorityMode("client-auth-input")
+                .build();
     }
 }

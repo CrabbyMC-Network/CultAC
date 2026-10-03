@@ -1,14 +1,13 @@
 package ac.cult.cultac.utils.inventory.inventory;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
-import lombok.Getter;
-
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 @Getter
 public enum MenuType {

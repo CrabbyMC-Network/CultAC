@@ -1,9 +1,5 @@
 package ac.cult.cultac.manager.config.update;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +15,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Cross-version YAML config updater.
@@ -52,12 +51,17 @@ public final class ConfigUpdater {
 
     /** V2 vs V3 plugin lineage marker — fail-fast on flavor mismatch. */
     public enum ConfigFlavor {
-        V2, V3;
+        V2,
+        V3;
 
         public static @Nullable ConfigFlavor parse(@Nullable Object raw) {
             if (raw == null) return null;
             String s = raw.toString().trim().toUpperCase();
-            try { return valueOf(s); } catch (IllegalArgumentException e) { return null; }
+            try {
+                return valueOf(s);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         }
     }
 
@@ -77,6 +81,7 @@ public final class ConfigUpdater {
          * bundled — same shape Configuralize uses for runtime loading.
          */
         public final String resourceDirectory;
+
         public final int latestVersion;
         public final String versionKey;
         public final boolean inPlace;
@@ -84,12 +89,15 @@ public final class ConfigUpdater {
         /** Keyed by the version this migration upgrades TO. */
         public final @NotNull Map<Integer, Migration> migrations;
 
-        Spec(@NotNull String resourceDirectory, int latestVersion,
-             @NotNull ConfigFlavor flavor, @NotNull Map<Integer, Migration> migrations,
-             String versionKey, boolean inPlace) {
+        Spec(
+                @NotNull String resourceDirectory,
+                int latestVersion,
+                @NotNull ConfigFlavor flavor,
+                @NotNull Map<Integer, Migration> migrations,
+                String versionKey,
+                boolean inPlace) {
             Objects.requireNonNull(resourceDirectory, "resourceDirectory");
-            this.resourceDirectory = resourceDirectory.endsWith("/")
-                    ? resourceDirectory : resourceDirectory + "/";
+            this.resourceDirectory = resourceDirectory.endsWith("/") ? resourceDirectory : resourceDirectory + "/";
             this.latestVersion = latestVersion;
             this.versionKey = versionKey;
             this.inPlace = inPlace;
@@ -97,9 +105,8 @@ public final class ConfigUpdater {
             this.migrations = Map.copyOf(migrations);
         }
 
-        public static @NotNull Builder builder(@NotNull String resourceDirectory,
-                                               int latestVersion,
-                                               @NotNull ConfigFlavor flavor) {
+        public static @NotNull Builder builder(
+                @NotNull String resourceDirectory, int latestVersion, @NotNull ConfigFlavor flavor) {
             return new Builder(resourceDirectory, latestVersion, flavor);
         }
 
@@ -184,8 +191,8 @@ public final class ConfigUpdater {
      *                 on-disk file's comments end up in the matching
      *                 language.
      */
-    public @NotNull Map<File, Result> updateAll(@NotNull Map<File, Spec> specs,
-                                                @NotNull String langCode) throws IOException {
+    public @NotNull Map<File, Result> updateAll(@NotNull Map<File, Spec> specs, @NotNull String langCode)
+            throws IOException {
         // Pending cross-file writes keyed by sibling file's bare name. Each
         // file's writes are accumulated in submission order; after every
         // per-file update finishes, we flush these against the on-disk file
@@ -202,7 +209,8 @@ public final class ConfigUpdater {
         for (Map.Entry<File, Spec> entry : specs.entrySet()) {
             File configFile = entry.getKey();
             Spec spec = entry.getValue();
-            results.put(configFile,
+            results.put(
+                    configFile,
                     updateSingle(configFile, spec, langCode, filesByName, siblingReadViews, pendingCrossFile));
         }
 
@@ -218,20 +226,23 @@ public final class ConfigUpdater {
             try {
                 applyEntries(sibling, q.getValue());
             } catch (IOException e) {
-                logger.log(Level.WARNING, "[cult-config-updater] failed to flush "
-                        + "cross-file writes into " + sibling.getName(), e);
+                logger.log(
+                        Level.WARNING,
+                        "[cult-config-updater] failed to flush " + "cross-file writes into " + sibling.getName(),
+                        e);
             }
         }
 
         return results;
     }
 
-    private @NotNull Result updateSingle(@NotNull File configFile,
-                                         @NotNull Spec spec,
-                                         @NotNull String langCode,
-                                         @NotNull Map<String, File> filesByName,
-                                         @NotNull Map<String, Map<String, Object>> siblingReadViews,
-                                         @NotNull Map<String, List<WriteLog.Entry>> pendingCrossFile)
+    private @NotNull Result updateSingle(
+            @NotNull File configFile,
+            @NotNull Spec spec,
+            @NotNull String langCode,
+            @NotNull Map<String, File> filesByName,
+            @NotNull Map<String, Map<String, Object>> siblingReadViews,
+            @NotNull Map<String, List<WriteLog.Entry>> pendingCrossFile)
             throws IOException {
         if (!configFile.exists()) {
             // Fresh install — let the loader (Configuralize) copy the
@@ -241,8 +252,7 @@ public final class ConfigUpdater {
 
         Map<String, Object> oldData = readYaml(configFile.toPath());
         if (oldData == null) {
-            return new Result(false, -1, spec.latestVersion,
-                    "couldn't parse " + configFile.getName());
+            return new Result(false, -1, spec.latestVersion, "couldn't parse " + configFile.getName());
         }
 
         ConfigFlavor onDiskFlavor = ConfigFlavor.parse(oldData.get("config-flavor"));
@@ -259,8 +269,9 @@ public final class ConfigUpdater {
             return new Result(false, oldVersion, spec.latestVersion, null);
         }
 
-        Path backup = configFile.toPath().resolveSibling(
-                configFile.getName() + (spec.inPlace ? ".cult-v" : ".v") + oldVersion + ".bak");
+        Path backup = configFile
+                .toPath()
+                .resolveSibling(configFile.getName() + (spec.inPlace ? ".cult-v" : ".v") + oldVersion + ".bak");
         if (!Files.exists(backup)) {
             Files.copy(configFile.toPath(), backup);
         }
@@ -274,8 +285,7 @@ public final class ConfigUpdater {
 
         Map<String, Object> newData = readYaml(configFile.toPath());
         if (newData == null) {
-            String warning = "bundled default " + resolvedResource
-                    + " is unparseable; backup at " + backup;
+            String warning = "bundled default " + resolvedResource + " is unparseable; backup at " + backup;
             logger.log(Level.SEVERE, "[cult-config-updater] " + warning);
             return new Result(false, oldVersion, spec.latestVersion, warning);
         }
@@ -293,16 +303,22 @@ public final class ConfigUpdater {
         for (int v = oldVersion + 1; v <= spec.latestVersion; v++) {
             Migration m = spec.migrations.get(v);
             if (m == null) continue;
-            MigrationContext ctx = new ContextImpl(
-                    inputView, outputView, filesByName, siblingReadViews, pendingCrossFile, logger);
+            MigrationContext ctx =
+                    new ContextImpl(inputView, outputView, filesByName, siblingReadViews, pendingCrossFile, logger);
             try {
                 m.apply(ctx);
             } catch (RuntimeException e) {
-                if (spec.inPlace) throw new IOException("Cult migration to v" + v
-                        + " failed for " + configFile.getName() + "; version not advanced", e);
-                logger.log(Level.WARNING, "[cult-config-updater] migration to v" + v
-                        + " failed for " + configFile.getName()
-                        + " — partial state may have been applied", e);
+                if (spec.inPlace)
+                    throw new IOException(
+                            "Cult migration to v" + v + " failed for " + configFile.getName()
+                                    + "; version not advanced",
+                            e);
+                logger.log(
+                        Level.WARNING,
+                        "[cult-config-updater] migration to v" + v
+                                + " failed for " + configFile.getName()
+                                + " — partial state may have been applied",
+                        e);
             }
         }
 
@@ -316,11 +332,12 @@ public final class ConfigUpdater {
             }
         }
 
-        applyEntries(configFile, ownLog.finalState().entrySet().stream()
-                .map(e -> new WriteLog.Entry(
-                        e.getValue() == null ? WriteLog.Op.REMOVE : WriteLog.Op.PUT,
-                        e.getKey(), e.getValue()))
-                .toList());
+        applyEntries(
+                configFile,
+                ownLog.finalState().entrySet().stream()
+                        .map(e -> new WriteLog.Entry(
+                                e.getValue() == null ? WriteLog.Op.REMOVE : WriteLog.Op.PUT, e.getKey(), e.getValue()))
+                        .toList());
 
         logger.info("[cult-config-updater] " + configFile.getName()
                 + " migrated " + spec.versionKey + " v" + oldVersion + " → v" + spec.latestVersion
@@ -329,10 +346,8 @@ public final class ConfigUpdater {
     }
 
     @SuppressWarnings("unchecked")
-    private static void autoLift(String pathPrefix,
-                                 Map<String, Object> oldData,
-                                 Map<String, Object> newData,
-                                 YamlMap output) {
+    private static void autoLift(
+            String pathPrefix, Map<String, Object> oldData, Map<String, Object> newData, YamlMap output) {
         for (Map.Entry<String, Object> entry : oldData.entrySet()) {
             String key = entry.getKey();
             if (!newData.containsKey(key)) continue;
@@ -340,10 +355,7 @@ public final class ConfigUpdater {
             Object oldValue = entry.getValue();
             Object newValue = newData.get(key);
             if (oldValue instanceof Map && newValue instanceof Map) {
-                autoLift(currentPath,
-                        (Map<String, Object>) oldValue,
-                        (Map<String, Object>) newValue,
-                        output);
+                autoLift(currentPath, (Map<String, Object>) oldValue, (Map<String, Object>) newValue, output);
             } else if (!Objects.equals(oldValue, newValue)) {
                 output.put(currentPath, oldValue);
             }
@@ -357,9 +369,11 @@ public final class ConfigUpdater {
         List<WriteLog.Entry> additions = new ArrayList<>();
         for (WriteLog.Entry e : entries) {
             if (e.op() == WriteLog.Op.REMOVE) {
-                logger.log(Level.FINE, "[cult-config-updater] REMOVE op for '"
-                        + e.path() + "' on " + configFile.getName()
-                        + " is not yet supported; expected the bundled default to drop the key");
+                logger.log(
+                        Level.FINE,
+                        "[cult-config-updater] REMOVE op for '"
+                                + e.path() + "' on " + configFile.getName()
+                                + " is not yet supported; expected the bundled default to drop the key");
                 continue;
             }
             ConfigPatcher.NodePosition pos = patcher.getNodePosition(e.path());
@@ -421,8 +435,11 @@ public final class ConfigUpdater {
     private static int parseVersion(@Nullable Object raw) {
         if (raw == null) return 0;
         if (raw instanceof Number n) return n.intValue();
-        try { return Integer.parseInt(raw.toString().trim()); }
-        catch (NumberFormatException e) { return 0; }
+        try {
+            return Integer.parseInt(raw.toString().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /**
@@ -437,8 +454,8 @@ public final class ConfigUpdater {
             Map<String, File> filesByName,
             Map<String, Map<String, Object>> siblingReadViews,
             Map<String, List<WriteLog.Entry>> pendingCrossFile,
-            Logger logger
-    ) implements MigrationContext {
+            Logger logger)
+            implements MigrationContext {
         @Override
         public @NotNull YamlMap otherFile(@NotNull String fileName) {
             File f = filesByName.get(fileName);

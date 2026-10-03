@@ -7,14 +7,13 @@ import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.EntityPush;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.TransactionOrder;
 import ac.cult.cultac.utils.data.TransactionVel;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.BlockFace;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.block.BlockFace;
 
 public class MovementModifiers {
     public static final String FLUID_HOP_REASON = "swim hop";
@@ -25,7 +24,12 @@ public class MovementModifiers {
     private static final double RIDDEN_FLUID_HOP_ADDEND = (double) 0.04F;
     private static final double RIDDEN_FLUID_HOP_Y = FLUID_HOP_Y + RIDDEN_FLUID_HOP_ADDEND;
 
-    public List<PredVector> applyModifers(CultPlayer player, Set<Vec3> initial, SimulationContext state, PredictionResult lastResult, boolean canTickSkip) {
+    public List<PredVector> applyModifers(
+            CultPlayer player,
+            Set<Vec3> initial,
+            SimulationContext state,
+            PredictionResult lastResult,
+            boolean canTickSkip) {
         return applyModifers(player, initial, state, lastResult, canTickSkip, FluidHopMode.INCLUDE);
     }
 
@@ -34,8 +38,7 @@ public class MovementModifiers {
             Set<Vec3> initial,
             SimulationContext state,
             PredictionResult lastResult,
-            boolean canTickSkip
-    ) {
+            boolean canTickSkip) {
         return applyWithoutJavaFluidHop(player, initial, state, lastResult, canTickSkip);
     }
 
@@ -44,8 +47,7 @@ public class MovementModifiers {
             Set<Vec3> initial,
             SimulationContext state,
             PredictionResult lastResult,
-            boolean canTickSkip
-    ) {
+            boolean canTickSkip) {
         return applyModifers(player, initial, state, lastResult, canTickSkip, FluidHopMode.EXCLUDE);
     }
 
@@ -54,9 +56,9 @@ public class MovementModifiers {
             Set<Vec3> initial,
             SimulationContext state,
             PredictionResult lastResult,
-            boolean canTickSkip
-    ) {
-        List<PredVector> vectors = applyModifers(player, initial, state, lastResult, canTickSkip, FluidHopMode.EXCLUDE, false);
+            boolean canTickSkip) {
+        List<PredVector> vectors =
+                applyModifers(player, initial, state, lastResult, canTickSkip, FluidHopMode.EXCLUDE, false);
         TransactionVel receivedMotion = player.checkManager.getKnockbackHandler().secondBread;
         if (state.isBedrockTeleportTick() && receivedMotion != null) {
             // Travel is suppressed, so displacement cannot select the applied motion.
@@ -72,8 +74,7 @@ public class MovementModifiers {
             SimulationContext state,
             PredictionResult lastResult,
             boolean canTickSkip,
-            FluidHopMode fluidHopMode
-    ) {
+            FluidHopMode fluidHopMode) {
         return applyModifers(player, initial, state, lastResult, canTickSkip, fluidHopMode, true);
     }
 
@@ -84,8 +85,7 @@ public class MovementModifiers {
             PredictionResult lastResult,
             boolean canTickSkip,
             FluidHopMode fluidHopMode,
-            boolean includeSlimePistonLaunches
-    ) {
+            boolean includeSlimePistonLaunches) {
         List<PredVector> start = new ArrayList<>();
 
         // This happens on first join, good to keep in case other things do this too.
@@ -93,7 +93,8 @@ public class MovementModifiers {
             start.add(new PredVector(Vec3.ZERO));
         }
 
-        boolean canStartWithFluidHop = fluidHopMode == FluidHopMode.INCLUDE && canStartWithFluidHop(state, lastResult, canTickSkip);
+        boolean canStartWithFluidHop =
+                fluidHopMode == FluidHopMode.INCLUDE && canStartWithFluidHop(state, lastResult, canTickSkip);
         boolean canStartWithRiddenFluidHopFloat = canStartWithRiddenFluidHopFloat(lastResult);
         if (canStartWithFluidHop) {
             for (Vec3 vector : initial) {
@@ -101,8 +102,15 @@ public class MovementModifiers {
             }
         }
 
-        if (player.riptideSpinAttackTicks > 0 && (state.getWorldData().getNumColliding() > 0 ||
-                (lastResult != null && lastResult.getSimulationContext().getWorldData().getNumColliding() > 0)) && state.getVehicle() == null) {
+        if (player.riptideSpinAttackTicks > 0
+                && (state.getWorldData().getNumColliding() > 0
+                        || (lastResult != null
+                                && lastResult
+                                                .getSimulationContext()
+                                                .getWorldData()
+                                                .getNumColliding()
+                                        > 0))
+                && state.getVehicle() == null) {
             for (Vec3 vector : initial) {
                 PredVector riptideAttack = PredVector.fromStartingVector(vector).multiply(-0.2, "riptide attack");
                 start.add(riptideAttack);
@@ -110,7 +118,8 @@ public class MovementModifiers {
                 // MCP-Reborn Player#causeExtraKnockback damps attacker X/Z by 0.6
                 // before LivingEntity#checkAutoSpinAttack applies the -0.2 rebound.
                 if (state.getIsSprinting().determineOptimistically()) {
-                    start.add(riptideAttack.withXYZ(riptideAttack.x * 0.6, riptideAttack.y, riptideAttack.z * 0.6, "riptide sprint attack"));
+                    start.add(riptideAttack.withXYZ(
+                            riptideAttack.x * 0.6, riptideAttack.y, riptideAttack.z * 0.6, "riptide sprint attack"));
                 }
             }
         }
@@ -126,15 +135,18 @@ public class MovementModifiers {
             // The outbound observer can see B + motion while A's reply is in flight.
             // Exclude that unconfirmed motion from A; firstBread retains it normally.
             TransactionVel possibleMotion = player.checkManager.getKnockbackHandler().firstBread;
-            if (possibleMotion != null && possibleMotion.getBedrockTeleportRevision()
-                    > state.getBedrockTeleport().getBedrockTransportRevision()) {
+            if (possibleMotion != null
+                    && possibleMotion.getBedrockTeleportRevision()
+                            > state.getBedrockTeleport().getBedrockTransportRevision()) {
                 packetEventsInOrder.removeIf(event -> event == possibleMotion);
             }
         }
         packetEventsInOrder.sort(Comparator.comparingInt(TransactionOrder::getTransaction)
                 // Within one Java transaction, confirmed Bedrock motion precedes its pending successor.
-                .thenComparingInt(event -> player.isBedrockMovement()
-                        && event == player.checkManager.getKnockbackHandler().firstBread ? 1 : 0));
+                .thenComparingInt(event ->
+                        player.isBedrockMovement() && event == player.checkManager.getKnockbackHandler().firstBread
+                                ? 1
+                                : 0));
 
         for (Vec3 vector : initial) {
             start.add(PredVector.fromStartingVector(vector));
@@ -208,10 +220,7 @@ public class MovementModifiers {
     }
 
     private static void addFluidHopCandidates(
-            List<PredVector> start,
-            PredVector vector,
-            boolean canStartWithRiddenFluidHopFloat
-    ) {
+            List<PredVector> start, PredVector vector, boolean canStartWithRiddenFluidHopFloat) {
         PredVector fluidHop = vector.withY(FLUID_HOP_Y, FLUID_HOP_REASON);
         start.add(fluidHop);
         if (canStartWithRiddenFluidHopFloat) {

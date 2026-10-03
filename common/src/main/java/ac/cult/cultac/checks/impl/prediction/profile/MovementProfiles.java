@@ -8,8 +8,7 @@ public final class MovementProfiles {
     private static final MovementProfile JAVA = new JavaMovementProfile();
     private static final MovementProfile BEDROCK = new BedrockMovementProfile();
 
-    private MovementProfiles() {
-    }
+    private MovementProfiles() {}
 
     public static MovementProfile forPlayer(CultPlayer player) {
         return player.movementPlatform == MovementPlatform.BEDROCK ? BEDROCK : JAVA;

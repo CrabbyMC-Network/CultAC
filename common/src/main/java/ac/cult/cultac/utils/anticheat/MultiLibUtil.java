@@ -1,14 +1,13 @@
 package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.utils.reflection.ReflectionUtils;
+import java.lang.reflect.Method;
 import net.minecraft.SharedConstants;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.Method;
-
 public class MultiLibUtil {
 
-    public final static Method externalPlayerMethod = ReflectionUtils.getMethod(Player.class, "isExternalPlayer");
+    public static final Method externalPlayerMethod = ReflectionUtils.getMethod(Player.class, "isExternalPlayer");
 
     private static final boolean IS_PRE_1_18 = SharedConstants.getProtocolVersion() < 757;
 

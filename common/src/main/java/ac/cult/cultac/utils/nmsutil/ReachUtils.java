@@ -93,7 +93,9 @@ public class ReachUtils {
             return null;
         } else {
             double d3 = (x - self.getX()) / d0;
-            return d3 >= 0.0D && d3 <= 1.0D ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3) : null;
+            return d3 >= 0.0D && d3 <= 1.0D
+                    ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3)
+                    : null;
         }
     }
 
@@ -110,7 +112,9 @@ public class ReachUtils {
             return null;
         } else {
             double d3 = (y - self.getY()) / d1;
-            return d3 >= 0.0D && d3 <= 1.0D ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3) : null;
+            return d3 >= 0.0D && d3 <= 1.0D
+                    ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3)
+                    : null;
         }
     }
 
@@ -127,7 +131,9 @@ public class ReachUtils {
             return null;
         } else {
             double d3 = (z - self.getZ()) / d2;
-            return d3 >= 0.0D && d3 <= 1.0D ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3) : null;
+            return d3 >= 0.0D && d3 <= 1.0D
+                    ? new Vector(self.getX() + d0 * d3, self.getY() + d1 * d3, self.getZ() + d2 * d3)
+                    : null;
         }
     }
 
@@ -135,21 +141,33 @@ public class ReachUtils {
      * Checks if the specified vector is within the YZ dimensions of the bounding box. Args: Vec3D
      */
     private static boolean isVecInYZ(SimpleCollisionBox self, Vector vec) {
-        return vec != null && vec.getY() >= self.minY && vec.getY() <= self.maxY && vec.getZ() >= self.minZ && vec.getZ() <= self.maxZ;
+        return vec != null
+                && vec.getY() >= self.minY
+                && vec.getY() <= self.maxY
+                && vec.getZ() >= self.minZ
+                && vec.getZ() <= self.maxZ;
     }
 
     /**
      * Checks if the specified vector is within the XZ dimensions of the bounding box. Args: Vec3D
      */
     private static boolean isVecInXZ(SimpleCollisionBox self, Vector vec) {
-        return vec != null && vec.getX() >= self.minX && vec.getX() <= self.maxX && vec.getZ() >= self.minZ && vec.getZ() <= self.maxZ;
+        return vec != null
+                && vec.getX() >= self.minX
+                && vec.getX() <= self.maxX
+                && vec.getZ() >= self.minZ
+                && vec.getZ() <= self.maxZ;
     }
 
     /**
      * Checks if the specified vector is within the XY dimensions of the bounding box. Args: Vec3D
      */
     private static boolean isVecInXY(SimpleCollisionBox self, Vector vec) {
-        return vec != null && vec.getX() >= self.minX && vec.getX() <= self.maxX && vec.getY() >= self.minY && vec.getY() <= self.maxY;
+        return vec != null
+                && vec.getX() >= self.minX
+                && vec.getX() <= self.maxX
+                && vec.getY() >= self.minY
+                && vec.getY() <= self.maxY;
     }
 
     // Look vector accounting for optifine FastMath.
@@ -164,7 +182,12 @@ public class ReachUtils {
     }
 
     public static boolean isVecInside(SimpleCollisionBox self, Vector vec) {
-        return vec.getX() > self.minX && vec.getX() < self.maxX && (vec.getY() > self.minY && vec.getY() < self.maxY && vec.getZ() > self.minZ && vec.getZ() < self.maxZ);
+        return vec.getX() > self.minX
+                && vec.getX() < self.maxX
+                && (vec.getY() > self.minY
+                        && vec.getY() < self.maxY
+                        && vec.getZ() > self.minZ
+                        && vec.getZ() < self.maxZ);
     }
 
     public static double getMinReachToBox(CultPlayer player, SimpleCollisionBox targetBox) {

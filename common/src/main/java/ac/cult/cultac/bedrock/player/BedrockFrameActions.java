@@ -33,12 +33,13 @@ final class BedrockFrameActions {
         if (serverUsingItem) input.add("SERVER_USING_ITEM");
         // Keep both start and stop actions; each phase consumes its own flag.
         for (BedrockClientAction action : pending) {
-            input.add(switch (action) {
-                case ITEM_RELEASE -> "RELEASE_USING_ITEM";
-                case START_GLIDING -> BedrockPoseInputData.START_GLIDING_ACTION;
-                case STOP_GLIDING -> BedrockPoseInputData.STOP_GLIDING_ACTION;
-                default -> action.name();
-            });
+            input.add(
+                    switch (action) {
+                        case ITEM_RELEASE -> "RELEASE_USING_ITEM";
+                        case START_GLIDING -> BedrockPoseInputData.START_GLIDING_ACTION;
+                        case STOP_GLIDING -> BedrockPoseInputData.STOP_GLIDING_ACTION;
+                        default -> action.name();
+                    });
         }
         pending.clear();
         if (frame.hasRawInputFlag(PlayerAuthInputData.START_USING_ITEM)) {

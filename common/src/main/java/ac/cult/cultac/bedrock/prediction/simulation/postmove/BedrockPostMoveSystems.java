@@ -6,32 +6,37 @@ import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockMoveRequest;
 import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockTravelPlan;
 
 public final class BedrockPostMoveSystems {
-    private BedrockPostMoveSystems() {
-    }
+    private BedrockPostMoveSystems() {}
 
     public static BedrockPostMoveResult postMove(BedrockTravelPlan plan, BedrockCollisionOutput collision) {
         BedrockPostMoveContext context = context(plan, collision.moveRequest());
         BedrockEntityMove.Result blockMove = collision.blockMove();
 
-        BedrockPostMoveFrame frame = context.startEffectFrame(
-            blockMove.velocity(),
-            blockMove.collisionFlags(),
-            false
-        );
+        BedrockPostMoveFrame frame = context.startEffectFrame(blockMove.velocity(), blockMove.collisionFlags(), false);
         if (plan.frame().boat() != null) {
             frame = context.applyBlockMovementSlowdownClear(frame);
             frame = context.resolvePostMoveFluidContext(frame, blockMove.position());
             var velocity = ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBoatMovement.afterMove(
-                    plan.frame().input().previousState(), plan.frame().frameFacts().blockCollisionWorld(),
+                    plan.frame().input().previousState(),
+                            plan.frame().frameFacts().blockCollisionWorld(),
                     blockMove.position(), frame.velocity());
-            velocity = BedrockBoatInsideMovement.apply(frame.postMoveContext(), velocity,
-                    blockMove.position(), plan.frame().input().previousState().simulationTick());
-            velocity = ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockSurfaceMovement.applyInsideBlockAfterPostMoveEffects(
-                    velocity, plan.frame().frameFacts().honeySlideState(), blockMove.position(),
-                    plan.frame().frameFacts().movementDimensions());
+            velocity = BedrockBoatInsideMovement.apply(
+                    frame.postMoveContext(),
+                    velocity,
+                    blockMove.position(),
+                    plan.frame().input().previousState().simulationTick());
+            velocity = ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockSurfaceMovement
+                    .applyInsideBlockAfterPostMoveEffects(
+                            velocity,
+                            plan.frame().frameFacts().honeySlideState(),
+                            blockMove.position(),
+                            plan.frame().frameFacts().movementDimensions());
             var result = BedrockPostMoveResult.afterLiquidClimbOut(frame, velocity, frame.flags(), 1.0D);
-            return new BedrockPostMoveResult(new BedrockPostMoveResult.VelocityEffects(
-                    velocity, velocity, velocity, false, true, true, 1.0D), result.collisionEffects(), result.stateModes(), null);
+            return new BedrockPostMoveResult(
+                    new BedrockPostMoveResult.VelocityEffects(velocity, velocity, velocity, false, true, true, 1.0D),
+                    result.collisionEffects(),
+                    result.stateModes(),
+                    null);
         }
         boolean travel = plan.frame().input().options().travelActive();
         if (travel) {
@@ -52,12 +57,11 @@ public final class BedrockPostMoveSystems {
         }
 
         BedrockPostMoveResult result = travel
-            ? context.applyLiquidClimbOut(frame, blockMove.position())
-            : BedrockPostMoveResult.afterLiquidClimbOut(frame, frame.velocity(), frame.flags(), 1.0D);
+                ? context.applyLiquidClimbOut(frame, blockMove.position())
+                : BedrockPostMoveResult.afterLiquidClimbOut(frame, frame.velocity(), frame.flags(), 1.0D);
         result = BedrockEntityInsideMovement.apply(context, result, blockMove.position());
         result = result.withPendingBlockMovementSlowdownState(
-            context.resolvePendingBlockMovementSlowdown(blockMove.position())
-        );
+                context.resolvePendingBlockMovementSlowdown(blockMove.position()));
         result = context.withPostMoveStateModes(result, blockMove.position());
         return result;
     }

@@ -4,11 +4,10 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import com.viaversion.viaversion.api.Via;
-import net.minecraft.SharedConstants;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Locale;
 import java.util.UUID;
+import net.minecraft.SharedConstants;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Maps legacy client-version release-name strings (e.g. {@code "1.21.1"}) to

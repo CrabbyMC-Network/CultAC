@@ -14,10 +14,21 @@ public record BedrockCoordinateFrame(int originX, int originZ, long revision) {
         }
     }
 
-    public float localX(double worldX) { return (float) (worldX - originX); }
-    public float localZ(double worldZ) { return (float) (worldZ - originZ); }
-    public double roundX(double worldX) { return originX + (double) localX(worldX); }
-    public double roundZ(double worldZ) { return originZ + (double) localZ(worldZ); }
+    public float localX(double worldX) {
+        return (float) (worldX - originX);
+    }
+
+    public float localZ(double worldZ) {
+        return (float) (worldZ - originZ);
+    }
+
+    public double roundX(double worldX) {
+        return originX + (double) localX(worldX);
+    }
+
+    public double roundZ(double worldZ) {
+        return originZ + (double) localZ(worldZ);
+    }
 
     public Vec3 toWorld(Vec3 local) {
         return local == null ? null : new Vec3(local.x + originX, local.y, local.z + originZ);
@@ -36,7 +47,12 @@ public record BedrockCoordinateFrame(int originX, int originZ, long revision) {
     }
 
     public WorldCollisionBox roundBox(WorldCollisionBox box) {
-        return new WorldCollisionBox(roundX(box.minX()), (float) box.minY(), roundZ(box.minZ()),
-                roundX(box.maxX()), (float) box.maxY(), roundZ(box.maxZ()));
+        return new WorldCollisionBox(
+                roundX(box.minX()),
+                (float) box.minY(),
+                roundZ(box.minZ()),
+                roundX(box.maxX()),
+                (float) box.maxY(),
+                roundZ(box.maxZ()));
     }
 }

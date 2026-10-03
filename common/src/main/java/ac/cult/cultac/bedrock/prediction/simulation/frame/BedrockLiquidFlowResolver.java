@@ -10,14 +10,12 @@ import java.util.OptionalInt;
 final class BedrockLiquidFlowResolver {
     private static final double MIN_FLOW_VECTOR_LENGTH = 1.0E-4D;
 
-    private BedrockLiquidFlowResolver() {
-    }
+    private BedrockLiquidFlowResolver() {}
 
     static BedrockLiquidFlowVector flowVector(
-        PlacedBlockCollision block,
-        BedrockLiquidKind liquidKind,
-        Map<BlockPosition, PlacedBlockCollision> byPosition
-    ) {
+            PlacedBlockCollision block,
+            BedrockLiquidKind liquidKind,
+            Map<BlockPosition, PlacedBlockCollision> byPosition) {
         Optional<BedrockLiquidFlowVector> explicitFlow = explicitFlowVector(block);
         if (explicitFlow.isPresent()) {
             return explicitFlow.get();
@@ -63,18 +61,17 @@ final class BedrockLiquidFlowResolver {
         double z = BedrockBlockStateProperties.bedrockDoubleOrZero(flowZ, "flow_z");
         BedrockLiquidFlowVector normalized = normalizedFlowVector(x, y, z);
         return normalized == BedrockLiquidFlowVector.NONE
-            ? Optional.of(BedrockLiquidFlowVector.NONE)
-            : Optional.of(normalized);
+                ? Optional.of(BedrockLiquidFlowVector.NONE)
+                : Optional.of(normalized);
     }
 
     private static BedrockLiquidFlowVector horizontalFlowDelta(
-        BlockPosition position,
-        int dx,
-        int dz,
-        int currentDepth,
-        BedrockLiquidKind liquidKind,
-        Map<BlockPosition, PlacedBlockCollision> byPosition
-    ) {
+            BlockPosition position,
+            int dx,
+            int dz,
+            int currentDepth,
+            BedrockLiquidKind liquidKind,
+            Map<BlockPosition, PlacedBlockCollision> byPosition) {
         BlockPosition neighborPosition = new BlockPosition(position.x() + dx, position.y(), position.z() + dz);
         OptionalInt neighborDepth = neighborDepth(neighborPosition, liquidKind, byPosition);
         if (neighborDepth.isPresent()) {
@@ -84,11 +81,8 @@ final class BedrockLiquidFlowResolver {
         if (blocksMotion(byPosition.get(neighborPosition))) {
             return BedrockLiquidFlowVector.NONE;
         }
-        BlockPosition belowNeighborPosition = new BlockPosition(
-            neighborPosition.x(),
-            neighborPosition.y() - 1,
-            neighborPosition.z()
-        );
+        BlockPosition belowNeighborPosition =
+                new BlockPosition(neighborPosition.x(), neighborPosition.y() - 1, neighborPosition.z());
         OptionalInt belowDepth = neighborDepth(belowNeighborPosition, liquidKind, byPosition);
         if (belowDepth.isEmpty()) {
             return BedrockLiquidFlowVector.NONE;
@@ -98,30 +92,21 @@ final class BedrockLiquidFlowResolver {
     }
 
     private static boolean hasFallingLiquidSide(
-        BlockPosition position,
-        Map<BlockPosition, PlacedBlockCollision> byPosition
-    ) {
+            BlockPosition position, Map<BlockPosition, PlacedBlockCollision> byPosition) {
         return hasSolidFallingLiquidNeighbor(position, 1, 0, byPosition)
-            || hasSolidFallingLiquidNeighbor(position, -1, 0, byPosition)
-            || hasSolidFallingLiquidNeighbor(position, 0, 1, byPosition)
-            || hasSolidFallingLiquidNeighbor(position, 0, -1, byPosition);
+                || hasSolidFallingLiquidNeighbor(position, -1, 0, byPosition)
+                || hasSolidFallingLiquidNeighbor(position, 0, 1, byPosition)
+                || hasSolidFallingLiquidNeighbor(position, 0, -1, byPosition);
     }
 
     private static boolean hasSolidFallingLiquidNeighbor(
-        BlockPosition position,
-        int dx,
-        int dz,
-        Map<BlockPosition, PlacedBlockCollision> byPosition
-    ) {
+            BlockPosition position, int dx, int dz, Map<BlockPosition, PlacedBlockCollision> byPosition) {
         BlockPosition neighborPosition = new BlockPosition(position.x() + dx, position.y(), position.z() + dz);
         if (isSolid(byPosition.get(neighborPosition))) {
             return true;
         }
-        BlockPosition aboveNeighborPosition = new BlockPosition(
-            neighborPosition.x(),
-            neighborPosition.y() + 1,
-            neighborPosition.z()
-        );
+        BlockPosition aboveNeighborPosition =
+                new BlockPosition(neighborPosition.x(), neighborPosition.y() + 1, neighborPosition.z());
         return isSolid(byPosition.get(aboveNeighborPosition));
     }
 
@@ -142,15 +127,11 @@ final class BedrockLiquidFlowResolver {
     }
 
     private static OptionalInt neighborDepth(
-        BlockPosition position,
-        BedrockLiquidKind liquidKind,
-        Map<BlockPosition, PlacedBlockCollision> byPosition
-    ) {
+            BlockPosition position, BedrockLiquidKind liquidKind, Map<BlockPosition, PlacedBlockCollision> byPosition) {
         PlacedBlockCollision neighbor = byPosition.get(position);
         if (neighbor == null || BedrockLiquidGeometry.liquidKind(neighbor) != liquidKind) {
             return OptionalInt.empty();
         }
         return BedrockLiquidGeometry.liquidDepth(neighbor);
     }
-
 }

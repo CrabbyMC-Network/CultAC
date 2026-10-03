@@ -33,12 +33,14 @@ final class GfpSessionHooks {
         this.session = session;
         this.reflection = reflection;
         user = reflection.user(session.getUpstream(), session);
-        if (!Vector3i.ZERO.equals(offset())) throw new IllegalStateException("GFP origin changed before CultAC attached");
+        if (!Vector3i.ZERO.equals(offset()))
+            throw new IllegalStateException("GFP origin changed before CultAC attached");
         upstreamField = field(GeyserSession.class, "upstream");
         postStartGamePackets = field(UpstreamSession.class, "postStartGamePackets");
         immediatePacketsField = field(GeyserSession.class, "queuedImmediatelyPackets");
         immediatePackets = session.getQueuedImmediatelyPackets();
-        if (!immediatePackets.isEmpty()) throw new IllegalStateException("GFP tick-end packets queued before CultAC attached");
+        if (!immediatePackets.isEmpty())
+            throw new IllegalStateException("GFP tick-end packets queued before CultAC attached");
         immediateHook = new GeyserImmediatePacketQueue(immediatePackets, owner::enqueue);
     }
 
@@ -47,7 +49,9 @@ final class GfpSessionHooks {
         refresh(false);
     }
 
-    Vector3i offset() throws ReflectiveOperationException { return reflection.offset(user); }
+    Vector3i offset() throws ReflectiveOperationException {
+        return reflection.offset(user);
+    }
 
     void refresh(boolean requireJavaHook) throws ReflectiveOperationException {
         if (session.getUpstream() != upstreamHook) {
@@ -86,7 +90,8 @@ final class GfpSessionHooks {
     }
 
     void detach() throws ReflectiveOperationException {
-        if (session.getQueuedImmediatelyPackets() == immediateHook) immediatePacketsField.set(session, immediatePackets);
+        if (session.getQueuedImmediatelyPackets() == immediateHook)
+            immediatePacketsField.set(session, immediatePackets);
         if (session.getUpstream() == upstreamHook) upstreamField.set(session, upstreamHook.delegate);
         if (javaHook != null && session.getDownstream() != null) {
             var downstream = session.getDownstream().getSession();
@@ -119,8 +124,15 @@ final class GfpSessionHooks {
             this.delegate = delegate;
         }
 
-        @Override public void sendPacket(BedrockPacket packet) { enqueue(packet, false); }
-        @Override public void sendPacketImmediately(BedrockPacket packet) { enqueue(packet, true); }
+        @Override
+        public void sendPacket(BedrockPacket packet) {
+            enqueue(packet, false);
+        }
+
+        @Override
+        public void sendPacketImmediately(BedrockPacket packet) {
+            enqueue(packet, true);
+        }
 
         private void enqueue(BedrockPacket packet, boolean immediate) {
             synchronized (owner) {
@@ -129,8 +141,11 @@ final class GfpSessionHooks {
                     else delegate.sendPacket(packet);
                     // GFP installs its Java wrapper during this call to its upstream wrapper.
                     if (packet instanceof StartGamePacket && !owner.isClosed() && upstreamHook == this) {
-                        try { owner.refresh(true); }
-                        catch (ReflectiveOperationException | RuntimeException | LinkageError failure) { owner.fail(failure); }
+                        try {
+                            owner.refresh(true);
+                        } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+                            owner.fail(failure);
+                        }
                     }
                 };
                 if (upstreamHook != this) write.run();
@@ -138,14 +153,34 @@ final class GfpSessionHooks {
             }
         }
 
-        @Override public void disconnect(String reason) { delegate.disconnect(reason); }
-        @Override public int getProtocolVersion() { return delegate.getProtocolVersion(); }
-        @Override public boolean isInitialized() { return delegate.isInitialized(); }
-        @Override public void setInitialized(boolean initialized) { delegate.setInitialized(initialized); }
-        @Override public void queuePostStartGamePacket(BedrockPacket packet) { delegate.queuePostStartGamePacket(packet); }
+        @Override
+        public void disconnect(String reason) {
+            delegate.disconnect(reason);
+        }
+
+        @Override
+        public int getProtocolVersion() {
+            return delegate.getProtocolVersion();
+        }
+
+        @Override
+        public boolean isInitialized() {
+            return delegate.isInitialized();
+        }
+
+        @Override
+        public void setInitialized(boolean initialized) {
+            delegate.setInitialized(initialized);
+        }
+
+        @Override
+        public void queuePostStartGamePacket(BedrockPacket packet) {
+            delegate.queuePostStartGamePacket(packet);
+        }
 
         @SuppressWarnings("unchecked")
-        @Override public void sendPostStartGamePackets() {
+        @Override
+        public void sendPostStartGamePackets() {
             synchronized (owner) {
                 if (isClosed()) return;
                 try {
@@ -154,7 +189,9 @@ final class GfpSessionHooks {
                     BedrockPacket packet;
                     while ((packet = packets.poll()) != null) sendPacket(packet);
                     postStartGamePackets.set(delegate, null);
-                } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) { owner.fail(failure); }
+                } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+                    owner.fail(failure);
+                }
             }
         }
     }
@@ -164,17 +201,41 @@ final class GfpSessionHooks {
         final List<SessionListener> delegates;
         final GfpPacketRewriter rewriter;
 
-        private JavaHook(SessionListener original, List<SessionListener> delegates) throws ReflectiveOperationException {
+        private JavaHook(SessionListener original, List<SessionListener> delegates)
+                throws ReflectiveOperationException {
             this.original = original;
             this.delegates = delegates;
             rewriter = new GfpPacketRewriter(observer -> reflection.adapter(user, List.of(observer)));
         }
 
-        @Override public void packetReceived(Session downstream, Packet packet) { owner.receive(this, downstream, packet); }
-        @Override public void packetSending(PacketSendingEvent event) { owner.send(this, event); }
-        @Override public void packetSent(Session session, Packet packet) { original.packetSent(session, packet); }
-        @Override public void connected(ConnectedEvent event) { original.connected(event); }
-        @Override public void disconnected(DisconnectedEvent event) { original.disconnected(event); }
-        @Override public void packetError(PacketErrorEvent event) { original.packetError(event); }
+        @Override
+        public void packetReceived(Session downstream, Packet packet) {
+            owner.receive(this, downstream, packet);
+        }
+
+        @Override
+        public void packetSending(PacketSendingEvent event) {
+            owner.send(this, event);
+        }
+
+        @Override
+        public void packetSent(Session session, Packet packet) {
+            original.packetSent(session, packet);
+        }
+
+        @Override
+        public void connected(ConnectedEvent event) {
+            original.connected(event);
+        }
+
+        @Override
+        public void disconnected(DisconnectedEvent event) {
+            original.disconnected(event);
+        }
+
+        @Override
+        public void packetError(PacketErrorEvent event) {
+            original.packetError(event);
+        }
     }
 }

@@ -1,12 +1,12 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.checks.impl.chat.ChatD;
 import ac.cult.cultac.checks.impl.exploit.ExploitA;
 import ac.cult.cultac.checks.impl.misc.ClientBrand;
-import ac.cult.cultac.checks.impl.chat.ChatD;
 import ac.cult.cultac.manager.player.PluginChannelManager;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientInformation;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
@@ -14,7 +14,8 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 public class PacketConfigurationListener {
 
     @CultPacketHandler
-    public void onCustomPayload(PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
+    public void onCustomPayload(
+            PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
         if (event.getPhase() != ConnectionPhase.CONFIGURATION) {
             return;
         }
@@ -44,7 +45,10 @@ public class PacketConfigurationListener {
     }
 
     @CultPacketHandler
-    public void onClientInformation(PacketReceiveEvent<ServerboundClientInformation> event, CultPlayer player, ServerboundClientInformation packet) {
+    public void onClientInformation(
+            PacketReceiveEvent<ServerboundClientInformation> event,
+            CultPlayer player,
+            ServerboundClientInformation packet) {
         if (event.getPhase() != ConnectionPhase.CONFIGURATION) {
             return;
         }
@@ -53,5 +57,4 @@ public class PacketConfigurationListener {
         // CheckManagerListener gate deliberately does not see this phase.
         player.checkManager.getListener(ChatD.class).onClientInformation(event, player, packet);
     }
-
 }

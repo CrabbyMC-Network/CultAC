@@ -11,8 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class BedrockProfileState {
-    private BedrockProfileState() {
-    }
+    private BedrockProfileState() {}
 
     public static BedrockMovementState previousState(SimulationContext context) {
         return context == null ? null : previousState(context.getProfileCarry());
@@ -67,15 +66,10 @@ public final class BedrockProfileState {
         return Optional.empty();
     }
 
-    public record Entry(
-            BedrockMovementState state,
-            BedrockMobJumpComponentState mobJumpComponent
-    ) {
+    public record Entry(BedrockMovementState state, BedrockMobJumpComponentState mobJumpComponent) {
         public Entry {
             state = Objects.requireNonNull(state, "state");
-            mobJumpComponent = mobJumpComponent == null
-                    ? BedrockMobJumpComponentState.DEFAULT
-                    : mobJumpComponent;
+            mobJumpComponent = mobJumpComponent == null ? BedrockMobJumpComponentState.DEFAULT : mobJumpComponent;
         }
 
         public Entry withState(BedrockMovementState state) {

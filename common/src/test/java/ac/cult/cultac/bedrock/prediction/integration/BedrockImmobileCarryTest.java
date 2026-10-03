@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.model.AttributeState;
@@ -25,25 +28,31 @@ import java.util.Set;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-
 public final class BedrockImmobileCarryTest {
     @Test
     public void sleepAndCoordinateRebasePreserveCameraHistory() {
         var camera = new BedrockCameraWaterState(0.61F, 1.22F, true, false);
-        var initial = state(new Vec3d(1, 64, 2), Vec3d.ZERO, BedrockCollisionFlags.ON_GROUND).withCameraWater(camera);
+        var initial = state(new Vec3d(1, 64, 2), Vec3d.ZERO, BedrockCollisionFlags.ON_GROUND)
+                .withCameraWater(camera);
         var rebased = initial.withCoordinateFrame(new BedrockCoordinateFrame(32, -32, 1))
-            .afterServerTeleport(new Vec3d(33, 64, -30), Vec3d.ZERO).afterImmobileBoundary();
+                .afterServerTeleport(new Vec3d(33, 64, -30), Vec3d.ZERO)
+                .afterImmobileBoundary();
         assertSame(camera, rebased.cameraWater());
-        var frame = new BedrockInputFrame(12L, 0, 0, false, false, false,
-            Set.of("ACTOR_POSE_SNAPSHOT", "ACTOR_SLEEPING"));
-        var carry = new BedrockNextTickStates(List.of(
-            new BedrockProfileState.Entry(rebased, BedrockMobJumpComponentState.DEFAULT)));
-        assertSame(carry, BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(carry, frame, false, null).carry());
-        var commit = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(carry, frame, false,
-            BedrockWorldSnapshot.fromContext(airContext()));
-        var next = ((BedrockNextTickStates) commit.carry()).profileEntries().getFirst().state();
+        var frame =
+                new BedrockInputFrame(12L, 0, 0, false, false, false, Set.of("ACTOR_POSE_SNAPSHOT", "ACTOR_SLEEPING"));
+        var carry = new BedrockNextTickStates(
+                List.of(new BedrockProfileState.Entry(rebased, BedrockMobJumpComponentState.DEFAULT)));
+        assertSame(
+                carry,
+                BedrockMovementEngine.INSTANCE
+                        .applyImmobileStateToCarry(carry, frame, false, null)
+                        .carry());
+        var commit = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(
+                carry, frame, false, BedrockWorldSnapshot.fromContext(airContext()));
+        var next = ((BedrockNextTickStates) commit.carry())
+                .profileEntries()
+                .getFirst()
+                .state();
         var expected = camera.sense(false, false).advanceCamera(false, false, true, 1.62001F, 0, 0.35F);
         assertEquals(expected, next.cameraWater());
         assertEquals(rebased.simulationTick() + 1L, next.simulationTick());
@@ -51,28 +60,25 @@ public final class BedrockImmobileCarryTest {
 
     @Test
     public void immobileTransformAdvancesEveryBoundedCandidateAndPreImmobileState() {
-        BedrockMovementState first = state(
-                new Vec3d(1.0D, 64.0D, 2.0D),
-                new Vec3d(0.1D, -0.08D, 0.02D),
-                BedrockCollisionFlags.ON_GROUND);
+        BedrockMovementState first =
+                state(new Vec3d(1.0D, 64.0D, 2.0D), new Vec3d(0.1D, -0.08D, 0.02D), BedrockCollisionFlags.ON_GROUND);
         BedrockMovementState second = state(
                 new Vec3d(1.0D, 64.0D, 2.0D),
                 new Vec3d(0.08D, 0.12D, 0.01D),
                 new BedrockCollisionFlags(false, true, false, true, false, true, false));
-        BedrockMobJumpComponentState reducedSwimImpulse =
-                new BedrockMobJumpComponentState(true);
-        BedrockProfileState.Entry firstEntry = new BedrockProfileState.Entry(
-                first, BedrockMobJumpComponentState.DEFAULT);
-        BedrockProfileState.Entry secondEntry = new BedrockProfileState.Entry(
-                second, reducedSwimImpulse);
-        BedrockInputFrame frame = new BedrockInputFrame(
-                12L, 45.0F, 5.0F, false, false, false, Set.of("START_SPRINTING"));
+        BedrockMobJumpComponentState reducedSwimImpulse = new BedrockMobJumpComponentState(true);
+        BedrockProfileState.Entry firstEntry =
+                new BedrockProfileState.Entry(first, BedrockMobJumpComponentState.DEFAULT);
+        BedrockProfileState.Entry secondEntry = new BedrockProfileState.Entry(second, reducedSwimImpulse);
+        BedrockInputFrame frame =
+                new BedrockInputFrame(12L, 45.0F, 5.0F, false, false, false, Set.of("START_SPRINTING"));
 
         PredictionCommit transformed = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(
-                new BedrockNextTickStates(List.of(firstEntry, secondEntry)), frame, false,
+                new BedrockNextTickStates(List.of(firstEntry, secondEntry)),
+                frame,
+                false,
                 BedrockWorldSnapshot.fromContext(airContext()));
-        List<BedrockProfileState.Entry> entries =
-                ((BedrockNextTickStates) transformed.carry()).profileEntries();
+        List<BedrockProfileState.Entry> entries = ((BedrockNextTickStates) transformed.carry()).profileEntries();
 
         assertEquals(2, entries.size());
         assertSame(BedrockMobJumpComponentState.DEFAULT, entries.get(0).mobJumpComponent());
@@ -87,8 +93,7 @@ public final class BedrockImmobileCarryTest {
     @Test
     public void missingCarryStillClearsStartingVelocity() {
         PredictionCommit transformed = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(
-                null, BedrockInputFrame.idle(1L), false,
-                BedrockWorldSnapshot.fromContext(airContext()));
+                null, BedrockInputFrame.idle(1L), false, BedrockWorldSnapshot.fromContext(airContext()));
 
         assertEquals(Set.of(Vec3.ZERO), transformed.startingVelocities());
     }
@@ -96,14 +101,18 @@ public final class BedrockImmobileCarryTest {
     @Test
     public void correctionTickPreservesOriginForEveryCarryCandidate() {
         var origin = new BedrockCoordinateFrame(-29_000_000, 29_000_000, 4);
-        BedrockMovementState first = state(new Vec3d(-29_000_000 + 31.12345, 64, 29_000_000 - 19.7654),
-                new Vec3d(0.1, -0.08, 0.02), BedrockCollisionFlags.ON_GROUND).withCoordinateFrame(origin);
-        BedrockMovementState second = first.withVelocityAndCollisionFlags(new Vec3d(0.08, 0.12, 0.01), first.collisionFlags());
+        BedrockMovementState first = state(
+                        new Vec3d(-29_000_000 + 31.12345, 64, 29_000_000 - 19.7654),
+                        new Vec3d(0.1, -0.08, 0.02),
+                        BedrockCollisionFlags.ON_GROUND)
+                .withCoordinateFrame(origin);
+        BedrockMovementState second =
+                first.withVelocityAndCollisionFlags(new Vec3d(0.08, 0.12, 0.01), first.collisionFlags());
         var carry = new BedrockNextTickStates(List.of(
                 new BedrockProfileState.Entry(first, BedrockMobJumpComponentState.DEFAULT),
                 new BedrockProfileState.Entry(second, new BedrockMobJumpComponentState(true))));
-        var transformed = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(carry,
-                BedrockInputFrame.idle(12), false, BedrockWorldSnapshot.fromContext(airContext()));
+        var transformed = BedrockMovementEngine.INSTANCE.applyImmobileStateToCarry(
+                carry, BedrockInputFrame.idle(12), false, BedrockWorldSnapshot.fromContext(airContext()));
         var entries = ((BedrockNextTickStates) transformed.carry()).profileEntries();
         assertEquals(2, entries.size());
         for (var entry : entries) {
@@ -114,10 +123,7 @@ public final class BedrockImmobileCarryTest {
     }
 
     private static void assertCandidateTransformed(
-            BedrockMovementState source,
-            BedrockInputFrame frame,
-            BedrockMovementState transformed
-    ) {
+            BedrockMovementState source, BedrockInputFrame frame, BedrockMovementState transformed) {
         assertEquals(source.physicalFeetPosition(), transformed.physicalFeetPosition());
         assertEquals(Vec3d.ZERO, transformed.velocity());
         assertEquals(Vec3d.ZERO, transformed.lastPhysicalDisplacement());
@@ -125,16 +131,8 @@ public final class BedrockImmobileCarryTest {
         assertSame(frame, transformed.inputFrame());
     }
 
-    private static BedrockMovementState state(
-            Vec3d position,
-            Vec3d velocity,
-            BedrockCollisionFlags collisionFlags
-    ) {
-        return BedrockMovementState.fromPhysicalFeet(
-                position,
-                velocity,
-                BedrockInputFrame.idle(11L),
-                collisionFlags);
+    private static BedrockMovementState state(Vec3d position, Vec3d velocity, BedrockCollisionFlags collisionFlags) {
+        return BedrockMovementState.fromPhysicalFeet(position, velocity, BedrockInputFrame.idle(11L), collisionFlags);
     }
 
     private static BedrockMovementContext airContext() {
@@ -144,9 +142,7 @@ public final class BedrockImmobileCarryTest {
                 new WorldContactState(Medium.AIR, FluidState.NONE, BlockCollisionWorld.EMPTY),
                 EquipmentState.NONE,
                 EntityContactState.NONE,
-                new MovementModifierState(
-                        false, false, false, false, 0.05D, false,
-                        false, false, false, 0.35D, 0L),
+                new MovementModifierState(false, false, false, false, 0.05D, false, false, false, false, 0.35D, 0L),
                 PlayerDimensionsState.DEFAULT);
     }
 }

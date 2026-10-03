@@ -3,10 +3,7 @@ package ac.cult.cultac.bedrock.prediction.world;
 import java.util.Objects;
 import java.util.Optional;
 
-public record BounceBlockState(
-    BounceBlockType type,
-    double surfaceY
-) {
+public record BounceBlockState(BounceBlockType type, double surfaceY) {
     private static final String SLIME_BLOCK_IDENTIFIER = "minecraft:slime";
     private static final String JAVA_SLIME_BLOCK_IDENTIFIER = "minecraft:slime_block";
     private static final String BED_BLOCK_IDENTIFIER = "minecraft:bed";
@@ -20,15 +17,10 @@ public record BounceBlockState(
         }
     }
 
-    public static Optional<BounceBlockState> fromCollisionBlock(
-        PlacedBlockCollision block,
-        double surfaceY
-    ) {
+    public static Optional<BounceBlockState> fromCollisionBlock(PlacedBlockCollision block, double surfaceY) {
         Objects.requireNonNull(block, "block");
         BounceBlockType type = collisionBlockType(block);
-        return type == BounceBlockType.NONE
-            ? Optional.empty()
-            : Optional.of(new BounceBlockState(type, surfaceY));
+        return type == BounceBlockType.NONE ? Optional.empty() : Optional.of(new BounceBlockState(type, surfaceY));
     }
 
     public double reboundVelocityY(double fallingVelocityY) {
@@ -57,15 +49,15 @@ public record BounceBlockState(
 
     private static boolean isSlimeBlockIdentifier(String identifier) {
         return SLIME_BLOCK_IDENTIFIER.equals(identifier)
-            || JAVA_SLIME_BLOCK_IDENTIFIER.equals(identifier)
-            || identifier.startsWith(SLIME_BLOCK_IDENTIFIER + "[")
-            || identifier.startsWith(JAVA_SLIME_BLOCK_IDENTIFIER + "[");
+                || JAVA_SLIME_BLOCK_IDENTIFIER.equals(identifier)
+                || identifier.startsWith(SLIME_BLOCK_IDENTIFIER + "[")
+                || identifier.startsWith(JAVA_SLIME_BLOCK_IDENTIFIER + "[");
     }
 
     private static boolean isBedBlockIdentifier(String identifier) {
         return BED_BLOCK_IDENTIFIER.equals(identifier)
-            || identifier.startsWith(BED_BLOCK_IDENTIFIER + "[")
-            || identifier.startsWith("minecraft:") && identifier.endsWith("_bed")
-            || identifier.startsWith("minecraft:") && identifier.contains("_bed[");
+                || identifier.startsWith(BED_BLOCK_IDENTIFIER + "[")
+                || identifier.startsWith("minecraft:") && identifier.endsWith("_bed")
+                || identifier.startsWith("minecraft:") && identifier.contains("_bed[");
     }
 }

@@ -1,22 +1,25 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.value.Hand;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "PacketOrderD", stableKey = "cult.packetorder.interact_hand_order", description = "Sent offhand entity interaction before the matching mainhand interaction", experimental = true)
+@CheckData(
+        name = "PacketOrderD",
+        stableKey = "cult.packetorder.interact_hand_order",
+        description = "Sent offhand entity interaction before the matching mainhand interaction",
+        experimental = true)
 public class PacketOrderD extends Check implements CheckListener {
     private static final Verbose V = Verbose.of(
             "[Skipped Mainhand|requiredEntity={sint}, entity={sint}, requiredSneaking={bool}, sneaking={bool}]");
@@ -35,9 +38,9 @@ public class PacketOrderD extends Check implements CheckListener {
     private boolean requiredSneaking;
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
-        if (!isApplicable()
-                || !DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        if (!isApplicable() || !DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
 
         final InteractAction action = packet.action();
         if (action == InteractAction.ATTACK) return;
@@ -46,14 +49,16 @@ public class PacketOrderD extends Check implements CheckListener {
         final int entity = packet.entityId();
 
         if (packet.hand() == Hand.OFF_HAND) {
-            if (action == InteractAction.INTERACT || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_1)) {
+            if (action == InteractAction.INTERACT
+                    || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_1)) {
                 if (!sentMainhand) {
                     if (flag(V.write(verbose())
-                            .bool(true) // skipped mainhand
-                            .sint(0)
-                            .sint(0)
-                            .bool(false)
-                            .bool(false)) && shouldModifyPackets()) {
+                                    .bool(true) // skipped mainhand
+                                    .sint(0)
+                                    .sint(0)
+                                    .bool(false)
+                                    .bool(false))
+                            && shouldModifyPackets()) {
                         event.setCancelled(true);
                         player.onPacketCancel();
                     }
@@ -64,11 +69,12 @@ public class PacketOrderD extends Check implements CheckListener {
             if (action == InteractAction.INTERACT_AT) {
                 if (sneaking != requiredSneaking || entity != requiredEntity) {
                     if (flag(V.write(verbose())
-                            .bool(false) // mismatch
-                            .sint(requiredEntity)
-                            .sint(entity)
-                            .bool(requiredSneaking)
-                            .bool(sneaking)) && shouldModifyPackets()) {
+                                    .bool(false) // mismatch
+                                    .sint(requiredEntity)
+                                    .sint(entity)
+                                    .bool(requiredSneaking)
+                                    .bool(sneaking))
+                            && shouldModifyPackets()) {
                         event.setCancelled(true);
                         player.onPacketCancel();
                     }
@@ -83,8 +89,8 @@ public class PacketOrderD extends Check implements CheckListener {
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
         if (!player.packetStateData.lastPacketWasTeleport) {
             sentMainhand = false;

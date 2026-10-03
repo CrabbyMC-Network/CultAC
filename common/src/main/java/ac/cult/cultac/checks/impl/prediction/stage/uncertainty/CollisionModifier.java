@@ -3,26 +3,32 @@ package ac.cult.cultac.checks.impl.prediction.stage.uncertainty;
 import ac.cult.cultac.checks.impl.prediction.PredVector;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.utils.nmsutil.JavaCollisionState;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
 import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import net.minecraft.world.phys.Vec3;
-
+import ac.cult.cultac.utils.nmsutil.JavaCollisionState;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import net.minecraft.world.phys.Vec3;
 
 public class CollisionModifier implements UncertaintyHandler {
     @Override
-    public MovementTrace handleMovementTrace(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, MovementTrace trace, Vec3 end) {
+    public MovementTrace handleMovementTrace(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            MovementTrace trace,
+            Vec3 end) {
         if (valid != null && valid.isTestingMaxStartingVelExtents(end)) {
             return trace;
         }
@@ -30,29 +36,39 @@ public class CollisionModifier implements UncertaintyHandler {
         // Entity#move records its attempted delta, after stuck scaling, for
         // checkInsideBlocks' axis order. Clipping can reverse the X/Z ordering.
         Vec3 stuckSpeed = trace.position().collisionStuckSpeedMultiplier(context);
-        trace = trace.withPreCollisionMovement(stuckSpeed == null
-                ? trace.position() : trace.position().multiply(stuckSpeed));
+        trace = trace.withPreCollisionMovement(
+                stuckSpeed == null ? trace.position() : trace.position().multiply(stuckSpeed));
         Vec3 collisionBaseOffset = trace.collisionBaseOffset();
         if (collisionBaseOffset.lengthSqr() <= 1.0E-14) {
-            return trace.withPosition(transformWithCollisions(context, result.getCollideAxisData(), trace.position(), end));
+            return trace.withPosition(
+                    transformWithCollisions(context, result.getCollideAxisData(), trace.position(), end));
         }
 
         // Piston/shulker shoves are separate position-only Entity#move calls.
         // Collision clipping applies to the player's movement vector, then the
         // already-proven external base displacement is re-applied once.
         Vec3 movementOnlyTarget = end.subtract(collisionBaseOffset);
-        PredVector clippedMovement = transformWithCollisions(context, result.getCollideAxisData(), trace.position(), movementOnlyTarget);
+        PredVector clippedMovement =
+                transformWithCollisions(context, result.getCollideAxisData(), trace.position(), movementOnlyTarget);
         return trace.withPosition(clippedMovement.add(collisionBaseOffset, "external movement collision base"));
     }
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         if (valid != null && valid.isTestingMaxStartingVelExtents(end)) return start;
 
         return transformWithCollisions(context, result.getCollideAxisData(), start, end);
     }
 
-    public static PredVector transformWithCollisions(SimulationContext context, CollideAxisData collide, PredVector start, Vec3 end) {
+    public static PredVector transformWithCollisions(
+            SimulationContext context, CollideAxisData collide, PredVector start, Vec3 end) {
         PredVector attempted = start;
         // Collisions mean that movement from the start of the collision to the max extent is possible
         if (isValidCollision(collide.getX(), start.x, end.x)) {
@@ -68,7 +84,8 @@ public class CollisionModifier implements UncertaintyHandler {
         if (collide.getYNeg() != null
                 && collide.getYNeg().isLikelyCollide()
                 && start.y < collide.getYNeg().getResult()
-                && end.y <= 0 && end.y > start.y) {
+                && end.y <= 0
+                && end.y > start.y) {
             double clamped = CultMath.clamp(end.y, start.y, collide.getYNeg().getResult());
             start = start.withY(clamped, "collide -y");
         }
@@ -76,21 +93,23 @@ public class CollisionModifier implements UncertaintyHandler {
         if (collide.getYPos() != null
                 && collide.getYPos().isLikelyCollide()
                 && start.y > collide.getYPos().getResult()
-                && end.y >= 0 && end.y < start.y) {
+                && end.y >= 0
+                && end.y < start.y) {
             double clamped = CultMath.clamp(end.y, start.y, collide.getYPos().getResult());
             start = start.withY(clamped, "collide +y");
         }
 
         // Legacy Entity#moveEntity always commits the clipped bounding box.
-        if (context != null && context.getVersion() != null && context.getVersion().isOlderThan(ClientVersion.V_1_14)) return start;
-        Vec3 packetVisibleMovement = applyEntityMovePositionCommitGuard(
-                attempted,
-                start,
-                attempted.collisionStuckSpeedMultiplier(context));
+        if (context != null
+                && context.getVersion() != null
+                && context.getVersion().isOlderThan(ClientVersion.V_1_14)) return start;
+        Vec3 packetVisibleMovement =
+                applyEntityMovePositionCommitGuard(attempted, start, attempted.collisionStuckSpeedMultiplier(context));
         return packetVisibleMovement == start ? start : start.with(packetVisibleMovement, "Entity#move setPos guard");
     }
 
-    private static Vec3 applyEntityMovePositionCommitGuard(Vec3 attemptedMovement, Vec3 clippedMovement, Vec3 stuckSpeed) {
+    private static Vec3 applyEntityMovePositionCommitGuard(
+            Vec3 attemptedMovement, Vec3 clippedMovement, Vec3 stuckSpeed) {
         Vec3 multiplier = stuckSpeed == null ? new Vec3(1.0D, 1.0D, 1.0D) : stuckSpeed;
         Vec3 vanillaAttempted = attemptedMovement.multiply(multiplier.x, multiplier.y, multiplier.z);
         Vec3 vanillaClipped = clippedMovement.multiply(multiplier.x, multiplier.y, multiplier.z);
@@ -122,7 +141,13 @@ public class CollisionModifier implements UncertaintyHandler {
     // We should probe collisions in all directions that we care about, really.
     // - When the player isn't moving in a direction, we should probe collision epsilon in both pos and negative
     // - When the player could technically move in both pos and negative Y, probe both! (for stepping)
-    public CollideAxisData probeCollisions(CultPlayer player, SimulationContext context, double minY, Vec3 target, Vec3 playerPos, SimpleCollisionBox attemptedMovementExtents) {
+    public CollideAxisData probeCollisions(
+            CultPlayer player,
+            SimulationContext context,
+            double minY,
+            Vec3 target,
+            Vec3 playerPos,
+            SimpleCollisionBox attemptedMovementExtents) {
         return probeCollisions(
                 player,
                 context,
@@ -140,19 +165,40 @@ public class CollisionModifier implements UncertaintyHandler {
             Vec3 target,
             Vec3 playerPos,
             SimpleCollisionBox attemptedMovementExtents,
-            ProbeDimensions dimensions
-    ) {
-        return probeCollisions(player, context, minY, target, playerPos, attemptedMovementExtents, dimensions,
+            ProbeDimensions dimensions) {
+        return probeCollisions(
+                player,
+                context,
+                minY,
+                target,
+                playerPos,
+                attemptedMovementExtents,
+                dimensions,
                 JavaCollisionState.current(player));
     }
 
-    public CollideAxisData probeCollisions(CultPlayer player, SimulationContext context, double minY, Vec3 target,
-            Vec3 playerPos, SimpleCollisionBox attemptedMovementExtents, ProbeDimensions dimensions, JavaCollisionState actor) {
-        return probeCollisions(player, context, minY, target, playerPos, attemptedMovementExtents, dimensions, actor, false);
+    public CollideAxisData probeCollisions(
+            CultPlayer player,
+            SimulationContext context,
+            double minY,
+            Vec3 target,
+            Vec3 playerPos,
+            SimpleCollisionBox attemptedMovementExtents,
+            ProbeDimensions dimensions,
+            JavaCollisionState actor) {
+        return probeCollisions(
+                player, context, minY, target, playerPos, attemptedMovementExtents, dimensions, actor, false);
     }
 
-    public CollideAxisData probeCollisions(CultPlayer player, SimulationContext context, double minY, Vec3 target,
-            Vec3 playerPos, SimpleCollisionBox attemptedMovementExtents, ProbeDimensions dimensions, JavaCollisionState actor,
+    public CollideAxisData probeCollisions(
+            CultPlayer player,
+            SimulationContext context,
+            double minY,
+            Vec3 target,
+            Vec3 playerPos,
+            SimpleCollisionBox attemptedMovementExtents,
+            ProbeDimensions dimensions,
+            JavaCollisionState actor,
             boolean followCandidateVerticalMovement) {
         CollideAxisData result = new CollideAxisData();
 
@@ -178,19 +224,16 @@ public class CollisionModifier implements UncertaintyHandler {
         List<SimpleCollisionBox> collisions = new ArrayList<>();
         Collisions.getCollisionBoxes(player, grabBoxesBB, collisions, false, playerPos.y, actor);
 
-        List<SimpleCollisionBox> unknown = UnknownCollisionProvider.movementUnknownCollisions(
-                player,
-                context,
-                playerPos,
-                grabBoxesBB);
+        List<SimpleCollisionBox> unknown =
+                UnknownCollisionProvider.movementUnknownCollisions(player, context, playerPos, grabBoxesBB);
         result.setUnknown(unknown);
-
 
         // slight optimization
         unknown.removeIf(unknownBox -> !unknownBox.isIntersected(grabBoxesBB));
 
         if (!unknown.isEmpty()) {
-            return new CollideAxisData(new CollideAxisData.CollideResult(true, 0),
+            return new CollideAxisData(
+                    new CollideAxisData.CollideResult(true, 0),
                     new CollideAxisData.CollideResult(true, 0),
                     new CollideAxisData.CollideResult(true, 0),
                     new CollideAxisData.CollideResult(true, 0),
@@ -229,23 +272,29 @@ public class CollisionModifier implements UncertaintyHandler {
             Vec3 iterPos = playerPos;
             for (Collisions.Axis axis : order) {
                 double movement = getAxisOfVector(target, axis);
-                double positiveMovement = getAttemptedAxisMovement(axis, movement, attemptedMovementExtents, stuckSpeed, true);
-                double negativeMovement = getAttemptedAxisMovement(axis, movement, attemptedMovementExtents, stuckSpeed, false);
+                double positiveMovement =
+                        getAttemptedAxisMovement(axis, movement, attemptedMovementExtents, stuckSpeed, true);
+                double negativeMovement =
+                        getAttemptedAxisMovement(axis, movement, attemptedMovementExtents, stuckSpeed, false);
                 double multiplier = 1 / getAxisOfVector(stuckSpeed, axis); // TODO: How do we stuck speed collision?
 
-                AxisResult pos = testInAxisAndDirection(context, collisions, unknown, iterPos, axis, positiveMovement, true, dimensions);
+                AxisResult pos = testInAxisAndDirection(
+                        context, collisions, unknown, iterPos, axis, positiveMovement, true, dimensions);
                 // Keep the downward reach for landing/step discovery separate
                 // from the position used for the following horizontal axes.
                 if (axis == Collisions.Axis.Y) {
-                    negativeMovement = getAttemptedAxisMovement(axis, minY, attemptedMovementExtents, stuckSpeed, false);
+                    negativeMovement =
+                            getAttemptedAxisMovement(axis, minY, attemptedMovementExtents, stuckSpeed, false);
                     movement = followCandidateVerticalMovement ? candidateY : minY;
                 }
-                AxisResult neg = testInAxisAndDirection(context, collisions, unknown, iterPos, axis, negativeMovement, false, dimensions);
+                AxisResult neg = testInAxisAndDirection(
+                        context, collisions, unknown, iterPos, axis, negativeMovement, false, dimensions);
 
                 if (axis == Collisions.Axis.Y && followCandidateVerticalMovement && movement != 0.0D) {
                     AxisResult vertical = movement < 0 ? neg : pos;
                     if (vertical != null && vertical.isCollide()) {
-                        movement = movement < 0 ? Math.max(movement, vertical.getResult())
+                        movement = movement < 0
+                                ? Math.max(movement, vertical.getResult())
                                 : Math.min(movement, vertical.getResult());
                     }
                 }
@@ -257,20 +306,24 @@ public class CollisionModifier implements UncertaintyHandler {
 
                 switch (axis) {
                     case X:
-                        CollideAxisData.CollideResult xResult = mergeHorizontalAxisResults(pos, neg, positiveMovement, negativeMovement, movement, multiplier);
+                        CollideAxisData.CollideResult xResult = mergeHorizontalAxisResults(
+                                pos, neg, positiveMovement, negativeMovement, movement, multiplier);
                         if (xResult != null) result.setX(xResult);
                         break;
                     case Z:
-                        CollideAxisData.CollideResult zResult = mergeHorizontalAxisResults(pos, neg, positiveMovement, negativeMovement, movement, multiplier);
+                        CollideAxisData.CollideResult zResult = mergeHorizontalAxisResults(
+                                pos, neg, positiveMovement, negativeMovement, movement, multiplier);
                         if (zResult != null) result.setZ(zResult);
                         break;
                     // We care about both positive and negative for Y axis (for stepping) - special case
                     case Y:
                         if (pos != null) {
-                            result.setYPos(new CollideAxisData.CollideResult(pos.isCollide(), pos.getResult() * multiplier));
+                            result.setYPos(
+                                    new CollideAxisData.CollideResult(pos.isCollide(), pos.getResult() * multiplier));
                         }
                         if (neg != null) {
-                            result.setYNeg(new CollideAxisData.CollideResult(neg.isCollide(), neg.getResult() * multiplier));
+                            result.setYNeg(
+                                    new CollideAxisData.CollideResult(neg.isCollide(), neg.getResult() * multiplier));
                         }
                         break;
                 }
@@ -280,9 +333,13 @@ public class CollisionModifier implements UncertaintyHandler {
         return result;
     }
 
-    private CollideAxisData.CollideResult mergeHorizontalAxisResults(AxisResult pos, AxisResult neg,
-                                                                    double positiveMovement, double negativeMovement,
-                                                                    double packetMovement, double multiplier) {
+    private CollideAxisData.CollideResult mergeHorizontalAxisResults(
+            AxisResult pos,
+            AxisResult neg,
+            double positiveMovement,
+            double negativeMovement,
+            double packetMovement,
+            double multiplier) {
         AxisResult selected = selectHorizontalAxisResult(pos, neg, positiveMovement, negativeMovement, packetMovement);
         if (selected == null) {
             return null;
@@ -292,9 +349,8 @@ public class CollisionModifier implements UncertaintyHandler {
         return new CollideAxisData.CollideResult(didCollide, selected.getResult() * multiplier);
     }
 
-    private AxisResult selectHorizontalAxisResult(AxisResult pos, AxisResult neg,
-                                                 double positiveMovement, double negativeMovement,
-                                                 double packetMovement) {
+    private AxisResult selectHorizontalAxisResult(
+            AxisResult pos, AxisResult neg, double positiveMovement, double negativeMovement, double packetMovement) {
         if (pos == null) return neg;
         if (neg == null) return pos;
 
@@ -313,7 +369,12 @@ public class CollisionModifier implements UncertaintyHandler {
         return Math.abs(pos.getResult()) <= Math.abs(neg.getResult()) ? pos : neg;
     }
 
-    private double getAttemptedAxisMovement(Collisions.Axis axis, double fallback, SimpleCollisionBox attemptedMovementExtents, Vec3 stuckSpeed, boolean positive) {
+    private double getAttemptedAxisMovement(
+            Collisions.Axis axis,
+            double fallback,
+            SimpleCollisionBox attemptedMovementExtents,
+            Vec3 stuckSpeed,
+            boolean positive) {
         if (attemptedMovementExtents == null) {
             return fallback;
         }
@@ -331,9 +392,12 @@ public class CollisionModifier implements UncertaintyHandler {
         return Math.min(fallback, attempted);
     }
 
-    private void expandToAttemptedMovement(SimpleCollisionBox sweepBox, SimpleCollisionBox attemptedMovementExtents, Vec3 stuckSpeed) {
-        sweepBox.expandToCoordinate(attemptedMovementExtents.minX * stuckSpeed.x, 0, attemptedMovementExtents.minZ * stuckSpeed.z);
-        sweepBox.expandToCoordinate(attemptedMovementExtents.maxX * stuckSpeed.x, 0, attemptedMovementExtents.maxZ * stuckSpeed.z);
+    private void expandToAttemptedMovement(
+            SimpleCollisionBox sweepBox, SimpleCollisionBox attemptedMovementExtents, Vec3 stuckSpeed) {
+        sweepBox.expandToCoordinate(
+                attemptedMovementExtents.minX * stuckSpeed.x, 0, attemptedMovementExtents.minZ * stuckSpeed.z);
+        sweepBox.expandToCoordinate(
+                attemptedMovementExtents.maxX * stuckSpeed.x, 0, attemptedMovementExtents.maxZ * stuckSpeed.z);
 
         if (attemptedMovementExtents.minY < 0) {
             sweepBox.minY += attemptedMovementExtents.minY * stuckSpeed.y;
@@ -353,14 +417,21 @@ public class CollisionModifier implements UncertaintyHandler {
         }
     }
 
-    private Vec3 moveBoundingBoxForAxis(SimulationContext context, List<SimpleCollisionBox> collisions, Collisions.Axis axis, double amount, Vec3 playerPos, ProbeDimensions dimensions) {
+    private Vec3 moveBoundingBoxForAxis(
+            SimulationContext context,
+            List<SimpleCollisionBox> collisions,
+            Collisions.Axis axis,
+            double amount,
+            Vec3 playerPos,
+            ProbeDimensions dimensions) {
         // Move the position for the next axis (with the smallest bounding box possible)
         // This is needed to stop people from slightly clipping into walls to avoid taking knockback (Clip AntiKB)
         if (amount == 0) return playerPos; // Nothing to do
         Vec3 movementVector = transformToOnlyHaveAxis(new Vec3(amount, amount, amount), axis);
         float width = context.getVehicle() == null ? dimensions.width() : context.getMaxWidth();
         float height = context.getVehicle() == null ? dimensions.initialHeight() : context.getMaxHeight();
-        SimpleCollisionBox oldBox = GetBoundingBox.getBoundingBoxFromPosAndSize(playerPos.x, playerPos.y, playerPos.z, width, height);
+        SimpleCollisionBox oldBox =
+                GetBoundingBox.getBoundingBoxFromPosAndSize(playerPos.x, playerPos.y, playerPos.z, width, height);
         Vec3 result = Collisions.collideBoundingBoxLegacy(
                 movementVector, oldBox, collisions, Collections.singletonList(axis), dimensions.epsilon());
         return playerPos.add(result);
@@ -378,8 +449,17 @@ public class CollisionModifier implements UncertaintyHandler {
         throw new IllegalStateException("Unknown axis " + axis);
     }
 
-    private AxisResult testInAxisAndDirection(SimulationContext context, List<SimpleCollisionBox> collisions, List<SimpleCollisionBox> unknown, Vec3 pos, Collisions.Axis axis, double amount, boolean isPositive, ProbeDimensions dimensions) {
-        // Nothing to do (in opposite dir, not counting less than epsilon - floating point means you can move 1e16 upwards while colliding downwards
+    private AxisResult testInAxisAndDirection(
+            SimulationContext context,
+            List<SimpleCollisionBox> collisions,
+            List<SimpleCollisionBox> unknown,
+            Vec3 pos,
+            Collisions.Axis axis,
+            double amount,
+            boolean isPositive,
+            ProbeDimensions dimensions) {
+        // Nothing to do (in opposite dir, not counting less than epsilon - floating point means you can move 1e16
+        // upwards while colliding downwards
         double axisEpsilon = axisEpsilon(dimensions.epsilon(), axis);
         if (Math.abs(amount) > axisEpsilon && isPositive != (Math.signum(amount) == 1)) return null;
 
@@ -389,7 +469,8 @@ public class CollisionModifier implements UncertaintyHandler {
         // START HANDLING OF POTENTIALLY UNKNOWN CLIENT SIDED BLOCKS
         float maximumWidth = context.getVehicle() == null ? dimensions.width() : context.getMaxWidth();
         float maximumHeight = context.getVehicle() == null ? dimensions.maxHeight() : context.getMaxHeight();
-        SimpleCollisionBox biggestBoxPossible = GetBoundingBox.getBoundingBoxFromPosAndSize(pos.x, pos.y, pos.z, maximumWidth, maximumHeight);
+        SimpleCollisionBox biggestBoxPossible =
+                GetBoundingBox.getBoundingBoxFromPosAndSize(pos.x, pos.y, pos.z, maximumWidth, maximumHeight);
         biggestBoxPossible.expand(0.1); // For good measure.
         for (SimpleCollisionBox box : unknown) {
             if (box.isCollided(biggestBoxPossible)) {
@@ -415,8 +496,8 @@ public class CollisionModifier implements UncertaintyHandler {
         // clipping, rather than proximity, bounds where that body can be.
         double reportingExtent = !isVehicle && context.getVersion().isOlderThan(ClientVersion.V_1_18_2) ? 0.03D : 0.0D;
         SimpleCollisionBox playerBox = GetBoundingBox.getBoundingBoxFromPosAndSize(
-                pos.x, pos.y, pos.z, (float) (dimensions.width() - reportingExtent),
-                (float) (dimensions.initialHeight() - reportingExtent));
+                pos.x, pos.y, pos.z, (float) (dimensions.width() - reportingExtent), (float)
+                        (dimensions.initialHeight() - reportingExtent));
         if (reportingExtent > 0) {
             List<Collisions.Axis> expandOrder = new ArrayList<>(Arrays.asList(Collisions.Axis.values()));
             expandOrder.remove(axis);
@@ -424,22 +505,35 @@ public class CollisionModifier implements UncertaintyHandler {
             Vec3 extent = new Vec3(reportingExtent * 2, reportingExtent * 2, reportingExtent * 2);
             for (Collisions.Axis expandAxis : expandOrder) {
                 if (expandAxis == axis) {
-                    expandUpwards(playerBox, collisions, axis, epsilon,
-                            dimensions.maxHeight() - dimensions.initialHeight(), dimensions.epsilon());
+                    expandUpwards(
+                            playerBox,
+                            collisions,
+                            axis,
+                            epsilon,
+                            dimensions.maxHeight() - dimensions.initialHeight(),
+                            dimensions.epsilon());
                 }
                 Vec3 expansion = transformToOnlyHaveAxis(extent, expandAxis);
                 List<Collisions.Axis> oneAxis = Collections.singletonList(expandAxis);
-                Vec3 positive = Collisions.collideBoundingBoxLegacy(expansion, playerBox, collisions, oneAxis, dimensions.epsilon());
-                Vec3 negative = Collisions.collideBoundingBoxLegacy(expansion.scale(-1), playerBox, collisions, oneAxis, dimensions.epsilon());
+                Vec3 positive = Collisions.collideBoundingBoxLegacy(
+                        expansion, playerBox, collisions, oneAxis, dimensions.epsilon());
+                Vec3 negative = Collisions.collideBoundingBoxLegacy(
+                        expansion.scale(-1), playerBox, collisions, oneAxis, dimensions.epsilon());
                 playerBox.expandToCoordinate(positive);
                 playerBox.expandToCoordinate(negative);
             }
         } else if (!isVehicle) {
-            expandUpwards(playerBox, collisions, axis, epsilon,
-                    dimensions.maxHeight() - dimensions.initialHeight(), dimensions.epsilon());
+            expandUpwards(
+                    playerBox,
+                    collisions,
+                    axis,
+                    epsilon,
+                    dimensions.maxHeight() - dimensions.initialHeight(),
+                    dimensions.epsilon());
         } else {
             // No desync's with vehicle bounding box (that we can control)
-            playerBox = GetBoundingBox.getBoundingBoxFromPosAndSize(pos.x, pos.y, pos.z, context.getMaxWidth(), context.getMaxHeight());
+            playerBox = GetBoundingBox.getBoundingBoxFromPosAndSize(
+                    pos.x, pos.y, pos.z, context.getMaxWidth(), context.getMaxHeight());
         }
 
         // Now, after all of this bounding box fuckery is done, we can finally test for a collision!
@@ -456,9 +550,13 @@ public class CollisionModifier implements UncertaintyHandler {
         return new AxisResult(getAxisOfVector(result, axis), collided);
     }
 
-    private void expandUpwards(SimpleCollisionBox playerBox, List<SimpleCollisionBox> collisions,
-                               Collisions.Axis axis, double epsilon, double amount,
-                               SimpleCollisionBox.AxisEpsilon collisionEpsilon) {
+    private void expandUpwards(
+            SimpleCollisionBox playerBox,
+            List<SimpleCollisionBox> collisions,
+            Collisions.Axis axis,
+            double epsilon,
+            double amount,
+            SimpleCollisionBox.AxisEpsilon collisionEpsilon) {
         // TODO: Define minimum bounding box extent (for 1.8 players and such to not by 0.6)
         // Expand the player box upwards by their unknown hitbox amount
         Vec3 unknownPlayerBoxAmount = new Vec3(0, amount, 0);
@@ -492,8 +590,8 @@ public class CollisionModifier implements UncertaintyHandler {
         return Math.max(epsilon.x(), Math.max(epsilon.y(), epsilon.z()));
     }
 
-    public record ProbeDimensions(float width, float initialHeight, float maxHeight,
-                                  SimpleCollisionBox.AxisEpsilon epsilon) {
+    public record ProbeDimensions(
+            float width, float initialHeight, float maxHeight, SimpleCollisionBox.AxisEpsilon epsilon) {
         public ProbeDimensions {
             if (width <= 0.0F || initialHeight <= 0.0F || maxHeight < initialHeight) {
                 throw new IllegalArgumentException("invalid collision probe dimensions");

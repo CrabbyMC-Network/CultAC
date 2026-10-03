@@ -7,29 +7,30 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.HitData;
 import ac.cult.cultac.utils.data.Pair;
 import ac.cult.cultac.utils.math.CultMath;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiFunction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.Material;
-import net.minecraft.world.phys.Vec3;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiFunction;
 
 public class TraverseBlocks {
     // Copied from MCP...
     // Returns null if there isn't anything.
     //
     // I do have to admit that I'm starting to like bifunctions/new java 8 things more than I originally did.
-    // although I still don't understand Mojang's obsession with streams in some of the hottest methods... that kills performance
-    public static HitData traverseBlocks(CultPlayer player, Vec3 start, Vec3 end, BiFunction<BlockData, BlockPos, HitData> predicate) {
+    // although I still don't understand Mojang's obsession with streams in some of the hottest methods... that kills
+    // performance
+    public static HitData traverseBlocks(
+            CultPlayer player, Vec3 start, Vec3 end, BiFunction<BlockData, BlockPos, HitData> predicate) {
         // I guess go back by the collision epsilon?
         double endX = CultMath.lerp(-1.0E-7D, end.x, start.x);
         double endY = CultMath.lerp(-1.0E-7D, end.y, start.y);
@@ -40,7 +41,6 @@ public class TraverseBlocks {
         int floorStartX = CultMath.floor(startX);
         int floorStartY = CultMath.floor(startY);
         int floorStartZ = CultMath.floor(startZ);
-
 
         if (start.equals(end)) return null;
 
@@ -95,7 +95,8 @@ public class TraverseBlocks {
         return null;
     }
 
-    public static @Nullable HitData getNearestHitResult(CultPlayer player, Material heldItem, boolean sourcesHaveHitbox) {
+    public static @Nullable HitData getNearestHitResult(
+            CultPlayer player, Material heldItem, boolean sourcesHaveHitbox) {
         Vec3 startingPos = new Vec3(player.x, player.y + player.getEyeHeight(), player.z);
         Vector startingVec = new Vector(startingPos.x, startingPos.y, startingPos.z);
         Ray trace = new Ray(player, startingPos.x, startingPos.y, startingPos.z, player.xRot, player.yRot);
@@ -103,7 +104,8 @@ public class TraverseBlocks {
         Vec3 endPos = new Vec3(endVec.getX(), endVec.getY(), endVec.getZ());
 
         return traverseBlocks(player, startingPos, endPos, (block, vector3i) -> {
-            CollisionBox data = HitboxData.getBlockHitbox(player, heldItem, block, vector3i.getX(), vector3i.getY(), vector3i.getZ());
+            CollisionBox data = HitboxData.getBlockHitbox(
+                    player, heldItem, block, vector3i.getX(), vector3i.getY(), vector3i.getZ());
             List<SimpleCollisionBox> boxes = new ArrayList<>();
             data.downCast(boxes);
 
@@ -112,7 +114,8 @@ public class TraverseBlocks {
             BlockFace bestFace = null;
 
             for (SimpleCollisionBox box : boxes) {
-                Pair<Vector, BlockFace> intercept = ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
+                Pair<Vector, BlockFace> intercept =
+                        ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
                 if (intercept.getFirst() == null) continue; // No intercept
 
                 Vector hitLoc = intercept.getFirst();
@@ -127,13 +130,23 @@ public class TraverseBlocks {
                 return new HitData(vector3i, bestHitLoc, bestFace, block);
             }
 
-            if (sourcesHaveHitbox &&
-                    (player.compensatedWorld.isWaterSourceBlock(vector3i.getX(), vector3i.getY(), vector3i.getZ())
-                            || player.compensatedWorld.getLavaFluidLevelAt(vector3i.getX(), vector3i.getY(), vector3i.getZ()) == (8 / 9f))) {
-                double waterHeight = player.compensatedWorld.getFluidLevelAt(vector3i.getX(), vector3i.getY(), vector3i.getZ());
-                SimpleCollisionBox box = new SimpleCollisionBox(vector3i.getX(), vector3i.getY(), vector3i.getZ(), vector3i.getX() + 1, vector3i.getY() + waterHeight, vector3i.getZ() + 1);
+            if (sourcesHaveHitbox
+                    && (player.compensatedWorld.isWaterSourceBlock(vector3i.getX(), vector3i.getY(), vector3i.getZ())
+                            || player.compensatedWorld.getLavaFluidLevelAt(
+                                            vector3i.getX(), vector3i.getY(), vector3i.getZ())
+                                    == (8 / 9f))) {
+                double waterHeight =
+                        player.compensatedWorld.getFluidLevelAt(vector3i.getX(), vector3i.getY(), vector3i.getZ());
+                SimpleCollisionBox box = new SimpleCollisionBox(
+                        vector3i.getX(),
+                        vector3i.getY(),
+                        vector3i.getZ(),
+                        vector3i.getX() + 1,
+                        vector3i.getY() + waterHeight,
+                        vector3i.getZ() + 1);
 
-                Pair<Vector, BlockFace> intercept = ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
+                Pair<Vector, BlockFace> intercept =
+                        ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
 
                 if (intercept.getFirst() != null) {
                     return new HitData(vector3i, intercept.getFirst(), intercept.getSecond(), block);
@@ -157,8 +170,7 @@ public class TraverseBlocks {
                 endPos,
                 ClipContext.Block.OUTLINE,
                 ClipContext.Fluid.SOURCE_ONLY,
-                NativeBlockCollisionHelper.collisionContext(player)
-        ));
+                NativeBlockCollisionHelper.collisionContext(player)));
         if (hitResult.getType() != HitResult.Type.BLOCK) {
             return null;
         }
@@ -169,8 +181,7 @@ public class TraverseBlocks {
                 blockPos,
                 new Vector(location.x, location.y, location.z),
                 toBlockFace(hitResult.getDirection()),
-                player.compensatedWorld.getBlockDataAt(blockPos)
-        );
+                player.compensatedWorld.getBlockDataAt(blockPos));
     }
 
     private static double getBlockInteractionRange(CultPlayer player) {

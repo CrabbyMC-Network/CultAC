@@ -1,17 +1,15 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Optional;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Optional;
-
 /** Bridges Mojang's ResourceLocation-to-Identifier rename without leaking either type internally. */
 public final class NmsIdentifierUtil {
-    private NmsIdentifierUtil() {
-    }
+    private NmsIdentifierUtil() {}
 
     public static String asString(Object identifier) {
         if (identifier == null) {
@@ -59,7 +57,9 @@ public final class NmsIdentifierUtil {
         try {
             Class<?> keyType = Registry.class.getMethod("getKey", Object.class).getReturnType();
             Object key = keyType.getMethod("parse", String.class).invoke(null, identifier);
-            return (ResourceKey<T>) ResourceKey.class.getMethod("create", ResourceKey.class, keyType).invoke(null, registry, key);
+            return (ResourceKey<T>) ResourceKey.class
+                    .getMethod("create", ResourceKey.class, keyType)
+                    .invoke(null, registry, key);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Resource key lookup failed for " + identifier, exception);
         }
@@ -70,7 +70,8 @@ public final class NmsIdentifierUtil {
         try {
             Class<?> keyType = Registry.class.getMethod("getKey", Object.class).getReturnType();
             Object key = keyType.getMethod("parse", String.class).invoke(null, identifier);
-            return (TagKey<T>) TagKey.class.getMethod("create", ResourceKey.class, keyType).invoke(null, registry, key);
+            return (TagKey<T>)
+                    TagKey.class.getMethod("create", ResourceKey.class, keyType).invoke(null, registry, key);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Tag lookup failed for " + identifier, exception);
         }
@@ -111,7 +112,8 @@ public final class NmsIdentifierUtil {
             } catch (NoSuchMethodException ignored) {
                 // Try the name used by the other supported Mojang mapping generation.
             } catch (IllegalAccessException exception) {
-                throw new IllegalStateException("Unable to access " + target.getClass().getName() + "#" + methodName, exception);
+                throw new IllegalStateException(
+                        "Unable to access " + target.getClass().getName() + "#" + methodName, exception);
             } catch (InvocationTargetException exception) {
                 Throwable cause = exception.getCause();
                 if (cause instanceof RuntimeException runtimeException) {
@@ -120,6 +122,7 @@ public final class NmsIdentifierUtil {
                 throw new IllegalStateException("Identifier accessor failed", cause);
             }
         }
-        throw new IllegalStateException("No supported identifier accessor on " + target.getClass().getName());
+        throw new IllegalStateException(
+                "No supported identifier accessor on " + target.getClass().getName());
     }
 }

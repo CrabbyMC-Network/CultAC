@@ -38,8 +38,7 @@ final class BedrockPistonArmCollisionShape {
         }
     };
 
-    private BedrockPistonArmCollisionShape() {
-    }
+    private BedrockPistonArmCollisionShape() {}
 
     enum FacingDirection {
         DOWN(0, 0.0D, -1.0D, 0.0D),
@@ -93,24 +92,22 @@ final class BedrockPistonArmCollisionShape {
         List<BlockAabb> translated = new ArrayList<>(3);
         for (BlockAabb source : COLLISION_TABLE[direction.bedrockValue()]) {
             translated.add(translate(
-                source,
-                direction.offsetX() * progress,
-                direction.offsetY() * progress,
-                direction.offsetZ() * progress
-            ));
+                    source,
+                    direction.offsetX() * progress,
+                    direction.offsetY() * progress,
+                    direction.offsetZ() * progress));
         }
         return List.copyOf(translated);
     }
 
     private static BlockAabb translate(BlockAabb source, double x, double y, double z) {
         return new BlockAabb(
-            source.minX() + x,
-            source.minY() + y,
-            source.minZ() + z,
-            source.maxX() + x,
-            source.maxY() + y,
-            source.maxZ() + z
-        );
+                source.minX() + x,
+                source.minY() + y,
+                source.minZ() + z,
+                source.maxX() + x,
+                source.maxY() + y,
+                source.maxZ() + z);
     }
 
     private static void validateProgress(double progress) {

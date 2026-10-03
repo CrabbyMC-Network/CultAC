@@ -14,13 +14,12 @@ import org.jetbrains.annotations.NotNull;
 public class CultSendAlert implements BuildableCommand {
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("sendalert")
-                        .permission("cult.sendalert")
-                        .required("message", StringParser.greedyStringParser())
-                        .handler(this::handleSendAlert)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("sendalert")
+                .permission("cult.sendalert")
+                .required("message", StringParser.greedyStringParser())
+                .handler(this::handleSendAlert));
     }
 
     private void handleSendAlert(@NotNull CommandContext<Sender> context) {

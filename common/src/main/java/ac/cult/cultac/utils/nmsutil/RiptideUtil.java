@@ -10,8 +10,7 @@ import org.bukkit.inventory.ItemStack;
 public final class RiptideUtil {
     private static final int MIN_CHARGE_TICKS = 10;
 
-    private RiptideUtil() {
-    }
+    private RiptideUtil() {}
 
     public static int getRiptideLevel(ItemStack item) {
         if (item == null || item.getType() != Material.TRIDENT) {
@@ -46,7 +45,8 @@ public final class RiptideUtil {
         if (hand == null || hand != player.packetStateData.riptideUseHand) {
             return 0;
         }
-        return Math.max(0, player.packetStateData.acceptedClientTick - player.packetStateData.riptideUseStartClientTick);
+        return Math.max(
+                0, player.packetStateData.acceptedClientTick - player.packetStateData.riptideUseStartClientTick);
     }
 
     public static boolean canUseRiptideAtCurrentState(CultPlayer player) {
@@ -57,7 +57,8 @@ public final class RiptideUtil {
     }
 
     public static boolean isTouchingWater(CultPlayer player) {
-        SimpleCollisionBox box = GetBoundingBox.getPlayerBoundingBox(player, player.x, player.y, player.z).copy();
+        SimpleCollisionBox box = GetBoundingBox.getPlayerBoundingBox(player, player.x, player.y, player.z)
+                .copy();
         box.expand(-1.0E-7D);
         return Collisions.hasMaterial(player, box, data -> NmsBlockTags.isWater(data.getFirst()));
     }

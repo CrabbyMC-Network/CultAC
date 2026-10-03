@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Objects;
 
 public record ClientboundMoveMinecart(int entityId, List<Step> steps) implements ClientboundPacket {
-    public ClientboundMoveMinecart { steps = List.copyOf(steps); }
+    public ClientboundMoveMinecart {
+        steps = List.copyOf(steps);
+    }
 
     public record Step(Vec3d position, Vec3d movement, float yaw, float pitch, float weight) {
         public Step {

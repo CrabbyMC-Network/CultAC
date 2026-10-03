@@ -1,20 +1,19 @@
 package ac.cult.cultac.utils.data.webhook.discord;
 
+import static ac.cult.cultac.utils.data.json.JsonSerializable.deserializeArray;
+import static ac.cult.cultac.utils.data.json.JsonSerializable.serializeArray;
+
 import ac.cult.cultac.utils.data.json.JsonSerializable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.time.Instant;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.time.Instant;
-import java.util.Objects;
-
-import static ac.cult.cultac.utils.data.json.JsonSerializable.deserializeArray;
-import static ac.cult.cultac.utils.data.json.JsonSerializable.serializeArray;
 
 @Getter
 @Setter
@@ -49,17 +48,21 @@ public class Embed implements JsonSerializable {
         if ((element = json.get("timestamp")) != null) timestamp(Instant.parse(element.getAsString()));
         if ((element = json.get("color")) != null) color(element.getAsInt());
         if ((element = json.get("footer")) != null) footer(new EmbedFooter(element));
-        if ((element = json.get("image")) != null) imageURL(element.getAsJsonObject().get("url").getAsString());
-        if ((element = json.get("thumbnail")) != null) imageURL(element.getAsJsonObject().get("url").getAsString());
+        if ((element = json.get("image")) != null)
+            imageURL(element.getAsJsonObject().get("url").getAsString());
+        if ((element = json.get("thumbnail")) != null)
+            imageURL(element.getAsJsonObject().get("url").getAsString());
         if ((element = json.get("author")) != null) author(new EmbedAuthor(element));
-        if ((element = json.get("fields")) != null) fields(deserializeArray(element.getAsJsonArray(), EmbedField[]::new, EmbedField::new));
+        if ((element = json.get("fields")) != null)
+            fields(deserializeArray(element.getAsJsonArray(), EmbedField[]::new, EmbedField::new));
     }
 
     @Contract(value = "_ -> this", mutates = "this")
     public @NotNull Embed description(@NotNull String description) {
         Objects.requireNonNull(description, "Embed description cannot be null!");
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("Embed description too long, " + description.length() + " > " + MAX_DESCRIPTION_LENGTH);
+            throw new IllegalArgumentException(
+                    "Embed description too long, " + description.length() + " > " + MAX_DESCRIPTION_LENGTH);
         }
 
         this.description = description;

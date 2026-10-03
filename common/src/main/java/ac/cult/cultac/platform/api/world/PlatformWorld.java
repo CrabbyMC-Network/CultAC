@@ -1,9 +1,8 @@
 package ac.cult.cultac.platform.api.world;
 
+import java.util.UUID;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 public interface PlatformWorld {
     boolean isChunkLoaded(int chunkX, int chunkZ);
@@ -12,7 +11,8 @@ public interface PlatformWorld {
 
     String getName();
 
-    @Nullable UUID getUID();
+    @Nullable
+    UUID getUID();
 
     PlatformChunk getChunkAt(int currChunkX, int currChunkZ);
 

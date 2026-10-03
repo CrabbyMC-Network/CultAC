@@ -9,30 +9,44 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 
 /** Updates head-water state from the saved camera height. */
 public final class BedrockUnderwaterSensing {
-    private BedrockUnderwaterSensing() {
-    }
+    private BedrockUnderwaterSensing() {}
 
-    public static BedrockCameraWaterState update(BedrockMovementState actor,
-        BedrockCameraWaterState current, BedrockMovementContext context,
-        Vec3d feet, PlayerDimensionsState dimensions
-    ) {
+    public static BedrockCameraWaterState update(
+            BedrockMovementState actor,
+            BedrockCameraWaterState current,
+            BedrockMovementContext context,
+            Vec3d feet,
+            PlayerDimensionsState dimensions) {
         if (!actor.isHorse()) return update(current, context, feet, dimensions);
         boolean requested = BedrockLiquidSensing.waterSwimUpApplies(context, feet, dimensions);
         float headY = (float) feet.y() + (float) dimensions.height() * 0.85F;
-        return current.sense(requested, requested && BedrockLiquidGeometry.liquidPointInBlock(
-                context.worldState().blockCollisionWorld(), feet.x(), headY, feet.z(), BedrockLiquidKind.WATER));
+        return current.sense(
+                requested,
+                requested
+                        && BedrockLiquidGeometry.liquidPointInBlock(
+                                context.worldState().blockCollisionWorld(),
+                                feet.x(),
+                                headY,
+                                feet.z(),
+                                BedrockLiquidKind.WATER));
     }
 
     public static BedrockCameraWaterState update(
-        BedrockCameraWaterState current, BedrockMovementContext context,
-        Vec3d feet, PlayerDimensionsState dimensions
-    ) {
+            BedrockCameraWaterState current,
+            BedrockMovementContext context,
+            Vec3d feet,
+            PlayerDimensionsState dimensions) {
         // Water contact enables head sensing independently of the travel branch.
         boolean headRequested = BedrockLiquidSensing.waterSwimUpApplies(context, feet, dimensions);
         float actorY = (float) (feet.y() + BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET);
         float cameraY = current.sensingY(actorY, 0.0F, 0.0F);
-        boolean submerged = headRequested && BedrockLiquidGeometry.liquidPointInBlock(
-            context.worldState().blockCollisionWorld(), feet.x(), cameraY, feet.z(), BedrockLiquidKind.WATER);
+        boolean submerged = headRequested
+                && BedrockLiquidGeometry.liquidPointInBlock(
+                        context.worldState().blockCollisionWorld(),
+                        feet.x(),
+                        cameraY,
+                        feet.z(),
+                        BedrockLiquidKind.WATER);
         return current.sense(headRequested, submerged);
     }
 }

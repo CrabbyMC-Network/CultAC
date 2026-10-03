@@ -1,8 +1,7 @@
 package ac.cult.cultac.utils.floodgate;
 
-import org.geysermc.floodgate.api.FloodgateApi;
-
 import java.util.UUID;
+import org.geysermc.floodgate.api.FloodgateApi;
 
 public class FloodgateUtil {
 
@@ -26,5 +25,4 @@ public class FloodgateUtil {
             return false;
         }
     }
-
 }

@@ -8,14 +8,13 @@ import ac.cult.cultac.bedrock.prediction.model.BedrockCollisionFlags;
 import ac.cult.cultac.bedrock.prediction.model.BedrockEffectState;
 import ac.cult.cultac.bedrock.prediction.model.BlockMovementSlowdownState;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
+import ac.cult.cultac.bedrock.prediction.simulation.collision.BedrockStandingBlockResolver;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockMovementSlowdownResolver;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockSurfaceMovement;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockClimbState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockFluidStateResolver;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockGlideState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockMobJump;
-import ac.cult.cultac.bedrock.prediction.simulation.collision.BedrockStandingBlockResolver;
-import ac.cult.cultac.bedrock.prediction.world.BounceBlockState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockTravelTypeResolver;
 import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockMoveRequest;
 import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockTravelHorizontalControl;
@@ -23,49 +22,99 @@ import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockTravelPlan;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
+import ac.cult.cultac.bedrock.prediction.world.BounceBlockState;
 import ac.cult.cultac.bedrock.prediction.world.HoneySlideState;
 
-record BedrockPostMoveContext(
-    BedrockTravelPlan plan,
-    BedrockMoveRequest moveRequest
-) {
+record BedrockPostMoveContext(BedrockTravelPlan plan, BedrockMoveRequest moveRequest) {
     private static final double VELOCITY_EPSILON = 1.0E-12D;
 
-    BedrockMovementState current() { return plan.frame().input().previousState(); }
-    BedrockMovementContext context() { return plan.frame().frameFacts().context(); }
-    BedrockEffectState effectState() { return plan.frame().frameFacts().effectState(); }
-    PlayerDimensionsState movementDimensions() { return plan.frame().frameFacts().movementDimensions(); }
-    BlockCollisionWorld blockCollisionWorld() { return plan.frame().frameFacts().blockCollisionWorld(); }
-    HoneySlideState honeySlideState() { return plan.frame().frameFacts().honeySlideState(); }
-    BedrockInputFrame frame() { return plan.frame().input().inputFrame(); }
-    BedrockInputIntent intent() { return plan.frame().inputIntent(); }
-    Vec3d startingVelocity() { return plan.frame().input().startingVelocity(); }
-    double horizontalFriction() { return plan.horizontal().horizontalFriction(); }
-    boolean actorSprinting() { return plan.frame().postMoveActorSprinting(); }
-    boolean inWater() { return plan.frame().branch().waterTravel(); }
-    boolean inLava() { return plan.frame().branch().lavaTravel(); }
-    boolean playerFlying() { return plan.frame().branch().playerFlyingTravel(); }
-    boolean navigationCanWalkInLava() { return plan.frame().frameFacts().navigationCanWalkInLava(); }
-    boolean swimmingActorStateAfterAction() { return plan.frame().frameFacts().swimming().actorStateAfterActions(); }
-    BedrockClimbState climb() { return plan.frame().frameFacts().climb(); }
-    BedrockGlideState gliding() { return plan.frame().gliding(); }
-    boolean clearVelocityAfterSlowdownMove() { return plan.frame().input().options().travelActive()
-        && plan.frame().frameFacts().blockMovementSlowdownState().clearVelocityAfterMove(); }
-    boolean liquidTravelActive() { return plan.frame().branch().selection().liquidTravelActive(); }
-    BedrockMobJump mobJump() { return plan.frame().mobJump(); }
+    BedrockMovementState current() {
+        return plan.frame().input().previousState();
+    }
 
-    BedrockPostMoveFrame startEffectFrame(
-        Vec3d velocity,
-        BedrockCollisionFlags flags,
-        boolean standingBounceBounced
-    ) {
-        return BedrockPostMoveFrame.initial(
-            velocity,
-            flags,
-            context(),
-            standingBounceBounced,
-            horizontalFriction()
-        );
+    BedrockMovementContext context() {
+        return plan.frame().frameFacts().context();
+    }
+
+    BedrockEffectState effectState() {
+        return plan.frame().frameFacts().effectState();
+    }
+
+    PlayerDimensionsState movementDimensions() {
+        return plan.frame().frameFacts().movementDimensions();
+    }
+
+    BlockCollisionWorld blockCollisionWorld() {
+        return plan.frame().frameFacts().blockCollisionWorld();
+    }
+
+    HoneySlideState honeySlideState() {
+        return plan.frame().frameFacts().honeySlideState();
+    }
+
+    BedrockInputFrame frame() {
+        return plan.frame().input().inputFrame();
+    }
+
+    BedrockInputIntent intent() {
+        return plan.frame().inputIntent();
+    }
+
+    Vec3d startingVelocity() {
+        return plan.frame().input().startingVelocity();
+    }
+
+    double horizontalFriction() {
+        return plan.horizontal().horizontalFriction();
+    }
+
+    boolean actorSprinting() {
+        return plan.frame().postMoveActorSprinting();
+    }
+
+    boolean inWater() {
+        return plan.frame().branch().waterTravel();
+    }
+
+    boolean inLava() {
+        return plan.frame().branch().lavaTravel();
+    }
+
+    boolean playerFlying() {
+        return plan.frame().branch().playerFlyingTravel();
+    }
+
+    boolean navigationCanWalkInLava() {
+        return plan.frame().frameFacts().navigationCanWalkInLava();
+    }
+
+    boolean swimmingActorStateAfterAction() {
+        return plan.frame().frameFacts().swimming().actorStateAfterActions();
+    }
+
+    BedrockClimbState climb() {
+        return plan.frame().frameFacts().climb();
+    }
+
+    BedrockGlideState gliding() {
+        return plan.frame().gliding();
+    }
+
+    boolean clearVelocityAfterSlowdownMove() {
+        return plan.frame().input().options().travelActive()
+                && plan.frame().frameFacts().blockMovementSlowdownState().clearVelocityAfterMove();
+    }
+
+    boolean liquidTravelActive() {
+        return plan.frame().branch().selection().liquidTravelActive();
+    }
+
+    BedrockMobJump mobJump() {
+        return plan.frame().mobJump();
+    }
+
+    BedrockPostMoveFrame startEffectFrame(Vec3d velocity, BedrockCollisionFlags flags, boolean standingBounceBounced) {
+        return BedrockPostMoveFrame.initial(velocity, flags, context(), standingBounceBounced, horizontalFriction());
     }
 
     BedrockPostMoveFrame applyWaterJumpGroundReset(BedrockPostMoveFrame frame) {
@@ -75,17 +124,25 @@ record BedrockPostMoveContext(
         return frame;
     }
 
-    BedrockPostMoveFrame applyStandingBounce(BedrockPostMoveFrame frame, Vec3d nextPosition, WorldCollisionBox fetchBox) {
-        if (fetchBox == null || !frame.flags().verticalCollision() || !frame.flags().onGround()
+    BedrockPostMoveFrame applyStandingBounce(
+            BedrockPostMoveFrame frame, Vec3d nextPosition, WorldCollisionBox fetchBox) {
+        if (fetchBox == null
+                || !frame.flags().verticalCollision()
+                || !frame.flags().onGround()
                 || moveRequest.move().y() >= 0.0D) {
             return frame;
         }
-        var block = BedrockStandingBlockResolver.resolveFetched(nextPosition, blockCollisionWorld(), movementDimensions(), fetchBox)
-            .flatMap(support -> BounceBlockState.fromCollisionBlock(support.block(), support.surfaceY()));
+        var block = BedrockStandingBlockResolver.resolveFetched(
+                        nextPosition, blockCollisionWorld(), movementDimensions(), fetchBox)
+                .flatMap(support -> BounceBlockState.fromCollisionBlock(support.block(), support.surfaceY()));
         if (block.isEmpty()) return frame;
         var bounce = BedrockBounceBlockMovement.applyAfterVerticalReset(
-            current().physicalFeetPosition(), frame.velocity(), moveRequest.move().y(),
-            frame(), block.get(), !gliding().activeAtTravelSensing());
+                current().physicalFeetPosition(),
+                frame.velocity(),
+                moveRequest.move().y(),
+                frame(),
+                block.get(),
+                !gliding().activeAtTravelSensing());
         return bounce.applied() ? frame.withVelocityAndBounce(bounce.velocity(), bounce.bounced()) : frame;
     }
 
@@ -94,17 +151,14 @@ record BedrockPostMoveContext(
             return frame;
         }
         Vec3d velocity = BedrockBlockSurfaceMovement.applyStandingAfterMove(
-            frame.velocity(),
-            nextPosition,
-            frame().sneaking(),
-            frame.flags().onGround(),
-            blockCollisionWorld(),
-            movementDimensions()
-        );
+                frame.velocity(),
+                nextPosition,
+                frame().sneaking(),
+                frame.flags().onGround(),
+                blockCollisionWorld(),
+                movementDimensions());
         return frame.withVelocityAndStandingSurfaceSlowdown(
-            velocity,
-            horizontalVelocityChanged(frame.velocity(), velocity)
-        );
+                velocity, horizontalVelocityChanged(frame.velocity(), velocity));
     }
 
     BedrockPostMoveFrame applyBlockMovementSlowdownClear(BedrockPostMoveFrame frame) {
@@ -116,10 +170,7 @@ record BedrockPostMoveContext(
 
     BedrockPostMoveFrame resolvePostMoveFluidContext(BedrockPostMoveFrame frame, Vec3d nextPosition) {
         BedrockMovementContext postMoveContext = BedrockFluidStateResolver.withCurrentTickFluidStateFromBlockWorld(
-            context(),
-            nextPosition,
-            movementDimensions()
-        );
+                context(), nextPosition, movementDimensions());
         return frame.withPostMoveContext(postMoveContext);
     }
 
@@ -129,11 +180,7 @@ record BedrockPostMoveContext(
         }
         boolean gravityAndVerticalDragApplies = gravityAndVerticalDragApplies(frame);
         BedrockPostMoveVerticalEffects.DragResult drag = BedrockPostMoveVerticalEffects.applyLiquidDrag(
-            this,
-            frame.postMoveContext(),
-            frame.velocity(),
-            gravityAndVerticalDragApplies
-        );
+                this, frame.postMoveContext(), frame.velocity(), gravityAndVerticalDragApplies);
         return frame.withVelocityAndHorizontalFriction(drag.velocity(), drag.horizontalFriction());
     }
 
@@ -142,21 +189,13 @@ record BedrockPostMoveContext(
             return frame;
         }
         return frame.withVelocity(
-            BedrockPostMoveVerticalEffects.applyLevitation(
-                this,
-                frame.postMoveContext(),
-                frame.velocity()
-            )
-        );
+                BedrockPostMoveVerticalEffects.applyLevitation(this, frame.postMoveContext(), frame.velocity()));
     }
 
     double waterDragHorizontalFriction(BedrockMovementContext effectContext) {
         // The vanilla water-drag system reads the ordered sprinting actor
         // flag state.
-        return BedrockTravelHorizontalControl.waterHorizontalDrag(
-            effectContext,
-            actorSprinting()
-        );
+        return BedrockTravelHorizontalControl.waterHorizontalDrag(effectContext, actorSprinting());
     }
 
     BedrockPostMoveFrame applyGravity(BedrockPostMoveFrame frame) {
@@ -164,12 +203,7 @@ record BedrockPostMoveContext(
             return frame;
         }
         return frame.withVelocity(
-            BedrockPostMoveVerticalEffects.applyGravity(
-                this,
-                frame.postMoveContext(),
-                frame.velocity()
-            )
-        );
+                BedrockPostMoveVerticalEffects.applyGravity(this, frame.postMoveContext(), frame.velocity()));
     }
 
     BedrockPostMoveFrame applyVerticalDrag(BedrockPostMoveFrame frame) {
@@ -177,12 +211,7 @@ record BedrockPostMoveContext(
             return frame;
         }
         return frame.withVelocity(
-            BedrockPostMoveVerticalEffects.applyVerticalDrag(
-                this,
-                frame.postMoveContext(),
-                frame.velocity()
-            )
-        );
+                BedrockPostMoveVerticalEffects.applyVerticalDrag(this, frame.postMoveContext(), frame.velocity()));
     }
 
     BedrockPostMoveFrame applyNormalFriction(BedrockPostMoveFrame frame) {
@@ -192,69 +221,47 @@ record BedrockPostMoveContext(
         // The vanilla auto-climb flag excludes vertical drag/gravity systems,
         // but normal horizontal friction still consumes the travel friction.
         double normalFriction = frame.horizontalFriction();
-        return frame.withVelocityAndHorizontalFriction(BedrockPostMoveVerticalEffects.applyNormalFriction(
-            this,
-            frame.postMoveContext(),
-            frame.velocity(),
-            normalFriction
-        ), normalFriction);
+        return frame.withVelocityAndHorizontalFriction(
+                BedrockPostMoveVerticalEffects.applyNormalFriction(
+                        this, frame.postMoveContext(), frame.velocity(), normalFriction),
+                normalFriction);
     }
 
     BedrockPostMoveFrame applyPlayerWaterGravity(BedrockPostMoveFrame frame) {
         if (postMoveVelocityEffectsSuppressed() || !gravityAndVerticalDragApplies(frame)) {
             return frame;
         }
-        return frame.withVelocity(
-            BedrockPostMoveVerticalEffects.applyPlayerWaterGravity(
-                this,
-                frame.postMoveContext(),
-                frame.velocity()
-            )
-        );
+        return frame.withVelocity(BedrockPostMoveVerticalEffects.applyPlayerWaterGravity(
+                this, frame.postMoveContext(), frame.velocity()));
     }
 
     BedrockPostMoveResult applyLiquidClimbOut(BedrockPostMoveFrame frame, Vec3d nextPosition) {
         boolean liquidClimbOutActive = liquidTravelActive();
         BedrockLiquidClimbOutMovement.Result liquidClimbOut = BedrockLiquidClimbOutMovement.apply(
-            liquidClimbOutActive,
-            current().physicalFeetPosition(),
-            nextPosition,
-            frame.velocity(),
-            frame.flags(),
-            blockCollisionWorld(),
-            movementDimensions()
-        );
+                liquidClimbOutActive,
+                current().physicalFeetPosition(),
+                nextPosition,
+                frame.velocity(),
+                frame.flags(),
+                blockCollisionWorld(),
+                movementDimensions());
         Vec3d velocity = liquidClimbOut.velocity();
         return BedrockPostMoveResult.afterLiquidClimbOut(
-            frame,
-            velocity,
-            liquidClimbOut.flags(),
-            frame.horizontalFriction()
-        );
+                frame, velocity, liquidClimbOut.flags(), frame.horizontalFriction());
     }
 
     BlockMovementSlowdownState resolvePendingBlockMovementSlowdown(Vec3d nextPosition) {
-        return BedrockBlockMovementSlowdownResolver.nextState(
-            context(),
-            nextPosition,
-            movementDimensions()
-        );
+        return BedrockBlockMovementSlowdownResolver.nextState(context(), nextPosition, movementDimensions());
     }
 
     BedrockPostMoveResult withPostMoveStateModes(BedrockPostMoveResult result, Vec3d nextPosition) {
-        boolean gliding = BedrockGlidePostMoveMovement.activeAfterMove(
-            gliding(),
-            climb().climbing()
-        );
-        boolean waterTravelActive = plan.frame().input().options().travelActive() && BedrockTravelTypeResolver.waterActive(
-            result.postMoveContext(),
-            nextPosition,
-            movementDimensions());
+        boolean gliding = BedrockGlidePostMoveMovement.activeAfterMove(gliding(), climb().climbing());
+        boolean waterTravelActive = plan.frame().input().options().travelActive()
+                && BedrockTravelTypeResolver.waterActive(result.postMoveContext(), nextPosition, movementDimensions());
         return result.withStateModes(
-            waterTravelActive,
-            BedrockTravelTypeResolver.postMoveBranch(result.postMoveContext(), result.flags(), waterTravelActive),
-            gliding
-        );
+                waterTravelActive,
+                BedrockTravelTypeResolver.postMoveBranch(result.postMoveContext(), result.flags(), waterTravelActive),
+                gliding);
     }
 
     private boolean gravityAndVerticalDragApplies(BedrockPostMoveFrame frame) {
@@ -267,6 +274,6 @@ record BedrockPostMoveContext(
 
     private static boolean horizontalVelocityChanged(Vec3d before, Vec3d after) {
         return Math.abs(before.x() - after.x()) > VELOCITY_EPSILON
-            || Math.abs(before.z() - after.z()) > VELOCITY_EPSILON;
+                || Math.abs(before.z() - after.z()) > VELOCITY_EPSILON;
     }
 }

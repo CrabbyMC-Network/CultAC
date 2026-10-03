@@ -1,12 +1,14 @@
 package ac.cult.cultac.utils.latency;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
 public class LatencyTaskQueueTest {
-    @Test public void nativeSpawnAndAttributesCannotBeHiddenBehindFutureJavaTasks() {
+    @Test
+    public void nativeSpawnAndAttributesCannotBeHiddenBehindFutureJavaTasks() {
         var queue = new LatencyTaskQueue();
         var applied = new ArrayList<String>();
         queue.add(23, () -> applied.add("java spawn"));
@@ -22,11 +24,11 @@ public class LatencyTaskQueueTest {
         // The next native receipt can now apply the complete attribute packet.
         applied.add("jump 0.67052144");
         drain(queue, 100);
-        assertEquals(List.of("java spawn", "bedrock spawn", "jump 0.5",
-                "jump 0.67052144", "future"), applied);
+        assertEquals(List.of("java spawn", "bedrock spawn", "jump 0.5", "jump 0.67052144", "future"), applied);
     }
 
-    @Test public void outOfOrderDependenciesPreserveContinuationsAndFifo() {
+    @Test
+    public void outOfOrderDependenciesPreserveContinuationsAndFifo() {
         var queue = new LatencyTaskQueue();
         var applied = new ArrayList<Integer>();
         queue.addWithNextTransaction(10, () -> applied.add(10), () -> applied.add(11));

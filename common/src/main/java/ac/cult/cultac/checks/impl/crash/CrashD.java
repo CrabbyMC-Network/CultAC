@@ -1,19 +1,19 @@
 package ac.cult.cultac.checks.impl.crash;
 
-import ac.cult.cultac.utils.inventory.InventoryClick;
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.inventory.inventory.MenuType;
-import net.minecraft.SharedConstants;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.cult.cultac.utils.inventory.InventoryClick;
+import ac.cult.cultac.utils.inventory.inventory.MenuType;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
+import net.minecraft.SharedConstants;
 
 @CheckData(name = "CrashD", stableKey = "cult.crash.lectern", description = "Clicking slots in lectern window")
 public class CrashD extends Check implements CheckListener {
@@ -34,7 +34,8 @@ public class CrashD extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onOpenScreen(PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
+    public void onOpenScreen(
+            PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
         if (!isApplicable()) return;
         this.type = MenuType.fromRegistryKey(packet.menuType());
         if (type == MenuType.LECTERN) lecternId = packet.containerId();

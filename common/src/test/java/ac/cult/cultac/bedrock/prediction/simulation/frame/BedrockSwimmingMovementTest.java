@@ -1,12 +1,12 @@
 package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputIntent;
 import java.util.Set;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 public final class BedrockSwimmingMovementTest {
     @Test
@@ -23,16 +23,16 @@ public final class BedrockSwimmingMovementTest {
     @Test
     public void swimmingPoseAndAnimationDoNotBecomeARequest() {
         var swimmingLooking = new BedrockSwimmingMovement.SwimmingState(false, false, 1.0D);
-        assertFalse(swimmingLooking.afterActions(intent("SWIMMING", "HORIZONTAL_POSE"), true).actorStateAfterActions());
+        assertFalse(swimmingLooking
+                .afterActions(intent("SWIMMING", "HORIZONTAL_POSE"), true)
+                .actorStateAfterActions());
     }
 
     @Test
     public void startSwimmingActionSetsActorFlag() {
-        BedrockSwimmingMovement.SwimmingState initial =
-            new BedrockSwimmingMovement.SwimmingState(false, false, 0.0D);
+        BedrockSwimmingMovement.SwimmingState initial = new BedrockSwimmingMovement.SwimmingState(false, false, 0.0D);
 
-        BedrockSwimmingMovement.SwimmingState result =
-            initial.afterActions(intent("START_SWIMMING"), true);
+        BedrockSwimmingMovement.SwimmingState result = initial.afterActions(intent("START_SWIMMING"), true);
 
         assertTrue(result.actorStateAfterActions());
     }
@@ -40,12 +40,10 @@ public final class BedrockSwimmingMovementTest {
     @Test
     public void stopSwimmingActionWinsWhenBothBitsAreSet() {
         BedrockSwimmingMovement.SwimmingState initial =
-            new BedrockSwimmingMovement.SwimmingState(true, true, (double) 0.1F);
+                new BedrockSwimmingMovement.SwimmingState(true, true, (double) 0.1F);
 
-        BedrockSwimmingMovement.SwimmingState result = initial.afterActions(intent(
-            "START_SWIMMING",
-            "STOP_SWIMMING"
-        ), true);
+        BedrockSwimmingMovement.SwimmingState result =
+                initial.afterActions(intent("START_SWIMMING", "STOP_SWIMMING"), true);
 
         org.junit.Assert.assertFalse(result.actorStateAfterActions());
     }
@@ -53,23 +51,14 @@ public final class BedrockSwimmingMovementTest {
     @Test
     public void currentSwimAmountIsNotRecomputedByLaterActions() {
         BedrockSwimmingMovement.SwimmingState initial =
-            new BedrockSwimmingMovement.SwimmingState(true, true, (double) 0.2F);
+                new BedrockSwimmingMovement.SwimmingState(true, true, (double) 0.2F);
 
-        BedrockSwimmingMovement.SwimmingState result =
-            initial.afterActions(intent("STOP_SWIMMING"), true);
+        BedrockSwimmingMovement.SwimmingState result = initial.afterActions(intent("STOP_SWIMMING"), true);
 
         org.junit.Assert.assertEquals((double) 0.2F, result.swimAmount(), 0.0D);
     }
 
     private static BedrockInputIntent intent(String... inputData) {
-        return BedrockInputIntent.from(new BedrockInputFrame(
-            1L,
-            0.0F,
-            0.0F,
-            false,
-            false,
-            false,
-            Set.of(inputData)
-        ));
+        return BedrockInputIntent.from(new BedrockInputFrame(1L, 0.0F, 0.0F, false, false, false, Set.of(inputData)));
     }
 }

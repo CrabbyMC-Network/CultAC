@@ -6,11 +6,13 @@ import java.util.List;
 public sealed interface EntityDelta permits EntityDelta.Linear, EntityDelta.Stepped {
     Linear ZERO = new Linear((short) 0, (short) 0, (short) 0);
 
-    record Linear(short x, short y, short z) implements EntityDelta { }
+    record Linear(short x, short y, short z) implements EntityDelta {}
 
     record Stepped(List<Step> steps) implements EntityDelta {
-        public Stepped { steps = List.copyOf(steps); }
+        public Stepped {
+            steps = List.copyOf(steps);
+        }
     }
 
-    record Step(short x, short y, short z, int ticks) { }
+    record Step(short x, short y, short z, int ticks) {}
 }

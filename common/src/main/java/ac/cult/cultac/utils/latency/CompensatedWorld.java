@@ -4,6 +4,7 @@ import ac.cult.cultac.checks.impl.movement.GhostBlockMitigator;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.ClientBlockShapes;
+import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.*;
 import ac.cult.cultac.utils.math.CultMath;
@@ -11,36 +12,37 @@ import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NativeBlockCollisionHelper;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import ac.cult.cultac.utils.nmsutil.NmsPalettedContainerUtil;
-import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.block.BlockFace;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.BlockPos;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import java.util.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.util.Vector;
 
-import java.util.*;
-
-// Inspired by https://github.com/GeyserMC/Geyser/blob/master/connector/src/main/java/org/geysermc/connector/network/session/cache/ChunkCache.java
+// Inspired by
+// https://github.com/GeyserMC/Geyser/blob/master/connector/src/main/java/org/geysermc/connector/network/session/cache/ChunkCache.java
 public class CompensatedWorld implements BlockGetter {
     private static final BlockState AIR_STATE = Block.stateById(0);
-    public static final BlockData airData = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(AIR_STATE).clone();
+    public static final BlockData airData = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(
+                    AIR_STATE)
+            .clone();
     private static final int RECENT_CLIENT_COLLISION_CHANGE_TICKS = 3;
     private static final int RECENT_CLIENT_FLUID_CHANGE_TICKS = 3;
     private static final int MAX_REINTERN_CONTENT_COMPARISONS_PER_TICK = 10;
@@ -65,11 +67,8 @@ public class CompensatedWorld implements BlockGetter {
     private int maxHeight = 256;
     private String visibleDimension = "minecraft:overworld";
     private boolean fastLava;
-    private ClientboundDimensionData lastClientboundDimension = new ClientboundDimensionData(
-            "minecraft:overworld",
-            0,
-            256
-    );
+    private ClientboundDimensionData lastClientboundDimension =
+            new ClientboundDimensionData("minecraft:overworld", 0, 256);
 
     // When the player changes the blocks, they track what the server thinks the blocks are
     //
@@ -156,7 +155,8 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     public static final class CachedSection {
-        public static final java.util.concurrent.atomic.AtomicLong mutableCopyCounter = new java.util.concurrent.atomic.AtomicLong(0);
+        public static final java.util.concurrent.atomic.AtomicLong mutableCopyCounter =
+                new java.util.concurrent.atomic.AtomicLong(0);
 
         private static final BlockState AIR_SECTION_STATE = Block.stateById(0);
 
@@ -323,8 +323,8 @@ public class CompensatedWorld implements BlockGetter {
     public void toggleBlockChangeDebug() {
         debugBlockChanges = !debugBlockChanges;
         player.sendMessage(Component.text("[places] ", NamedTextColor.AQUA)
-                .append(Component.text("Block changes " + (debugBlockChanges ? "enabled" : "disabled") + ".",
-                        NamedTextColor.GRAY)));
+                .append(Component.text(
+                        "Block changes " + (debugBlockChanges ? "enabled" : "disabled") + ".", NamedTextColor.GRAY)));
     }
 
     public void advanceClientPredictionSequence() {
@@ -346,7 +346,9 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     public void handlePredictionConfirmation(int prediction, int transaction) {
-        for (Iterator<Map.Entry<Integer, List<BlockPos>>> it = serverIsCurrentlyProcessingThesePredictions.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Integer, List<BlockPos>>> it =
+                        serverIsCurrentlyProcessingThesePredictions.entrySet().iterator();
+                it.hasNext(); ) {
             Map.Entry<Integer, List<BlockPos>> iter = it.next();
             if (iter.getKey() <= prediction) {
                 applyBlockChanges(iter.getValue(), transaction);
@@ -356,7 +358,9 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     public void handlePredictionConfirmation(int prediction, CultPlayer.TrackedTransaction transaction) {
-        for (Iterator<Map.Entry<Integer, List<BlockPos>>> it = serverIsCurrentlyProcessingThesePredictions.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Integer, List<BlockPos>>> it =
+                        serverIsCurrentlyProcessingThesePredictions.entrySet().iterator();
+                it.hasNext(); ) {
             Map.Entry<Integer, List<BlockPos>> iter = it.next();
             if (iter.getKey() <= prediction) {
                 applyBlockChanges(iter.getValue(), transaction);
@@ -366,7 +370,8 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     public void handleServerBlockUpdate(BlockPos pos, BlockState state, CultPlayer.TrackedTransaction transaction) {
-        player.latencyUtils.addRealTimeTask(transaction.transaction(), () -> handleServerBlockUpdate(pos, state, transaction.transaction()));
+        player.latencyUtils.addRealTimeTask(
+                transaction.transaction(), () -> handleServerBlockUpdate(pos, state, transaction.transaction()));
     }
 
     public void handleServerBlockUpdate(BlockPos pos, BlockState state, int transaction) {
@@ -377,32 +382,36 @@ public class CompensatedWorld implements BlockGetter {
         // The transaction is sent after the block-ack packet in the same clientbound bundle.
         // Vanilla processes bundle sub-packets in order on the client thread, then replies to
         // the ping, so this marker means the ack and any bundled block updates are applied.
-        player.latencyUtils.addRealTimeTask(transaction, () -> toApplyBlocks.forEach(vector3i -> {
-            BlockPrediction predictionData = originalServerBlocks.get(vector3i.asLong());
+        player.latencyUtils.addRealTimeTask(
+                transaction,
+                () -> toApplyBlocks.forEach(vector3i -> {
+                    BlockPrediction predictionData = originalServerBlocks.get(vector3i.asLong());
 
-            // We are the last to care about this prediction, remove it to stop memory leak
-            // Block changes are allowed to execute out of order, because it actually doesn't matter
-            if (predictionData != null && predictionData.getForBlockUpdate() == toApplyBlocks) {
-                originalServerBlocks.remove(vector3i.asLong());
-                handleAck(vector3i, predictionData.getOriginalBlockId(), predictionData.getPlayerPosition());
-            }
-        }));
+                    // We are the last to care about this prediction, remove it to stop memory leak
+                    // Block changes are allowed to execute out of order, because it actually doesn't matter
+                    if (predictionData != null && predictionData.getForBlockUpdate() == toApplyBlocks) {
+                        originalServerBlocks.remove(vector3i.asLong());
+                        handleAck(vector3i, predictionData.getOriginalBlockId(), predictionData.getPlayerPosition());
+                    }
+                }));
     }
 
     private void applyBlockChanges(List<BlockPos> toApplyBlocks, CultPlayer.TrackedTransaction transaction) {
         // The transaction is sent after the block-ack packet in the same clientbound bundle.
         // Vanilla processes bundle sub-packets in order on the client thread, then replies to
         // the ping, so the tracked transaction is the marker for applying the ack here.
-        player.latencyUtils.addRealTimeTask(transaction.transaction(), () -> toApplyBlocks.forEach(vector3i -> {
-            BlockPrediction predictionData = originalServerBlocks.get(vector3i.asLong());
+        player.latencyUtils.addRealTimeTask(
+                transaction.transaction(),
+                () -> toApplyBlocks.forEach(vector3i -> {
+                    BlockPrediction predictionData = originalServerBlocks.get(vector3i.asLong());
 
-            // We are the last to care about this prediction, remove it to stop memory leak
-            // Block changes are allowed to execute out of order, because it actually doesn't matter
-            if (predictionData != null && predictionData.getForBlockUpdate() == toApplyBlocks) {
-                originalServerBlocks.remove(vector3i.asLong());
-                handleAck(vector3i, predictionData.getOriginalBlockId(), predictionData.getPlayerPosition());
-            }
-        }));
+                    // We are the last to care about this prediction, remove it to stop memory leak
+                    // Block changes are allowed to execute out of order, because it actually doesn't matter
+                    if (predictionData != null && predictionData.getForBlockUpdate() == toApplyBlocks) {
+                        originalServerBlocks.remove(vector3i.asLong());
+                        handleAck(vector3i, predictionData.getOriginalBlockId(), predictionData.getPlayerPosition());
+                    }
+                }));
     }
 
     private void handleAck(BlockPos vector3i, int originalBlockId, Vec3 playerPosition) {
@@ -416,15 +425,16 @@ public class CompensatedWorld implements BlockGetter {
             updateBlock(vector3i.getX(), vector3i.getY(), vector3i.getZ(), state);
 
             if (playerPosition == null) {
-                // Fuck you player. You tried teleporting and then causing an illegal block change to try to validate your illegal teleport.
+                // Fuck you player. You tried teleporting and then causing an illegal block change to try to validate
+                // your illegal teleport.
                 final ac.cult.cultac.manager.player.SetbackTeleportUtil setbackUtil = player.getSetbackTeleportUtil();
                 setbackUtil.executeForceResync("block ack");
             } else if (ClientBlockShapes.movement(
-                    player,
-                    ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state),
-                    vector3i.getX(),
-                    vector3i.getY(),
-                    vector3i.getZ())
+                            player,
+                            ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state),
+                            vector3i.getX(),
+                            vector3i.getY(),
+                            vector3i.getZ())
                     .isIntersected(player.boundingBox)) {
                 // The player will teleport themselves if they get stuck in the reverted block
                 player.lastX = player.x;
@@ -443,7 +453,8 @@ public class CompensatedWorld implements BlockGetter {
 
         if (this.currentlyChangedBlocks.isEmpty()) return; // Nothing to change
 
-        List<BlockPos> toApplyBlocks = this.currentlyChangedBlocks; // We must now track the client applying the server predicted blocks
+        List<BlockPos> toApplyBlocks =
+                this.currentlyChangedBlocks; // We must now track the client applying the server predicted blocks
         this.currentlyChangedBlocks = new LinkedList<>(); // Reset variable without changing original
 
         // Vanilla stores predictions under its local monotonic counter, not the untrusted packet sequence.
@@ -606,14 +617,20 @@ public class CompensatedWorld implements BlockGetter {
             return;
         }
 
-        if (oldState.getBlock() == Blocks.MOVING_PISTON || newState.getBlock() == Blocks.MOVING_PISTON || !collisionShapesMatch(pos, oldState, newState)) {
+        if (oldState.getBlock() == Blocks.MOVING_PISTON
+                || newState.getBlock() == Blocks.MOVING_PISTON
+                || !collisionShapesMatch(pos, oldState, newState)) {
             markRecentClientCollisionChange(pos);
         }
     }
 
     private boolean collisionShapesMatch(BlockPos pos, BlockState oldState, BlockState newState) {
-        List<AABB> oldBoxes = NativeBlockCollisionHelper.getCollisionShape(player, oldState, pos.getX(), pos.getY(), pos.getZ()).toAabbs();
-        List<AABB> newBoxes = NativeBlockCollisionHelper.getCollisionShape(player, newState, pos.getX(), pos.getY(), pos.getZ()).toAabbs();
+        List<AABB> oldBoxes = NativeBlockCollisionHelper.getCollisionShape(
+                        player, oldState, pos.getX(), pos.getY(), pos.getZ())
+                .toAabbs();
+        List<AABB> newBoxes = NativeBlockCollisionHelper.getCollisionShape(
+                        player, newState, pos.getX(), pos.getY(), pos.getZ())
+                .toAabbs();
         if (oldBoxes.size() != newBoxes.size()) {
             return false;
         }
@@ -686,11 +703,25 @@ public class CompensatedWorld implements BlockGetter {
 
         if (isCurrentlyPredicting && !player.isBedrockMovement()) {
             if (prediction == null) {
-                boolean isPlayerTryingToDisableCult = player.getSetbackTeleportUtil().shouldBlockMovement();
+                boolean isPlayerTryingToDisableCult =
+                        player.getSetbackTeleportUtil().shouldBlockMovement();
                 int serverState = Block.getId(getBlockStateAt(asVector));
-                originalServerBlocks.put(asVector.asLong(), new BlockPrediction(currentlyChangedBlocks, asVector, serverState, Block.getId(newState), isPlayerTryingToDisableCult ? null : new Vec3(player.x, player.y, player.z))); // Remember server controlled block type
+                originalServerBlocks.put(
+                        asVector.asLong(),
+                        new BlockPrediction(
+                                currentlyChangedBlocks,
+                                asVector,
+                                serverState,
+                                Block.getId(newState),
+                                isPlayerTryingToDisableCult
+                                        ? null
+                                        : new Vec3(
+                                                player.x, player.y,
+                                                player.z))); // Remember server controlled block type
             } else {
-                prediction.setForBlockUpdate(currentlyChangedBlocks); // Block existing there was placed by client, mark block to have a new prediction
+                prediction.setForBlockUpdate(
+                        currentlyChangedBlocks); // Block existing there was placed by client, mark block to have a new
+                // prediction
                 prediction.setPredictedBlockId(Block.getId(newState));
             }
             currentlyChangedBlocks.add(asVector);
@@ -703,7 +734,10 @@ public class CompensatedWorld implements BlockGetter {
             // Only update the stored rollback target; the actual local block stays client-predicted until
             // confirmation handling decides whether to keep it or restore the original server state.
             prediction.setOriginalBlockId(Block.getId(newState));
-            ghostBlockMitigator.handleUpdateServerBlockState(asVector, ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState).clone());
+            ghostBlockMitigator.handleUpdateServerBlockState(
+                    asVector,
+                    ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
+                            .clone());
             return original;
         }
 
@@ -713,14 +747,22 @@ public class CompensatedWorld implements BlockGetter {
         if (getBlockStateAt(asVector).equals(newState)) return original;
 
         player.checkManager.getSimulationProcessor().handleBlockChange(asVector, original.clone());
-        player.checkManager.getSimulationProcessor().handleBlockChange(asVector, ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState).clone());
+        player.checkManager
+                .getSimulationProcessor()
+                .handleBlockChange(
+                        asVector,
+                        ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
+                                .clone());
         markRecentClientCollisionChange(asVector, toNmsState(original), newState);
         markRecentClientFluidChange(asVector, toNmsState(original), newState);
 
         applyBlockChangeRawDANGER(x, y, z, newState);
         geysers.updateBlock(asVector, toNmsState(original), newState);
-        if (debugBlockChanges && isCurrentlyPredicting && getBlockStateAt(asVector).equals(newState)) {
-            String state = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState).getAsString(false);
+        if (debugBlockChanges
+                && isCurrentlyPredicting
+                && getBlockStateAt(asVector).equals(newState)) {
+            String state = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
+                    .getAsString(false);
             if (state.startsWith("minecraft:")) state = state.substring("minecraft:".length());
             player.sendMessage(Component.text("[places] ", NamedTextColor.AQUA)
                     .append(Component.text(x + ", " + y + ", " + z, NamedTextColor.GRAY))
@@ -783,7 +825,8 @@ public class CompensatedWorld implements BlockGetter {
                 MAX_REINTERN_HASH_CALCULATIONS_PER_TICK,
                 MAX_REINTERN_ATTEMPTED_COMPARISONS_PER_TICK);
         List<PendingReinternCandidate> candidates = new ArrayList<>(pendingReinternSections.size());
-        Iterator<Map.Entry<PendingReinternSection, PendingReinternState>> iterator = pendingReinternSections.entrySet().iterator();
+        Iterator<Map.Entry<PendingReinternSection, PendingReinternState>> iterator =
+                pendingReinternSections.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<PendingReinternSection, PendingReinternState> entry = iterator.next();
             PendingReinternSection key = entry.getKey();
@@ -811,11 +854,13 @@ public class CompensatedWorld implements BlockGetter {
             }
 
             String dimension = dimensionForChunk(candidate.key().chunkX, candidate.key().chunkZ);
-            SectionPool pool = SectionPool.forChunk(dimension, candidate.key().chunkX, candidate.key().sectionIndex, candidate.key().chunkZ);
-            SectionPool.ReinternResult result = pool.tryReinternRetained(
-                    section, candidate.state().nextComparisonIndex(), comparisonBudget);
+            SectionPool pool = SectionPool.forChunk(
+                    dimension, candidate.key().chunkX, candidate.key().sectionIndex, candidate.key().chunkZ);
+            SectionPool.ReinternResult result =
+                    pool.tryReinternRetained(section, candidate.state().nextComparisonIndex(), comparisonBudget);
             if (!result.complete()) {
-                pendingReinternSections.put(candidate.key(), new PendingReinternState(section, result.nextComparisonIndex()));
+                pendingReinternSections.put(
+                        candidate.key(), new PendingReinternState(section, result.nextComparisonIndex()));
                 break;
             }
 
@@ -828,7 +873,8 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     private void queuePendingReintern(int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
-        pendingReinternSections.put(new PendingReinternSection(chunkX, sectionIndex, chunkZ), new PendingReinternState(section, 0));
+        pendingReinternSections.put(
+                new PendingReinternSection(chunkX, sectionIndex, chunkZ), new PendingReinternState(section, 0));
     }
 
     private CachedSection prepareSectionForWrite(int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
@@ -856,18 +902,16 @@ public class CompensatedWorld implements BlockGetter {
         pendingReinternSections.remove(new PendingReinternSection(chunkX, sectionIndex, chunkZ));
     }
 
-    private record PendingReinternSection(int chunkX, int sectionIndex, int chunkZ) {
-    }
+    private record PendingReinternSection(int chunkX, int sectionIndex, int chunkZ) {}
 
-    private record PendingReinternState(CachedSection section, int nextComparisonIndex) {
-    }
+    private record PendingReinternState(CachedSection section, int nextComparisonIndex) {}
 
-    private record PendingReinternCandidate(PendingReinternSection key,
-                                            PendingReinternState state,
-                                            CachedChunk column,
-                                            CachedSection section,
-                                            long lastMutatedNanos) {
-    }
+    private record PendingReinternCandidate(
+            PendingReinternSection key,
+            PendingReinternState state,
+            CachedChunk column,
+            CachedSection section,
+            long lastMutatedNanos) {}
 
     public void removeInvalidPistonLikeStuff(int transactionId) {
         if (transactionId == 0) {
@@ -892,7 +936,8 @@ public class CompensatedWorld implements BlockGetter {
     // Drop shulker boxes whose backing block or entity no longer exists.
     private void pruneOrphanedShulkerBoxes() {
         openShulkerBoxes.removeIf(box -> box.blockPos != null
-                ? !NmsBlockTags.isShulkerBox(player.compensatedWorld.getBlockDataAt(box.blockPos).getMaterial())
+                ? !NmsBlockTags.isShulkerBox(
+                        player.compensatedWorld.getBlockDataAt(box.blockPos).getMaterial())
                 : !player.compensatedEntities.entityMap.containsValue(box.entity));
     }
 
@@ -914,7 +959,8 @@ public class CompensatedWorld implements BlockGetter {
 
         SimpleCollisionBox pistonPush = pistonResult.getPistonPush();
         SimpleCollisionBox combinedPushes = pistonPush.copy().union(shulkerPushes);
-        PistonPushes result = new PistonPushes(combinedPushes, pistonPush, shulkerPushes, pistonResult.getSlimeBlockLaunches());
+        PistonPushes result =
+                new PistonPushes(combinedPushes, pistonPush, shulkerPushes, pistonResult.getSlimeBlockLaunches());
         result.setPistonMovementPhased(pistonResult.isPistonMovementPhased());
         return result;
     }
@@ -930,8 +976,12 @@ public class CompensatedWorld implements BlockGetter {
 
             BlockFace pushDirection = data.getFacing(player);
             if (queryBox.isCollided(openShulkerCollisionBox(data))) {
-                queryBox.expand(Math.abs(pushDirection.getModX()), Math.abs(pushDirection.getModY()), Math.abs(pushDirection.getModZ()));
-                shulkerPushes.expandToCoordinate(pushDirection.getModX(), pushDirection.getModY(), pushDirection.getModZ());
+                queryBox.expand(
+                        Math.abs(pushDirection.getModX()),
+                        Math.abs(pushDirection.getModY()),
+                        Math.abs(pushDirection.getModZ()));
+                shulkerPushes.expandToCoordinate(
+                        pushDirection.getModX(), pushDirection.getModY(), pushDirection.getModZ());
             }
         }
         return shulkerPushes;
@@ -943,7 +993,10 @@ public class CompensatedWorld implements BlockGetter {
 
     public BlockData getBlockDataAt(int x, int y, int z) {
         BlockState state = getBlockStateAt(x, y, z);
-        return state == null ? airData.clone() : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state).clone();
+        return state == null
+                ? airData.clone()
+                : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state)
+                        .clone();
     }
 
     public BlockState getBlockStateAt(BlockPos vector3i) {
@@ -990,7 +1043,9 @@ public class CompensatedWorld implements BlockGetter {
 
     @Override
     public FluidState getFluidIfLoaded(BlockPos blockPos) {
-        return isChunkLoaded(blockPos.getX() >> 4, blockPos.getZ() >> 4) ? getFluidStateAt(blockPos) : Fluids.EMPTY.defaultFluidState();
+        return isChunkLoaded(blockPos.getX() >> 4, blockPos.getZ() >> 4)
+                ? getFluidStateAt(blockPos)
+                : Fluids.EMPTY.defaultFluidState();
     }
 
     @Override
@@ -1030,7 +1085,13 @@ public class CompensatedWorld implements BlockGetter {
         addToCache(chunk, dimension, transaction, chunkX, chunkZ, List.of());
     }
 
-    public void addToCache(CachedChunk chunk, String dimension, int transaction, int chunkX, int chunkZ, List<BlockPos> geyserTickers) {
+    public void addToCache(
+            CachedChunk chunk,
+            String dimension,
+            int transaction,
+            int chunkX,
+            int chunkZ,
+            List<BlockPos> geyserTickers) {
         long chunkPosition = chunkPositionToLong(chunkX, chunkZ);
         player.latencyUtils.addRealTimeTask(transaction, () -> {
             CachedChunk previous = chunks.get(chunkPosition);
@@ -1062,7 +1123,13 @@ public class CompensatedWorld implements BlockGetter {
         mergeIntoCache(existingColumn, toMerge, visibleDimension, player.lastTransactionSent.get(), chunkX, chunkZ);
     }
 
-    public void mergeIntoCache(CachedChunk existingColumn, CachedSection[] toMerge, String dimension, int transaction, int chunkX, int chunkZ) {
+    public void mergeIntoCache(
+            CachedChunk existingColumn,
+            CachedSection[] toMerge,
+            String dimension,
+            int transaction,
+            int chunkX,
+            int chunkZ) {
         long chunkPosition = chunkPositionToLong(chunkX, chunkZ);
         String previousDimension = chunkDimensions.get(chunkPosition);
         if (dimension.equals(previousDimension) && existingColumn.getTransaction() > transaction) {
@@ -1093,7 +1160,8 @@ public class CompensatedWorld implements BlockGetter {
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             CachedSection section = sections[sectionIndex];
             if (section != null) {
-                sections[sectionIndex] = SectionPool.forChunk(dimension, chunkX, sectionIndex, chunkZ).internRetained(section);
+                sections[sectionIndex] = SectionPool.forChunk(dimension, chunkX, sectionIndex, chunkZ)
+                        .internRetained(section);
             }
         }
     }
@@ -1111,8 +1179,11 @@ public class CompensatedWorld implements BlockGetter {
         }
     }
 
-    private void releaseMergedChunkSections(CachedChunk existingColumn, CachedSection[] toMerge, String dimension, int chunkX, int chunkZ) {
-        for (int sectionIndex = 0; sectionIndex < Math.min(existingColumn.sectionCount(), toMerge.length); sectionIndex++) {
+    private void releaseMergedChunkSections(
+            CachedChunk existingColumn, CachedSection[] toMerge, String dimension, int chunkX, int chunkZ) {
+        for (int sectionIndex = 0;
+                sectionIndex < Math.min(existingColumn.sectionCount(), toMerge.length);
+                sectionIndex++) {
             if (toMerge[sectionIndex] != null) {
                 CachedSection previous = existingColumn.getSection(sectionIndex);
                 if (previous != null) {
@@ -1170,7 +1241,8 @@ public class CompensatedWorld implements BlockGetter {
     }
 
     public Material getMaterialAt(double x, double y, double z) {
-        return getBlockDataAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z)).getMaterial();
+        return getBlockDataAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z))
+                .getMaterial();
     }
 
     public Material getMaterialAt(int x, int y, int z) {
@@ -1279,11 +1351,7 @@ public class CompensatedWorld implements BlockGetter {
 
     public void setLastClientboundDimension(String dimension, net.minecraft.world.level.dimension.DimensionType type) {
         int minY = type.minY();
-        lastClientboundDimension = new ClientboundDimensionData(
-                dimension,
-                minY,
-                minY + type.height()
-        );
+        lastClientboundDimension = new ClientboundDimensionData(dimension, minY, minY + type.height());
     }
 
     public void setDimension(String dimension, net.minecraft.world.level.dimension.DimensionType type) {
@@ -1324,7 +1392,8 @@ public class CompensatedWorld implements BlockGetter {
             chunkDimensions.remove(chunkPosition);
 
             releaseChunkSections(entry.getValue(), chunkDimension, chunkX, chunkZ);
-            sectionPoolLeases.release(chunkDimension, chunkX, chunkZ, entry.getValue().sectionCount());
+            sectionPoolLeases.release(
+                    chunkDimension, chunkX, chunkZ, entry.getValue().sectionCount());
             removePendingReinternSections(chunkX, chunkZ);
             if (dimension.equals(visibleDimension)) {
                 geysers.removeChunk(chunkX, chunkZ);
@@ -1337,7 +1406,8 @@ public class CompensatedWorld implements BlockGetter {
         for (Map.Entry<Long, CachedChunk> entry : chunks.entrySet()) {
             long chunkPosition = entry.getKey();
             String dimension = chunkDimensions.getOrDefault(chunkPosition, visibleDimension);
-            releaseChunkSections(entry.getValue(), dimension, chunkXFromPosition(chunkPosition), chunkZFromPosition(chunkPosition));
+            releaseChunkSections(
+                    entry.getValue(), dimension, chunkXFromPosition(chunkPosition), chunkZFromPosition(chunkPosition));
         }
         sectionPoolLeases.clear();
         chunks.clear();

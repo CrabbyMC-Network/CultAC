@@ -13,8 +13,7 @@ public record BedrockWorldSnapshot(
         PowderSnowContactState initialPowderSnowContact,
         StandingSurfaceState initialStandingSurface,
         BlockMovementSlowdownState initialBlockMovementSlowdownState,
-        HoneySlideState honeySlideState
-) {
+        HoneySlideState honeySlideState) {
     public BedrockWorldSnapshot {
         movementContext = Objects.requireNonNull(movementContext, "movementContext");
         blockCollisionWorld = Objects.requireNonNull(blockCollisionWorld, "blockCollisionWorld");
@@ -22,9 +21,8 @@ public record BedrockWorldSnapshot(
         initialClimbableContact = Objects.requireNonNull(initialClimbableContact, "initialClimbableContact");
         initialPowderSnowContact = Objects.requireNonNull(initialPowderSnowContact, "initialPowderSnowContact");
         initialStandingSurface = Objects.requireNonNull(initialStandingSurface, "initialStandingSurface");
-        initialBlockMovementSlowdownState = Objects.requireNonNull(
-                initialBlockMovementSlowdownState,
-                "initialBlockMovementSlowdownState");
+        initialBlockMovementSlowdownState =
+                Objects.requireNonNull(initialBlockMovementSlowdownState, "initialBlockMovementSlowdownState");
         honeySlideState = Objects.requireNonNull(honeySlideState, "honeySlideState");
     }
 
@@ -64,14 +62,14 @@ public record BedrockWorldSnapshot(
 
     public BedrockWorldSnapshot withBlockCollisionWorld(BlockCollisionWorld world) {
         return new BedrockWorldSnapshot(
-            movementContext.withBlockCollisionWorld(world),
-            world,
-            playerDimensionsState,
-            initialClimbableContact,
-            initialPowderSnowContact,
-            initialStandingSurface,
-            initialBlockMovementSlowdownState,
-            honeySlideState);
+                movementContext.withBlockCollisionWorld(world),
+                world,
+                playerDimensionsState,
+                initialClimbableContact,
+                initialPowderSnowContact,
+                initialStandingSurface,
+                initialBlockMovementSlowdownState,
+                honeySlideState);
     }
 
     public BedrockWorldSnapshot withPlayerDimensions(PlayerDimensionsState dimensions) {
@@ -91,8 +89,7 @@ public record BedrockWorldSnapshot(
             PowderSnowContactState powderSnowContact,
             StandingSurfaceState standingSurface,
             BlockMovementSlowdownState blockMovementSlowdownState,
-            HoneySlideState honeySlideState
-    ) {
+            HoneySlideState honeySlideState) {
         return new BedrockWorldSnapshot(
                 movementContext,
                 blockCollisionWorld,

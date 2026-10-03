@@ -12,12 +12,14 @@ final class GeyserPingTranslator extends PacketTranslator<ClientboundPingPacket>
 
     @SuppressWarnings("unchecked")
     GeyserPingTranslator() {
-        delegate = (PacketTranslator<ClientboundPingPacket>) Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundPingPacket.class);
+        delegate = (PacketTranslator<ClientboundPingPacket>)
+                Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundPingPacket.class);
         if (delegate == null) throw new IllegalStateException("Missing Geyser ping translator");
         Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundPingPacket.class, this);
     }
 
-    @Override public void translate(GeyserSession session, ClientboundPingPacket packet) {
+    @Override
+    public void translate(GeyserSession session, ClientboundPingPacket packet) {
         session.sendNetworkLatencyStackPacket(packet.getId(), true, () -> {
             if (!GeyserBedrockBridgeRuntime.acceptTransaction(session, packet.getId())) {
                 session.sendDownstreamPacket(new ServerboundPongPacket(packet.getId()));
@@ -25,7 +27,9 @@ final class GeyserPingTranslator extends PacketTranslator<ClientboundPingPacket>
         });
     }
 
-    boolean isInstalled() { return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundPingPacket.class) == this; }
+    boolean isInstalled() {
+        return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundPingPacket.class) == this;
+    }
 
     void close() {
         if (isInstalled()) Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundPingPacket.class, delegate);

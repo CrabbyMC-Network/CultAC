@@ -1,16 +1,18 @@
 package ac.cult.cultac.bedrock.bridge;
 
-import ac.cult.cultac.bedrock.prediction.integration.BedrockReplayContextEvent;
-import ac.cult.cultac.bedrock.prediction.integration.BedrockReplayAttributeEvent;
-import org.cloudburstmc.protocol.bedrock.packet.MobEffectPacket;
-import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
-import org.cloudburstmc.protocol.bedrock.data.AttributeData;
-import java.util.ArrayList;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
+import ac.cult.cultac.bedrock.prediction.integration.BedrockReplayAttributeEvent;
+import ac.cult.cultac.bedrock.prediction.integration.BedrockReplayContextEvent;
+import java.util.ArrayList;
+import org.cloudburstmc.protocol.bedrock.data.AttributeData;
+import org.cloudburstmc.protocol.bedrock.packet.MobEffectPacket;
+import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
+import org.junit.Test;
+
 public final class GeyserReplayUpdateTest {
-    @Test public void resistanceDoesNotCreateAMovementReplay() {
+    @Test
+    public void resistanceDoesNotCreateAMovementReplay() {
         var packet = new MobEffectPacket();
         packet.setRuntimeEntityId(9);
         packet.setEffectId(11);
@@ -54,8 +56,10 @@ public final class GeyserReplayUpdateTest {
         var update = (BedrockReplayAttributeEvent) captured.event();
         assertEquals(4, captured.actorId());
         assertFalse(update.historical());
-        assertEquals(0.81F, update.attributes().get("minecraft:horse.jump_strength").current(), 0);
-        assertEquals(0.7F, update.attributes().get("minecraft:horse.jump_strength").defaultValue(), 0);
+        assertEquals(
+                0.81F, update.attributes().get("minecraft:horse.jump_strength").current(), 0);
+        assertEquals(
+                0.7F, update.attributes().get("minecraft:horse.jump_strength").defaultValue(), 0);
         assertEquals(0.35245588F, update.attributes().get("minecraft:movement").current(), 0);
         assertEquals(0.1F, update.attributes().get("minecraft:movement").defaultValue(), 0);
     }

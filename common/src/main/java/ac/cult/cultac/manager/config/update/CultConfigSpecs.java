@@ -1,13 +1,12 @@
 package ac.cult.cultac.manager.config.update;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Locale;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Centralised registry of {@link ConfigUpdater.Spec} instances for every
@@ -76,7 +75,7 @@ public final class CultConfigSpecs {
                         // none of the SQL backends declare support for it
                         // (would fail capability validation); leave it on
                         // whatever the bundled default routes blob to.
-                        for (String cat : new String[]{"violation", "session", "player-identity", "setting"}) {
+                        for (String cat : new String[] {"violation", "session", "player-identity", "setting"}) {
                             ctx.otherFile("database.yml").put("database.routing." + cat, backendId);
                         }
                     }
@@ -112,8 +111,10 @@ public final class CultConfigSpecs {
     /** Bump this per-file Cult revision and register steps here, leaving legacy specs unchanged. */
     public static @NotNull ConfigUpdater.Spec cultConfig(String resourceDirectory) {
         ConfigUpdater.Spec.Builder builder = ConfigUpdater.Spec.builder(
-                resourceDirectory, resourceDirectory.equals("/punishments/") ? 1 : 0,
-                ConfigUpdater.ConfigFlavor.V2).cultVersioning();
+                        resourceDirectory,
+                        resourceDirectory.equals("/punishments/") ? 1 : 0,
+                        ConfigUpdater.ConfigFlavor.V2)
+                .cultVersioning();
         if (resourceDirectory.equals("/punishments/")) {
             builder.migration(1, CultConfigSpecs::addBedrockPunishment);
         }
@@ -136,7 +137,8 @@ public final class CultConfigSpecs {
         for (Map.Entry<String, Object> entry : groups.entrySet()) {
             if (!(entry.getValue() instanceof Map<?, ?> group)
                     || !(group.get("checks") instanceof List<?> checks)
-                    || checks.stream().noneMatch(value -> "Simulation".equalsIgnoreCase(String.valueOf(value)))) continue;
+                    || checks.stream().noneMatch(value -> "Simulation".equalsIgnoreCase(String.valueOf(value))))
+                continue;
             List<Object> updated = new ArrayList<>(checks);
             updated.add("BedrockMovement");
             ctx.output().put("Punishments." + entry.getKey() + ".checks", updated);
@@ -183,9 +185,7 @@ public final class CultConfigSpecs {
      */
     public static @NotNull ConfigUpdater.Spec backend(@NotNull String backendId) {
         ConfigUpdater.Spec.Builder builder = ConfigUpdater.Spec.builder(
-                "/databases/" + backendId + "/",
-                backendVersion(backendId),
-                ConfigUpdater.ConfigFlavor.V2);
+                "/databases/" + backendId + "/", backendVersion(backendId), ConfigUpdater.ConfigFlavor.V2);
         if (backendSupportsHikariPoolSettings(backendId)) {
             builder.migration(2, ctx -> preservePoolSettingOverrides(ctx, backendId));
         }
@@ -200,18 +200,13 @@ public final class CultConfigSpecs {
         return backendId.equals("mysql") || backendId.equals("postgres");
     }
 
-    private static void preservePoolSettingOverrides(
-            @NotNull MigrationContext ctx,
-            @NotNull String backendId) {
+    private static void preservePoolSettingOverrides(@NotNull MigrationContext ctx, @NotNull String backendId) {
         // v1 did not ship these keys, but preserve values if an operator
         // already added them by hand before the bundled defaults caught up.
         String prefix = backendId + ".pool-settings.";
-        for (String key : new String[]{
-                "maximum-pool-size",
-                "minimum-idle",
-                "maximum-lifetime-ms",
-                "keepalive-time-ms",
-                "connection-timeout-ms"}) {
+        for (String key : new String[] {
+            "maximum-pool-size", "minimum-idle", "maximum-lifetime-ms", "keepalive-time-ms", "connection-timeout-ms"
+        }) {
             Object value = ctx.input().get(prefix + key);
             if (value != null) {
                 ctx.output().put(prefix + key, value);

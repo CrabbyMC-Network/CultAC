@@ -35,8 +35,15 @@ public final class ClientInformationCodec implements WritablePacketCodec<Serverb
             hand = hand >= 0 && hand < HAND.length ? hand : 0;
             particles = Math.floorMod(particles, PARTICLES.length);
         }
-        return new ServerboundClientInformation(new ClientInformation(language, distance,
-                checked(CHAT, chat), colors, model, checked(HAND, hand), filtering, listing,
+        return new ServerboundClientInformation(new ClientInformation(
+                language,
+                distance,
+                checked(CHAT, chat),
+                colors,
+                model,
+                checked(HAND, hand),
+                filtering,
+                listing,
                 checked(PARTICLES, particles)));
     }
 
@@ -56,7 +63,8 @@ public final class ClientInformationCodec implements WritablePacketCodec<Serverb
     }
 
     private static <T> T checked(T[] values, int id) {
-        if (id < 0 || id >= values.length) throw new MalformedPacketException("Invalid client information enum ID " + id);
+        if (id < 0 || id >= values.length)
+            throw new MalformedPacketException("Invalid client information enum ID " + id);
         return values[id];
     }
 }

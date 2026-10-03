@@ -32,7 +32,8 @@ public class VerticalAnalyzer implements EngineCheck {
             result.addFlag(invalidStep, () -> "", 1);
         }
 
-        if (result.getSimulationContext().usesFallFlyingMovement() && !result.getSimulationContext().getWorldData().mustBeInLiquid()) {
+        if (result.getSimulationContext().usesFallFlyingMovement()
+                && !result.getSimulationContext().getWorldData().mustBeInLiquid()) {
             return;
         }
 

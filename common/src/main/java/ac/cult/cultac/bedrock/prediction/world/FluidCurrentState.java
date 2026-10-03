@@ -1,32 +1,20 @@
 package ac.cult.cultac.bedrock.prediction.world;
 
 public record FluidCurrentState(
-    double pushPerTick,
-    double disableMinFeetY,
-    double resumeMinFeetY,
-    double stopBeforeFeetY,
-    double directionX,
-    double directionY,
-    double directionZ
-) {
-    public FluidCurrentState(
         double pushPerTick,
         double disableMinFeetY,
         double resumeMinFeetY,
-        double stopBeforeFeetY
-    ) {
+        double stopBeforeFeetY,
+        double directionX,
+        double directionY,
+        double directionZ) {
+    public FluidCurrentState(
+            double pushPerTick, double disableMinFeetY, double resumeMinFeetY, double stopBeforeFeetY) {
         this(pushPerTick, disableMinFeetY, resumeMinFeetY, stopBeforeFeetY, 0.0D, 0.0D, 0.0D);
     }
 
     public static final FluidCurrentState NONE = new FluidCurrentState(
-        0.0D,
-        Double.POSITIVE_INFINITY,
-        Double.POSITIVE_INFINITY,
-        Double.POSITIVE_INFINITY,
-        0.0D,
-        0.0D,
-        0.0D
-    );
+            0.0D, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0D, 0.0D, 0.0D);
 
     public FluidCurrentState {
         if (pushPerTick < 0.0D) {

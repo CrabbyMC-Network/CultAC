@@ -12,19 +12,23 @@ final class GeyserKeepAliveTranslator extends PacketTranslator<ClientboundKeepAl
 
     @SuppressWarnings("unchecked")
     GeyserKeepAliveTranslator() {
-        delegate = (PacketTranslator<ClientboundKeepAlivePacket>) Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundKeepAlivePacket.class);
+        delegate = (PacketTranslator<ClientboundKeepAlivePacket>)
+                Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundKeepAlivePacket.class);
         if (delegate == null) throw new IllegalStateException("Missing Geyser keepalive translator");
         Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundKeepAlivePacket.class, this);
     }
 
-    @Override public void translate(GeyserSession session, ClientboundKeepAlivePacket packet) {
+    @Override
+    public void translate(GeyserSession session, ClientboundKeepAlivePacket packet) {
         session.sendNetworkLatencyStackPacket(packet.getPingId(), false, () -> {
             GeyserBedrockBridgeRuntime.acceptKeepAlive(session, packet.getPingId());
             session.sendDownstreamPacket(new ServerboundKeepAlivePacket(packet.getPingId()));
         });
     }
 
-    boolean isInstalled() { return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundKeepAlivePacket.class) == this; }
+    boolean isInstalled() {
+        return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundKeepAlivePacket.class) == this;
+    }
 
     void close() {
         if (isInstalled()) Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundKeepAlivePacket.class, delegate);

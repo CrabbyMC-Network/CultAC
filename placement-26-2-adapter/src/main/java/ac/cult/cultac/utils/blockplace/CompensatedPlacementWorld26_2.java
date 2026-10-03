@@ -1,5 +1,14 @@
 package ac.cult.cultac.utils.blockplace;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -56,26 +65,17 @@ import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.BlackholeTickAccess;
 import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.ticks.TickPriority;
+import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.bukkit.World;
 
 // Per-place virtual world adapter. All reads come from the player's compensated world or this placement's overlay.
 public final class CompensatedPlacementWorld26_2 extends Level implements PlacementWorldAdapter {
     private static final int SEA_LEVEL = 63;
     private static final int MAX_NEIGHBOR_UPDATES = 512;
-    private static final RegistryAccess.Frozen REGISTRY_ACCESS = RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+    private static final RegistryAccess.Frozen REGISTRY_ACCESS =
+            RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
     private static final FeatureFlagSet ENABLED_FEATURES = FeatureFlags.DEFAULT_FLAGS;
     private static final Holder<Biome> DEFAULT_BIOME = Holder.direct(createDefaultBiome());
     private static final Unsafe UNSAFE = resolveUnsafe();
@@ -121,8 +121,7 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
                 null,
                 World.Environment.NORMAL,
                 ignored -> null,
-                Runnable::run
-        );
+                Runnable::run);
         this.blockAccess = blockAccess;
         this.snapshot = snapshot;
         initializeState();
@@ -132,7 +131,8 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
         try {
             // Paper's Level constructor unconditionally creates CraftWorld and casts this to ServerLevel.
             // Allocate only the detached shell; unlike the old adapter, no NMS/Paper field is patched.
-            CompensatedPlacementWorld26_2 world = (CompensatedPlacementWorld26_2) UNSAFE.allocateInstance(CompensatedPlacementWorld26_2.class);
+            CompensatedPlacementWorld26_2 world =
+                    (CompensatedPlacementWorld26_2) UNSAFE.allocateInstance(CompensatedPlacementWorld26_2.class);
             world.blockAccess = blockAccess;
             world.snapshot = snapshot;
             world.initializeState();
@@ -209,20 +209,16 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
     }
 
     @Override
-    public void scheduleTick(BlockPos pos, Block block, int delay, TickPriority priority) {
-    }
+    public void scheduleTick(BlockPos pos, Block block, int delay, TickPriority priority) {}
 
     @Override
-    public void scheduleTick(BlockPos pos, Block block, int delay) {
-    }
+    public void scheduleTick(BlockPos pos, Block block, int delay) {}
 
     @Override
-    public void scheduleTick(BlockPos pos, Fluid fluid, int delay, TickPriority priority) {
-    }
+    public void scheduleTick(BlockPos pos, Fluid fluid, int delay, TickPriority priority) {}
 
     @Override
-    public void scheduleTick(BlockPos pos, Fluid fluid, int delay) {
-    }
+    public void scheduleTick(BlockPos pos, Fluid fluid, int delay) {}
 
     @Override
     public FluidState getFluidState(BlockPos pos) {
@@ -284,12 +280,19 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
     }
 
     @Override
-    public void neighborShapeChanged(Direction direction, BlockPos pos, BlockPos neighborPos, BlockState neighborState, int updateFlags, int updateLimit) {
+    public void neighborShapeChanged(
+            Direction direction,
+            BlockPos pos,
+            BlockPos neighborPos,
+            BlockState neighborState,
+            int updateFlags,
+            int updateLimit) {
         if (updateLimit <= 0 || ClientNeighborShapes.update(this, pos, direction, updateFlags, updateLimit - 1)) {
             return;
         }
 
-        NeighborUpdater.executeShapeUpdate(this, direction, pos, neighborPos, neighborState, updateFlags, updateLimit - 1);
+        NeighborUpdater.executeShapeUpdate(
+                this, direction, pos, neighborPos, neighborState, updateFlags, updateLimit - 1);
     }
 
     @Override
@@ -299,33 +302,61 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
     }
 
     @Override
-    public void updateNeighborsAt(BlockPos pos, Block block, @Nullable Orientation orientation) {
-    }
+    public void updateNeighborsAt(BlockPos pos, Block block, @Nullable Orientation orientation) {}
 
     @Override
-    public void updateNeighborsAtExceptFromFacing(BlockPos pos, Block block, @Nullable Direction skippedDirection, @Nullable Orientation orientation) {
-    }
+    public void updateNeighborsAtExceptFromFacing(
+            BlockPos pos, Block block, @Nullable Direction skippedDirection, @Nullable Orientation orientation) {}
 
     @Override
-    public void neighborChanged(BlockPos pos, Block block, @Nullable Orientation orientation) {
-    }
+    public void neighborChanged(BlockPos pos, Block block, @Nullable Orientation orientation) {}
 
     @Override
-    public void neighborChanged(BlockState state, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston) {
-    }
+    public void neighborChanged(
+            BlockState state, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston) {}
 
     @Override
-    public void playSeededSound(@Nullable Entity entity, double x, double y, double z, Holder<net.minecraft.sounds.SoundEvent> sound, net.minecraft.sounds.SoundSource source, float volume, float pitch, long seed) {
+    public void playSeededSound(
+            @Nullable Entity entity,
+            double x,
+            double y,
+            double z,
+            Holder<net.minecraft.sounds.SoundEvent> sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch,
+            long seed) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void playSeededSound(@Nullable Entity sourceEntity, @Nullable Entity targetEntity, Holder<net.minecraft.sounds.SoundEvent> sound, net.minecraft.sounds.SoundSource source, float volume, float pitch, long seed) {
+    public void playSeededSound(
+            @Nullable Entity sourceEntity,
+            @Nullable Entity targetEntity,
+            Holder<net.minecraft.sounds.SoundEvent> sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch,
+            long seed) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void explode(@Nullable Entity entity, @Nullable net.minecraft.world.damagesource.DamageSource damageSource, @Nullable net.minecraft.world.level.ExplosionDamageCalculator explosionDamageCalculator, double x, double y, double z, float power, boolean fire, ExplosionInteraction interaction, net.minecraft.core.particles.ParticleOptions smallExplosionParticles, net.minecraft.core.particles.ParticleOptions largeExplosionParticles, net.minecraft.util.random.WeightedList<net.minecraft.core.particles.ExplosionParticleInfo> explosionParticles, Holder<net.minecraft.sounds.SoundEvent> sound) {
+    public void explode(
+            @Nullable Entity entity,
+            @Nullable net.minecraft.world.damagesource.DamageSource damageSource,
+            @Nullable net.minecraft.world.level.ExplosionDamageCalculator explosionDamageCalculator,
+            double x,
+            double y,
+            double z,
+            float power,
+            boolean fire,
+            ExplosionInteraction interaction,
+            net.minecraft.core.particles.ParticleOptions smallExplosionParticles,
+            net.minecraft.core.particles.ParticleOptions largeExplosionParticles,
+            net.minecraft.util.random.WeightedList<net.minecraft.core.particles.ExplosionParticleInfo>
+                    explosionParticles,
+            Holder<net.minecraft.sounds.SoundEvent> sound) {
         SmoketestPredictionSafety.forbiddenAccess("Level#explode");
         throw new UnsupportedOperationException("Explosions are forbidden in compensated placement simulation");
     }
@@ -494,7 +525,8 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
     }
 
     @Override
-    public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> entityTypeTest, AABB aabb, Predicate<? super T> predicate) {
+    public <T extends Entity> List<T> getEntities(
+            EntityTypeTest<Entity, T> entityTypeTest, AABB aabb, Predicate<? super T> predicate) {
         return Collections.emptyList();
     }
 
@@ -560,27 +592,62 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
     }
 
     @Override
-    public void playSound(@Nullable Entity entity, BlockPos pos, net.minecraft.sounds.SoundEvent sound, net.minecraft.sounds.SoundSource source, float volume, float pitch) {
+    public void playSound(
+            @Nullable Entity entity,
+            BlockPos pos,
+            net.minecraft.sounds.SoundEvent sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void playSound(@Nullable Entity except, double x, double y, double z, net.minecraft.sounds.SoundEvent sound, net.minecraft.sounds.SoundSource source, float volume, float pitch) {
+    public void playSound(
+            @Nullable Entity except,
+            double x,
+            double y,
+            double z,
+            net.minecraft.sounds.SoundEvent sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void playSound(@Nullable Entity except, double x, double y, double z, Holder<net.minecraft.sounds.SoundEvent> sound, net.minecraft.sounds.SoundSource source, float volume, float pitch) {
+    public void playSound(
+            @Nullable Entity except,
+            double x,
+            double y,
+            double z,
+            Holder<net.minecraft.sounds.SoundEvent> sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void playSound(@Nullable Entity except, Entity sourceEntity, net.minecraft.sounds.SoundEvent sound, net.minecraft.sounds.SoundSource source, float volume, float pitch) {
+    public void playSound(
+            @Nullable Entity except,
+            Entity sourceEntity,
+            net.minecraft.sounds.SoundEvent sound,
+            net.minecraft.sounds.SoundSource source,
+            float volume,
+            float pitch) {
         // Sound emission is intentionally ignored during prediction simulation.
     }
 
     @Override
-    public void addParticle(net.minecraft.core.particles.ParticleOptions particle, double x, double y, double z, double dx, double dy, double dz) {
+    public void addParticle(
+            net.minecraft.core.particles.ParticleOptions particle,
+            double x,
+            double y,
+            double z,
+            double dx,
+            double dy,
+            double dz) {
         // Particle emission is intentionally ignored during prediction simulation.
     }
 
@@ -614,36 +681,54 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
 
     private static DimensionType createDimensionType(PlacementSnapshot snapshot) {
         int height = snapshot.getMaxY() - snapshot.getMinY();
-        DimensionType.MonsterSettings monsterSettings =
-                new DimensionType.MonsterSettings(ConstantInt.of(0), 0);
+        DimensionType.MonsterSettings monsterSettings = new DimensionType.MonsterSettings(ConstantInt.of(0), 0);
         for (java.lang.reflect.Constructor<?> constructor : DimensionType.class.getConstructors()) {
             Class<?>[] parameterTypes = constructor.getParameterTypes();
             try {
-                if (parameterTypes.length == 14 && parameterTypes[0] == boolean.class
-                        && parameterTypes[11].isEnum()) {
+                if (parameterTypes.length == 14 && parameterTypes[0] == boolean.class && parameterTypes[11].isEnum()) {
                     Object cardinalLight = enumConstant(parameterTypes[11], "DEFAULT");
                     return (DimensionType) constructor.newInstance(
-                            false, true, false, 1.0D,
-                            snapshot.getMinY(), height, height,
-                            BlockTags.INFINIBURN_OVERWORLD, 0.0F, monsterSettings,
-                            DimensionType.Skybox.OVERWORLD, cardinalLight,
-                            EnvironmentAttributeMap.EMPTY, HolderSet.empty()
-                    );
+                            false,
+                            true,
+                            false,
+                            1.0D,
+                            snapshot.getMinY(),
+                            height,
+                            height,
+                            BlockTags.INFINIBURN_OVERWORLD,
+                            0.0F,
+                            monsterSettings,
+                            DimensionType.Skybox.OVERWORLD,
+                            cardinalLight,
+                            EnvironmentAttributeMap.EMPTY,
+                            HolderSet.empty());
                 }
-                if (parameterTypes.length == 16 && parameterTypes[0] == boolean.class
-                        && parameterTypes[12].isEnum() && parameterTypes[15] == Optional.class) {
+                if (parameterTypes.length == 16
+                        && parameterTypes[0] == boolean.class
+                        && parameterTypes[12].isEnum()
+                        && parameterTypes[15] == Optional.class) {
                     Object cardinalLight = enumConstant(parameterTypes[12], "DEFAULT");
                     // 26.2 passes infiniburn as a HolderSet instead of a TagKey.
                     Object infiniburn = TagKey.class.isAssignableFrom(parameterTypes[8])
                             ? BlockTags.INFINIBURN_OVERWORLD
                             : HolderSet.empty();
                     return (DimensionType) constructor.newInstance(
-                            false, true, false, false, 1.0D,
-                            snapshot.getMinY(), height, height,
-                            infiniburn, 0.0F, monsterSettings,
-                            DimensionType.Skybox.OVERWORLD, cardinalLight,
-                            EnvironmentAttributeMap.EMPTY, HolderSet.empty(), Optional.empty()
-                    );
+                            false,
+                            true,
+                            false,
+                            false,
+                            1.0D,
+                            snapshot.getMinY(),
+                            height,
+                            height,
+                            infiniburn,
+                            0.0F,
+                            monsterSettings,
+                            DimensionType.Skybox.OVERWORLD,
+                            cardinalLight,
+                            EnvironmentAttributeMap.EMPTY,
+                            HolderSet.empty(),
+                            Optional.empty());
                 }
             } catch (ReflectiveOperationException exception) {
                 throw new IllegalStateException("Failed to create compensated dimension type", exception);
@@ -669,8 +754,7 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        net.minecraft.world.level.biome.BiomeSpecialEffects.GrassColorModifier.NONE
-                ))
+                        net.minecraft.world.level.biome.BiomeSpecialEffects.GrassColorModifier.NONE))
                 .mobSpawnSettings(net.minecraft.world.level.biome.MobSpawnSettings.EMPTY)
                 .generationSettings(net.minecraft.world.level.biome.BiomeGenerationSettings.EMPTY)
                 .build();
@@ -680,8 +764,10 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
         private LevelData.RespawnData respawnData = LevelData.RespawnData.DEFAULT;
 
         private PlacementLevelData(PlacementSnapshot snapshot) {
-            BlockPos spawnPos = new BlockPos(0, Math.max(snapshot.getMinY(), Math.min(snapshot.getMaxY() - 1, SEA_LEVEL)), 0);
-            this.respawnData = new LevelData.RespawnData(net.minecraft.core.GlobalPos.of(Level.OVERWORLD, spawnPos), 0.0F, 0.0F);
+            BlockPos spawnPos =
+                    new BlockPos(0, Math.max(snapshot.getMinY(), Math.min(snapshot.getMaxY() - 1, SEA_LEVEL)), 0);
+            this.respawnData =
+                    new LevelData.RespawnData(net.minecraft.core.GlobalPos.of(Level.OVERWORLD, spawnPos), 0.0F, 0.0F);
         }
 
         @Override
@@ -722,8 +808,7 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
         }
 
         @Override
-        public void tick(java.util.function.BooleanSupplier hasTimeLeft, boolean tickChunks) {
-        }
+        public void tick(java.util.function.BooleanSupplier hasTimeLeft, boolean tickChunks) {}
 
         @Override
         public String gatherStats() {
@@ -763,15 +848,14 @@ public final class CompensatedPlacementWorld26_2 extends Level implements Placem
         }
 
         @Override
-        public <U extends Entity> void get(EntityTypeTest<Entity, U> entityTypeTest, AbortableIterationConsumer<U> consumer) {
-        }
+        public <U extends Entity> void get(
+                EntityTypeTest<Entity, U> entityTypeTest, AbortableIterationConsumer<U> consumer) {}
 
         @Override
-        public void get(AABB aabb, Consumer<Entity> consumer) {
-        }
+        public void get(AABB aabb, Consumer<Entity> consumer) {}
 
         @Override
-        public <U extends Entity> void get(EntityTypeTest<Entity, U> entityTypeTest, AABB aabb, AbortableIterationConsumer<U> consumer) {
-        }
+        public <U extends Entity> void get(
+                EntityTypeTest<Entity, U> entityTypeTest, AABB aabb, AbortableIterationConsumer<U> consumer) {}
     }
 }

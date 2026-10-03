@@ -21,7 +21,6 @@ import com.viaversion.viaversion.api.protocol.packet.PacketType;
 import com.viaversion.viaversion.api.protocol.packet.State;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-
 import java.util.List;
 
 /**
@@ -71,13 +70,16 @@ public final class LegacyViaInputBridge extends com.viaversion.viaversion.protoc
                 if (observer != null && observer.user.get() == user) observer.user.clear();
             }
         };
-        if (channel.eventLoop().inEventLoop()) remove.run(); else channel.eventLoop().execute(remove);
+        if (channel.eventLoop().inEventLoop()) remove.run();
+        else channel.eventLoop().execute(remove);
     }
 
     private static ProtocolPipeline viaPipeline(Channel channel) {
         if (channel == null) return null;
         var decoder = channel.pipeline().get(Via.getManager().getInjector().getDecoderName());
-        return decoder instanceof ViaChannelHandler via ? via.connection().getProtocolInfo().getPipeline() : null;
+        return decoder instanceof ViaChannelHandler via
+                ? via.connection().getProtocolInfo().getPipeline()
+                : null;
     }
 
     private static void installOnEventLoop(User user, Channel channel) {
@@ -88,21 +90,34 @@ public final class LegacyViaInputBridge extends com.viaversion.viaversion.protoc
         else pipeline.add(new LegacyViaInputBridge(user));
     }
 
-    @Override public boolean isBaseProtocol() { return true; }
+    @Override
+    public boolean isBaseProtocol() {
+        return true;
+    }
 
-    @Override public void transform(com.viaversion.viaversion.api.protocol.packet.Direction direction,
-                                    State state, com.viaversion.viaversion.api.protocol.packet.PacketWrapper wrapper)
+    @Override
+    public void transform(
+            com.viaversion.viaversion.api.protocol.packet.Direction direction,
+            State state,
+            com.viaversion.viaversion.api.protocol.packet.PacketWrapper wrapper)
             throws com.viaversion.viaversion.exception.CancelException {
-        if (direction != com.viaversion.viaversion.api.protocol.packet.Direction.SERVERBOUND || state != State.PLAY) return;
+        if (direction != com.viaversion.viaversion.api.protocol.packet.Direction.SERVERBOUND || state != State.PLAY)
+            return;
         User current = user.get();
         if (current == null) return;
         // Via's public add(baseProtocol) inserts this observer before translation.
         // Peeking its input leaves wrapper values and all other protocols untouched.
         if (!(wrapper instanceof com.viaversion.viaversion.protocol.packet.PacketWrapperImpl frame)) return;
         boolean rejected;
-        try { rejected = inspect(current, wrapper.user(), wrapper.getId(), frame.getInputBuffer()); }
-        catch (RuntimeException unknownFrame) { return; }
-        if (rejected) { wrapper.cancel(); throw com.viaversion.viaversion.exception.CancelException.generate(); }
+        try {
+            rejected = inspect(current, wrapper.user(), wrapper.getId(), frame.getInputBuffer());
+        } catch (RuntimeException unknownFrame) {
+            return;
+        }
+        if (rejected) {
+            wrapper.cancel();
+            throw com.viaversion.viaversion.exception.CancelException.generate();
+        }
     }
 
     private boolean inspect(User user, UserConnection viaConnection, int packetId, ByteBuf original) {
@@ -113,10 +128,10 @@ public final class LegacyViaInputBridge extends com.viaversion.viaversion.protoc
         }
 
         CultPlayer player = user.getCultPlayer();
-        if (player == null || player.isBedrockMovement()
+        if (player == null
+                || player.isBedrockMovement()
                 || protocolInfo.protocolVersion() == null
-                || protocolInfo.protocolVersion().getVersion()
-                >= ClientVersion.V_1_21_2.getProtocolVersion()) {
+                || protocolInfo.protocolVersion().getVersion() >= ClientVersion.V_1_21_2.getProtocolVersion()) {
             return false;
         }
 
@@ -156,8 +171,8 @@ public final class LegacyViaInputBridge extends com.viaversion.viaversion.protoc
             return null;
         }
 
-        PacketType type = (PacketType) protocols.get(firstTranslation)
-                .getPacketTypesProvider().unmappedServerboundType(State.PLAY, packetId);
+        PacketType type = (PacketType)
+                protocols.get(firstTranslation).getPacketTypesProvider().unmappedServerboundType(State.PLAY, packetId);
         return type == null ? null : type.getName();
     }
 

@@ -7,12 +7,12 @@ import ac.cult.cultac.utils.data.HitData;
 import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import ac.cult.cultac.utils.nmsutil.TraverseBlocks;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.Material;
 import net.minecraft.core.BlockPos;
-import org.bukkit.GameMode;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 public class UseItemHandler {
     public static void handleUseItem(CultPlayer player, ItemStack placedWith, InteractionHand hand) {
@@ -36,7 +36,8 @@ public class UseItemHandler {
     public static void placeWaterLavaSnowBucket(CultPlayer player, ItemStack held, InteractionHand hand) {
         HitData data = TraverseBlocks.getNearestHitResult(player, Material.AIR, false);
         if (data != null) {
-            BlockPlace blockPlace = new BlockPlace(player, hand, data.getPosition(), data.getClosestDirection(), held, data);
+            BlockPlace blockPlace =
+                    new BlockPlace(player, hand, data.getPosition(), data.getClosestDirection(), held, data);
             blockPlace.setUseItem(true);
 
             boolean didPlace = NmsBlockPlaceResolver.applyBucketPlace(player, blockPlace);
@@ -44,9 +45,9 @@ public class UseItemHandler {
                 if (hand == InteractionHand.MAIN_HAND) {
                     player.getInventory().inventory.setHeldItem(new ItemStack(Material.BUCKET, 1));
                 } else {
-                    player.getInventory().inventory.setPlayerInventoryItem(
-                            Inventory.SLOT_OFFHAND,
-                            new ItemStack(Material.BUCKET, 1));
+                    player.getInventory()
+                            .inventory
+                            .setPlayerInventoryItem(Inventory.SLOT_OFFHAND, new ItemStack(Material.BUCKET, 1));
                 }
             }
         }
@@ -64,8 +65,7 @@ public class UseItemHandler {
         blockPlace.setCursor(new Vec3(
                 data.getBlockHitLocation().getX() - clickedPos.getX(),
                 data.getBlockHitLocation().getY() - clickedPos.getY(),
-                data.getBlockHitLocation().getZ() - clickedPos.getZ()
-        ));
+                data.getBlockHitLocation().getZ() - clickedPos.getZ()));
         blockPlace.setUseItem(true);
 
         NmsBlockPlaceResolver.applyBlockPlace(player, blockPlace);
@@ -76,7 +76,8 @@ public class UseItemHandler {
 
         if (data != null) {
             ItemStack held = player.getInventory().getHandItem(hand);
-            BlockPlace blockPlace = new BlockPlace(player, hand, data.getPosition(), data.getClosestDirection(), held, data);
+            BlockPlace blockPlace =
+                    new BlockPlace(player, hand, data.getPosition(), data.getClosestDirection(), held, data);
             blockPlace.setReplaceClicked(true); // Replace the block clicked, not the block in the direction
             blockPlace.setUseItem(true);
 

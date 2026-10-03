@@ -5,22 +5,28 @@ import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import ac.cult.cultac.utils.enums.BoatEntityStatus;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityTrackXRot;
+import ac.cult.cultac.utils.enums.BoatEntityStatus;
 import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.WaterCurrent;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
 
-
-public class BoatTransform implements UncertaintyHandler{
+public class BoatTransform implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
-        if (context.getVehicle() == null || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) return start;
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
+        if (context.getVehicle() == null
+                || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) return start;
         if (!player.packetStateData.isVehicleMovementFromClientTick()) {
             // MCP-Reborn ClientPacketListener#handleMoveVehicle only snaps the
             // local-authoritative root with Entity#absSnapTo and immediately
@@ -37,14 +43,17 @@ public class BoatTransform implements UncertaintyHandler{
 
     public static void commitAcceptedBoatTickState(CultPlayer player, PredictionResult result) {
         SimulationContext context = result.getSimulationContext();
-        if (context.getVehicle() == null || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) return;
+        if (context.getVehicle() == null
+                || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) return;
 
-        BoatTickResult tick = selectBoatTick(player, context, result.getInitialStartingVel(), BoatTickState.capture(player), result.getTarget());
+        BoatTickResult tick = selectBoatTick(
+                player, context, result.getInitialStartingVel(), BoatTickState.capture(player), result.getTarget());
         tick.state().apply(player);
     }
 
     public static String debugBoatTick(CultPlayer player, SimulationContext context, Vec3 vector) {
-        if (context.getVehicle() == null || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) {
+        if (context.getVehicle() == null
+                || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) {
             return null;
         }
 
@@ -72,7 +81,8 @@ public class BoatTransform implements UncertaintyHandler{
     }
 
     public static boolean usesProvenWaterEntryPositionSnap(CultPlayer player, SimulationContext context) {
-        if (context.getVehicle() == null || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) {
+        if (context.getVehicle() == null
+                || !ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type)) {
             return false;
         }
 
@@ -95,9 +105,11 @@ public class BoatTransform implements UncertaintyHandler{
         return waterEntrySnapHasNoCollision(player, context, movedBox);
     }
 
-    public static Vec3 applyBoatBaseTickWaterCurrent(CultPlayer player, PacketEntity vehicle, Vec3 physicalPosition, Vec3 vector) {
+    public static Vec3 applyBoatBaseTickWaterCurrent(
+            CultPlayer player, PacketEntity vehicle, Vec3 physicalPosition, Vec3 vector) {
         SimpleCollisionBox fluidBox = player.boatData.fluidInteractionBox == null
-                ? GetBoundingBox.getPacketEntityBoundingBox(player, physicalPosition.x, physicalPosition.y, physicalPosition.z, vehicle)
+                ? GetBoundingBox.getPacketEntityBoundingBox(
+                        player, physicalPosition.x, physicalPosition.y, physicalPosition.z, vehicle)
                 : player.boatData.fluidInteractionBox;
         return applyBoatBaseTickWaterCurrent(player, fluidBox, vector);
     }
@@ -120,7 +132,8 @@ public class BoatTransform implements UncertaintyHandler{
         return current == null ? vector : vector.add(current);
     }
 
-    private static FloatBoatResult floatBoat(CultPlayer player, SimulationContext context, Vec3 vector, double lastYd, BoatTickState state) {
+    private static FloatBoatResult floatBoat(
+            CultPlayer player, SimulationContext context, Vec3 vector, double lastYd, BoatTickState state) {
         SimpleCollisionBox boatBox = context.getFromMaximumExtent();
         double boatY = context.getStart().y;
         double boatHeight = boatBox.maxY - boatBox.minY;
@@ -128,7 +141,9 @@ public class BoatTransform implements UncertaintyHandler{
         double d2 = 0.0D;
         float invFriction = 0.05F;
 
-        if (state.oldStatus() == BoatEntityStatus.IN_AIR && state.status() != BoatEntityStatus.IN_AIR && state.status() != BoatEntityStatus.ON_LAND) {
+        if (state.oldStatus() == BoatEntityStatus.IN_AIR
+                && state.status() != BoatEntityStatus.IN_AIR
+                && state.status() != BoatEntityStatus.ON_LAND) {
             double waterLevel = boatY + boatHeight;
             double targetY = getWaterLevelAbove(player, boatBox, lastYd) - boatHeight + 0.101D;
             Vec3 snapVector = new Vec3(vector.x, targetY - boatY, vector.z);
@@ -158,7 +173,7 @@ public class BoatTransform implements UncertaintyHandler{
                 invFriction = 0.9F;
             } else if (state.status() == BoatEntityStatus.ON_LAND) {
                 invFriction = state.landFriction();
-                //player.boatData.landFriction /= 2.0F; // why does mojang do this?
+                // player.boatData.landFriction /= 2.0F; // why does mojang do this?
             }
 
             vector = new Vec3(vector.x * invFriction, vector.y + d1, vector.z * invFriction);
@@ -170,10 +185,13 @@ public class BoatTransform implements UncertaintyHandler{
 
         // MCP-Reborn AbstractBoat#floatBoat multiplies deltaRotation by the same
         // status friction applied to horizontal velocity.
-        return new FloatBoatResult(vector, state.withDeltaRotation(state.deltaRotation() * invFriction).withLastYd(vector.y));
+        return new FloatBoatResult(
+                vector,
+                state.withDeltaRotation(state.deltaRotation() * invFriction).withLastYd(vector.y));
     }
 
-    private static BoatTickResult selectBoatTick(CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state, Vec3 target) {
+    private static BoatTickResult selectBoatTick(
+            CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state, Vec3 target) {
         BoatTickResult selected = computeBoatTick(player, context, vector, state);
         if (state.oldStatusMayBeInAir()
                 && state.oldStatus() != BoatEntityStatus.IN_AIR
@@ -184,7 +202,8 @@ public class BoatTransform implements UncertaintyHandler{
             // begins before the next boat tick, the first tick can still copy
             // a pre-packet IN_AIR status into oldStatus and take the exact
             // AbstractBoat#floatBoat water-entry snap branch.
-            BoatTickResult airOldStatus = computeBoatTick(player, context, vector, state.withOldStatus(BoatEntityStatus.IN_AIR));
+            BoatTickResult airOldStatus =
+                    computeBoatTick(player, context, vector, state.withOldStatus(BoatEntityStatus.IN_AIR));
             if (airOldStatus.vector().distanceToSqr(target) < selected.vector().distanceToSqr(target)) {
                 selected = airOldStatus;
             }
@@ -199,15 +218,18 @@ public class BoatTransform implements UncertaintyHandler{
             // that packet-phase snap leaves the previous hidden boat tick ambiguous;
             // otherwise AbstractBoat#tick has already copied the exact prior status
             // into oldStatus before sampling the current box.
-            BoatTickResult noSnapOldStatus = computeBoatTick(player, context, vector, state.withOldStatus(state.status()));
-            if (noSnapOldStatus.vector().distanceToSqr(target) < selected.vector().distanceToSqr(target)) {
+            BoatTickResult noSnapOldStatus =
+                    computeBoatTick(player, context, vector, state.withOldStatus(state.status()));
+            if (noSnapOldStatus.vector().distanceToSqr(target)
+                    < selected.vector().distanceToSqr(target)) {
                 selected = noSnapOldStatus;
             }
         }
         return selected;
     }
 
-    private static BoatTickResult computeBoatTick(CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state) {
+    private static BoatTickResult computeBoatTick(
+            CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state) {
         vector = applyBoatWaterCurrent(player, context, vector);
         // MCP-Reborn AbstractBoat#getWaterLevelAbove uses AbstractBoat.lastYd.
         // checkFallDamage stores that from getDeltaMovement().y, not from the
@@ -215,10 +237,14 @@ public class BoatTransform implements UncertaintyHandler{
         FloatBoatResult floated = floatBoat(player, context, vector, state.lastYd(), state);
         BoatTickState postFloatState = floated.state();
         BoatControlResult controlled = controlBoat(player, context, floated.vector(), postFloatState);
-        return new BoatTickResult(controlled.vector(), postFloatState.withDeltaRotation(controlled.deltaRotation()), controlled.postControlYaw());
+        return new BoatTickResult(
+                controlled.vector(),
+                postFloatState.withDeltaRotation(controlled.deltaRotation()),
+                controlled.postControlYaw());
     }
 
-    private static boolean waterEntrySnapHasNoCollision(CultPlayer player, SimulationContext context, SimpleCollisionBox movedBox) {
+    private static boolean waterEntrySnapHasNoCollision(
+            CultPlayer player, SimulationContext context, SimpleCollisionBox movedBox) {
         return findFirstWaterEntryIntersection(player, context, movedBox) == null;
     }
 
@@ -237,7 +263,8 @@ public class BoatTransform implements UncertaintyHandler{
         return blocker == null ? "clear" : blocker.toString();
     }
 
-    private static SimpleCollisionBox findFirstWaterEntryIntersection(CultPlayer player, SimulationContext context, SimpleCollisionBox movedBox) {
+    private static SimpleCollisionBox findFirstWaterEntryIntersection(
+            CultPlayer player, SimulationContext context, SimpleCollisionBox movedBox) {
         List<SimpleCollisionBox> collisions = new ArrayList<>();
         Collisions.getCollisionBoxes(player, movedBox, collisions, false, movedBox.minY);
 
@@ -282,7 +309,8 @@ public class BoatTransform implements UncertaintyHandler{
         return (float) (l + 1);
     }
 
-    private static BoatControlResult controlBoat(CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state) {
+    private static BoatControlResult controlBoat(
+            CultPlayer player, SimulationContext context, Vec3 vector, BoatTickState state) {
         Vec3 inputs = context.getHorseInputs();
         float deltaRotation = applyBoatControlDelta(state.deltaRotation(), inputs);
         float startYaw;
@@ -322,8 +350,7 @@ public class BoatTransform implements UncertaintyHandler{
         Vec3 controlled = vector.add(new Vec3(
                 player.trigHandler.sin(-postControlYaw * ((float) Math.PI / 180F)) * f,
                 0,
-                player.trigHandler.cos(postControlYaw * ((float) Math.PI / 180F)) * f
-        ));
+                player.trigHandler.cos(postControlYaw * ((float) Math.PI / 180F)) * f));
         return new BoatControlResult(controlled, deltaRotation, startYaw, postControlYaw);
     }
 
@@ -354,17 +381,21 @@ public class BoatTransform implements UncertaintyHandler{
         return deltaRotation;
     }
 
-    private record BoatTickResult(Vec3 vector, BoatTickState state, float postControlYaw) {
-    }
+    private record BoatTickResult(Vec3 vector, BoatTickState state, float postControlYaw) {}
 
-    private record FloatBoatResult(Vec3 vector, BoatTickState state) {
-    }
+    private record FloatBoatResult(Vec3 vector, BoatTickState state) {}
 
-    private record BoatControlResult(Vec3 vector, float deltaRotation, float startYaw, float postControlYaw) {
-    }
+    private record BoatControlResult(Vec3 vector, float deltaRotation, float startYaw, float postControlYaw) {}
 
-    private record BoatTickState(BoatEntityStatus oldStatus, BoatEntityStatus status, double waterLevel, float landFriction,
-                                 float deltaRotation, boolean nullifyNextY, double lastYd, boolean oldStatusMayBeInAir) {
+    private record BoatTickState(
+            BoatEntityStatus oldStatus,
+            BoatEntityStatus status,
+            double waterLevel,
+            float landFriction,
+            float deltaRotation,
+            boolean nullifyNextY,
+            double lastYd,
+            boolean oldStatusMayBeInAir) {
         private static BoatTickState capture(CultPlayer player) {
             return new BoatTickState(
                     player.boatData.oldStatus,
@@ -378,23 +409,63 @@ public class BoatTransform implements UncertaintyHandler{
         }
 
         private BoatTickState withOldStatus(BoatEntityStatus oldStatus) {
-            return new BoatTickState(oldStatus, status, waterLevel, landFriction, deltaRotation, nullifyNextY, lastYd, oldStatusMayBeInAir);
+            return new BoatTickState(
+                    oldStatus,
+                    status,
+                    waterLevel,
+                    landFriction,
+                    deltaRotation,
+                    nullifyNextY,
+                    lastYd,
+                    oldStatusMayBeInAir);
         }
 
         private BoatTickState withDeltaRotation(float deltaRotation) {
-            return new BoatTickState(oldStatus, status, waterLevel, landFriction, deltaRotation, nullifyNextY, lastYd, oldStatusMayBeInAir);
+            return new BoatTickState(
+                    oldStatus,
+                    status,
+                    waterLevel,
+                    landFriction,
+                    deltaRotation,
+                    nullifyNextY,
+                    lastYd,
+                    oldStatusMayBeInAir);
         }
 
         private BoatTickState withLastYd(double lastYd) {
-            return new BoatTickState(oldStatus, status, waterLevel, landFriction, deltaRotation, nullifyNextY, lastYd, oldStatusMayBeInAir);
+            return new BoatTickState(
+                    oldStatus,
+                    status,
+                    waterLevel,
+                    landFriction,
+                    deltaRotation,
+                    nullifyNextY,
+                    lastYd,
+                    oldStatusMayBeInAir);
         }
 
         private BoatTickState withWaterEntrySnap(double waterLevel) {
-            return new BoatTickState(oldStatus, BoatEntityStatus.IN_WATER, waterLevel, landFriction, deltaRotation, true, 0.0D, oldStatusMayBeInAir);
+            return new BoatTickState(
+                    oldStatus,
+                    BoatEntityStatus.IN_WATER,
+                    waterLevel,
+                    landFriction,
+                    deltaRotation,
+                    true,
+                    0.0D,
+                    oldStatusMayBeInAir);
         }
 
         private BoatTickState withWaterEntryBlocked(double waterLevel) {
-            return new BoatTickState(oldStatus, BoatEntityStatus.IN_WATER, waterLevel, landFriction, deltaRotation, false, lastYd, oldStatusMayBeInAir);
+            return new BoatTickState(
+                    oldStatus,
+                    BoatEntityStatus.IN_WATER,
+                    waterLevel,
+                    landFriction,
+                    deltaRotation,
+                    false,
+                    lastYd,
+                    oldStatusMayBeInAir);
         }
 
         private void apply(CultPlayer player) {

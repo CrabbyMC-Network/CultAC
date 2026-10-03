@@ -1,24 +1,25 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "MultiActionsD", stableKey = "cult.multiactions.inventory_close_while_moving", description = "Closed inventory while moving")
+@CheckData(
+        name = "MultiActionsD",
+        stableKey = "cult.multiactions.inventory_close_while_moving",
+        description = "Closed inventory while moving")
 public class MultiActionsD extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("sprinting={bool}, sneaking={bool}, input={bool}");
 
     public MultiActionsD(CultPlayer player) {
         super(player);
     }
-
 
     @CultPacketHandler("serverbound.container_close")
     public void onContainerClose(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
@@ -31,7 +32,8 @@ public class MultiActionsD extends Check implements CheckListener {
 
         // The client force-closes the inventory while inside a nether portal, sending this close
         // window packet even while moving. This only happens on 1.12.2 and newer clients.
-        if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12_2) && player.intersectedWithNetherPortal) return;
+        if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12_2) && player.intersectedWithNetherPortal)
+            return;
 
         // Don't cancel this packet, because it won't do anything except for making chests
         // look like they are still open (desynced),

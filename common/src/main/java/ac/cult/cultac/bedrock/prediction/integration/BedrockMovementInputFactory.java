@@ -5,8 +5,8 @@ import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputIntent;
 import ac.cult.cultac.bedrock.prediction.input.BedrockTickInput;
 import ac.cult.cultac.bedrock.prediction.simulation.BedrockSimulation;
-import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockMobJumpComponentState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockHorseMovement;
+import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockMobJumpComponentState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockSnapshotResolver;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
@@ -14,9 +14,9 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockWorldSnapshot;
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 import ac.cult.cultac.utils.latency.CompensatedWorld;
 import ac.cult.cultac.utils.math.CultMath;
-import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 
 final class BedrockMovementInputFactory {
     private final BedrockTickInputBuilder tickInputs;
@@ -27,55 +27,50 @@ final class BedrockMovementInputFactory {
         this.worldSnapshots = new BedrockWorldSnapshotBuilder();
     }
 
-    Input create(
-            CultPlayer player,
-            SimulationContext context
-    ) {
+    Input create(CultPlayer player, SimulationContext context) {
         BedrockAuthInputFrame frame = trustedFrame(player, context);
         if (frame == null) {
             return null;
         }
         BedrockMovementState profilePreviousState = BedrockProfileState.previousState(context);
-        boolean actorGliding = profilePreviousState != null ? profilePreviousState.gliding()
+        boolean actorGliding = profilePreviousState != null
+                ? profilePreviousState.gliding()
                 : player.bedrockState.getClientPoseState(frame).gliding();
         BedrockCollisionOverrideCatalog geometry = geometryCatalog();
         BedrockPlayerContext playerContext = BedrockPlayerContext.from(player, context, frame, actorGliding);
         BedrockWorldSnapshot worldSnapshot = worldSnapshots.create(player, context, geometry, frame, playerContext);
         BedrockTickInput tickInput = context.getVehicle() instanceof PacketEntityHorse horse
                 ? tickInputs.createHorse(player, frame, profilePreviousState, horse)
-                 : context.getVehicle() != null && context.getVehicle().isBoat()
-                ? tickInputs.createBoat(player, frame, profilePreviousState, context.getVehicle())
-                : tickInputs.create(player, frame, playerContext);
+                : context.getVehicle() != null && context.getVehicle().isBoat()
+                        ? tickInputs.createBoat(player, frame, profilePreviousState, context.getVehicle())
+                        : tickInputs.create(player, frame, playerContext);
         BedrockMobJumpComponentState mobJumpComponent = BedrockProfileState.mobJumpComponent(context);
         BedrockMovementState previousState = BedrockInitialStateFactory.resolve(
-                context,
-                tickInput.inputFrame(),
-                worldSnapshot.movementContext(),
-                frame,
-                profilePreviousState);
+                context, tickInput.inputFrame(), worldSnapshot.movementContext(), frame, profilePreviousState);
         if (profilePreviousState == null) {
-            previousState = previousState.withAcknowledgedPose(null, null, playerContext.pose().spinning())
-                .withGliding(playerContext.actorGliding())
-                .withSprinting(!previousState.isVehicle() && player.bedrockState.acknowledgedSprinting);
+            previousState = previousState
+                    .withAcknowledgedPose(null, null, playerContext.pose().spinning())
+                    .withGliding(playerContext.actorGliding())
+                    .withSprinting(!previousState.isVehicle() && player.bedrockState.acknowledgedSprinting);
         }
         if (previousState.isHorse()) {
             var horse = previousState.horse().actor();
-            previousState = previousState.withHorse(previousState.horse().forFrame(
-                    horse.horseFlagsRevision, horse.isRearing, player.bedrockState.horseJumpRelease(frame)));
+            previousState = previousState.withHorse(previousState
+                    .horse()
+                    .forFrame(horse.horseFlagsRevision, horse.isRearing, player.bedrockState.horseJumpRelease(frame)));
         } else if (previousState.isBoat()) {
-            previousState = previousState.withBoat(previousState.boat().withProperties(
-                    previousState.boat().actor().bedrockBoat, analogBoatInput(frame)))
-                    .withPlayerDimensions(previousState.boat().actor().bedrockBoat.dimensions(), true);
+            previousState = previousState
+                    .withBoat(previousState
+                            .boat()
+                            .withProperties(previousState.boat().actor().bedrockBoat, analogBoatInput(frame)))
+                    .withPlayerDimensions(
+                            previousState.boat().actor().bedrockBoat.dimensions(), true);
         } else if (player.bedrockState != null) {
-            previousState = player.bedrockState.applyConfirmedBoundingBoxSize(
-                    previousState, tickInput.inputFrame());
+            previousState = player.bedrockState.applyConfirmedBoundingBoxSize(previousState, tickInput.inputFrame());
         }
-        worldSnapshot = BedrockSnapshotResolver.forState(
-                worldSnapshot,
-                previousState,
-                tickInput.inputFrame());
-        boolean actorMovementTick = !player.bedrockState.loadingScreen.active()
-                && hasAcknowledgedStartChunk(player, context);
+        worldSnapshot = BedrockSnapshotResolver.forState(worldSnapshot, previousState, tickInput.inputFrame());
+        boolean actorMovementTick =
+                !player.bedrockState.loadingScreen.active() && hasAcknowledgedStartChunk(player, context);
         player.bedrockState.movementEffects.glideBoost(frame, actorMovementTick);
         return new Input(
                 frame,
@@ -83,16 +78,17 @@ final class BedrockMovementInputFactory {
                 tickInput,
                 tickInput.inputFrame().intent(),
                 worldSnapshot,
-                previousState.isHorse() ? BedrockHorseMovement.maxUpStep(previousState, worldSnapshot.movementContext())
+                previousState.isHorse()
+                        ? BedrockHorseMovement.maxUpStep(previousState, worldSnapshot.movementContext())
                         : previousState.isBoat() ? boatStep(previousState) : BedrockSimulation.DEFAULT_MAX_AUTO_STEP,
                 mobJumpComponent,
-                actorMovementTick
-        );
+                actorMovementTick);
     }
 
     private static boolean analogBoatInput(BedrockAuthInputFrame frame) {
         return frame.getInputMode() != org.cloudburstmc.protocol.bedrock.data.InputMode.TOUCH.ordinal()
-                || frame.getInteractionModel() != org.cloudburstmc.protocol.bedrock.data.InputInteractionModel.CLASSIC.ordinal();
+                || frame.getInteractionModel()
+                        != org.cloudburstmc.protocol.bedrock.data.InputInteractionModel.CLASSIC.ordinal();
     }
 
     private static double boatStep(BedrockMovementState state) {
@@ -118,8 +114,7 @@ final class BedrockMovementInputFactory {
         int chunkX = CultMath.floor(context.getStart().x) >> 4;
         int chunkZ = CultMath.floor(context.getStart().z) >> 4;
         CompensatedWorld.CachedChunk chunk = player.compensatedWorld.getChunk(chunkX, chunkZ);
-        return chunk != null
-                && chunk.getTransaction() <= player.lastTransactionReceived.get();
+        return chunk != null && chunk.getTransaction() <= player.lastTransactionReceived.get();
     }
 
     public record Input(
@@ -130,8 +125,7 @@ final class BedrockMovementInputFactory {
             BedrockWorldSnapshot worldSnapshot,
             double maxUpStep,
             BedrockMobJumpComponentState mobJumpComponent,
-            boolean actorMovementTick
-    ) {
+            boolean actorMovementTick) {
         public Input(
                 BedrockAuthInputFrame authFrame,
                 BedrockMovementState previousState,
@@ -139,18 +133,15 @@ final class BedrockMovementInputFactory {
                 BedrockInputIntent inputIntent,
                 BedrockWorldSnapshot worldSnapshot,
                 double maxUpStep,
-                BedrockMobJumpComponentState mobJumpComponent
-        ) {
-            this(authFrame, previousState, tickInput, inputIntent, worldSnapshot,
-                    maxUpStep, mobJumpComponent, true);
+                BedrockMobJumpComponentState mobJumpComponent) {
+            this(authFrame, previousState, tickInput, inputIntent, worldSnapshot, maxUpStep, mobJumpComponent, true);
         }
 
         public Input(
                 BedrockAuthInputFrame authFrame,
                 BedrockMovementState previousState,
                 BedrockTickInput tickInput,
-                BedrockWorldSnapshot worldSnapshot
-        ) {
+                BedrockWorldSnapshot worldSnapshot) {
             this(
                     authFrame,
                     previousState,
@@ -187,16 +178,23 @@ final class BedrockMovementInputFactory {
             return withPreviousState(previousEntry.state(), previousEntry.mobJumpComponent());
         }
 
-        public Input withPreviousState(BedrockMovementState previousState, BedrockMobJumpComponentState mobJumpComponent) {
+        public Input withPreviousState(
+                BedrockMovementState previousState, BedrockMobJumpComponentState mobJumpComponent) {
             if (previousState.isHorse()) {
                 var snapshot = this.previousState.horse();
-                previousState = previousState.withHorse(previousState.horse().forFrame(
-                        snapshot.metadataRevision(), snapshot.standing(), snapshot.release()));
+                previousState = previousState.withHorse(previousState
+                        .horse()
+                        .forFrame(snapshot.metadataRevision(), snapshot.standing(), snapshot.release()));
             }
             if (previousState.isBoat()) {
-                previousState = previousState.withBoat(previousState.boat().withProperties(
-                        this.previousState.boat().properties(), this.previousState.boat().analogPaddles()))
-                        .withPlayerDimensions(this.previousState.boat().properties().dimensions(), true);
+                previousState = previousState
+                        .withBoat(previousState
+                                .boat()
+                                .withProperties(
+                                        this.previousState.boat().properties(),
+                                        this.previousState.boat().analogPaddles()))
+                        .withPlayerDimensions(
+                                this.previousState.boat().properties().dimensions(), true);
             }
             if (java.util.Objects.equals(this.previousState, previousState)) {
                 if (java.util.Objects.equals(this.mobJumpComponent, mobJumpComponent)) {
@@ -209,7 +207,9 @@ final class BedrockMovementInputFactory {
                     tickInput,
                     inputIntent,
                     BedrockSnapshotResolver.forState(worldSnapshot, previousState, tickInput.inputFrame()),
-                    previousState.isHorse() ? BedrockHorseMovement.maxUpStep(previousState, movementContext()) : maxUpStep,
+                    previousState.isHorse()
+                            ? BedrockHorseMovement.maxUpStep(previousState, movementContext())
+                            : maxUpStep,
                     mobJumpComponent,
                     actorMovementTick);
         }
@@ -218,5 +218,4 @@ final class BedrockMovementInputFactory {
     private BedrockCollisionOverrideCatalog geometryCatalog() {
         return ac.cult.cultac.utils.collisions.BedrockClientBlockShapeMappings.catalog();
     }
-
 }

@@ -1,14 +1,13 @@
 package ac.cult.cultac.utils.latency;
 
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.block.data.BlockData;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import org.bukkit.block.data.BlockData;
 
 /**
  * Client-visible potent-sulfur block entity tickers, in vanilla ticker order.
@@ -41,9 +40,12 @@ public final class CompensatedGeysers {
     public List<BlockPos> getTickersInOrder(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         List<BlockPos> result = new ArrayList<>();
         for (BlockPos position : tickers.values()) {
-            if (position.getX() >= minX && position.getX() <= maxX
-                    && position.getY() >= minY && position.getY() <= maxY
-                    && position.getZ() >= minZ && position.getZ() <= maxZ) {
+            if (position.getX() >= minX
+                    && position.getX() <= maxX
+                    && position.getY() >= minY
+                    && position.getY() <= maxY
+                    && position.getZ() >= minZ
+                    && position.getZ() <= maxZ) {
                 result.add(position);
             }
         }

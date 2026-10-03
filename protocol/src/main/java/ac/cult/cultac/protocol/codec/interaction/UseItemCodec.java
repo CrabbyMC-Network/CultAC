@@ -18,8 +18,11 @@ import io.netty.buffer.ByteBuf;
 public final class UseItemCodec implements PacketCodec<ServerboundUseItem> {
     @Override
     public ServerboundUseItem read(ByteBuf input, ProtocolContext context) {
-        return new ServerboundUseItem(readHand(input, context.version().atLeast(ProtocolVersion.V26_3)), Wire.readVarInt(input),
-                input.readFloat(), input.readFloat());
+        return new ServerboundUseItem(
+                readHand(input, context.version().atLeast(ProtocolVersion.V26_3)),
+                Wire.readVarInt(input),
+                input.readFloat(),
+                input.readFloat());
     }
 
     static Hand readHand(ByteBuf input, boolean zeroFallback) {

@@ -21,27 +21,21 @@ public final class BedrockBlockSurfaceMovement {
     private static final float STANDING_SLOWDOWN_VERTICAL_SCALE = 0.2F;
     private static final float STANDING_SLOWDOWN_BASE_SCALE = 0.4F;
 
-    private BedrockBlockSurfaceMovement() {
-    }
+    private BedrockBlockSurfaceMovement() {}
 
     public static Vec3d applyStandingAfterMove(
-        Vec3d currentVelocity,
-        Vec3d physicalFeetPosition,
-        boolean sneaking,
-        boolean onGround,
-        BlockCollisionWorld blockCollisionWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d currentVelocity,
+            Vec3d physicalFeetPosition,
+            boolean sneaking,
+            boolean onGround,
+            BlockCollisionWorld blockCollisionWorld,
+            PlayerDimensionsState playerDimensions) {
         return standingSlowdownVelocity(
-            currentVelocity,
-            sneaking,
-            onGround,
-            BedrockStandingSurfaceResolver.fromBlockWorld(
-                physicalFeetPosition,
-                blockCollisionWorld,
-                playerDimensions
-            )
-        );
+                currentVelocity,
+                sneaking,
+                onGround,
+                BedrockStandingSurfaceResolver.fromBlockWorld(
+                        physicalFeetPosition, blockCollisionWorld, playerDimensions));
     }
 
     public static Vec3d applyKnownStandingSlowdownAfterMove(Vec3d currentVelocity) {
@@ -49,25 +43,18 @@ public final class BedrockBlockSurfaceMovement {
     }
 
     public static Vec3d applyInsideBlockAfterPostMoveEffects(
-        Vec3d currentVelocity,
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
-        return honeyInsideBlockVelocity(
-            currentVelocity,
-            honeySlideState,
-            physicalFeetPosition,
-            playerDimensions
-        );
+            Vec3d currentVelocity,
+            HoneySlideState honeySlideState,
+            Vec3d physicalFeetPosition,
+            PlayerDimensionsState playerDimensions) {
+        return honeyInsideBlockVelocity(currentVelocity, honeySlideState, physicalFeetPosition, playerDimensions);
     }
 
     public static Vec3d applyHoneySlideBeforeMove(
-        Vec3d currentVelocity,
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d currentVelocity,
+            HoneySlideState honeySlideState,
+            Vec3d physicalFeetPosition,
+            PlayerDimensionsState playerDimensions) {
         Objects.requireNonNull(currentVelocity, "currentVelocity");
         if (!honeySlideState.active() || currentVelocity.y() >= HONEY_INSIDE_MIN_VERTICAL_VELOCITY) {
             return currentVelocity;
@@ -79,22 +66,20 @@ public final class BedrockBlockSurfaceMovement {
     }
 
     public static boolean isHoneySliding(
-        Vec3d currentVelocity,
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d currentVelocity,
+            HoneySlideState honeySlideState,
+            Vec3d physicalFeetPosition,
+            PlayerDimensionsState playerDimensions) {
         return honeySlideState.active()
-            && currentVelocity.y() < HONEY_INSIDE_MIN_VERTICAL_VELOCITY
-            && intersectsHoneySlideTrigger(honeySlideState, physicalFeetPosition, playerDimensions);
+                && currentVelocity.y() < HONEY_INSIDE_MIN_VERTICAL_VELOCITY
+                && intersectsHoneySlideTrigger(honeySlideState, physicalFeetPosition, playerDimensions);
     }
 
     public static Vec3d honeyInsideBlockVelocity(
-        Vec3d currentVelocity,
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d currentVelocity,
+            HoneySlideState honeySlideState,
+            Vec3d physicalFeetPosition,
+            PlayerDimensionsState playerDimensions) {
         Objects.requireNonNull(currentVelocity, "currentVelocity");
         Objects.requireNonNull(honeySlideState, "honeySlideState");
         Objects.requireNonNull(playerDimensions, "playerDimensions");
@@ -125,15 +110,9 @@ public final class BedrockBlockSurfaceMovement {
     }
 
     public static int honeyInsideBlockCount(
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
-        WorldCollisionBox actorBox = actorBox(
-            physicalFeetPosition,
-            honeySlideState.actorWidth() * 0.5D,
-            playerDimensions.height()
-        );
+            HoneySlideState honeySlideState, Vec3d physicalFeetPosition, PlayerDimensionsState playerDimensions) {
+        WorldCollisionBox actorBox =
+                actorBox(physicalFeetPosition, honeySlideState.actorWidth() * 0.5D, playerDimensions.height());
         // The vanilla block query floors min + 0.001 and max - 0.001 with
         // the default zero inside-block margin.
         int minX = blockAabbMin(actorBox.minX());
@@ -160,15 +139,9 @@ public final class BedrockBlockSurfaceMovement {
     }
 
     private static boolean intersectsHoneySlideTrigger(
-        HoneySlideState honeySlideState,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState playerDimensions
-    ) {
-        WorldCollisionBox actorBox = actorBox(
-            physicalFeetPosition,
-            honeySlideState.actorWidth() * 0.5D,
-            playerDimensions.height()
-        );
+            HoneySlideState honeySlideState, Vec3d physicalFeetPosition, PlayerDimensionsState playerDimensions) {
+        WorldCollisionBox actorBox =
+                actorBox(physicalFeetPosition, honeySlideState.actorWidth() * 0.5D, playerDimensions.height());
         int minX = blockAabbMin(actorBox.minX());
         int minY = blockAabbMin(actorBox.minY());
         int minZ = blockAabbMin(actorBox.minZ());
@@ -177,18 +150,14 @@ public final class BedrockBlockSurfaceMovement {
         int maxZ = blockAabbMax(actorBox.maxZ());
         for (BlockPosition position : honeySlideState.honeyBlockPositions()) {
             if (insideBlockQuery(position, minX, minY, minZ, maxX, maxY, maxZ)
-                && isSlidingDownHoney(position, physicalFeetPosition, honeySlideState.actorWidth())) {
+                    && isSlidingDownHoney(position, physicalFeetPosition, honeySlideState.actorWidth())) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean isSlidingDownHoney(
-        BlockPosition position,
-        Vec3d physicalFeetPosition,
-        double actorWidth
-    ) {
+    private static boolean isSlidingDownHoney(BlockPosition position, Vec3d physicalFeetPosition, double actorWidth) {
         if (physicalFeetPosition.y() > position.y() + HONEY_SLIDE_MAX_LOCAL_Y) {
             return false;
         }
@@ -200,38 +169,31 @@ public final class BedrockBlockSurfaceMovement {
 
     private static WorldCollisionBox actorBox(Vec3d physicalFeetPosition, double radius, double actorHeight) {
         return new WorldCollisionBox(
-            physicalFeetPosition.x() - radius,
-            physicalFeetPosition.y(),
-            physicalFeetPosition.z() - radius,
-            physicalFeetPosition.x() + radius,
-            physicalFeetPosition.y() + actorHeight,
-            physicalFeetPosition.z() + radius
-        );
+                physicalFeetPosition.x() - radius,
+                physicalFeetPosition.y(),
+                physicalFeetPosition.z() - radius,
+                physicalFeetPosition.x() + radius,
+                physicalFeetPosition.y() + actorHeight,
+                physicalFeetPosition.z() + radius);
     }
 
     private static boolean insideBlockQuery(
-        BlockPosition position,
-        int minX,
-        int minY,
-        int minZ,
-        int maxX,
-        int maxY,
-        int maxZ
-    ) {
-        return position.x() >= minX && position.x() <= maxX
-            && position.y() >= minY && position.y() <= maxY
-            && position.z() >= minZ && position.z() <= maxZ;
+            BlockPosition position, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return position.x() >= minX
+                && position.x() <= maxX
+                && position.y() >= minY
+                && position.y() <= maxY
+                && position.z() >= minZ
+                && position.z() <= maxZ;
     }
 
     public static Vec3d standingSlowdownVelocity(
-        Vec3d currentVelocity,
-        boolean sneaking,
-        boolean onGround,
-        StandingSurfaceState standingSurfaceState
-    ) {
-        if (!onGround || sneaking || standingSurfaceState == null
-            || (!standingSurfaceState.hasSurface(Surface.HONEY)
-            && !standingSurfaceState.hasSurface(Surface.SLIME))) {
+            Vec3d currentVelocity, boolean sneaking, boolean onGround, StandingSurfaceState standingSurfaceState) {
+        if (!onGround
+                || sneaking
+                || standingSurfaceState == null
+                || (!standingSurfaceState.hasSurface(Surface.HONEY)
+                        && !standingSurfaceState.hasSurface(Surface.SLIME))) {
             return currentVelocity;
         }
 
@@ -245,10 +207,6 @@ public final class BedrockBlockSurfaceMovement {
     private static Vec3d standingSlowdownVelocity(Vec3d currentVelocity) {
         float velocityY = (float) currentVelocity.y();
         float scale = Math.abs(velocityY) * STANDING_SLOWDOWN_VERTICAL_SCALE + STANDING_SLOWDOWN_BASE_SCALE;
-        return new Vec3d(
-            (float) currentVelocity.x() * scale,
-            currentVelocity.y(),
-            (float) currentVelocity.z() * scale
-        );
+        return new Vec3d((float) currentVelocity.x() * scale, currentVelocity.y(), (float) currentVelocity.z() * scale);
     }
 }

@@ -1,23 +1,21 @@
 package ac.cult.cultac.network.protocol.util;
 
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import org.bukkit.block.data.BlockData;
-import net.minecraft.network.HashedStack;
-import org.bukkit.Material;
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.util.CraftMagicNumbers;
-import org.bukkit.inventory.ItemStack;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import net.minecraft.network.HashedStack;
+import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.util.CraftMagicNumbers;
+import org.bukkit.inventory.ItemStack;
 
 public final class SpigotConversionUtil {
     private static final Method BLOCK_STATE_TO_BLOCK_DATA = resolveBlockStateToBlockData();
     private static final Method NMS_ITEM_TO_BUKKIT_COPY = resolveNmsItemToBukkitCopy();
 
-    private SpigotConversionUtil() {
-    }
+    private SpigotConversionUtil() {}
 
     public static net.minecraft.world.InteractionHand toNmsHand(ac.cult.cultac.protocol.value.Hand hand) {
         return switch (hand) {
@@ -57,7 +55,8 @@ public final class SpigotConversionUtil {
                         contents.getClass().getMethod("asMutable").invoke(contents);
             } catch (NoSuchMethodException legacy) {
                 return net.minecraft.world.item.component.BundleContents.Mutable.class
-                        .getConstructor(net.minecraft.world.item.component.BundleContents.class).newInstance(contents);
+                        .getConstructor(net.minecraft.world.item.component.BundleContents.class)
+                        .newInstance(contents);
             }
         } catch (ReflectiveOperationException failure) {
             throw new IllegalStateException("Unable to copy bundle contents", failure);
@@ -150,7 +149,7 @@ public final class SpigotConversionUtil {
 
     private static Method resolveBlockStateToBlockData() {
         Class<?> stateClass = net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase.class;
-        for (String name : new String[]{"asBlockData", "createCraftBlockData"}) {
+        for (String name : new String[] {"asBlockData", "createCraftBlockData"}) {
             try {
                 Method method = stateClass.getDeclaredMethod(name);
                 method.setAccessible(true);

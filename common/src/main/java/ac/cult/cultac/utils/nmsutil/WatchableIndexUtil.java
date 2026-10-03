@@ -1,7 +1,6 @@
 package ac.cult.cultac.utils.nmsutil;
 
 import ac.cult.cultac.network.packet.EntityMetadata;
-
 import java.util.List;
 
 /** Consumed metadata indices on the pinned 26.3 server; client versions do not change this layout. */
@@ -28,8 +27,7 @@ public final class WatchableIndexUtil {
     public static final int FIREWORK_ATTACHED_TO_TARGET = 9;
     public static final int FISHING_HOOKED_ENTITY = 8;
 
-    private WatchableIndexUtil() {
-    }
+    private WatchableIndexUtil() {}
 
     public static EntityMetadata.Entry getIndex(List<EntityMetadata.Entry> objects, int index) {
         for (EntityMetadata.Entry object : objects) {
@@ -38,5 +36,4 @@ public final class WatchableIndexUtil {
 
         return null;
     }
-
 }

@@ -18,7 +18,8 @@ public final class BedrockMovementEffects {
 
     public void setGlideBoost(int duration, long lastAuthTickBeforeAcknowledgement) {
         setGlideBoost(duration);
-        if (duration == 0 && lastAuthTickBeforeAcknowledgement >= 0
+        if (duration == 0
+                && lastAuthTickBeforeAcknowledgement >= 0
                 && lastAuthTickBeforeAcknowledgement < Long.MAX_VALUE) {
             stopFinalTick = lastAuthTickBeforeAcknowledgement + 1;
         }
@@ -27,8 +28,8 @@ public final class BedrockMovementEffects {
     public boolean glideBoost(BedrockAuthInputFrame frame, boolean actorTick) {
         if (sampledFrame != frame) {
             sampledFrame = frame;
-            sampledBoost = glideBoostActive && (stopFinalTick == Long.MIN_VALUE
-                    || frame.getClientTick() <= stopFinalTick);
+            sampledBoost =
+                    glideBoostActive && (stopFinalTick == Long.MIN_VALUE || frame.getClientTick() <= stopFinalTick);
             if (actorTick && glideBoostActive && glideBoostTicks != -1) {
                 if (stopFinalTick != Long.MIN_VALUE) {
                     if (frame.getClientTick() >= stopFinalTick) glideBoostActive = false;

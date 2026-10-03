@@ -1,13 +1,6 @@
 package ac.cult.cultac.bedrock.prediction.geometry;
 
-public record WorldCollisionBox(
-    double minX,
-    double minY,
-    double minZ,
-    double maxX,
-    double maxY,
-    double maxZ
-) {
+public record WorldCollisionBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
     public WorldCollisionBox {
         requireFinite(minX, "minX");
         requireFinite(minY, "minY");
@@ -21,30 +14,20 @@ public record WorldCollisionBox(
     }
 
     public WorldCollisionBox move(double x, double y, double z) {
-        return new WorldCollisionBox(
-            minX + x,
-            minY + y,
-            minZ + z,
-            maxX + x,
-            maxY + y,
-            maxZ + z
-        );
+        return new WorldCollisionBox(minX + x, minY + y, minZ + z, maxX + x, maxY + y, maxZ + z);
     }
 
     public boolean intersects(WorldCollisionBox other) {
         return maxX > other.minX
-            && minX < other.maxX
-            && maxY > other.minY
-            && minY < other.maxY
-            && maxZ > other.minZ
-            && minZ < other.maxZ;
+                && minX < other.maxX
+                && maxY > other.minY
+                && minY < other.maxY
+                && maxZ > other.minZ
+                && minZ < other.maxZ;
     }
 
     public boolean overlapsXz(WorldCollisionBox other) {
-        return maxX > other.minX
-            && minX < other.maxX
-            && maxZ > other.minZ
-            && minZ < other.maxZ;
+        return maxX > other.minX && minX < other.maxX && maxZ > other.minZ && minZ < other.maxZ;
     }
 
     private static void requireFinite(double value, String name) {

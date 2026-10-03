@@ -6,28 +6,24 @@ import ac.cult.cultac.bedrock.prediction.input.BedrockPoseInputData;
 public final class BedrockSwimmingPoseProgress {
     private static final float SWIM_AMOUNT_STEP = 0.1F;
 
-    private BedrockSwimmingPoseProgress() {
-    }
+    private BedrockSwimmingPoseProgress() {}
 
     public static boolean initialSwimming(BedrockInputFrame frame) {
         return BedrockPoseInputData.has(frame, BedrockPoseInputData.START_SWIMMING)
-            && !BedrockPoseInputData.has(frame, BedrockPoseInputData.STOP_SWIMMING);
+                && !BedrockPoseInputData.has(frame, BedrockPoseInputData.STOP_SWIMMING);
     }
 
     public static double initialSwimAmount(BedrockInputFrame frame) {
         return initialSwimming(frame) || BedrockPoseInputData.committedSwimming(frame) || initialHorizontalPose(frame)
-            ? SWIM_AMOUNT_STEP
-            : 0.0D;
+                ? SWIM_AMOUNT_STEP
+                : 0.0D;
     }
 
     public static boolean initialHorizontalPose(BedrockInputFrame frame) {
         return BedrockPoseInputData.committedHorizontalPose(frame);
     }
 
-    public static double nextSwimAmount(
-        boolean swimPoseActive,
-        double previousSwimAmount
-    ) {
+    public static double nextSwimAmount(boolean swimPoseActive, double previousSwimAmount) {
         return nextSwimAmount(previousSwimAmount, swimPoseActive);
     }
 

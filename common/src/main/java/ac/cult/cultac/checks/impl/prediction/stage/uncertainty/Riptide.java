@@ -11,12 +11,27 @@ import net.minecraft.world.phys.Vec3;
 public class Riptide implements UncertaintyHandler {
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
-        return handleMovementTrace(player, valid, result, context, lastContext, MovementTrace.start(start), end).position();
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
+        return handleMovementTrace(player, valid, result, context, lastContext, MovementTrace.start(start), end)
+                .position();
     }
 
     @Override
-    public MovementTrace handleMovementTrace(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, MovementTrace trace, Vec3 end) {
+    public MovementTrace handleMovementTrace(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            MovementTrace trace,
+            Vec3 end) {
         PredVector start = trace.position();
 
         if (lastContext != null && lastContext.getSimulationContext().getRiptideLevel() != 0) {

@@ -1,11 +1,11 @@
 package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public final class BedrockJumpMovementTest {
     private static final double REBOUND_Y = 0.4866231381893158D;
@@ -15,8 +15,7 @@ public final class BedrockJumpMovementTest {
     public void groundJumpPreservesLargerReboundVelocity() {
         Vec3d current = new Vec3d(0.1D, REBOUND_Y, -0.2D);
 
-        Vec3d launched = BedrockJumpMovement.groundLaunchVelocity(
-                current, BedrockInputFrame.idle(0L), JUMP_Y, false);
+        Vec3d launched = BedrockJumpMovement.groundLaunchVelocity(current, BedrockInputFrame.idle(0L), JUMP_Y, false);
 
         assertEquals(current.x(), launched.x(), 0.0D);
         assertEquals(REBOUND_Y, launched.y(), 0.0D);
@@ -26,8 +25,7 @@ public final class BedrockJumpMovementTest {
     @Test
     public void sprintGroundJumpPreservesLargerReboundVelocity() {
         Vec3d current = new Vec3d(0.1D, REBOUND_Y, -0.2D);
-        BedrockInputFrame frame = new BedrockInputFrame(
-                0L, -89.244316F, 0.0F, true, false, true);
+        BedrockInputFrame frame = new BedrockInputFrame(0L, -89.244316F, 0.0F, true, false, true);
 
         Vec3d launched = BedrockJumpMovement.groundLaunchVelocity(current, frame, JUMP_Y, true);
 

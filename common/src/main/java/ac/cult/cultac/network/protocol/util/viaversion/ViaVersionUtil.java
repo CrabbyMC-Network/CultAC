@@ -6,8 +6,7 @@ import org.bukkit.Bukkit;
 public final class ViaVersionUtil {
     private static volatile Boolean available;
 
-    private ViaVersionUtil() {
-    }
+    private ViaVersionUtil() {}
 
     public static boolean isAvailable() {
         Boolean cached = available;

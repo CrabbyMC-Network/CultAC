@@ -21,7 +21,8 @@ public abstract class OptionalReflectiveInitable implements StartableInitable, S
         if (!isAvailable()) return;
 
         try {
-            Class<? extends Initable> handlerClass = Class.forName(handlerClassName).asSubclass(Initable.class);
+            Class<? extends Initable> handlerClass =
+                    Class.forName(handlerClassName).asSubclass(Initable.class);
             delegate = handlerClass.getDeclaredConstructor().newInstance();
             if (delegate instanceof StartableInitable startable) {
                 startable.start();

@@ -10,13 +10,34 @@ public class TickRunner implements StartableInitable {
         LogUtil.info("Registering tick schedulers...");
 
         if (CultAPI.INSTANCE.getPlatform() == Platform.FOLIA) {
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runAtFixedRate(CultAPI.INSTANCE.getGrimPlugin(), () -> {
-                CultAPI.INSTANCE.getTickManager().tickSync();
-                CultAPI.INSTANCE.getTickManager().tickAsync();
-            }, 1, 1);
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runAtFixedRate(
+                            CultAPI.INSTANCE.getGrimPlugin(),
+                            () -> {
+                                CultAPI.INSTANCE.getTickManager().tickSync();
+                                CultAPI.INSTANCE.getTickManager().tickAsync();
+                            },
+                            1,
+                            1);
         } else {
-            CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().runAtFixedRate(CultAPI.INSTANCE.getGrimPlugin(), () -> CultAPI.INSTANCE.getTickManager().tickSync(), 0, 1);
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runAtFixedRate(CultAPI.INSTANCE.getGrimPlugin(), () -> CultAPI.INSTANCE.getTickManager().tickAsync(), 0, 1);
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getGlobalRegionScheduler()
+                    .runAtFixedRate(
+                            CultAPI.INSTANCE.getGrimPlugin(),
+                            () -> CultAPI.INSTANCE.getTickManager().tickSync(),
+                            0,
+                            1);
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runAtFixedRate(
+                            CultAPI.INSTANCE.getGrimPlugin(),
+                            () -> CultAPI.INSTANCE.getTickManager().tickAsync(),
+                            0,
+                            1);
         }
     }
 }

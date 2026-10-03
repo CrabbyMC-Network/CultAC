@@ -5,11 +5,13 @@ import net.minecraft.world.entity.EntityType;
 
 /** Native predicted equines; camels and llamas use different control paths. */
 public final class BedrockHorseProperties {
-    private BedrockHorseProperties() { }
+    private BedrockHorseProperties() {}
 
     public static boolean supports(EntityType<?> type) {
-        return type == EntityTypesCompat.HORSE || type == EntityTypesCompat.DONKEY
-                || type == EntityTypesCompat.MULE || type == EntityTypesCompat.SKELETON_HORSE
+        return type == EntityTypesCompat.HORSE
+                || type == EntityTypesCompat.DONKEY
+                || type == EntityTypesCompat.MULE
+                || type == EntityTypesCompat.SKELETON_HORSE
                 || type == EntityTypesCompat.ZOMBIE_HORSE;
     }
 
@@ -20,5 +22,4 @@ public final class BedrockHorseProperties {
         else if (type == EntityTypesCompat.SKELETON_HORSE) mounted -= 0.1875F;
         return (mounted - 0.35F) + 1.62001F;
     }
-
 }

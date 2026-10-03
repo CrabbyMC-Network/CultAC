@@ -1,9 +1,10 @@
 package ac.cult.cultac.bedrock.player;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import java.util.UUID;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public final class BedrockMovementEffectsTest {
     @Test

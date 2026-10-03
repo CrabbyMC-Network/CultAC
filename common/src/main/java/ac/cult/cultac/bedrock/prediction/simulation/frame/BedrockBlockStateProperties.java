@@ -1,8 +1,7 @@
 package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
 public final class BedrockBlockStateProperties {
-    private BedrockBlockStateProperties() {
-    }
+    private BedrockBlockStateProperties() {}
 
     public static boolean bedrockBoolean(Object value, String stateName) {
         if (value instanceof Boolean bool) {

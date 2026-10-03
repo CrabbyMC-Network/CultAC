@@ -1,8 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
-import ac.cult.cultac.bedrock.prediction.model.BedrockEffectState;
 import ac.cult.cultac.bedrock.prediction.model.BedrockBoundingBoxMode;
+import ac.cult.cultac.bedrock.prediction.model.BedrockEffectState;
 import ac.cult.cultac.bedrock.prediction.model.BlockMovementSlowdownState;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
@@ -15,20 +15,19 @@ import java.util.Objects;
 import java.util.Set;
 
 public record BedrockFrameFacts(
-    BedrockMovementContext context,
-    BedrockBoundingBoxMode boundingBoxMode,
-    PlayerDimensionsState movementDimensions,
-    BedrockSwimmingMovement.SwimmingState swimming,
-    BedrockClimbState climb,
-    boolean inWaterFlag,
-    boolean lavaTravelFlag,
-    boolean inPowderSnow,
-    boolean rawPowderSnowAtFeetAscendable,
-    long powderSnowTicks,
-    BlockMovementSlowdownState blockMovementSlowdownState,
-    HoneySlideState honeySlideState,
-    StandingSurfaceState standingSurfaceState
-) {
+        BedrockMovementContext context,
+        BedrockBoundingBoxMode boundingBoxMode,
+        PlayerDimensionsState movementDimensions,
+        BedrockSwimmingMovement.SwimmingState swimming,
+        BedrockClimbState climb,
+        boolean inWaterFlag,
+        boolean lavaTravelFlag,
+        boolean inPowderSnow,
+        boolean rawPowderSnowAtFeetAscendable,
+        long powderSnowTicks,
+        BlockMovementSlowdownState blockMovementSlowdownState,
+        HoneySlideState honeySlideState,
+        StandingSurfaceState standingSurfaceState) {
     public BedrockFrameFacts {
         context = Objects.requireNonNull(context, "context");
         boundingBoxMode = Objects.requireNonNull(boundingBoxMode, "boundingBoxMode");
@@ -50,90 +49,83 @@ public record BedrockFrameFacts(
         boolean travelOnGround = current.movementGrounded();
         // Liquid sensing precedes this tick's pose-driven resize, including Riptide.
         PlayerDimensionsState sensingDimensions = current.playerDimensions();
-        boolean inWaterFlag = BedrockLiquidSensing.inWaterFlag(
-            context,
-            current.physicalFeetPosition(),
-            sensingDimensions
-        );
-        boolean lavaTravelFlag = BedrockLiquidSensing.lavaTravelFlag(
-            context,
-            current.physicalFeetPosition(),
-            sensingDimensions
-        );
-        BedrockActorDimensions.Resolved resolvedDimensions = BedrockActorDimensions.resolve(
-            current,
-            context,
-            frame,
-            spinActive,
-            spinAttackStarted
-        );
+        boolean inWaterFlag =
+                BedrockLiquidSensing.inWaterFlag(context, current.physicalFeetPosition(), sensingDimensions);
+        boolean lavaTravelFlag =
+                BedrockLiquidSensing.lavaTravelFlag(context, current.physicalFeetPosition(), sensingDimensions);
+        BedrockActorDimensions.Resolved resolvedDimensions =
+                BedrockActorDimensions.resolve(current, context, frame, spinActive, spinAttackStarted);
         PlayerDimensionsState movementDimensions = resolvedDimensions.dimensions();
         return new BedrockFrameFacts(
-            context,
-            resolvedDimensions.mode(),
-            movementDimensions,
-            BedrockSwimmingMovement.initial(current, context, frame),
-            BedrockClimbMovement.resolveSurface(
-                current.climbableContact(),
-                context.inWater(),
-                context.inLava()
-            ),
-            inWaterFlag,
-            lavaTravelFlag,
-            inPowderSnow,
-            powderSnowContact.rawAtFeetAscendable(),
-            powderSnowSurfaceSink || inPowderSnow ? current.powderSnowTicks() + 1L : 0L,
-            input.worldSnapshot().initialBlockMovementSlowdownState(),
-            input.worldSnapshot().honeySlideState(),
-            travelOnGround
-                ? BedrockStandingSurfaceResolver.travelSurfaceFromBlockWorld(
-                    current.physicalFeetPosition(),
-                    input.worldSnapshot().blockCollisionWorld(),
-                    movementDimensions)
-                : new StandingSurfaceState(Set.of())
-        );
+                context,
+                resolvedDimensions.mode(),
+                movementDimensions,
+                BedrockSwimmingMovement.initial(current, context, frame),
+                BedrockClimbMovement.resolveSurface(current.climbableContact(), context.inWater(), context.inLava()),
+                inWaterFlag,
+                lavaTravelFlag,
+                inPowderSnow,
+                powderSnowContact.rawAtFeetAscendable(),
+                powderSnowSurfaceSink || inPowderSnow ? current.powderSnowTicks() + 1L : 0L,
+                input.worldSnapshot().initialBlockMovementSlowdownState(),
+                input.worldSnapshot().honeySlideState(),
+                travelOnGround
+                        ? BedrockStandingSurfaceResolver.travelSurfaceFromBlockWorld(
+                                current.physicalFeetPosition(),
+                                input.worldSnapshot().blockCollisionWorld(),
+                                movementDimensions)
+                        : new StandingSurfaceState(Set.of()));
     }
 
     public BedrockFrameFacts withContext(BedrockMovementContext value) {
-        return new BedrockFrameFacts(value, boundingBoxMode, movementDimensions, swimming, climb,
-            inWaterFlag, lavaTravelFlag, inPowderSnow, rawPowderSnowAtFeetAscendable, powderSnowTicks,
-            blockMovementSlowdownState, honeySlideState, standingSurfaceState);
+        return new BedrockFrameFacts(
+                value,
+                boundingBoxMode,
+                movementDimensions,
+                swimming,
+                climb,
+                inWaterFlag,
+                lavaTravelFlag,
+                inPowderSnow,
+                rawPowderSnowAtFeetAscendable,
+                powderSnowTicks,
+                blockMovementSlowdownState,
+                honeySlideState,
+                standingSurfaceState);
     }
 
     public BedrockFrameFacts withClimb(BedrockClimbState climb) {
         return new BedrockFrameFacts(
-            context,
-            boundingBoxMode,
-            movementDimensions,
-            swimming,
-            climb,
-            inWaterFlag,
-            lavaTravelFlag,
-            inPowderSnow,
-            rawPowderSnowAtFeetAscendable,
-            powderSnowTicks,
-            blockMovementSlowdownState,
-            honeySlideState,
-            standingSurfaceState
-        );
+                context,
+                boundingBoxMode,
+                movementDimensions,
+                swimming,
+                climb,
+                inWaterFlag,
+                lavaTravelFlag,
+                inPowderSnow,
+                rawPowderSnowAtFeetAscendable,
+                powderSnowTicks,
+                blockMovementSlowdownState,
+                honeySlideState,
+                standingSurfaceState);
     }
 
     public BedrockFrameFacts withSwimming(BedrockSwimmingMovement.SwimmingState swimming) {
         return new BedrockFrameFacts(
-            context,
-            boundingBoxMode,
-            movementDimensions,
-            swimming,
-            climb,
-            inWaterFlag,
-            lavaTravelFlag,
-            inPowderSnow,
-            rawPowderSnowAtFeetAscendable,
-            powderSnowTicks,
-            blockMovementSlowdownState,
-            honeySlideState,
-            standingSurfaceState
-        );
+                context,
+                boundingBoxMode,
+                movementDimensions,
+                swimming,
+                climb,
+                inWaterFlag,
+                lavaTravelFlag,
+                inPowderSnow,
+                rawPowderSnowAtFeetAscendable,
+                powderSnowTicks,
+                blockMovementSlowdownState,
+                honeySlideState,
+                standingSurfaceState);
     }
 
     public BedrockEffectState effectState() {

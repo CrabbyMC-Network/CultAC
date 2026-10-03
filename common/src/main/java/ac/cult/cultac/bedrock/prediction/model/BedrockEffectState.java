@@ -3,49 +3,45 @@ package ac.cult.cultac.bedrock.prediction.model;
 import java.util.Objects;
 
 public record BedrockEffectState(
-    int slownessLevel,
-    int speedLevel,
-    int jumpBoostLevel,
-    int levitationLevel,
-    boolean blindness,
-    boolean slowFalling,
-    boolean weaving,
-    BedrockEffectState.MovementSpeedEffectOrder movementSpeedEffectOrder
-) {
-    public static final BedrockEffectState NONE = new BedrockEffectState(0, 0, 0, 0, false, false, false);
-    private static final double SLOWNESS_SPEED_REDUCTION_PER_LEVEL = 0.15D;
-    private static final double SPEED_SPEED_BONUS_PER_LEVEL = 0.2D;
-
-    public BedrockEffectState(
-        int slownessLevel,
-        int speedLevel,
-        int jumpBoostLevel,
-        int levitationLevel,
-        boolean blindness,
-        boolean slowFalling
-    ) {
-        this(slownessLevel, speedLevel, jumpBoostLevel, levitationLevel, blindness, slowFalling, false);
-    }
-
-    public BedrockEffectState(
         int slownessLevel,
         int speedLevel,
         int jumpBoostLevel,
         int levitationLevel,
         boolean blindness,
         boolean slowFalling,
-        boolean weaving
-    ) {
+        boolean weaving,
+        BedrockEffectState.MovementSpeedEffectOrder movementSpeedEffectOrder) {
+    public static final BedrockEffectState NONE = new BedrockEffectState(0, 0, 0, 0, false, false, false);
+    private static final double SLOWNESS_SPEED_REDUCTION_PER_LEVEL = 0.15D;
+    private static final double SPEED_SPEED_BONUS_PER_LEVEL = 0.2D;
+
+    public BedrockEffectState(
+            int slownessLevel,
+            int speedLevel,
+            int jumpBoostLevel,
+            int levitationLevel,
+            boolean blindness,
+            boolean slowFalling) {
+        this(slownessLevel, speedLevel, jumpBoostLevel, levitationLevel, blindness, slowFalling, false);
+    }
+
+    public BedrockEffectState(
+            int slownessLevel,
+            int speedLevel,
+            int jumpBoostLevel,
+            int levitationLevel,
+            boolean blindness,
+            boolean slowFalling,
+            boolean weaving) {
         this(
-            slownessLevel,
-            speedLevel,
-            jumpBoostLevel,
-            levitationLevel,
-            blindness,
-            slowFalling,
-            weaving,
-            MovementSpeedEffectOrder.SLOWNESS_THEN_SPEED
-        );
+                slownessLevel,
+                speedLevel,
+                jumpBoostLevel,
+                levitationLevel,
+                blindness,
+                slowFalling,
+                weaving,
+                MovementSpeedEffectOrder.SLOWNESS_THEN_SPEED);
     }
 
     public BedrockEffectState {
@@ -65,27 +61,75 @@ public record BedrockEffectState(
     }
 
     public BedrockEffectState withSlownessLevel(int value) {
-        return new BedrockEffectState(value, speedLevel, jumpBoostLevel, levitationLevel, blindness, slowFalling, weaving, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                value,
+                speedLevel,
+                jumpBoostLevel,
+                levitationLevel,
+                blindness,
+                slowFalling,
+                weaving,
+                movementSpeedEffectOrder);
     }
 
     public BedrockEffectState withSpeedLevel(int value) {
-        return new BedrockEffectState(slownessLevel, value, jumpBoostLevel, levitationLevel, blindness, slowFalling, weaving, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                slownessLevel,
+                value,
+                jumpBoostLevel,
+                levitationLevel,
+                blindness,
+                slowFalling,
+                weaving,
+                movementSpeedEffectOrder);
     }
 
     public BedrockEffectState withJumpBoostLevel(int value) {
-        return new BedrockEffectState(slownessLevel, speedLevel, value, levitationLevel, blindness, slowFalling, weaving, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                slownessLevel,
+                speedLevel,
+                value,
+                levitationLevel,
+                blindness,
+                slowFalling,
+                weaving,
+                movementSpeedEffectOrder);
     }
 
     public BedrockEffectState withLevitationLevel(int value) {
-        return new BedrockEffectState(slownessLevel, speedLevel, jumpBoostLevel, value, blindness, slowFalling, weaving, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                slownessLevel,
+                speedLevel,
+                jumpBoostLevel,
+                value,
+                blindness,
+                slowFalling,
+                weaving,
+                movementSpeedEffectOrder);
     }
 
     public BedrockEffectState withSlowFalling(boolean value) {
-        return new BedrockEffectState(slownessLevel, speedLevel, jumpBoostLevel, levitationLevel, blindness, value, weaving, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                slownessLevel,
+                speedLevel,
+                jumpBoostLevel,
+                levitationLevel,
+                blindness,
+                value,
+                weaving,
+                movementSpeedEffectOrder);
     }
 
     public BedrockEffectState withWeaving(boolean value) {
-        return new BedrockEffectState(slownessLevel, speedLevel, jumpBoostLevel, levitationLevel, blindness, slowFalling, value, movementSpeedEffectOrder);
+        return new BedrockEffectState(
+                slownessLevel,
+                speedLevel,
+                jumpBoostLevel,
+                levitationLevel,
+                blindness,
+                slowFalling,
+                value,
+                movementSpeedEffectOrder);
     }
 
     public float applyMovementSpeedEffects(float speed) {

@@ -15,41 +15,28 @@ import ac.cult.cultac.bedrock.prediction.world.StandingSurfaceState;
 import java.util.ArrayList;
 
 public final class BedrockSnapshotResolver {
-    private BedrockSnapshotResolver() {
-    }
+    private BedrockSnapshotResolver() {}
 
     public static BedrockWorldSnapshot forState(
-        BedrockWorldSnapshot snapshot,
-        BedrockMovementState state,
-        BedrockInputFrame frame
-    ) {
+            BedrockWorldSnapshot snapshot, BedrockMovementState state, BedrockInputFrame frame) {
         // Early liquid sensing uses the carried box before pose-driven resizing.
         BedrockMovementContext context = BedrockFluidStateResolver.withFluidStateFromBlockWorld(
-            snapshot.movementContext(), state.physicalFeetPosition(), state.playerDimensions()
-        );
+                snapshot.movementContext(), state.physicalFeetPosition(), state.playerDimensions());
         PlayerDimensionsState dimensions = BedrockActorDimensions.committedMovementDimensions(state, context, frame);
         snapshot = snapshot.withMovementContext(context).withPlayerDimensions(dimensions);
         BedrockClimbableContact climbable = snapshot.climbableContactAt(state.physicalFeetPosition(), dimensions);
         PowderSnowContactState powderSnow = BedrockPowderSnowContactResolver.fromBlockWorld(
-            dimensions.width(),
-            dimensions.height(),
-            state.physicalFeetPosition(),
-            snapshot.blockCollisionWorld(),
-            context.equipmentState().leatherBoots()
-        );
+                dimensions.width(),
+                dimensions.height(),
+                state.physicalFeetPosition(),
+                snapshot.blockCollisionWorld(),
+                context.equipmentState().leatherBoots());
         StandingSurfaceState standing = BedrockStandingSurfaceResolver.fromBlockWorld(
-            state.physicalFeetPosition(), snapshot.blockCollisionWorld(), dimensions
-        );
-        BlockMovementSlowdownState slowdown = BedrockBlockMovementSlowdownResolver.nextState(
-            context, state.physicalFeetPosition(), dimensions
-        );
+                state.physicalFeetPosition(), snapshot.blockCollisionWorld(), dimensions);
+        BlockMovementSlowdownState slowdown =
+                BedrockBlockMovementSlowdownResolver.nextState(context, state.physicalFeetPosition(), dimensions);
         return snapshot.withInitialContacts(
-            climbable,
-            powderSnow,
-            standing,
-            slowdown,
-            honeySlide(snapshot, dimensions.width())
-        );
+                climbable, powderSnow, standing, slowdown, honeySlide(snapshot, dimensions.width()));
     }
 
     private static HoneySlideState honeySlide(BedrockWorldSnapshot snapshot, double actorWidth) {

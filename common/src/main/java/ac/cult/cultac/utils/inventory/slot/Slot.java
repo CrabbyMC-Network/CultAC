@@ -50,6 +50,5 @@ public class Slot {
         return true;
     }
 
-    public void onTake(CultPlayer player, ItemStack stack) {
-    }
+    public void onTake(CultPlayer player, ItemStack stack) {}
 }

@@ -43,7 +43,8 @@ public class PacketStateData {
     public boolean clientMovementInputUpdatedThisClientTick = false;
     public Vec3 clientMovementInput = new Vec3(0, 0, 0);
     public Vec3 clientSidePosition = new Vec3(0, 0, 0);
-    // LocalPlayer#tick emits passenger Rot immediately before MoveVehicle; packet-handler echoes send MoveVehicle alone.
+    // LocalPlayer#tick emits passenger Rot immediately before MoveVehicle; packet-handler echoes send MoveVehicle
+    // alone.
     private boolean awaitingVehicleMoveAfterPassengerRotation = false;
     private boolean mountedPassengerRotationSeenThisClientTick = false;
     private boolean vehicleMovementFromClientTick = false;
@@ -128,5 +129,4 @@ public class PacketStateData {
     public int getSlowedByUsingItemSlot() {
         return slowedByUsingItemSlot;
     }
-
 }

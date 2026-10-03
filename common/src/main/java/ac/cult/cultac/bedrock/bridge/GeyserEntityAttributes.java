@@ -13,7 +13,8 @@ final class GeyserEntityAttributes {
         if (!(update.event() instanceof BedrockReplayAttributeEvent attributes)) return;
         long runtimeId = update.actorId();
         boolean self = runtimeId == session.getPlayerEntity().geyserId();
-        var translated = self ? session.getPlayerEntity() : session.getEntityCache().getEntityByGeyserId(runtimeId);
+        var translated =
+                self ? session.getPlayerEntity() : session.getEntityCache().getEntityByGeyserId(runtimeId);
         if (translated == null) return;
         int javaId = translated.getEntityId();
         var tracked = self ? null : player.compensatedEntities.getTrackedEntity(javaId);
@@ -35,5 +36,7 @@ final class GeyserEntityAttributes {
         player.addBedrockTransactionTask(transaction, () -> batch.forEach(Runnable::run));
     }
 
-    void clear() { pending.clear(); }
+    void clear() {
+        pending.clear();
+    }
 }

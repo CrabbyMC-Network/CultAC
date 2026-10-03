@@ -14,69 +14,56 @@ final class BedrockHorizontalSpeedControl {
     private static final float PLAYER_AIR_TRAVEL_SPEED = 0.02F;
     private static final float SOUL_SAND_NO_SOUL_SPEED_FRICTION_MULTIPLIER = 1.225F;
 
-    private BedrockHorizontalSpeedControl() {
-    }
+    private BedrockHorizontalSpeedControl() {}
 
     static double baseMovementSpeed(
-        boolean horizontalAttributeSpeed,
-        boolean dryAirTravelSpeed,
-        double baseMovementSpeed,
-        float airMovementSpeed
-    ) {
+            boolean horizontalAttributeSpeed,
+            boolean dryAirTravelSpeed,
+            double baseMovementSpeed,
+            float airMovementSpeed) {
         if (horizontalAttributeSpeed) {
             return baseMovementSpeed;
         }
-        return dryAirTravelSpeed
-            ? airMovementSpeed
-            : AttributeState.DEFAULT_BASE_MOVEMENT_SPEED;
+        return dryAirTravelSpeed ? airMovementSpeed : AttributeState.DEFAULT_BASE_MOVEMENT_SPEED;
     }
 
     static PreparedSpeed prepare(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        AttributeState attributeState,
-        EquipmentState equipmentState,
-        StandingSurfaceState standingSurfaceState,
-        boolean ordinaryAirborne,
-        boolean inWater,
-        boolean inLava
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            AttributeState attributeState,
+            EquipmentState equipmentState,
+            StandingSurfaceState standingSurfaceState,
+            boolean ordinaryAirborne,
+            boolean inWater,
+            boolean inLava) {
         int soulSpeedLevel = equipmentState.soulSpeedLevel();
         boolean horizontalAttributeSpeed = !ordinaryAirborne && !inLava;
         boolean dryAirTravelSpeed = !horizontalAttributeSpeed && !inWater && !inLava;
-        float airMovementSpeed = current.isHorse()
-            ? (float) attributeState.baseMovementSpeed() * 0.1F
-            : PLAYER_AIR_TRAVEL_SPEED;
+        float airMovementSpeed =
+                current.isHorse() ? (float) attributeState.baseMovementSpeed() * 0.1F : PLAYER_AIR_TRAVEL_SPEED;
         double movementSpeed = baseMovementSpeed(
-            horizontalAttributeSpeed,
-            dryAirTravelSpeed,
-            attributeState.baseMovementSpeed(),
-            airMovementSpeed
-        );
+                horizontalAttributeSpeed, dryAirTravelSpeed, attributeState.baseMovementSpeed(), airMovementSpeed);
         double inputRadiusMovementSpeed = baseMovementSpeed(
-            horizontalAttributeSpeed,
-            dryAirTravelSpeed,
-            attributeState.horizontalInputBaseMovementSpeed(),
-            airMovementSpeed
-        );
+                horizontalAttributeSpeed,
+                dryAirTravelSpeed,
+                attributeState.horizontalInputBaseMovementSpeed(),
+                airMovementSpeed);
         movementSpeed = speedWithSoulSpeedBoost(
-            movementSpeed,
-            ordinaryAirborne,
-            inWater,
-            inLava,
-            soulSpeedLevel,
-            standingSurfaceState,
-            current.lastPhysicalDisplacementSquared()
-        );
+                movementSpeed,
+                ordinaryAirborne,
+                inWater,
+                inLava,
+                soulSpeedLevel,
+                standingSurfaceState,
+                current.lastPhysicalDisplacementSquared());
         inputRadiusMovementSpeed = speedWithSoulSpeedBoost(
-            inputRadiusMovementSpeed,
-            ordinaryAirborne,
-            inWater,
-            inLava,
-            soulSpeedLevel,
-            standingSurfaceState,
-            current.lastPhysicalDisplacementSquared()
-        );
+                inputRadiusMovementSpeed,
+                ordinaryAirborne,
+                inWater,
+                inLava,
+                soulSpeedLevel,
+                standingSurfaceState,
+                current.lastPhysicalDisplacementSquared());
         // These are compensated attribute current values, including Speed/Slowness.
         // Geyser LivingEntity#calculateAttribute applies the Java modifiers before
         // sending minecraft:movement. Travel consumes that current value directly
@@ -84,27 +71,22 @@ final class BedrockHorizontalSpeedControl {
         float speed = (float) movementSpeed;
         float inputRadiusSpeed = (float) inputRadiusMovementSpeed;
         return new PreparedSpeed(
-            speed,
-            inputRadiusSpeed,
-            horizontalAttributeSpeed,
-            dryAirTravelSpeed,
-            soulSpeedLevel > 0);
+                speed, inputRadiusSpeed, horizontalAttributeSpeed, dryAirTravelSpeed, soulSpeedLevel > 0);
     }
 
     static double speedWithSoulSpeedBoost(
-        double movementSpeed,
-        boolean ordinaryAirborne,
-        boolean inWater,
-        boolean inLava,
-        int soulSpeedLevel,
-        StandingSurfaceState standingSurfaceState,
-        double lastPhysicalDisplacementSquared
-    ) {
+            double movementSpeed,
+            boolean ordinaryAirborne,
+            boolean inWater,
+            boolean inLava,
+            int soulSpeedLevel,
+            StandingSurfaceState standingSurfaceState,
+            double lastPhysicalDisplacementSquared) {
         if (!ordinaryAirborne
-            && !inWater
-            && !inLava
-            && soulSpeedLevel > 0
-            && soulSpeedModifierActive(standingSurfaceState, lastPhysicalDisplacementSquared)) {
+                && !inWater
+                && !inLava
+                && soulSpeedLevel > 0
+                && soulSpeedModifierActive(standingSurfaceState, lastPhysicalDisplacementSquared)) {
             return movementSpeed + soulSpeedAttributeBoost(soulSpeedLevel);
         }
         return movementSpeed;
@@ -115,10 +97,7 @@ final class BedrockHorizontalSpeedControl {
     }
 
     static float soulSandGroundControl(
-        boolean soulSpeedEnchantFlagPresent,
-        double groundControl,
-        double groundFriction
-    ) {
+            boolean soulSpeedEnchantFlagPresent, double groundControl, double groundFriction) {
         if (soulSpeedEnchantFlagPresent) {
             return (float) groundControl;
         }
@@ -133,11 +112,9 @@ final class BedrockHorizontalSpeedControl {
     }
 
     private static boolean soulSpeedModifierActive(
-        StandingSurfaceState standingSurfaceState,
-        double lastPhysicalDisplacementSquared
-    ) {
+            StandingSurfaceState standingSurfaceState, double lastPhysicalDisplacementSquared) {
         if (!standingSurfaceState.hasSurface(Surface.SOUL_SAND)
-            && !standingSurfaceState.hasSurface(Surface.SOUL_SOIL)) {
+                && !standingSurfaceState.hasSurface(Surface.SOUL_SOIL)) {
             return false;
         }
         if (!standingSurfaceState.hasSurface(Surface.SOUL_SOIL)) {
@@ -147,11 +124,9 @@ final class BedrockHorizontalSpeedControl {
     }
 
     record PreparedSpeed(
-        float speed,
-        float inputRadiusSpeed,
-        boolean horizontalAttributeSpeed,
-        boolean dryAirTravelSpeed,
-        boolean soulSpeedEnchantFlagPresent
-    ) {
-    }
+            float speed,
+            float inputRadiusSpeed,
+            boolean horizontalAttributeSpeed,
+            boolean dryAirTravelSpeed,
+            boolean soulSpeedEnchantFlagPresent) {}
 }

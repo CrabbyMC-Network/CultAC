@@ -1,13 +1,12 @@
 package ac.cult.cultac.bedrock.prediction.model;
 
 public record EquipmentState(
-    int depthStriderLevel,
-    int soulSpeedLevel,
-    int swiftSneakLevel,
-    int riptideLevel,
-    boolean leatherBoots,
-    boolean elytraEquipped
-) {
+        int depthStriderLevel,
+        int soulSpeedLevel,
+        int swiftSneakLevel,
+        int riptideLevel,
+        boolean leatherBoots,
+        boolean elytraEquipped) {
     public static final EquipmentState NONE = new EquipmentState(0, 0, 0, 0, false, false);
 
     public EquipmentState {
@@ -17,12 +16,11 @@ public record EquipmentState(
     }
 
     public EquipmentState(
-        int depthStriderLevel,
-        int soulSpeedLevel,
-        int swiftSneakLevel,
-        boolean leatherBoots,
-        boolean elytraEquipped
-    ) {
+            int depthStriderLevel,
+            int soulSpeedLevel,
+            int swiftSneakLevel,
+            boolean leatherBoots,
+            boolean elytraEquipped) {
         this(depthStriderLevel, soulSpeedLevel, swiftSneakLevel, 0, leatherBoots, elytraEquipped);
     }
 }

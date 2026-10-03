@@ -9,25 +9,16 @@ import ac.cult.cultac.bedrock.prediction.world.FluidState;
 import java.util.Objects;
 
 public final class BedrockFluidMovementSourceResolver {
-    private BedrockFluidMovementSourceResolver() {
-    }
+    private BedrockFluidMovementSourceResolver() {}
 
     public static BedrockFluidMovementSource fromContext(BedrockMovementContext context, double feetY) {
         Objects.requireNonNull(context, "context");
         return fromResolvedFluid(
-            context.worldState().medium(),
-            context.worldState().fluidState(),
-            context,
-            feetY
-        );
+                context.worldState().medium(), context.worldState().fluidState(), context, feetY);
     }
 
     private static BedrockFluidMovementSource fromResolvedFluid(
-        Medium medium,
-        FluidState fluidState,
-        BedrockMovementContext context,
-        double feetY
-    ) {
+            Medium medium, FluidState fluidState, BedrockMovementContext context, double feetY) {
         FluidCurrentState currentState = fluidState.currentState();
         if (!currentState.appliesAtFeetY(feetY)) {
             return BedrockFluidMovementSource.NONE;
@@ -56,11 +47,6 @@ public final class BedrockFluidMovementSourceResolver {
         double push = currentState.pushPerTick();
         Vec3d direction = new Vec3d(x / length, y / length, z / length);
         Vec3d appliedDelta = new Vec3d(direction.x() * push, direction.y() * push, direction.z() * push);
-        return new BedrockFluidMovementSource(
-            medium,
-            direction,
-            push,
-            appliedDelta
-        );
+        return new BedrockFluidMovementSource(medium, direction, push, appliedDelta);
     }
 }

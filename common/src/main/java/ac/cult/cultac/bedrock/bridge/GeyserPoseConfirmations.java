@@ -65,8 +65,12 @@ final class GeyserPoseConfirmations {
 
     void send(SetEntityDataPacket packet, long generation, Consumer<SetEntityDataPacket> send) {
         pending.put(packet, generation);
-        try { send.accept(packet); }
-        catch (RuntimeException | Error failure) { pending.remove(packet); throw failure; }
+        try {
+            send.accept(packet);
+        } catch (RuntimeException | Error failure) {
+            pending.remove(packet);
+            throw failure;
+        }
     }
 
     /** Null means an ordinary Geyser packet, false means a stale queued confirmation. */
@@ -86,7 +90,11 @@ final class GeyserPoseConfirmations {
         }
     }
 
-    void clear() { pose = null; lastSent = null; pending.clear(); }
+    void clear() {
+        pose = null;
+        lastSent = null;
+        pending.clear();
+    }
 
     SetEntityDataPacket collisionDefinition(long runtimeId, long generation) {
         var packet = new SetEntityDataPacket();
@@ -98,35 +106,47 @@ final class GeyserPoseConfirmations {
 
     private static boolean hasPoseAction(Set<PlayerAuthInputData> input) {
         return input.stream().anyMatch(flag -> switch (flag) {
-            case START_SNEAKING, STOP_SNEAKING, START_GLIDING, STOP_GLIDING,
-                    START_SWIMMING, STOP_SWIMMING, START_CRAWLING, STOP_CRAWLING,
-                    START_SPIN_ATTACK, STOP_SPIN_ATTACK -> true;
+            case START_SNEAKING,
+                    STOP_SNEAKING,
+                    START_GLIDING,
+                    STOP_GLIDING,
+                    START_SWIMMING,
+                    STOP_SWIMMING,
+                    START_CRAWLING,
+                    STOP_CRAWLING,
+                    START_SPIN_ATTACK,
+                    STOP_SPIN_ATTACK -> true;
             default -> false;
         });
     }
 
     record Pose(boolean sneaking, boolean gliding, boolean swimming, boolean crawling, boolean spinning) {
         static Pose read(SessionPlayerEntity entity) {
-            return new Pose(entity.getFlag(EntityFlag.SNEAKING), entity.getFlag(EntityFlag.GLIDING),
-                    entity.getFlag(EntityFlag.SWIMMING), entity.getFlag(EntityFlag.CRAWLING), entity.getFlag(EntityFlag.DAMAGE_NEARBY_MOBS));
+            return new Pose(
+                    entity.getFlag(EntityFlag.SNEAKING),
+                    entity.getFlag(EntityFlag.GLIDING),
+                    entity.getFlag(EntityFlag.SWIMMING),
+                    entity.getFlag(EntityFlag.CRAWLING),
+                    entity.getFlag(EntityFlag.DAMAGE_NEARBY_MOBS));
         }
 
         Pose actions(Set<PlayerAuthInputData> input) {
             boolean sneak = sneaking, glide = gliding, swim = swimming, crawl = crawling, spin = spinning;
             // Preserve the same ordered action iteration used by Geyser's auth-input translator.
-            for (var flag : input) switch (flag) {
-                case START_SNEAKING -> sneak = true;
-                case STOP_SNEAKING -> sneak = false;
-                case START_GLIDING -> glide = true;
-                case STOP_GLIDING -> glide = false;
-                case START_SWIMMING -> swim = true;
-                case STOP_SWIMMING -> swim = false;
-                case START_CRAWLING -> crawl = true;
-                case STOP_CRAWLING -> crawl = false;
-                case START_SPIN_ATTACK -> spin = true;
-                case STOP_SPIN_ATTACK -> spin = false;
-                default -> { }
-            }
+            for (var flag : input)
+                switch (flag) {
+                    case START_SNEAKING -> sneak = true;
+                    case STOP_SNEAKING -> sneak = false;
+                    case START_GLIDING -> glide = true;
+                    case STOP_GLIDING -> glide = false;
+                    case START_SWIMMING -> swim = true;
+                    case STOP_SWIMMING -> swim = false;
+                    case START_CRAWLING -> crawl = true;
+                    case STOP_CRAWLING -> crawl = false;
+                    case START_SPIN_ATTACK -> spin = true;
+                    case STOP_SPIN_ATTACK -> spin = false;
+                    default -> {}
+                }
             return new Pose(sneak, glide, swim, crawl, spin);
         }
 
@@ -147,5 +167,5 @@ final class GeyserPoseConfirmations {
         }
     }
 
-    private record Confirmation(Pose pose, long generation) { }
+    private record Confirmation(Pose pose, long generation) {}
 }

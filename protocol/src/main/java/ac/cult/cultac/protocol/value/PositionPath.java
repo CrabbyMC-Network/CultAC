@@ -8,7 +8,9 @@ public sealed interface PositionPath permits PositionPath.Linear, PositionPath.S
     Vec3d endPosition();
 
     record Linear(Vec3d endPosition) implements PositionPath {
-        public Linear { Objects.requireNonNull(endPosition); }
+        public Linear {
+            Objects.requireNonNull(endPosition);
+        }
     }
 
     record Stepped(List<Step> steps) implements PositionPath {
@@ -16,10 +18,16 @@ public sealed interface PositionPath permits PositionPath.Linear, PositionPath.S
             steps = List.copyOf(steps);
             if (steps.isEmpty()) throw new IllegalArgumentException("A stepped position path needs an endpoint");
         }
-        @Override public Vec3d endPosition() { return steps.get(steps.size() - 1).position(); }
+
+        @Override
+        public Vec3d endPosition() {
+            return steps.get(steps.size() - 1).position();
+        }
     }
 
     record Step(Vec3d position, int tickOffset) {
-        public Step { Objects.requireNonNull(position); }
+        public Step {
+            Objects.requireNonNull(position);
+        }
     }
 }

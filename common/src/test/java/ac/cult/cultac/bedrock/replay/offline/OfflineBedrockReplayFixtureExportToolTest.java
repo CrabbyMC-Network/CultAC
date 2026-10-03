@@ -5,10 +5,10 @@ import org.junit.Assume;
 import org.junit.Test;
 
 public final class OfflineBedrockReplayFixtureExportToolTest {
-    private static final Path REGION_DIR = Path.of(
-            "/home/hunter/Downloads/actest/world/dimensions/minecraft/overworld/region");
-    private static final Path SCENARIOS = Path.of(
-            "/home/hunter/Downloads/CultAC/bedrock-smoketest-scenarios/small-scenarios");
+    private static final Path REGION_DIR =
+            Path.of("/home/hunter/Downloads/actest/world/dimensions/minecraft/overworld/region");
+    private static final Path SCENARIOS =
+            Path.of("/home/hunter/Downloads/CultAC/bedrock-smoketest-scenarios/small-scenarios");
 
     @Test
     public void exportMissingFixturesFromActestWorld() throws Exception {
@@ -57,23 +57,9 @@ public final class OfflineBedrockReplayFixtureExportToolTest {
         export("fallingpowdersnow", 269, 76, -58, 282, 95, -44);
     }
 
-    private static void export(
-            String scenario,
-            int minX,
-            int minY,
-            int minZ,
-            int maxX,
-            int maxY,
-            int maxZ
-    ) throws Exception {
+    private static void export(String scenario, int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
+            throws Exception {
         OfflineBedrockReplayFixtureExporter.export(
-                REGION_DIR,
-                SCENARIOS.resolve(scenario),
-                minX,
-                minY,
-                minZ,
-                maxX,
-                maxY,
-                maxZ);
+                REGION_DIR, SCENARIOS.resolve(scenario), minX, minY, minZ, maxX, maxY, maxZ);
     }
 }

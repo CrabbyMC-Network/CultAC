@@ -6,7 +6,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
 import net.minecraft.world.phys.Vec3;
 
-//@CheckData(name = "Elytra")
+// @CheckData(name = "Elytra")
 public class ElytraCheck implements EngineCheck {
 
     @Override
@@ -14,7 +14,8 @@ public class ElytraCheck implements EngineCheck {
         if (result.getSimulationContext().getVehicle() != null) {
             return;
         }
-        if (!result.getSimulationContext().usesFallFlyingMovement() || result.getSimulationContext().getWorldData().mustBeInLiquid()) {
+        if (!result.getSimulationContext().usesFallFlyingMovement()
+                || result.getSimulationContext().getWorldData().mustBeInLiquid()) {
             return;
         }
 

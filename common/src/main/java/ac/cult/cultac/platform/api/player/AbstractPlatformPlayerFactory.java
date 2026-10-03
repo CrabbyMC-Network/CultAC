@@ -1,13 +1,12 @@
 package ac.cult.cultac.platform.api.player;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractPlatformPlayerFactory<T> implements PlatformPlayerFactory {
     protected final PlatformPlayerCache cache = PlatformPlayerCache.getInstance();
@@ -113,7 +112,6 @@ public abstract class AbstractPlatformPlayerFactory<T> implements PlatformPlayer
      * @return a collection of native player objects
      */
     protected abstract Collection<T> getNativeOnlinePlayers();
-
 
     @Override
     public abstract OfflinePlatformPlayer getOfflineFromUUID(@NotNull UUID uuid);

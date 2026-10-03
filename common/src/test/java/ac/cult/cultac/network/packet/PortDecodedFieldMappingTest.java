@@ -1,6 +1,8 @@
 package ac.cult.cultac.network.packet;
 
-import ac.cult.cultac.protocol.testing.CodecFixture;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import ac.cult.cultac.checks.impl.chat.ChatB;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
@@ -11,31 +13,22 @@ import ac.cult.cultac.protocol.ProtocolRuntime;
 import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.data.ProtocolData;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
-import io.netty.buffer.Unpooled;
-import net.minecraft.network.FriendlyByteBuf;
-import java.util.OptionalInt;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommand;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundChatCommandSigned;
+import ac.cult.cultac.protocol.testing.CodecFixture;
+import io.netty.buffer.Unpooled;
+import java.util.OptionalInt;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
 public final class PortDecodedFieldMappingTest {
     @Test
     public void chatCommandHandlersBindSignedAndUnsignedRecordFamiliesCorrectly() throws Exception {
         assertNotNull(ChatB.class.getDeclaredMethod(
-                "onChatCommandUnsigned",
-                PacketReceiveEvent.class,
-                CultPlayer.class,
-                ServerboundChatCommand.class));
+                "onChatCommandUnsigned", PacketReceiveEvent.class, CultPlayer.class, ServerboundChatCommand.class));
         assertNotNull(ChatB.class.getDeclaredMethod(
-                "onChatCommand",
-                PacketReceiveEvent.class,
-                CultPlayer.class,
-                ServerboundChatCommandSigned.class));
+                "onChatCommand", PacketReceiveEvent.class, CultPlayer.class, ServerboundChatCommandSigned.class));
     }
 
     @Test
@@ -46,17 +39,32 @@ public final class PortDecodedFieldMappingTest {
         int id = data.packets(ConnectionPhase.PLAY, PacketDirection.SERVERBOUND).id("minecraft:spectator_action");
         var bytes = new FriendlyByteBuf(Unpooled.buffer());
         try {
-            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(bytes, new ServerboundSpectatorActionPacket(OptionalInt.of(42)));
-            assertEquals(42, codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes).target().orElse(0));
+            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(
+                    bytes, new ServerboundSpectatorActionPacket(OptionalInt.of(42)));
+            assertEquals(
+                    42,
+                    codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes)
+                            .target()
+                            .orElse(0));
             bytes.clear();
-            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(bytes, new ServerboundSpectatorActionPacket(OptionalInt.empty()));
-            assertEquals(0, codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes).target().orElse(0));
-        } finally { bytes.release(); }
+            ServerboundSpectatorActionPacket.STREAM_CODEC.encode(
+                    bytes, new ServerboundSpectatorActionPacket(OptionalInt.empty()));
+            assertEquals(
+                    0,
+                    codec.read(ServerboundPackets.SPECTATOR_ACTION, id, bytes)
+                            .target()
+                            .orElse(0));
+        } finally {
+            bytes.release();
+        }
     }
 
     @Test
     public void transactionAcceptanceDefaultsToFalseOnEachReceiveEvent() {
-        var event = new PacketReceiveEvent<>(null, ConnectionPhase.PLAY, ServerboundPackets.SPECTATOR_ACTION,
+        var event = new PacketReceiveEvent<>(
+                null,
+                ConnectionPhase.PLAY,
+                ServerboundPackets.SPECTATOR_ACTION,
                 new ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction(OptionalInt.empty()));
         assertFalse(event.isAcceptedTransactionResponse());
     }

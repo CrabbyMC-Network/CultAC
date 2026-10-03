@@ -5,9 +5,6 @@ import ac.grim.grimac.api.storage.instance.OwnershipRenewResult;
 import ac.grim.grimac.api.storage.instance.ServerOwnershipAdapter;
 import ac.grim.grimac.api.storage.instance.ServerOwnershipGate;
 import ac.grim.grimac.api.storage.registry.StoreId;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -21,6 +18,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final class OwnershipHeartbeatScheduler {
 
@@ -139,8 +138,8 @@ final class OwnershipHeartbeatScheduler {
     private void tick() {
         if (lost.get()) return;
         try {
-            OwnershipRenewResult renewed = ownership.renewOwnership(
-                    ownershipStore, instanceId, startupId, fence, leaseTtlMs);
+            OwnershipRenewResult renewed =
+                    ownership.renewOwnership(ownershipStore, instanceId, startupId, fence, leaseTtlMs);
             if (!renewed.renewed()) {
                 onLostOwnership();
                 return;
@@ -165,8 +164,8 @@ final class OwnershipHeartbeatScheduler {
     private void onLostOwnership() {
         if (!lost.compareAndSet(false, true)) return;
         gate.close("lost-ownership");
-        logger.warning("[cult-datastore] lost DB ownership for instanceId=" + instanceId
-                + " startupId=" + startupId + "; disabling persistence for this boot");
+        logger.warning("[cult-datastore] lost DB ownership for instanceId=" + instanceId + " startupId=" + startupId
+                + "; disabling persistence for this boot");
         try {
             lostOwnership.run();
         } finally {

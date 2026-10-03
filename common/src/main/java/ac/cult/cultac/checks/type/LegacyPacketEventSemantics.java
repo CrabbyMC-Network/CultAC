@@ -4,8 +4,7 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 
 /** PacketEvents classifications that were part of legacy check behavior. */
 public final class LegacyPacketEventSemantics {
-    private LegacyPacketEventSemantics() {
-    }
+    private LegacyPacketEventSemantics() {}
 
     /** Matches the old Check#isAsync classification for serverbound PLAY packets. */
     public static boolean isAsync(PacketReceiveEvent<?> event) {

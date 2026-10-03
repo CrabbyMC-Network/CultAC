@@ -1,6 +1,5 @@
 package ac.cult.cultac.utils.latency;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,10 +47,7 @@ public final class SectionPoolLeaseTracker {
         for (Map.Entry<ChunkCoordinate, Integer> entry : retainedChunks.entrySet()) {
             ChunkCoordinate coordinate = entry.getKey();
             SectionPoolRegistry.releaseChunk(
-                    coordinate.dimension,
-                    coordinate.chunkX,
-                    coordinate.chunkZ,
-                    entry.getValue());
+                    coordinate.dimension, coordinate.chunkX, coordinate.chunkZ, entry.getValue());
         }
         retainedChunks.clear();
     }
@@ -64,6 +60,5 @@ public final class SectionPoolLeaseTracker {
         return retainedChunks.containsKey(new ChunkCoordinate(dimension, chunkX, chunkZ));
     }
 
-    private record ChunkCoordinate(String dimension, int chunkX, int chunkZ) {
-    }
+    private record ChunkCoordinate(String dimension, int chunkX, int chunkZ) {}
 }

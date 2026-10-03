@@ -1,8 +1,6 @@
 package ac.cult.cultac.manager;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.GrimUser;
-import ac.grim.grimac.api.config.ConfigManager;
 import ac.cult.cultac.manager.init.ReloadableInitable;
 import ac.cult.cultac.manager.init.start.StartableInitable;
 import ac.cult.cultac.player.CultPlayer;
@@ -15,11 +13,8 @@ import ac.cult.cultac.utils.data.webhook.discord.Embed;
 import ac.cult.cultac.utils.data.webhook.discord.EmbedField;
 import ac.cult.cultac.utils.data.webhook.discord.EmbedFooter;
 import ac.cult.cultac.utils.data.webhook.discord.WebhookMessage;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
-
+import ac.grim.grimac.api.GrimUser;
+import ac.grim.grimac.api.config.ConfigManager;
 import java.awt.*;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -36,13 +31,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 public class DiscordManager implements StartableInitable, ReloadableInitable {
-    private static final Predicate<String> WEBHOOK_REGEX = Pattern.compile("^https://(?:canary\\.)?discord\\.com/api(?:/v\\d+)?/webhooks/\\d+/[\\w-]+(\\?thread_id=\\d+)?$").asMatchPredicate();
-    private static final Predicate<String> HTTPS_URL_REGEX = Pattern.compile("^https://[^/\\s]+/\\S+$").asMatchPredicate();
+    private static final Predicate<String> WEBHOOK_REGEX = Pattern.compile(
+                    "^https://(?:canary\\.)?discord\\.com/api(?:/v\\d+)?/webhooks/\\d+/[\\w-]+(\\?thread_id=\\d+)?$")
+            .asMatchPredicate();
+    private static final Predicate<String> HTTPS_URL_REGEX =
+            Pattern.compile("^https://[^/\\s]+/\\S+$").asMatchPredicate();
     private static final Duration timeout = Duration.ofMillis(CommonCultArguments.URL_TIMEOUT.value());
-    private static final HttpClient client = HttpClient.newBuilder().connectTimeout(timeout).build();
-    private static final ConcurrentLinkedDeque<Pair<HttpRequest, CompletableFuture<Boolean>>> requests = new ConcurrentLinkedDeque<>();
+    private static final HttpClient client =
+            HttpClient.newBuilder().connectTimeout(timeout).build();
+    private static final ConcurrentLinkedDeque<Pair<HttpRequest, CompletableFuture<Boolean>>> requests =
+            new ConcurrentLinkedDeque<>();
     private static final AtomicBoolean taskStarted = new AtomicBoolean();
     private static final AtomicBoolean sending = new AtomicBoolean();
     private static long rateLimitedUntil;
@@ -58,7 +62,9 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
     private @Nullable String embedFooterUrl;
     private String embedFooterText = "";
 
-    private static final Pattern URL_PATTERN = Pattern.compile("^https?://(?:www\\.)?[-a-z0-9@:%._+~#=]{1,256}\\.[a-z0-9()]{1,6}\\b[-a-z0-9()@:%_+.~#?&/=]*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern URL_PATTERN = Pattern.compile(
+            "^https?://(?:www\\.)?[-a-z0-9@:%._+~#=]{1,256}\\.[a-z0-9()]{1,6}\\b[-a-z0-9()@:%_+.~#?&/=]*$",
+            Pattern.CASE_INSENSITIVE);
 
     private static String validatedConfigURL(String configPath, String defaultURL) {
         String url = CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("embed-image-url", defaultURL);
@@ -79,9 +85,12 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
     @Override
     public void reload() {
         try {
-            // Yes all of these fields should technically be volatile so they will be updated correctly on reload for HTTP threads to read
-            // No we're not going to pay for atomic reads in the hot loop however cheap for a one in a billion chance to read an outdated config
-            // When your discord webhook settings are changed (who changes them in prod?) that can be fixed with a restart
+            // Yes all of these fields should technically be volatile so they will be updated correctly on reload for
+            // HTTP threads to read
+            // No we're not going to pay for atomic reads in the hot loop however cheap for a one in a billion chance to
+            // read an outdated config
+            // When your discord webhook settings are changed (who changes them in prod?) that can be fixed with a
+            // restart
             ConfigManager config = CultAPI.INSTANCE.getConfigManager().getConfig();
             if (!config.getBooleanElse("enabled", false)) {
                 url = null;
@@ -122,7 +131,8 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
             embedTitle = config.getStringElse("embed-title", "**Cult Alert**");
 
             try {
-                embedColor = Color.decode(config.getStringElse("embed-color", "#00FFFF")).getRGB();
+                embedColor = Color.decode(config.getStringElse("embed-color", "#00FFFF"))
+                        .getRGB();
             } catch (NumberFormatException e) {
                 LogUtil.warn("Discord embed color is invalid");
             }
@@ -150,8 +160,7 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
                 "**Client Version**: %version%",
                 "**Brand**: `%brand%`",
                 "**Ping**: %ping%",
-                "**TPS**: %tps%"
-        );
+                "**TPS**: %tps%");
     }
 
     public void sendAlert(@NotNull CultPlayer player, String verbose, String checkName, int violations) {
@@ -160,11 +169,13 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
         }
 
         // Per-alert overlay — avoids polluting the global static map
-        Map<String, String> statics = new HashMap<>(CultAPI.INSTANCE.getExternalAPI().getStaticReplacements());
+        Map<String, String> statics =
+                new HashMap<>(CultAPI.INSTANCE.getExternalAPI().getStaticReplacements());
         statics.put("%check%", checkName);
         statics.put("%violations%", Integer.toString(violations));
 
-        Map<String, Function<GrimUser, String>> dynamics = CultAPI.INSTANCE.getExternalAPI().getVariableReplacements();
+        Map<String, Function<GrimUser, String>> dynamics =
+                CultAPI.INSTANCE.getExternalAPI().getVariableReplacements();
 
         String content = compiledContent.render(player, statics, dynamics, backtickReplacement);
 
@@ -175,8 +186,7 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
                 .thumbnailURL(MessageUtil.replacePlaceholders(player, embedThumbnailUrl, false))
                 .footer(new EmbedFooter(
                         MessageUtil.replacePlaceholders(player, embedFooterText, false),
-                        MessageUtil.replacePlaceholders(player, embedFooterUrl, false)
-                ));
+                        MessageUtil.replacePlaceholders(player, embedFooterUrl, false)));
 
         if (includeTimestamp) embed.timestamp(Instant.now());
 
@@ -203,7 +213,10 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
 
         if (!taskStarted.getAndSet(true)) {
             // there's probably a better way to handle rate limits, but this works, so whatever.
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runAtFixedRate(CultAPI.INSTANCE.getGrimPlugin(), DiscordManager::tick, 0, 1);
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runAtFixedRate(CultAPI.INSTANCE.getGrimPlugin(), DiscordManager::tick, 0, 1);
         }
 
         return future;
@@ -226,7 +239,12 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
 
                 if (response != null && response.statusCode() == 429) {
                     sending.set(false);
-                    rateLimitedUntil = Math.max(response.headers().firstValueAsLong("X-RateLimit-Reset").getAsLong() * 1000, rateLimitedUntil);
+                    rateLimitedUntil = Math.max(
+                            response.headers()
+                                            .firstValueAsLong("X-RateLimit-Reset")
+                                            .getAsLong()
+                                    * 1000,
+                            rateLimitedUntil);
                     return;
                 }
 
@@ -235,7 +253,8 @@ public class DiscordManager implements StartableInitable, ReloadableInitable {
 
                 // TODO: handle 503 (Service Unavailable)?
                 if (response != null && response.statusCode() >= 400) {
-                    LogUtil.error("Encountered status code " + response.statusCode() + " with body " + response.body() + " and headers " + response.headers().map() + " while sending a Discord webhook alert.");
+                    LogUtil.error("Encountered status code " + response.statusCode() + " with body " + response.body()
+                            + " and headers " + response.headers().map() + " while sending a Discord webhook alert.");
                     pair.second().complete(false);
                 } else {
                     pair.second().complete(true);

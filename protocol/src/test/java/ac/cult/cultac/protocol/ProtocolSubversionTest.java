@@ -1,5 +1,7 @@
 package ac.cult.cultac.protocol;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ac.cult.cultac.protocol.data.ProtocolData;
 import ac.cult.cultac.protocol.packet.ClientboundPackets;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
@@ -13,11 +15,8 @@ import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import org.junit.jupiter.api.Test;
-
 import java.util.OptionalInt;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * Exact boundaries from PacketEvents 2.0 wrappers at 5da85d7ad, checked against
@@ -29,7 +28,11 @@ class ProtocolSubversionTest {
         for (var version : ProtocolVersion.values()) {
             ByteBuf bytes = Unpooled.buffer();
             try {
-                bytes.writeDouble(1).writeDouble(2).writeDouble(3).writeFloat(90).writeFloat(-20);
+                bytes.writeDouble(1)
+                        .writeDouble(2)
+                        .writeDouble(3)
+                        .writeFloat(90)
+                        .writeFloat(-20);
                 if (version.atLeast(ProtocolVersion.V1_21_4)) bytes.writeBoolean(true);
                 var vehicle = read(version, ServerboundPackets.MOVE_VEHICLE, bytes);
                 assertEquals(new Vec3d(1, 2, 3), vehicle.position());
@@ -37,22 +40,37 @@ class ProtocolSubversionTest {
                 assertEquals(version.atLeast(ProtocolVersion.V1_21_4), vehicle.onGround());
                 if (version == ProtocolVersion.V1_21_3) {
                     bytes.writeByte(1);
-                    assertThrows(MalformedPacketException.class, () -> read(version, ServerboundPackets.MOVE_VEHICLE, bytes));
+                    assertThrows(
+                            MalformedPacketException.class,
+                            () -> read(version, ServerboundPackets.MOVE_VEHICLE, bytes));
                 } else {
                     bytes.writerIndex(bytes.writerIndex() - 1);
-                    assertThrows(MalformedPacketException.class, () -> read(version, ServerboundPackets.MOVE_VEHICLE, bytes));
+                    assertThrows(
+                            MalformedPacketException.class,
+                            () -> read(version, ServerboundPackets.MOVE_VEHICLE, bytes));
                 }
 
-                bytes.clear().writeByte(version.atLeast(ProtocolVersion.V1_21_4) ? 128 : 0).writeByte(1);
+                bytes.clear()
+                        .writeByte(version.atLeast(ProtocolVersion.V1_21_4) ? 128 : 0)
+                        .writeByte(1);
                 Wire.writeUuid(bytes, new java.util.UUID(1, 2));
                 if (version.atLeast(ProtocolVersion.V1_21_4)) bytes.writeBoolean(true);
                 var info = read(version, ClientboundPackets.PLAYER_INFO_UPDATE, bytes);
-                assertEquals(version.atLeast(ProtocolVersion.V1_21_4),
+                assertEquals(
+                        version.atLeast(ProtocolVersion.V1_21_4),
                         info.actions().contains(ClientboundPlayerInfoUpdate.Action.UPDATE_HAT));
-                if (version.atLeast(ProtocolVersion.V1_21_4)) assertArrayEquals(new byte[]{1},
-                        info.entries().get(0).encodedActions().get(ClientboundPlayerInfoUpdate.Action.UPDATE_HAT).bytes());
+                if (version.atLeast(ProtocolVersion.V1_21_4))
+                    assertArrayEquals(
+                            new byte[] {1},
+                            info.entries()
+                                    .get(0)
+                                    .encodedActions()
+                                    .get(ClientboundPlayerInfoUpdate.Action.UPDATE_HAT)
+                                    .bytes());
                 assertWrittenBytes(version, ClientboundPackets.PLAYER_INFO_UPDATE, info, bytes);
-            } finally { bytes.release(); }
+            } finally {
+                bytes.release();
+            }
         }
     }
 
@@ -61,29 +79,53 @@ class ProtocolSubversionTest {
         for (var version : ProtocolVersion.values()) {
             ByteBuf bytes = Unpooled.buffer();
             try {
-                for (int selected : new int[]{Integer.MIN_VALUE, -2, -1, 0, 1, Integer.MAX_VALUE}) {
+                for (int selected : new int[] {Integer.MIN_VALUE, -2, -1, 0, 1, Integer.MAX_VALUE}) {
                     bytes.clear().writeByte(2);
                     Wire.writeVarInt(bytes, selected);
                     if (version.atLeast(ProtocolVersion.V1_21_5) && selected < -1) {
-                        assertThrows(MalformedPacketException.class, () -> read(version, ServerboundPackets.SELECT_BUNDLE_ITEM, bytes));
-                    } else assertEquals(selected, read(version, ServerboundPackets.SELECT_BUNDLE_ITEM, bytes).selectedItemIndex());
+                        assertThrows(
+                                MalformedPacketException.class,
+                                () -> read(version, ServerboundPackets.SELECT_BUNDLE_ITEM, bytes));
+                    } else
+                        assertEquals(
+                                selected,
+                                read(version, ServerboundPackets.SELECT_BUNDLE_ITEM, bytes)
+                                        .selectedItemIndex());
                 }
                 var expected = !version.atLeast(ProtocolVersion.V1_21_6)
-                        ? new PlayerCommandAction[]{PlayerCommandAction.PRESS_SHIFT_KEY, PlayerCommandAction.RELEASE_SHIFT_KEY,
-                        PlayerCommandAction.STOP_SLEEPING, PlayerCommandAction.START_SPRINTING, PlayerCommandAction.STOP_SPRINTING,
-                        PlayerCommandAction.START_JUMPING_WITH_HORSE, PlayerCommandAction.STOP_JUMPING_WITH_HORSE,
-                        PlayerCommandAction.OPEN_INVENTORY, PlayerCommandAction.START_FLYING_WITH_ELYTRA}
-                        : new PlayerCommandAction[]{PlayerCommandAction.STOP_SLEEPING, PlayerCommandAction.START_SPRINTING,
-                        PlayerCommandAction.STOP_SPRINTING, PlayerCommandAction.START_JUMPING_WITH_HORSE,
-                        PlayerCommandAction.STOP_JUMPING_WITH_HORSE, PlayerCommandAction.OPEN_INVENTORY,
-                        PlayerCommandAction.START_FLYING_WITH_ELYTRA};
+                        ? new PlayerCommandAction[] {
+                            PlayerCommandAction.PRESS_SHIFT_KEY,
+                            PlayerCommandAction.RELEASE_SHIFT_KEY,
+                            PlayerCommandAction.STOP_SLEEPING,
+                            PlayerCommandAction.START_SPRINTING,
+                            PlayerCommandAction.STOP_SPRINTING,
+                            PlayerCommandAction.START_JUMPING_WITH_HORSE,
+                            PlayerCommandAction.STOP_JUMPING_WITH_HORSE,
+                            PlayerCommandAction.OPEN_INVENTORY,
+                            PlayerCommandAction.START_FLYING_WITH_ELYTRA
+                        }
+                        : new PlayerCommandAction[] {
+                            PlayerCommandAction.STOP_SLEEPING,
+                            PlayerCommandAction.START_SPRINTING,
+                            PlayerCommandAction.STOP_SPRINTING,
+                            PlayerCommandAction.START_JUMPING_WITH_HORSE,
+                            PlayerCommandAction.STOP_JUMPING_WITH_HORSE,
+                            PlayerCommandAction.OPEN_INVENTORY,
+                            PlayerCommandAction.START_FLYING_WITH_ELYTRA
+                        };
                 for (int ordinal = 0; ordinal < expected.length; ordinal++) {
                     bytes.clear().writeByte(7).writeByte(ordinal).writeByte(90);
-                    assertEquals(expected[ordinal], read(version, ServerboundPackets.PLAYER_COMMAND, bytes).action());
+                    assertEquals(
+                            expected[ordinal],
+                            read(version, ServerboundPackets.PLAYER_COMMAND, bytes)
+                                    .action());
                 }
                 bytes.clear().writeByte(7).writeByte(expected.length).writeByte(0);
-                assertThrows(MalformedPacketException.class, () -> read(version, ServerboundPackets.PLAYER_COMMAND, bytes));
-            } finally { bytes.release(); }
+                assertThrows(
+                        MalformedPacketException.class, () -> read(version, ServerboundPackets.PLAYER_COMMAND, bytes));
+            } finally {
+                bytes.release();
+            }
         }
     }
 
@@ -100,7 +142,11 @@ class ProtocolSubversionTest {
 
                 bytes.clear().writeByte(7);
                 Wire.writeUuid(bytes, new java.util.UUID(1, 2));
-                Wire.writeVarInt(bytes, ProtocolData.load(version).registry("minecraft:entity_type").id("minecraft:pig"));
+                Wire.writeVarInt(
+                        bytes,
+                        ProtocolData.load(version)
+                                .registry("minecraft:entity_type")
+                                .id("minecraft:pig"));
                 bytes.writeDouble(1).writeDouble(2).writeDouble(3);
                 if (compact) bytes.writeBytes(ByteBufUtil.decodeHexDump("f1ff7ffe0003"));
                 bytes.writeByte(32).writeByte(64).writeByte(0).writeByte(12);
@@ -116,7 +162,9 @@ class ProtocolSubversionTest {
                 bytes.writeBoolean(true).writeDouble(0.25).writeDouble(-0.5).writeDouble(1);
                 // Particle and sound suffixes are deliberately unconsumed.
                 bytes.writeByte(99);
-                assertEquals(new Vec3d(0.25, -0.5, 1), read(version, ClientboundPackets.EXPLODE, bytes).knockback());
+                assertEquals(
+                        new Vec3d(0.25, -0.5, 1),
+                        read(version, ClientboundPackets.EXPLODE, bytes).knockback());
 
                 bytes.clear().writeFloat(90);
                 if (compact) bytes.writeBoolean(true);
@@ -128,7 +176,9 @@ class ProtocolSubversionTest {
                 assertEquals(compact, rotation.relativeYaw());
                 assertFalse(rotation.relativePitch());
                 assertWrittenBytes(version, ClientboundPackets.PLAYER_ROTATION, rotation, bytes);
-            } finally { bytes.release(); }
+            } finally {
+                bytes.release();
+            }
         }
     }
 
@@ -139,27 +189,46 @@ class ProtocolSubversionTest {
             try {
                 bytes.writeByte(2);
                 if (!version.atLeast(ProtocolVersion.V26_1)) {
-                    assertThrows(MalformedPacketException.class, () -> read(version, ServerboundPackets.CLIENT_COMMAND, bytes));
-                    assertFalse(ProtocolRuntime.create(ProtocolData.load(version)).supports(ServerboundPackets.SPECTATOR_ACTION));
+                    assertThrows(
+                            MalformedPacketException.class,
+                            () -> read(version, ServerboundPackets.CLIENT_COMMAND, bytes));
+                    assertFalse(ProtocolRuntime.create(ProtocolData.load(version))
+                            .supports(ServerboundPackets.SPECTATOR_ACTION));
                 } else {
-                    assertEquals("REQUEST_GAMERULE_VALUES", read(version, ServerboundPackets.CLIENT_COMMAND, bytes).action().name());
+                    assertEquals(
+                            "REQUEST_GAMERULE_VALUES",
+                            read(version, ServerboundPackets.CLIENT_COMMAND, bytes)
+                                    .action()
+                                    .name());
                     bytes.clear().writeByte(7);
-                    assertEquals(InteractAction.ATTACK, read(version, ServerboundPackets.INTERACT, "minecraft:attack", bytes).action());
-                    bytes.clear().writeByte(7).writeByte(1).writeBytes(ByteBufUtil.decodeHexDump("f1ff7ffe0003")).writeByte(1);
+                    assertEquals(
+                            InteractAction.ATTACK,
+                            read(version, ServerboundPackets.INTERACT, "minecraft:attack", bytes)
+                                    .action());
+                    bytes.clear()
+                            .writeByte(7)
+                            .writeByte(1)
+                            .writeBytes(ByteBufUtil.decodeHexDump("f1ff7ffe0003"))
+                            .writeByte(1);
                     var interact = read(version, ServerboundPackets.INTERACT, "minecraft:interact", bytes);
                     assertEquals(InteractAction.INTERACT_AT, interact.action());
                     assertEquals(new Vec3d(1, -1, 0), interact.target().orElseThrow());
-                    for (int id : new int[]{0, 1, 7}) {
+                    for (int id : new int[] {0, 1, 7}) {
                         bytes.clear().writeByte(id);
-                        OptionalInt expected = version == ProtocolVersion.V26_1 ? OptionalInt.of(id)
+                        OptionalInt expected = version == ProtocolVersion.V26_1
+                                ? OptionalInt.of(id)
                                 : id == 0 ? OptionalInt.empty() : OptionalInt.of(id - 1);
-                        assertEquals(new ServerboundSpectatorAction(expected), read(version, ServerboundPackets.SPECTATOR_ACTION, bytes));
+                        assertEquals(
+                                new ServerboundSpectatorAction(expected),
+                                read(version, ServerboundPackets.SPECTATOR_ACTION, bytes));
                     }
                 }
                 bytes.clear();
                 Wire.writeAngle(bytes, version, Float.NEGATIVE_INFINITY);
                 assertEquals(!version.atLeast(ProtocolVersion.V26_1) ? 255 : 0, bytes.readUnsignedByte());
-            } finally { bytes.release(); }
+            } finally {
+                bytes.release();
+            }
         }
     }
 
@@ -171,16 +240,24 @@ class ProtocolSubversionTest {
         var runtime = ProtocolRuntime.create(ProtocolData.load(version));
         var connection = new CodecFixture(runtime);
         connection.phase(ConnectionPhase.PLAY);
-        return type.recordClass().cast(connection.read(type.direction(),
-                runtime.data().packets(ConnectionPhase.PLAY, type.direction()).id(name), bytes));
+        return type.recordClass()
+                .cast(connection.read(
+                        type.direction(),
+                        runtime.data()
+                                .packets(ConnectionPhase.PLAY, type.direction())
+                                .id(name),
+                        bytes));
     }
 
-    private static <R> void assertWrittenBytes(ProtocolVersion version, PacketType<R> type, R record, ByteBuf expected) {
+    private static <R> void assertWrittenBytes(
+            ProtocolVersion version, PacketType<R> type, R record, ByteBuf expected) {
         ByteBuf output = Unpooled.buffer();
         try {
             ProtocolRuntime.create(ProtocolData.load(version)).encode(ConnectionPhase.PLAY, type, record, output);
             Wire.readVarInt(output);
             assertEquals(ByteBufUtil.hexDump(expected), ByteBufUtil.hexDump(output), version + "/" + type);
-        } finally { output.release(); }
+        } finally {
+            output.release();
+        }
     }
 }

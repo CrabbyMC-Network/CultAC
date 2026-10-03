@@ -7,12 +7,11 @@ import net.minecraft.world.entity.EntityType;
 public class PacketEntityUtil {
 
     public static boolean isRideable(EntityType type) {
-       return EntityTypeUtil.isBoat(type)
+        return EntityTypeUtil.isBoat(type)
                 || EntityTypeUtil.isHorseFamily(type)
                 || type == EntityTypesCompat.PIG
                 || type == EntityTypesCompat.STRIDER
                 || EntityTypeUtil.isHappyGhast(type)
                 || EntityTypeUtil.isNautilusFamily(type);
     }
-
 }

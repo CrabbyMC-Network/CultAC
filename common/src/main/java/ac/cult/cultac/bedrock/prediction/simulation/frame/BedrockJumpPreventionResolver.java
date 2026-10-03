@@ -14,32 +14,27 @@ final class BedrockJumpPreventionResolver {
     private static final long PREVENT_JUMPING_BLOCK_PROPERTY = 0x40000000L;
     private static final long CHECK_BELOW_BLOCK_PROPERTY = 0x80L;
 
-    private BedrockJumpPreventionResolver() {
-    }
+    private BedrockJumpPreventionResolver() {}
 
-    static JumpPreventionState resolve(
-        BedrockMovementContext context,
-        Vec3d physicalFeetPosition,
-        boolean onGround
-    ) {
+    static JumpPreventionState resolve(BedrockMovementContext context, Vec3d physicalFeetPosition, boolean onGround) {
         Objects.requireNonNull(context, "context");
-        return fromBlockWorld(onGround, physicalFeetPosition, context.worldState().blockCollisionWorld());
+        return fromBlockWorld(
+                onGround, physicalFeetPosition, context.worldState().blockCollisionWorld());
     }
 
     private static JumpPreventionState fromBlockWorld(
-        boolean onGround,
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld
-    ) {
+            boolean onGround, Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld) {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(blockWorld, "blockWorld");
         if (!onGround) {
             return JumpPreventionState.NONE;
         }
 
-        int x = blockWorld.coordinateFrame().originX() + floorToInt(blockWorld.coordinateFrame().localX(physicalFeetPosition.x()));
+        int x = blockWorld.coordinateFrame().originX()
+                + floorToInt(blockWorld.coordinateFrame().localX(physicalFeetPosition.x()));
         int y = floorToInt((float) physicalFeetPosition.y());
-        int z = blockWorld.coordinateFrame().originZ() + floorToInt(blockWorld.coordinateFrame().localZ(physicalFeetPosition.z()));
+        int z = blockWorld.coordinateFrame().originZ()
+                + floorToInt(blockWorld.coordinateFrame().localZ(physicalFeetPosition.z()));
         BlockPosition currentPosition = new BlockPosition(x, y, z);
         Optional<PlacedBlockCollision> currentBlock = blockWorld.blockAt(currentPosition);
         if (currentBlock.filter(BedrockJumpPreventionResolver::preventsJumping).isPresent()) {
@@ -48,16 +43,20 @@ final class BedrockJumpPreventionResolver {
 
         float feetY = (float) physicalFeetPosition.y();
         boolean checkBelow = feetY <= (float) y
-            || currentBlock.filter(block -> BedrockBlockMetadata.hasBedrockBlockProperty(block, CHECK_BELOW_BLOCK_PROPERTY)).isPresent();
+                || currentBlock
+                        .filter(block ->
+                                BedrockBlockMetadata.hasBedrockBlockProperty(block, CHECK_BELOW_BLOCK_PROPERTY))
+                        .isPresent();
         if (!checkBelow) {
             return JumpPreventionState.NONE;
         }
 
         BlockPosition belowPosition = new BlockPosition(x, y - 1, z);
-        return blockWorld.blockAt(belowPosition)
-            .filter(BedrockJumpPreventionResolver::preventsJumping)
-            .map(block -> JumpPreventionState.blockedBy(belowPosition))
-            .orElse(JumpPreventionState.NONE);
+        return blockWorld
+                .blockAt(belowPosition)
+                .filter(BedrockJumpPreventionResolver::preventsJumping)
+                .map(block -> JumpPreventionState.blockedBy(belowPosition))
+                .orElse(JumpPreventionState.NONE);
     }
 
     private static boolean preventsJumping(PlacedBlockCollision block) {

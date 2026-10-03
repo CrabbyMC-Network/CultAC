@@ -6,9 +6,11 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-//@CheckData(name = "OmniSprint")
+// @CheckData(name = "OmniSprint")
 public class OmniSprint extends Check implements PostPredictionListener {
-    public OmniSprint(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder().name("OmniSprint").build()); }
+    public OmniSprint(CultPlayer cultPlayer) {
+        super(cultPlayer, CheckInfo.builder().name("OmniSprint").build());
+    }
 
     double buffer;
     double maxBuffer;
@@ -31,7 +33,9 @@ public class OmniSprint extends Check implements PostPredictionListener {
     public boolean flag(String detail) {
         buffer = Math.min(buffer + 1, maxBuffer);
         // only alert if we're at the max buffer
-        if (buffer == maxBuffer) { player.getSetbackTeleportUtil().executeForceResync("omnisprint"); }
+        if (buffer == maxBuffer) {
+            player.getSetbackTeleportUtil().executeForceResync("omnisprint");
+        }
         return false;
     }
 }

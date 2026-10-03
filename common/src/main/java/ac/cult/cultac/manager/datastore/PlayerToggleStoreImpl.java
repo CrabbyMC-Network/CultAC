@@ -6,9 +6,6 @@ import ac.grim.grimac.api.storage.model.SettingRecord;
 import ac.grim.grimac.api.storage.model.SettingScope;
 import ac.grim.grimac.api.storage.query.Page;
 import ac.grim.grimac.api.storage.query.Queries;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Concrete {@link PlayerToggleStore} backed by a {@link DataStore}.
@@ -51,10 +50,14 @@ public final class PlayerToggleStoreImpl implements PlayerToggleStore {
         USER_TOGGLED(30);
 
         public final int precedence;
-        Source(int precedence) { this.precedence = precedence; }
+
+        Source(int precedence) {
+            this.precedence = precedence;
+        }
     }
 
-    public record TogglePair(@NotNull Source source, @Nullable Boolean value) {
+    public record TogglePair(
+            @NotNull Source source, @Nullable Boolean value) {
         static final TogglePair INITIAL = new TogglePair(Source.UNKNOWN, null);
     }
 
@@ -83,11 +86,12 @@ public final class PlayerToggleStoreImpl implements PlayerToggleStore {
         this(store, logger, defaultScheduler(), DEFAULT_FLUSH_DELAY_MS, true);
     }
 
-    PlayerToggleStoreImpl(@NotNull DataStore store,
-                          @NotNull Logger logger,
-                          @NotNull ScheduledExecutorService scheduler,
-                          long flushDelayMs,
-                          boolean ownsScheduler) {
+    PlayerToggleStoreImpl(
+            @NotNull DataStore store,
+            @NotNull Logger logger,
+            @NotNull ScheduledExecutorService scheduler,
+            long flushDelayMs,
+            boolean ownsScheduler) {
         this.store = store;
         this.logger = logger;
         this.scheduler = scheduler;
@@ -112,8 +116,7 @@ public final class PlayerToggleStoreImpl implements PlayerToggleStore {
     }
 
     private void prefetchKey(UUID uuid, AtomicReference<TogglePair> ref, String key) {
-        store.query(Categories.SETTING,
-                        new Queries.GetSetting(SettingScope.PLAYER, uuid.toString(), key))
+        store.query(Categories.SETTING, new Queries.GetSetting(SettingScope.PLAYER, uuid.toString(), key))
                 .whenComplete((page, err) -> {
                     if (err != null) {
                         logger.log(Level.FINE, "[cult-toggle] prefetch " + key + " failed for " + uuid, err);
@@ -182,10 +185,13 @@ public final class PlayerToggleStoreImpl implements PlayerToggleStore {
      */
     private void scheduleFlush(ToggleSlot slot, UUID uuid) {
         if (slot.pendingFlush.get() != null) return;
-        ScheduledFuture<?> f = scheduler.schedule(() -> {
-            slot.pendingFlush.set(null);
-            flushDirty(slot, uuid);
-        }, flushDelayMs, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> f = scheduler.schedule(
+                () -> {
+                    slot.pendingFlush.set(null);
+                    flushDirty(slot, uuid);
+                },
+                flushDelayMs,
+                TimeUnit.MILLISECONDS);
         if (!slot.pendingFlush.compareAndSet(null, f)) f.cancel(false);
     }
 
@@ -221,16 +227,17 @@ public final class PlayerToggleStoreImpl implements PlayerToggleStore {
 
     private void persist(UUID uuid, String key, boolean value) {
         long now = System.currentTimeMillis();
-        store.submit(Categories.SETTING, e -> e
-                .scope(SettingScope.PLAYER)
-                .scopeKey(uuid.toString())
-                .key(key)
-                .value(encodeBool(value))
-                .updatedEpochMs(now));
+        store.submit(
+                Categories.SETTING,
+                e -> e.scope(SettingScope.PLAYER)
+                        .scopeKey(uuid.toString())
+                        .key(key)
+                        .value(encodeBool(value))
+                        .updatedEpochMs(now));
     }
 
     private static byte[] encodeBool(boolean v) {
-        return new byte[] { v ? (byte) 1 : (byte) 0 };
+        return new byte[] {v ? (byte) 1 : (byte) 0};
     }
 
     private static @Nullable Boolean decodeBool(@NotNull Page<SettingRecord> page) {

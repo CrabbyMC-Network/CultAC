@@ -16,40 +16,36 @@ public final class BedrockSneakEdgeMovement {
     private static final float STEP_REACH_SCALE = 1.01F;
     private static final float STOPPED_AXIS_EPSILON = Math.ulp(1.0F);
 
-    private BedrockSneakEdgeMovement() {
-    }
+    private BedrockSneakEdgeMovement() {}
 
     public static BedrockMoveRequest applyBeforeCollision(
-        BedrockMovementState current,
-        boolean sneaking,
-        PlayerDimensionsState dimensions,
-        double maxUpStep,
-        BedrockMoveRequest request,
-        BlockCollisionWorld blockCollisionWorld
-    ) {
+            BedrockMovementState current,
+            boolean sneaking,
+            PlayerDimensionsState dimensions,
+            double maxUpStep,
+            BedrockMoveRequest request,
+            BlockCollisionWorld blockCollisionWorld) {
         // Nearby support alone does not enable edge protection while airborne.
         if (!sneaking || !current.collisionFlags().onGround()) {
             return request;
         }
-        WorldCollisionBox supportBox = supportBox(current, dimensions, maxUpStep, blockCollisionWorld.coordinateFrame());
+        WorldCollisionBox supportBox =
+                supportBox(current, dimensions, maxUpStep, blockCollisionWorld.coordinateFrame());
         Vec3d move = backOffFromEdge(request.move(), supportBox, blockCollisionWorld);
         Vec3d velocity = request.collisionInputVelocity();
         // Partial backoff retains momentum; fully stopped axes lose it before collision.
         Vec3d nextVelocity = new Vec3d(
-            Math.abs(move.x()) <= STOPPED_AXIS_EPSILON ? 0.0D : velocity.x(),
-            velocity.y(),
-            Math.abs(move.z()) <= STOPPED_AXIS_EPSILON ? 0.0D : velocity.z());
+                Math.abs(move.x()) <= STOPPED_AXIS_EPSILON ? 0.0D : velocity.x(),
+                velocity.y(),
+                Math.abs(move.z()) <= STOPPED_AXIS_EPSILON ? 0.0D : velocity.z());
         Vec3d feet = current.physicalFeetPosition();
         return new BedrockMoveRequest(
-            new BedrockResolvedMove(request.lavaSwimUpApplied(), move, nextVelocity),
-            new Vec3d(feet.x() + move.x(), request.requestedPosition().y(), feet.z() + move.z()));
+                new BedrockResolvedMove(request.lavaSwimUpApplied(), move, nextVelocity),
+                new Vec3d(feet.x() + move.x(), request.requestedPosition().y(), feet.z() + move.z()));
     }
 
     private static Vec3d backOffFromEdge(
-        Vec3d move,
-        WorldCollisionBox supportBox,
-        BlockCollisionWorld blockCollisionWorld
-    ) {
+            Vec3d move, WorldCollisionBox supportBox, BlockCollisionWorld blockCollisionWorld) {
         float backedOffX = (float) move.x();
         float backedOffZ = (float) move.z();
         float stepX = Math.signum(backedOffX) * BACKOFF_STEP;
@@ -62,7 +58,7 @@ public final class BedrockSneakEdgeMovement {
             backedOffZ = approachZero(backedOffZ, stepZ);
         }
         while ((backedOffX != 0.0D || backedOffZ != 0.0D)
-            && canFallAt(supportBox, backedOffX, backedOffZ, blockCollisionWorld)) {
+                && canFallAt(supportBox, backedOffX, backedOffZ, blockCollisionWorld)) {
             if (Math.abs(backedOffX) <= BACKOFF_STEP) {
                 backedOffX = 0.0F;
             } else {
@@ -78,13 +74,9 @@ public final class BedrockSneakEdgeMovement {
     }
 
     private static boolean canFallAt(
-        WorldCollisionBox supportBox,
-        float deltaX,
-        float deltaZ,
-        BlockCollisionWorld blockCollisionWorld
-    ) {
+            WorldCollisionBox supportBox, float deltaX, float deltaZ, BlockCollisionWorld blockCollisionWorld) {
         WorldCollisionBox stepDownBox = BedrockCollisionSweep.moveBedrock(
-            supportBox, deltaX, 0.0D, deltaZ, blockCollisionWorld.coordinateFrame());
+                supportBox, deltaX, 0.0D, deltaZ, blockCollisionWorld.coordinateFrame());
         for (BlockCollision obstacle : BedrockCollisionSweep.collisionObstacles(blockCollisionWorld)) {
             if (stepDownBox.intersects(obstacle.box())) {
                 return false;
@@ -93,8 +85,11 @@ public final class BedrockSneakEdgeMovement {
         return true;
     }
 
-    private static WorldCollisionBox supportBox(BedrockMovementState current, PlayerDimensionsState dimensions,
-                                                 double maxUpStep, BedrockCoordinateFrame frame) {
+    private static WorldCollisionBox supportBox(
+            BedrockMovementState current,
+            PlayerDimensionsState dimensions,
+            double maxUpStep,
+            BedrockCoordinateFrame frame) {
         WorldCollisionBox box = current.collisionBox(dimensions);
         double minX = frame.roundX(box.minX() + SUPPORT_INSET);
         double maxX = frame.roundX(box.maxX() - SUPPORT_INSET);
@@ -108,8 +103,8 @@ public final class BedrockSneakEdgeMovement {
             minZ = maxZ = frame.originZ() + (double) ((frame.localZ(box.minZ()) + frame.localZ(box.maxZ())) * 0.5F);
         }
         float stepDown = (float) maxUpStep * STEP_REACH_SCALE;
-        return new WorldCollisionBox(minX, (float) (box.minY() - stepDown), minZ,
-            maxX, (float) (box.maxY() - stepDown), maxZ);
+        return new WorldCollisionBox(
+                minX, (float) (box.minY() - stepDown), minZ, maxX, (float) (box.maxY() - stepDown), maxZ);
     }
 
     private static float approachZero(float value, float step) {

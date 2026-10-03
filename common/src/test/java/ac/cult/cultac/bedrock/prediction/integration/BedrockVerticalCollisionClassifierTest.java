@@ -1,5 +1,7 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
+import static org.junit.Assert.assertEquals;
+
 import ac.cult.cultac.bedrock.prediction.BedrockVerticalCollisionVerdict;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
@@ -7,16 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public final class BedrockVerticalCollisionClassifierTest {
     @Test
     public void openAirCollisionClaimIsManufactured() {
         assertEquals(
                 BedrockVerticalCollisionVerdict.MANUFACTURED_COLLISION,
                 BedrockVerticalCollisionClassifier.classify(
-                        true, collision(false, 0.0D, false, 0.0D, List.of()),
-                        movement(-0.08D, -0.08D), -0.08D, false));
+                        true, collision(false, 0.0D, false, 0.0D, List.of()), movement(-0.08D, -0.08D), -0.08D, false));
     }
 
     @Test
@@ -24,8 +23,7 @@ public final class BedrockVerticalCollisionClassifierTest {
         assertEquals(
                 BedrockVerticalCollisionVerdict.MANUFACTURED_NON_COLLISION,
                 BedrockVerticalCollisionClassifier.classify(
-                        false, collision(false, 0.0D, true, 0.0D, List.of()),
-                        movement(-0.08D, -0.08D), 0.0D, false));
+                        false, collision(false, 0.0D, true, 0.0D, List.of()), movement(-0.08D, -0.08D), 0.0D, false));
     }
 
     @Test
@@ -33,8 +31,7 @@ public final class BedrockVerticalCollisionClassifierTest {
         assertEquals(
                 BedrockVerticalCollisionVerdict.LEGAL,
                 BedrockVerticalCollisionClassifier.classify(
-                        true, collision(true, 0.0D, false, 0.0D, List.of()),
-                        movement(0.42D, 0.42D), 0.0D, false));
+                        true, collision(true, 0.0D, false, 0.0D, List.of()), movement(0.42D, 0.42D), 0.0D, false));
     }
 
     @Test
@@ -43,21 +40,14 @@ public final class BedrockVerticalCollisionClassifierTest {
         CollideAxisData collision = collision(true, 0.0D, true, 0.0D, new ArrayList<>(List.of(unknown)));
         assertEquals(
                 BedrockVerticalCollisionVerdict.LEGAL,
-                BedrockVerticalCollisionClassifier.classify(
-                        true, collision, movement(-0.08D, -0.08D), 0.0D, false));
+                BedrockVerticalCollisionClassifier.classify(true, collision, movement(-0.08D, -0.08D), 0.0D, false));
         assertEquals(
                 BedrockVerticalCollisionVerdict.LEGAL,
-                BedrockVerticalCollisionClassifier.classify(
-                        false, collision, movement(-0.08D, -0.08D), 0.0D, false));
+                BedrockVerticalCollisionClassifier.classify(false, collision, movement(-0.08D, -0.08D), 0.0D, false));
     }
 
     private static CollideAxisData collision(
-            boolean up,
-            double upResult,
-            boolean down,
-            double downResult,
-            List<SimpleCollisionBox> unknown
-    ) {
+            boolean up, double upResult, boolean down, double downResult, List<SimpleCollisionBox> unknown) {
         return new CollideAxisData(
                 new CollideAxisData.CollideResult(false, 0.0D),
                 new CollideAxisData.CollideResult(up, upResult),

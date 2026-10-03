@@ -1,44 +1,49 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
-
-import ac.cult.cultac.checks.impl.badpackets.BadPacketsJ;
-import ac.cult.cultac.events.packets.listeners.CheckManagerListener;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.SetbackPosWithVector;
-import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
-import ac.cult.cultac.bedrock.prediction.BedrockPredictionTrigger;
-import ac.cult.cultac.bedrock.protocol.BedrockMovementCorrection;
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
-import ac.cult.cultac.protocol.value.Vec3d;
-import net.minecraft.world.phys.Vec3;
-import org.junit.Test;
-import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import ac.cult.cultac.bedrock.prediction.BedrockPredictionTrigger;
+import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
+import ac.cult.cultac.bedrock.protocol.BedrockMovementCorrection;
+import ac.cult.cultac.checks.impl.badpackets.BadPacketsJ;
+import ac.cult.cultac.events.packets.listeners.CheckManagerListener;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.utils.data.SetbackPosWithVector;
+import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
+import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
+import net.minecraft.world.phys.Vec3;
+import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
+import org.junit.Test;
+
 public final class BedrockMoveVehicleTransportTest {
     @Test
     public void equineVariantsRequireSaddleAndValidatedMovement() {
         OfflineCultTestBootstrap.installConfig();
-        for (var type : java.util.List.of(EntityTypesCompat.DONKEY, EntityTypesCompat.MULE,
-                EntityTypesCompat.SKELETON_HORSE, EntityTypesCompat.ZOMBIE_HORSE)) {
+        for (var type : java.util.List.of(
+                EntityTypesCompat.DONKEY,
+                EntityTypesCompat.MULE,
+                EntityTypesCompat.SKELETON_HORSE,
+                EntityTypesCompat.ZOMBIE_HORSE)) {
             CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
             try {
                 mountHorse(player, 71, type);
                 var horse = (PacketEntityHorse) player.compensatedEntities.getEntity(71);
-                assertEquals(horse, ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl.controlledVehicle(player));
+                assertEquals(
+                        horse,
+                        ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl.controlledVehicle(player));
                 assertEquals(1.3965F, ac.cult.cultac.utils.nmsutil.BoundingBoxSize.getWidth(player, horse), 0);
                 assertEquals(1.6F, ac.cult.cultac.utils.nmsutil.BoundingBoxSize.getHeight(player, horse), 0);
                 horse.hasSaddle = false;
-                assertNull(ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl.controlledVehicle(player));
+                assertNull(
+                        ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl.controlledVehicle(player));
                 horse.hasSaddle = true;
 
                 var listener = new CheckManagerListener();
@@ -67,7 +72,8 @@ public final class BedrockMoveVehicleTransportTest {
         try {
             mountHorse(player, 71);
             Vec3 position = new Vec3(2.0F, 64.0F, 3.0F);
-            var packet = new ServerboundMoveVehicle(new Vec3d(position.x, position.y, position.z), 0.0F, 0.0F, false, true);
+            var packet =
+                    new ServerboundMoveVehicle(new Vec3d(position.x, position.y, position.z), 0.0F, 0.0F, false, true);
             var fallback = receiveEvent(player, packet);
             new CheckManagerListener().onMoveVehicle(fallback, player, packet);
             assertTrue(fallback.isCancelled());
@@ -75,7 +81,7 @@ public final class BedrockMoveVehicleTransportTest {
 
             // The preserved native listener forwards both ground values unchanged.
             // Authority is single-use; accepting a projection does not rewrite it.
-            for (boolean onGround : new boolean[]{false, true}) {
+            for (boolean onGround : new boolean[] {false, true}) {
                 var projection = new ServerboundMoveVehicle(packet.position(), 0.0F, 0.0F, onGround, true);
                 player.packetStateData.bedrockTranslatedMovement.allowVehicle(71);
                 var accepted = receiveEvent(player, projection);
@@ -177,7 +183,9 @@ public final class BedrockMoveVehicleTransportTest {
             assertEquals(1, teleports.queuedVehicleTeleportCount());
 
             player.lastTransactionReceived.set(sent - 1);
-            assertFalse(teleports.checkVehicleTeleportQueue(71, target.x, target.y, target.z).isTeleport());
+            assertFalse(teleports
+                    .checkVehicleTeleportQueue(71, target.x, target.y, target.z)
+                    .isTeleport());
             teleports.completeBedrockMovementCorrection(new BedrockMovementCorrection(
                     1, 0, 71, 71, 42, target, Vec3.ZERO, 0, 0, false, BedrockCoordinateFrame.IDENTITY, sent));
             assertTrue(teleports.isPendingSetback());
@@ -200,7 +208,10 @@ public final class BedrockMoveVehicleTransportTest {
             new CheckManagerListener().onMoveVehicle(unvalidated, player, packet);
             assertTrue(unvalidated.isCancelled());
 
-            Vec3 position = new Vec3(packet.position().x(), packet.position().y(), packet.position().z());
+            Vec3 position = new Vec3(
+                    packet.position().x(),
+                    packet.position().y(),
+                    packet.position().z());
             player.packetStateData.bedrockTranslatedMovement.allowVehicle(71);
             var validated = receiveEvent(player, packet);
             new CheckManagerListener().onMoveVehicle(validated, player, packet);
@@ -253,13 +264,14 @@ public final class BedrockMoveVehicleTransportTest {
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
             int entityId = 71;
-            player.bedrockState.offerAuthInputFrame(
-                    BedrockAuthInputFrame.builder(player.playerUUID).protocolVersion(944).build());
+            player.bedrockState.offerAuthInputFrame(BedrockAuthInputFrame.builder(player.playerUUID)
+                    .protocolVersion(944)
+                    .build());
             player.compensatedEntities.addEntity(entityId, EntityTypesCompat.HORSE, Vec3.ZERO, 0.0F, 0.0F, 0);
             ((PacketEntityHorse) player.compensatedEntities.getEntity(entityId)).hasSaddle = true;
             // Mount window: the server passenger timeline is installed while getRiding() is not.
             player.compensatedEntities.vehicles.setServerVehicle(
-                    entityId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    entityId, new int[] {player.entityID}, player.lastTransactionSent.get());
 
             // An unmapped vehicle ID must not allow unchecked movement through.
             BedrockAuthInputFrame frame = BedrockAuthInputFrame.builder(player.playerUUID)
@@ -270,8 +282,9 @@ public final class BedrockMoveVehicleTransportTest {
                     .predictedVehicleId(-1L)
                     .rawInputFlags(1L << PlayerAuthInputData.IN_CLIENT_PREDICTED_IN_VEHICLE.ordinal())
                     .build();
-            assertNull(player.checkManager.getSimulationProcessor().processBedrockAuthInputFrame(
-                    frame, BedrockPredictionTrigger.OFFLINE_REPLAY));
+            assertNull(player.checkManager
+                    .getSimulationProcessor()
+                    .processBedrockAuthInputFrame(frame, BedrockPredictionTrigger.OFFLINE_REPLAY));
             assertTrue(player.packetStateData.bedrockTranslatedMovement.isRejected());
 
             ServerboundMoveVehicle packet = vehiclePacket(new Vec3(0.0D, 80.0D, 0.0D));
@@ -288,11 +301,14 @@ public final class BedrockMoveVehicleTransportTest {
     }
 
     private static void mountHorse(CultPlayer player, int entityId, net.minecraft.world.entity.EntityType<?> type) {
-        player.bedrockState.offerAuthInputFrame(BedrockAuthInputFrame.builder(player.playerUUID).protocolVersion(944).build());
+        player.bedrockState.offerAuthInputFrame(BedrockAuthInputFrame.builder(player.playerUUID)
+                .protocolVersion(944)
+                .build());
         player.compensatedEntities.addEntity(entityId, type, Vec3.ZERO, 0.0F, 0.0F, 0);
         ((PacketEntityHorse) player.compensatedEntities.getEntity(entityId)).hasSaddle = true;
-        player.compensatedEntities.vehicles.setServerVehicle(entityId, new int[]{player.entityID}, player.lastTransactionSent.get());
-        player.compensatedEntities.vehicles.applyVehiclePassengers(entityId, new int[]{player.entityID});
+        player.compensatedEntities.vehicles.setServerVehicle(
+                entityId, new int[] {player.entityID}, player.lastTransactionSent.get());
+        player.compensatedEntities.vehicles.applyVehiclePassengers(entityId, new int[] {player.entityID});
     }
 
     @Test
@@ -300,7 +316,8 @@ public final class BedrockMoveVehicleTransportTest {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
-            ServerboundMoveVehicle packet = new ServerboundMoveVehicle(new Vec3d(2.0D, 64.0D, 3.0D), 0.0F, 0.0F, true, true);
+            ServerboundMoveVehicle packet =
+                    new ServerboundMoveVehicle(new Vec3d(2.0D, 64.0D, 3.0D), 0.0F, 0.0F, true, true);
             PacketReceiveEvent<ServerboundMoveVehicle> event = receiveEvent(player, packet);
             BadPacketsJ badPackets = player.checkManager.getCheck(BadPacketsJ.class);
 
@@ -320,26 +337,21 @@ public final class BedrockMoveVehicleTransportTest {
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
             int vehicleId = 51;
-            player.compensatedEntities.addEntity(vehicleId, EntityTypesCompat.HORSE,
-                    Vec3.ZERO, 0.0F, 0.0F, 0);
+            player.compensatedEntities.addEntity(vehicleId, EntityTypesCompat.HORSE, Vec3.ZERO, 0.0F, 0.0F, 0);
             ((PacketEntityHorse) player.compensatedEntities.getEntity(vehicleId)).hasSaddle = true;
             player.compensatedEntities.vehicles.setServerVehicle(
-                    vehicleId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    vehicleId, new int[] {player.entityID}, player.lastTransactionSent.get());
             player.getSetbackTeleportUtil().hasFullyLoaded = true;
             player.getSetbackTeleportUtil().hasFullyJoined = true;
             assertNull(player.compensatedEntities.getSelf().getRiding());
             assertNull(ac.cult.cultac.bedrock.prediction.integration.BedrockVehicleControl.controlledVehicle(player));
-            ServerboundMoveVehicle packet = vehiclePacket(
-                    new Vec3(2.0D, 80.0D, 3.0D));
+            ServerboundMoveVehicle packet = vehiclePacket(new Vec3(2.0D, 80.0D, 3.0D));
             PacketReceiveEvent event = receiveEvent(player, packet);
 
             new CheckManagerListener().onMoveVehicle(event, player, packet);
 
             assertTrue(event.isCancelled());
-            assertEquals(
-                    0.0D,
-                    player.checkManager.getCheck(BadPacketsJ.class).getViolations(),
-                    0.0D);
+            assertEquals(0.0D, player.checkManager.getCheck(BadPacketsJ.class).getViolations(), 0.0D);
             assertNull(player.checkManager.getSimulationProcessor().getLastPrediction());
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
@@ -353,7 +365,7 @@ public final class BedrockMoveVehicleTransportTest {
         try {
             int vehicleId = 51;
             player.compensatedEntities.vehicles.setServerVehicle(
-                    vehicleId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    vehicleId, new int[] {player.entityID}, player.lastTransactionSent.get());
             var teleports = player.getSetbackTeleportUtil();
             teleports.hasFullyLoaded = true;
             teleports.hasFullyJoined = true;
@@ -382,10 +394,9 @@ public final class BedrockMoveVehicleTransportTest {
         try {
             int vehicleId = 53;
             player.compensatedEntities.vehicles.setServerVehicle(
-                    vehicleId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    vehicleId, new int[] {player.entityID}, player.lastTransactionSent.get());
             player.packetStateData.bedrockTranslatedMovement.reject();
-            ServerboundMoveVehicle packet = vehiclePacket(
-                    new Vec3(2.0D, 64.0D, 3.0D));
+            ServerboundMoveVehicle packet = vehiclePacket(new Vec3(2.0D, 64.0D, 3.0D));
             PacketReceiveEvent event = receiveEvent(player, packet);
 
             new CheckManagerListener().onMoveVehicle(event, player, packet);
@@ -405,7 +416,7 @@ public final class BedrockMoveVehicleTransportTest {
         try {
             int vehicleId = 57;
             player.compensatedEntities.vehicles.setServerVehicle(
-                    vehicleId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    vehicleId, new int[] {player.entityID}, player.lastTransactionSent.get());
             player.getSetbackTeleportUtil().lastKnownGoodPosition =
                     new SetbackPosWithVector(new Vec3(8.0D, 72.0D, -4.0D), Vec3.ZERO, 0);
             player.getSetbackTeleportUtil().hasFullyLoaded = true;
@@ -413,8 +424,7 @@ public final class BedrockMoveVehicleTransportTest {
             player.getSetbackTeleportUtil().executeNonSimulatingSetback();
             assertTrue(player.getSetbackTeleportUtil().isPendingSetback());
 
-            ServerboundMoveVehicle packet = vehiclePacket(
-                    new Vec3(9.0D, 72.0D, -4.0D));
+            ServerboundMoveVehicle packet = vehiclePacket(new Vec3(9.0D, 72.0D, -4.0D));
             PacketReceiveEvent event = receiveEvent(player, packet);
             new CheckManagerListener().onMoveVehicle(event, player, packet);
 
@@ -432,8 +442,8 @@ public final class BedrockMoveVehicleTransportTest {
         try {
             int vehicleId = 61;
             Vec3 position = new Vec3(4.0D, 68.0D, 6.0D);
-            player.getSetbackTeleportUtil().addVehicleTeleport(
-                    vehicleId, player.lastTransactionReceived.get(), position);
+            player.getSetbackTeleportUtil()
+                    .addVehicleTeleport(vehicleId, player.lastTransactionReceived.get(), position);
             ServerboundMoveVehicle packet = vehiclePacket(position);
             PacketReceiveEvent event = receiveEvent(player, packet);
 
@@ -450,9 +460,7 @@ public final class BedrockMoveVehicleTransportTest {
     }
 
     private static PacketReceiveEvent<ServerboundMoveVehicle> receiveEvent(
-            CultPlayer player,
-            ServerboundMoveVehicle packet
-    ) {
+            CultPlayer player, ServerboundMoveVehicle packet) {
         return RecordReceiveTestEvents.vehicle(player, packet);
     }
 

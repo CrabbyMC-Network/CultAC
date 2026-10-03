@@ -10,8 +10,7 @@ public enum BedrockBoundingBoxMode {
     HORIZONTAL;
 
     public static BedrockBoundingBoxMode initial(BedrockInputFrame frame) {
-        if (BedrockPoseInputData.committedNonGlidingLowPose(frame)
-                || glidingStarts(frame)) {
+        if (BedrockPoseInputData.committedNonGlidingLowPose(frame) || glidingStarts(frame)) {
             return HORIZONTAL;
         }
         return frame.sneaking() ? SNEAKING : DEFAULT;
@@ -27,12 +26,12 @@ public enum BedrockBoundingBoxMode {
 
     private static boolean glidingStarts(BedrockInputFrame frame) {
         return BedrockPoseInputData.has(frame, BedrockPoseInputData.GLIDING)
-            || BedrockPoseInputData.has(frame, BedrockPoseInputData.START_GLIDING)
-            || BedrockPoseInputData.has(frame, BedrockPoseInputData.START_GLIDING_ACTION);
+                || BedrockPoseInputData.has(frame, BedrockPoseInputData.START_GLIDING)
+                || BedrockPoseInputData.has(frame, BedrockPoseInputData.START_GLIDING_ACTION);
     }
 
     private static boolean glidingStops(BedrockInputFrame frame) {
         return BedrockPoseInputData.has(frame, BedrockPoseInputData.STOP_GLIDING)
-            || BedrockPoseInputData.has(frame, BedrockPoseInputData.STOP_GLIDING_ACTION);
+                || BedrockPoseInputData.has(frame, BedrockPoseInputData.STOP_GLIDING_ACTION);
     }
 }

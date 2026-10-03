@@ -6,7 +6,6 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.data.LastInstance;
-
 import java.util.ArrayList;
 import java.util.List;
 

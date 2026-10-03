@@ -1,30 +1,29 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
-import ac.cult.cultac.protocol.ConnectionPhase;
-import ac.cult.cultac.protocol.packet.ClientboundPackets;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
+
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsG;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsM;
 import ac.cult.cultac.events.packets.listeners.PacketPlayerRespawn;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
-import io.netty.channel.embedded.EmbeddedChannel;
-import java.lang.reflect.Field;
-import java.util.UUID;
 import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.packet.ClientboundPackets;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundLogin;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundRespawn;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHealth;
-import org.junit.Test;
-import ac.cult.cultac.protocol.value.PlayerSpawnInfo;
 import ac.cult.cultac.protocol.value.GameMode;
-import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.value.PlayerSpawnInfo;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.lang.reflect.Field;
+import java.util.UUID;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public final class PacketPlayerRespawnLifecycleTest {
     @Test
@@ -42,7 +41,8 @@ public final class PacketPlayerRespawnLifecycleTest {
             assertFalse(booleanField(badPacketsM, "menu"));
 
             ClientboundLogin visibleDeathScreen = loginPacket(true);
-            listener.onLogin(sendEvent(player, ClientboundPackets.LOGIN, visibleDeathScreen), player, visibleDeathScreen);
+            listener.onLogin(
+                    sendEvent(player, ClientboundPackets.LOGIN, visibleDeathScreen), player, visibleDeathScreen);
             assertTrue(player.packetStateData.showsDeathScreen);
             badPacketsM.onDeath();
             assertTrue(booleanField(badPacketsM, "menu"));
@@ -103,7 +103,8 @@ public final class PacketPlayerRespawnLifecycleTest {
 
     private static ClientboundRespawn respawnPacket() {
         var registry = OfflineCultTestBootstrap.vanillaRegistries().lookupOrThrow(Registries.DIMENSION_TYPE);
-        int id = registry.getId(registry.getOrThrow(BuiltinDimensionTypes.OVERWORLD).value());
+        int id = registry.getId(
+                registry.getOrThrow(BuiltinDimensionTypes.OVERWORLD).value());
         return new ClientboundRespawn(new PlayerSpawnInfo(id, "minecraft:overworld", GameMode.SURVIVAL));
     }
 
@@ -111,7 +112,8 @@ public final class PacketPlayerRespawnLifecycleTest {
         return new ClientboundLogin(1, showDeathScreen, respawnPacket().spawnInfo());
     }
 
-    private static <R extends ac.cult.cultac.protocol.packet.clientbound.ClientboundPacket> PacketSendEvent<R> sendEvent(CultPlayer player, PacketType<R> type, R packet) {
+    private static <R extends ac.cult.cultac.protocol.packet.clientbound.ClientboundPacket>
+            PacketSendEvent<R> sendEvent(CultPlayer player, PacketType<R> type, R packet) {
         return new PacketSendEvent<>(player.user, ConnectionPhase.PLAY, type, packet, false);
     }
 
@@ -123,7 +125,8 @@ public final class PacketPlayerRespawnLifecycleTest {
 
     private static CultPlayer offlineJavaPlayer() {
         UUID playerId = UUID.fromString("9c5e440b-265d-435f-98f1-1f539659c002");
-        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Respawn_Test"), new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(
+                new User.Profile(playerId, ".Respawn_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 }

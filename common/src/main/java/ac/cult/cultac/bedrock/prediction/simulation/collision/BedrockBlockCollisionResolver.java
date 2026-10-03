@@ -1,11 +1,11 @@
 package ac.cult.cultac.bedrock.prediction.simulation.collision;
 
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollision;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,18 +15,16 @@ public final class BedrockBlockCollisionResolver {
     private static final double CONTACT_EPSILON = BedrockCollisionSweep.CONTACT_EPSILON;
     private static final double MAX_FLOAT_CONTACT_EPSILON = 1.0E-3D;
 
-    private BedrockBlockCollisionResolver() {
-    }
+    private BedrockBlockCollisionResolver() {}
 
     public static Result fromMove(
-        Vec3d requestedDelta,
-        Vec3d velocity,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions,
-        BedrockCollisionSweep.MoveResult baseMove,
-        BedrockCollisionSweep.MoveResult selectedMove,
-        boolean steppedUp
-    ) {
+            Vec3d requestedDelta,
+            Vec3d velocity,
+            List<BlockCollision> obstacles,
+            PlayerDimensionsState playerDimensions,
+            BedrockCollisionSweep.MoveResult baseMove,
+            BedrockCollisionSweep.MoveResult selectedMove,
+            boolean steppedUp) {
         Objects.requireNonNull(playerDimensions, "playerDimensions");
         boolean xCollision = selectedMove.xCollision();
         boolean yCollision = selectedMove.yCollision();
@@ -49,38 +47,35 @@ public final class BedrockBlockCollisionResolver {
 
         boolean horizontalCollisionFlag = selectedMove.horizontalCollision();
         boolean horizontalBlockContact = horizontalCollisionFlag
-            || hasHorizontalBlockContact(selectedMove.position(), obstacles, playerDimensions, selectedMove.coordinateFrame())
-            || steppedUp && hasHorizontalBlockContact(baseMove.position(), obstacles, playerDimensions, baseMove.coordinateFrame());
+                || hasHorizontalBlockContact(
+                        selectedMove.position(), obstacles, playerDimensions, selectedMove.coordinateFrame())
+                || steppedUp
+                        && hasHorizontalBlockContact(
+                                baseMove.position(), obstacles, playerDimensions, baseMove.coordinateFrame());
         return new Result(
-            selectedMove.position(),
-            nextVelocity,
-            xCollision,
-            zCollision,
-            selectedMove.horizontalCollision(),
-            horizontalCollisionFlag,
-            horizontalBlockContact,
-            verticalCollision,
-            steppedUp,
-            onGround
-        );
+                selectedMove.position(),
+                nextVelocity,
+                xCollision,
+                zCollision,
+                selectedMove.horizontalCollision(),
+                horizontalCollisionFlag,
+                horizontalBlockContact,
+                verticalCollision,
+                steppedUp,
+                onGround);
     }
 
-    public static boolean hasFloorContact(
-        Vec3d feet,
-        BlockCollisionWorld world,
-        double radius
-    ) {
+    public static boolean hasFloorContact(Vec3d feet, BlockCollisionWorld world, double radius) {
         if (world.isEmpty()) {
             return false;
         }
         WorldCollisionBox footprint = new WorldCollisionBox(
-            feet.x() - radius,
-            feet.y(),
-            feet.z() - radius,
-            feet.x() + radius,
-            feet.y() + EPSILON,
-            feet.z() + radius
-        );
+                feet.x() - radius,
+                feet.y(),
+                feet.z() - radius,
+                feet.x() + radius,
+                feet.y() + EPSILON,
+                feet.z() + radius);
         for (BlockCollision obstacle : BedrockCollisionSweep.collisionObstacles(world)) {
             if (Math.abs(obstacle.box().maxY() - feet.y()) <= EPSILON && footprint.overlapsXz(obstacle.box())) {
                 return true;
@@ -90,37 +85,29 @@ public final class BedrockBlockCollisionResolver {
     }
 
     public static boolean hasHorizontalBlockContact(
-        Vec3d feet,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d feet, List<BlockCollision> obstacles, PlayerDimensionsState playerDimensions) {
         return hasHorizontalBlockContact(feet, obstacles, playerDimensions, BedrockCoordinateFrame.IDENTITY);
     }
 
     public static boolean hasHorizontalBlockContact(
-        Vec3d feet,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions,
-        BedrockCoordinateFrame frame
-    ) {
+            Vec3d feet,
+            List<BlockCollision> obstacles,
+            PlayerDimensionsState playerDimensions,
+            BedrockCoordinateFrame frame) {
         HorizontalContactAxes axes = horizontalContactAxes(feet, obstacles, playerDimensions, frame);
         return axes.xContact() || axes.zContact();
     }
 
     public static HorizontalContactAxes horizontalContactAxes(
-        Vec3d feet,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d feet, List<BlockCollision> obstacles, PlayerDimensionsState playerDimensions) {
         return horizontalContactAxes(feet, obstacles, playerDimensions, BedrockCoordinateFrame.IDENTITY);
     }
 
     public static HorizontalContactAxes horizontalContactAxes(
-        Vec3d feet,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions,
-        BedrockCoordinateFrame frame
-    ) {
+            Vec3d feet,
+            List<BlockCollision> obstacles,
+            PlayerDimensionsState playerDimensions,
+            BedrockCoordinateFrame frame) {
         double epsilon = horizontalContactEpsilon(feet, frame);
         WorldCollisionBox actorBox = BedrockCollisionSweep.playerBox(feet, playerDimensions, frame);
         boolean xContact = false;
@@ -134,13 +121,13 @@ public final class BedrockBlockCollisionResolver {
                 return new HorizontalContactAxes(true, true);
             }
             if (overlapsZ(actorBox, box)
-                && (Math.abs(actorBox.maxX() - box.minX()) <= epsilon
-                || Math.abs(actorBox.minX() - box.maxX()) <= epsilon)) {
+                    && (Math.abs(actorBox.maxX() - box.minX()) <= epsilon
+                            || Math.abs(actorBox.minX() - box.maxX()) <= epsilon)) {
                 xContact = true;
             }
             if (overlapsX(actorBox, box)
-                && (Math.abs(actorBox.maxZ() - box.minZ()) <= epsilon
-                || Math.abs(actorBox.minZ() - box.maxZ()) <= epsilon)) {
+                    && (Math.abs(actorBox.maxZ() - box.minZ()) <= epsilon
+                            || Math.abs(actorBox.minZ() - box.maxZ()) <= epsilon)) {
                 zContact = true;
             }
         }
@@ -148,21 +135,17 @@ public final class BedrockBlockCollisionResolver {
     }
 
     public static HorizontalContactAxes movementSideHorizontalContactAxes(
-        Vec3d feet,
-        Vec3d movement,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions
-    ) {
-        return movementSideHorizontalContactAxes(feet, movement, obstacles, playerDimensions, BedrockCoordinateFrame.IDENTITY);
+            Vec3d feet, Vec3d movement, List<BlockCollision> obstacles, PlayerDimensionsState playerDimensions) {
+        return movementSideHorizontalContactAxes(
+                feet, movement, obstacles, playerDimensions, BedrockCoordinateFrame.IDENTITY);
     }
 
     public static HorizontalContactAxes movementSideHorizontalContactAxes(
-        Vec3d feet,
-        Vec3d movement,
-        List<BlockCollision> obstacles,
-        PlayerDimensionsState playerDimensions,
-        BedrockCoordinateFrame frame
-    ) {
+            Vec3d feet,
+            Vec3d movement,
+            List<BlockCollision> obstacles,
+            PlayerDimensionsState playerDimensions,
+            BedrockCoordinateFrame frame) {
         double epsilon = horizontalContactEpsilon(feet, frame);
         WorldCollisionBox actorBox = BedrockCollisionSweep.playerBox(feet, playerDimensions, frame);
         boolean positiveX = movement.x() > EPSILON;
@@ -177,13 +160,13 @@ public final class BedrockBlockCollisionResolver {
                 continue;
             }
             if (overlapsZ(actorBox, box)
-                && ((positiveX && Math.abs(actorBox.maxX() - box.minX()) <= epsilon)
-                || (negativeX && Math.abs(actorBox.minX() - box.maxX()) <= epsilon))) {
+                    && ((positiveX && Math.abs(actorBox.maxX() - box.minX()) <= epsilon)
+                            || (negativeX && Math.abs(actorBox.minX() - box.maxX()) <= epsilon))) {
                 xContact = true;
             }
             if (overlapsX(actorBox, box)
-                && ((positiveZ && Math.abs(actorBox.maxZ() - box.minZ()) <= epsilon)
-                || (negativeZ && Math.abs(actorBox.minZ() - box.maxZ()) <= epsilon))) {
+                    && ((positiveZ && Math.abs(actorBox.maxZ() - box.minZ()) <= epsilon)
+                            || (negativeZ && Math.abs(actorBox.minZ() - box.maxZ()) <= epsilon))) {
                 zContact = true;
             }
         }
@@ -213,19 +196,16 @@ public final class BedrockBlockCollisionResolver {
     }
 
     public record Result(
-        Vec3d position,
-        Vec3d velocity,
-        boolean xCollision,
-        boolean zCollision,
-        boolean horizontalCollision,
-        boolean horizontalCollisionFlag,
-        boolean horizontalBlockContact,
-        boolean verticalCollision,
-        boolean steppedUp,
-        boolean onGround
-    ) {
-    }
+            Vec3d position,
+            Vec3d velocity,
+            boolean xCollision,
+            boolean zCollision,
+            boolean horizontalCollision,
+            boolean horizontalCollisionFlag,
+            boolean horizontalBlockContact,
+            boolean verticalCollision,
+            boolean steppedUp,
+            boolean onGround) {}
 
-    public record HorizontalContactAxes(boolean xContact, boolean zContact) {
-    }
+    public record HorizontalContactAxes(boolean xContact, boolean zContact) {}
 }

@@ -1,15 +1,17 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import static org.junit.Assert.*;
+
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import org.cloudburstmc.protocol.bedrock.packet.MobEffectPacket;
 import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.*;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class GeyserVehicleAttributesTest {
-    @Test public void horseBaseSurvivesSlownessAndItsRefresh() {
+    @Test
+    public void horseBaseSurvivesSlownessAndItsRefresh() {
         var writer = new GeyserVehicleAttributes();
         written(writer, writer.source(4, attribute(0.2961814)));
         var slow = written(writer, writer.beforeEffect(effect(4, 2, 0, MobEffectPacket.Event.ADD)));
@@ -24,11 +26,16 @@ public class GeyserVehicleAttributesTest {
         written(writer, writer.source(4, attribute(0.2961814, modifier("minecraft:effect.slowness", -0.15F))));
         var refreshed = written(writer, writer.beforeEffect(effect(4, 2, 0, MobEffectPacket.Event.ADD)));
         assertEquals(slow.getAttributes(), refreshed.getAttributes());
-        var nativeState = GeyserMovementAttributeCodec.capture(refreshed.getAttributes().getFirst());
-        assertEquals(nativeState.current(), nativeState.recalculate(nativeState.modifiers()).current(), 0);
+        var nativeState =
+                GeyserMovementAttributeCodec.capture(refreshed.getAttributes().getFirst());
+        assertEquals(
+                nativeState.current(),
+                nativeState.recalculate(nativeState.modifiers()).current(),
+                0);
     }
 
-    @Test public void combinedEffectsAndRemovalDoNotDoubleApplyOrLoseTheBase() {
+    @Test
+    public void combinedEffectsAndRemovalDoNotDoubleApplyOrLoseTheBase() {
         var writer = new GeyserVehicleAttributes();
         written(writer, writer.source(4, attribute(0.2961814)));
         written(writer, writer.beforeEffect(effect(4, 1, 1, MobEffectPacket.Event.ADD)));
@@ -42,18 +49,25 @@ public class GeyserVehicleAttributesTest {
         assertTrue(cleared.getAttributes().getFirst().getModifiers().isEmpty());
     }
 
-    @Test public void pluginModifiersRemainInstalledAcrossEffectUpdates() {
+    @Test
+    public void pluginModifiersRemainInstalledAcrossEffectUpdates() {
         var writer = new GeyserVehicleAttributes();
-        written(writer, writer.source(4, attribute(0.2,
-                new AttributeModifier(Key.key("test:add"), 0.1, ModifierOperation.ADD),
-                new AttributeModifier(Key.key("test:base"), 0.5, ModifierOperation.ADD_MULTIPLIED_BASE),
-                modifier("test:total", 0.2))));
+        written(
+                writer,
+                writer.source(
+                        4,
+                        attribute(
+                                0.2,
+                                new AttributeModifier(Key.key("test:add"), 0.1, ModifierOperation.ADD),
+                                new AttributeModifier(Key.key("test:base"), 0.5, ModifierOperation.ADD_MULTIPLIED_BASE),
+                                modifier("test:total", 0.2))));
         var packet = written(writer, writer.beforeEffect(effect(4, 2, 0, MobEffectPacket.Event.MODIFY)));
         assertEquals(0.459F, packet.getAttributes().getFirst().getValue(), 1e-7F);
         assertEquals(4, packet.getAttributes().getFirst().getModifiers().size());
     }
 
-    @Test public void futureSourcePacketsCannotChangeAnEarlierEffectBoundary() {
+    @Test
+    public void futureSourcePacketsCannotChangeAnEarlierEffectBoundary() {
         var writer = new GeyserVehicleAttributes();
         written(writer, writer.source(4, attribute(0.3)));
         var later = writer.source(4, attribute(0.6));
@@ -64,14 +78,20 @@ public class GeyserVehicleAttributesTest {
         assertEquals(0.51F, after.getAttributes().getFirst().getValue(), 1e-7F);
     }
 
-    @Test public void actorsAreIndependentAndDespawnDiscardsTranslationState() {
+    @Test
+    public void actorsAreIndependentAndDespawnDiscardsTranslationState() {
         var writer = new GeyserVehicleAttributes();
         written(writer, writer.source(4, attribute(0.3)));
         written(writer, writer.source(5, attribute(0.6)));
         writer.remove(4);
         assertNull(writer.beforeEffect(effect(4, 2, 0, MobEffectPacket.Event.ADD)));
-        assertEquals(0.51F, writer.beforeEffect(effect(5, 2, 0, MobEffectPacket.Event.ADD))
-                .getAttributes().getFirst().getValue(), 1e-7F);
+        assertEquals(
+                0.51F,
+                writer.beforeEffect(effect(5, 2, 0, MobEffectPacket.Event.ADD))
+                        .getAttributes()
+                        .getFirst()
+                        .getValue(),
+                1e-7F);
         writer.clear();
         assertNull(writer.beforeEffect(effect(5, 2, 0, MobEffectPacket.Event.ADD)));
     }
@@ -81,12 +101,15 @@ public class GeyserVehicleAttributesTest {
         writer.written(packet);
         return packet;
     }
+
     private static Attribute attribute(double base, AttributeModifier... modifiers) {
         return new Attribute(AttributeType.Builtin.MOVEMENT_SPEED, base, List.of(modifiers));
     }
+
     private static AttributeModifier modifier(String id, double amount) {
         return new AttributeModifier(Key.key(id), amount, ModifierOperation.ADD_MULTIPLIED_TOTAL);
     }
+
     private static MobEffectPacket effect(long actor, int id, int amplifier, MobEffectPacket.Event event) {
         var packet = new MobEffectPacket();
         packet.setRuntimeEntityId(actor);

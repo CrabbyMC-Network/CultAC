@@ -33,8 +33,7 @@ public final class BedrockLoadingScreenState {
             active = true;
             return true;
         }
-        if (type == ServerboundLoadingScreenPacketType.END_LOADING_SCREEN
-                && active && Objects.equals(activeId, id)) {
+        if (type == ServerboundLoadingScreenPacketType.END_LOADING_SCREEN && active && Objects.equals(activeId, id)) {
             active = false;
             activeId = null;
             return true;
@@ -42,5 +41,7 @@ public final class BedrockLoadingScreenState {
         return false;
     }
 
-    public boolean active() { return active; }
+    public boolean active() {
+        return active;
+    }
 }

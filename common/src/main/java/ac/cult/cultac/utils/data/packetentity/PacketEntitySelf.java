@@ -1,17 +1,16 @@
 package ac.cult.cultac.utils.data.packetentity;
 
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.checks.impl.sprint.SprintD;
+import ac.cult.cultac.network.packet.EntityPositionPath;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import ac.cult.cultac.network.packet.EntityPositionPath;
+import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
 
 public class PacketEntitySelf extends PacketEntity {
     public double playerSpeed = 0.1f;
@@ -23,6 +22,7 @@ public class PacketEntitySelf extends PacketEntity {
     public double submergedMiningSpeed = 0.2D;
 
     private final CultPlayer player;
+
     @Getter
     @Setter
     int opLevel;
@@ -66,15 +66,21 @@ public class PacketEntitySelf extends PacketEntity {
     }
 
     @Override
-    public void onPositionPath(EntityPositionPath path, boolean hasPosition, @Nullable Float yaw,
-                               @Nullable Float pitch, CultPlayer player, boolean bundled) {
+    public void onPositionPath(
+            EntityPositionPath path,
+            boolean hasPosition,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player,
+            boolean bundled) {
         // please don't send this type of packet to the player self, it's not possible in vanilla
     }
 
     @Override
     public void addPotionEffect(PotionEffectType effect, int amplifier) {
         // Blindness does not cancel sprinting that began before the effect.
-        if (effect == PotionEffectType.BLINDNESS && (potionsMap == null || !potionsMap.containsKey(PotionEffectType.BLINDNESS))) {
+        if (effect == PotionEffectType.BLINDNESS
+                && (potionsMap == null || !potionsMap.containsKey(PotionEffectType.BLINDNESS))) {
             SprintD check = player.checkManager.getCheck(SprintD.class);
             if (check != null) {
                 check.startedSprintingBeforeBlind = player.isSprinting;
@@ -92,35 +98,59 @@ public class PacketEntitySelf extends PacketEntity {
     }
 
     @Override
-    public void onFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onFirstTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         // Player ignores this
     }
 
     @Override
-    public void onFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                   @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onFirstTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         // Player ignores this
     }
 
     @Override
-    public void onBundleTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onBundleTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         // Player ignores this
     }
 
     @Override
-    public void onBundleTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                    @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onBundleTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         // Player ignores this
     }
 
     @Override
-    public void onBundleFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onBundleFirstTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         // Player ignores this
     }
 
     @Override
-    public void onBundleFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                         @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onBundleFirstTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         // Player ignores this
     }
 
@@ -130,9 +160,8 @@ public class PacketEntitySelf extends PacketEntity {
     }
 
     @Override
-    public void onBundledPositionSyncTransaction(double x, double y, double z,
-                                                 @Nullable Float yaw, @Nullable Float pitch,
-                                                 CultPlayer player) {
+    public void onBundledPositionSyncTransaction(
+            double x, double y, double z, @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
         // Player ignores this
     }
 

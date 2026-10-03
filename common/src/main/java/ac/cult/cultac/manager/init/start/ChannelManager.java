@@ -2,12 +2,11 @@ package ac.cult.cultac.manager.init.start;
 
 import ac.cult.cultac.CultAPI;
 import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Set;
 
 public class ChannelManager implements StartableInitable, PluginMessageListener {
 
@@ -16,7 +15,9 @@ public class ChannelManager implements StartableInitable, PluginMessageListener 
 
     @Override
     public void start() {
-        for (String channel : CHANNELS) { registerChannel(channel); }
+        for (String channel : CHANNELS) {
+            registerChannel(channel);
+        }
     }
 
     private void registerChannel(String channelName) {
@@ -26,9 +27,6 @@ public class ChannelManager implements StartableInitable, PluginMessageListener 
     }
 
     @Override
-    public void onPluginMessageReceived(@NotNull String channelName, @NotNull Player bukkitPlayer, @NotNull byte[] data) {
-
-    }
-
-
+    public void onPluginMessageReceived(
+            @NotNull String channelName, @NotNull Player bukkitPlayer, @NotNull byte[] data) {}
 }

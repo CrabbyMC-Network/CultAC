@@ -6,14 +6,10 @@ import ac.cult.cultac.player.CultPlayer;
 import org.bukkit.GameMode;
 
 final class BedrockMovementModifierFactory {
-    private BedrockMovementModifierFactory() {
-    }
+    private BedrockMovementModifierFactory() {}
 
     static MovementModifierState create(
-            BedrockPlayerContext playerContext,
-            CultPlayer player,
-            SimulationContext context
-    ) {
+            BedrockPlayerContext playerContext, CultPlayer player, SimulationContext context) {
         boolean mayFly = trustedMayFlyAbility(player);
         return new MovementModifierState(
                 playerContext.wearingElytra(),
@@ -22,14 +18,11 @@ final class BedrockMovementModifierFactory {
                 player != null && player.gamemode == GameMode.CREATIVE,
                 trustedFlySpeed(player),
                 false,
-                playerContext.riptideLevel() > 0
-                        && context != null
-                        && context.getVehicle() == null,
+                playerContext.riptideLevel() > 0 && context != null && context.getVehicle() == null,
                 player != null && player.compensatedWorld != null && player.compensatedWorld.isRaining,
                 false,
                 0.35D,
-                0L
-        );
+                0L);
     }
 
     private static boolean trustedMayFlyAbility(CultPlayer player) {

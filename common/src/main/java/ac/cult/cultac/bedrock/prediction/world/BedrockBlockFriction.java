@@ -10,8 +10,7 @@ public final class BedrockBlockFriction {
     public static final double SLIME = 0.8F;
     public static final double HONEY = 0.8F;
 
-    private BedrockBlockFriction() {
-    }
+    private BedrockBlockFriction() {}
 
     public static double from(PlacedBlockCollision block) {
         Objects.requireNonNull(block, "block");
@@ -47,12 +46,11 @@ public final class BedrockBlockFriction {
         } else if (value instanceof String text) {
             friction = Double.parseDouble(text);
         } else {
-            throw new IllegalArgumentException(BedrockBlockMetadata.BLOCK_FRICTION
-                + " must be a number or numeric string");
+            throw new IllegalArgumentException(
+                    BedrockBlockMetadata.BLOCK_FRICTION + " must be a number or numeric string");
         }
         if (!Double.isFinite(friction) || friction <= 0.0D) {
-            throw new IllegalArgumentException(BedrockBlockMetadata.BLOCK_FRICTION
-                + " must be finite and positive");
+            throw new IllegalArgumentException(BedrockBlockMetadata.BLOCK_FRICTION + " must be finite and positive");
         }
         return friction;
     }
@@ -63,18 +61,18 @@ public final class BedrockBlockFriction {
 
     private static boolean isIce(String identifier) {
         return "minecraft:ice".equals(identifier)
-            || "ice".equals(identifier)
-            || "minecraft:packed_ice".equals(identifier)
-            || "packed_ice".equals(identifier)
-            || "minecraft:frosted_ice".equals(identifier)
-            || "frosted_ice".equals(identifier);
+                || "ice".equals(identifier)
+                || "minecraft:packed_ice".equals(identifier)
+                || "packed_ice".equals(identifier)
+                || "minecraft:frosted_ice".equals(identifier)
+                || "frosted_ice".equals(identifier);
     }
 
     private static boolean isSlime(String identifier) {
         return "minecraft:slime_block".equals(identifier)
-            || "slime_block".equals(identifier)
-            || "minecraft:slime".equals(identifier)
-            || "slime".equals(identifier);
+                || "slime_block".equals(identifier)
+                || "minecraft:slime".equals(identifier)
+                || "slime".equals(identifier);
     }
 
     private static boolean isHoney(String identifier) {

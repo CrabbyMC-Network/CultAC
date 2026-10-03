@@ -5,8 +5,8 @@ import ac.cult.cultac.utils.anticheat.LogUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 
 public class GeyserBedrockBridgeInit implements StartableInitable, Listener {
     @Override
@@ -30,7 +30,8 @@ public class GeyserBedrockBridgeInit implements StartableInitable, Listener {
             try {
                 GeyserBedrockBridgeRuntime.stop();
             } catch (LinkageError error) {
-                LogUtil.warn("Unable to stop the Geyser Bedrock bridge: " + error.getClass().getSimpleName());
+                LogUtil.warn("Unable to stop the Geyser Bedrock bridge: "
+                        + error.getClass().getSimpleName());
             }
         }
     }
@@ -39,7 +40,8 @@ public class GeyserBedrockBridgeInit implements StartableInitable, Listener {
         try {
             GeyserBedrockBridgeRuntime.start();
         } catch (LinkageError error) {
-            LogUtil.warn("Unable to start the Geyser Bedrock movement bridge: " + error.getClass().getSimpleName());
+            LogUtil.warn("Unable to start the Geyser Bedrock movement bridge: "
+                    + error.getClass().getSimpleName());
         }
     }
 }

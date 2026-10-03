@@ -1,6 +1,5 @@
 package ac.cult.cultac.checks.impl.crash;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -8,8 +7,12 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundCommandSuggestion;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "CrashH", stableKey = "cult.crash.invalid_tab_complete", description = "Sent a tab complete request with invalid or excessive length")
+@CheckData(
+        name = "CrashH",
+        stableKey = "cult.crash.invalid_tab_complete",
+        description = "Sent a tab complete request with invalid or excessive length")
 public class CrashH extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("[(length)|(invalid)] length={sint}");
 
@@ -18,7 +21,10 @@ public class CrashH extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCommandSuggestion(PacketReceiveEvent<ServerboundCommandSuggestion> event, CultPlayer player, ServerboundCommandSuggestion packet) {
+    public void onCommandSuggestion(
+            PacketReceiveEvent<ServerboundCommandSuggestion> event,
+            CultPlayer player,
+            ServerboundCommandSuggestion packet) {
         String text = packet.command();
         final int length = text.length();
         // general length limit

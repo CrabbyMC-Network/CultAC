@@ -1,19 +1,18 @@
 package ac.cult.cultac.manager.player.features;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.config.ConfigManager;
-import ac.grim.grimac.api.feature.FeatureManager;
-import ac.grim.grimac.api.feature.FeatureState;
 import ac.cult.cultac.manager.player.features.types.*;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.common.ConfigReloadObserver;
+import ac.grim.grimac.api.config.ConfigManager;
+import ac.grim.grimac.api.feature.FeatureManager;
+import ac.grim.grimac.api.feature.FeatureState;
 import com.google.common.collect.ImmutableSet;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nullable;
 
 public class FeatureManagerImpl implements FeatureManager, ConfigReloadObserver {
 
@@ -89,5 +88,4 @@ public class FeatureManagerImpl implements FeatureManager, ConfigReloadObserver 
             feature.setState(player, config, state);
         }
     }
-
 }

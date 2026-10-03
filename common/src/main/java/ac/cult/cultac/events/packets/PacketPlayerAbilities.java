@@ -4,9 +4,9 @@ import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerAbilities;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
 
@@ -22,27 +22,37 @@ public class PacketPlayerAbilities extends CultProcessor implements CheckListene
     boolean lastSentPlayerCanFly = false;
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketReceiveEvent<ServerboundPlayerAbilities> event, CultPlayer player, ServerboundPlayerAbilities packet) {
+    public void onPlayerAbilities(
+            PacketReceiveEvent<ServerboundPlayerAbilities> event,
+            CultPlayer player,
+            ServerboundPlayerAbilities packet) {
         if (player.isBedrockMovement()) return;
         player.isFlying = packet.flying() && player.canFly;
     }
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketSendEvent<ClientboundPlayerAbilities> event, CultPlayer player, ClientboundPlayerAbilities packet) {
+    public void onPlayerAbilities(
+            PacketSendEvent<ClientboundPlayerAbilities> event, CultPlayer player, ClientboundPlayerAbilities packet) {
         player.sendTransaction();
 
         if (lastSentPlayerCanFly && !packet.canFly()) {
             int noFlying = player.lastTransactionSent.get();
-            int maxFlyingPing = CultAPI.INSTANCE.getConfigManager().getConfig().getIntElse("max-ping-out-of-flying", 600);
+            int maxFlyingPing =
+                    CultAPI.INSTANCE.getConfigManager().getConfig().getIntElse("max-ping-out-of-flying", 600);
 
-            player.nettyScheduler.runTaskInMs(() -> {
-                if (player.lastTransactionReceived.get() < noFlying) { player.getSetbackTeleportUtil().executeTooHighLatencySetback("flying"); }
-            }, maxFlyingPing);
+            player.nettyScheduler.runTaskInMs(
+                    () -> {
+                        if (player.lastTransactionReceived.get() < noFlying) {
+                            player.getSetbackTeleportUtil().executeTooHighLatencySetback("flying");
+                        }
+                    },
+                    maxFlyingPing);
         }
 
         lastSentPlayerCanFly = packet.canFly();
 
-        player.latencyUtils.addRealTimeTaskNow(() -> { player.canFly = packet.canFly();
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            player.canFly = packet.canFly();
             player.isFlying = packet.flying();
             player.canInstabuild = packet.instabuild();
             player.flySpeed = packet.flyingSpeed();

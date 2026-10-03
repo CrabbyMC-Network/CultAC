@@ -16,6 +16,5 @@ public interface PacketCodec<R> {
     }
 
     /** Validate version-dependent enum mappings and other prerequisites eagerly. */
-    default void validate(ProtocolData data) {
-    }
+    default void validate(ProtocolData data) {}
 }

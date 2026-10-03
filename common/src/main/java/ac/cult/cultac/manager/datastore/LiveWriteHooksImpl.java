@@ -1,6 +1,10 @@
 package ac.cult.cultac.manager.datastore;
 
 import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.network.protocol.player.User;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.grim.grimac.api.AbstractCheck;
 import ac.grim.grimac.api.storage.DataStore;
 import ac.grim.grimac.api.storage.category.Categories;
@@ -8,18 +12,13 @@ import ac.grim.grimac.api.storage.model.VerboseFormat;
 import ac.grim.grimac.internal.storage.checks.CheckRegistry;
 import ac.grim.grimac.internal.storage.checks.StableKeyMapping;
 import ac.grim.grimac.internal.storage.identity.PlayerIdentityService;
-import ac.cult.cultac.network.protocol.player.User;
-import ac.cult.cultac.platform.api.player.PlatformPlayer;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.LogUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Concrete {@link LiveWriteHooks}. Caches display-name → checkId locally so
@@ -49,11 +48,7 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
     }
 
     @Override
-    public void onJoin(
-            @NotNull UUID uuid,
-            @Nullable String name,
-            long now,
-            @NotNull SessionTracker.ClientMeta meta) {
+    public void onJoin(@NotNull UUID uuid, @Nullable String name, long now, @NotNull SessionTracker.ClientMeta meta) {
         identityService.observe(uuid, name, now);
         sessionTracker.observeActivity(uuid, now, meta);
     }
@@ -86,14 +81,15 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
         }
         final int checkId = resolveCheckId(check);
         final UUID sid = sessionId;
-        store.submit(Categories.VIOLATION, e -> e
-                .sessionId(sid)
-                .playerUuid(playerUuid)
-                .checkId(checkId)
-                .vl(vl)
-                .occurredEpochMs(now)
-                .verbose(verbose)
-                .verboseFormat(VerboseFormat.TEXT));
+        store.submit(
+                Categories.VIOLATION,
+                e -> e.sessionId(sid)
+                        .playerUuid(playerUuid)
+                        .checkId(checkId)
+                        .vl(vl)
+                        .occurredEpochMs(now)
+                        .verbose(verbose)
+                        .verboseFormat(VerboseFormat.TEXT));
     }
 
     @Override
@@ -112,14 +108,15 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
         final int checkId = resolveCheckId(check);
         final UUID sid = sessionId;
         final byte[] payload = verboseData == null ? null : verboseData.clone();
-        store.submit(Categories.VIOLATION, e -> e
-                .sessionId(sid)
-                .playerUuid(playerUuid)
-                .checkId(checkId)
-                .vl(vl)
-                .occurredEpochMs(now)
-                .verboseData(payload)
-                .verboseFormat(VerboseFormat.STRUCTURED_V1));
+        store.submit(
+                Categories.VIOLATION,
+                e -> e.sessionId(sid)
+                        .playerUuid(playerUuid)
+                        .checkId(checkId)
+                        .vl(vl)
+                        .occurredEpochMs(now)
+                        .verboseData(payload)
+                        .verboseFormat(VerboseFormat.STRUCTURED_V1));
     }
 
     @Override
@@ -144,12 +141,15 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
 
     @Override
     public void recordFlagFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            @Nullable String verbose) {
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, @Nullable String verbose) {
         try {
-            recordFlag(player.playerUUID, check, vl, verbose, System.currentTimeMillis(), SessionTracker.ClientMeta.empty());
+            recordFlag(
+                    player.playerUUID,
+                    check,
+                    vl,
+                    verbose,
+                    System.currentTimeMillis(),
+                    SessionTracker.ClientMeta.empty());
         } catch (RuntimeException e) {
             // Don't let a datastore issue break the alert path; the legacy
             // write already ran when we got here. One warn, then swallow.
@@ -159,12 +159,15 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
 
     @Override
     public void recordFlagDataFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            byte @Nullable [] verboseData) {
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, byte @Nullable [] verboseData) {
         try {
-            recordFlagData(player.playerUUID, check, vl, verboseData, System.currentTimeMillis(), SessionTracker.ClientMeta.empty());
+            recordFlagData(
+                    player.playerUUID,
+                    check,
+                    vl,
+                    verboseData,
+                    System.currentTimeMillis(),
+                    SessionTracker.ClientMeta.empty());
         } catch (RuntimeException e) {
             // Don't let a datastore issue break the check path.
             LogUtil.warn("v1 datastore recordFlag failed: " + e.getMessage());
@@ -190,8 +193,7 @@ public final class LiveWriteHooksImpl implements LiveWriteHooks {
                         + " has no stableKey declared; falling back to StableKeyMapping. "
                         + "Populate the @CheckData.stableKey / CheckInfo.stableKey field.");
             }
-            stable = StableKeyMapping.stableKeyFor(display)
-                    .orElse(StableKeyMapping.legacyFallback(display));
+            stable = StableKeyMapping.stableKeyFor(display).orElse(StableKeyMapping.legacyFallback(display));
         }
         String description = check.getDescription();
         String introducedVersion = safePluginVersion();

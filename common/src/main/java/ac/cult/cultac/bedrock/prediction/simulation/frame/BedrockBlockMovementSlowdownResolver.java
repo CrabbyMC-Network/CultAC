@@ -6,61 +6,52 @@ import ac.cult.cultac.bedrock.prediction.model.BlockMovementSlowdownState;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
-import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision.BlockContactBehavior;
 import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision;
+import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision.BlockContactBehavior;
 import java.util.Objects;
 
 public final class BedrockBlockMovementSlowdownResolver {
     // vanilla contracts every face by 0.001F when its zero-margin entity-inside scan enumerates blocks.
     private static final double ENTITY_INSIDE_AABB_CONTRACTION = (double) 0.001F;
 
-    private BedrockBlockMovementSlowdownResolver() {
-    }
+    private BedrockBlockMovementSlowdownResolver() {}
 
     public static BlockMovementSlowdownState nextState(
-        BedrockMovementContext context,
-        Vec3d nextPosition,
-        PlayerDimensionsState committedMovementDimensions
-    ) {
+            BedrockMovementContext context, Vec3d nextPosition, PlayerDimensionsState committedMovementDimensions) {
         // vanilla entity-inside slowdown is resolved from the post-move actor AABB, not the swept path.
         return fromBlockWorld(
-            committedMovementDimensions.width(),
-            committedMovementDimensions.height(),
-            nextPosition,
-            context.worldState().blockCollisionWorld(),
-            context.effectState().weaving()
-        );
+                committedMovementDimensions.width(),
+                committedMovementDimensions.height(),
+                nextPosition,
+                context.worldState().blockCollisionWorld(),
+                context.effectState().weaving());
     }
 
     public static BlockMovementSlowdownState nextStateFromSweptMove(
-        BedrockMovementContext context,
-        Vec3d previousPosition,
-        Vec3d nextPosition,
-        PlayerDimensionsState committedMovementDimensions
-    ) {
+            BedrockMovementContext context,
+            Vec3d previousPosition,
+            Vec3d nextPosition,
+            PlayerDimensionsState committedMovementDimensions) {
         Objects.requireNonNull(previousPosition, "previousPosition");
         Objects.requireNonNull(nextPosition, "nextPosition");
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(committedMovementDimensions, "committedMovementDimensions");
         return fromActorBox(
-            sweptActorBox(
-                committedMovementDimensions.width(),
-                committedMovementDimensions.height(),
-                previousPosition,
-                nextPosition
-            ),
-            context.worldState().blockCollisionWorld(),
-            context.effectState().weaving()
-        );
+                sweptActorBox(
+                        committedMovementDimensions.width(),
+                        committedMovementDimensions.height(),
+                        previousPosition,
+                        nextPosition),
+                context.worldState().blockCollisionWorld(),
+                context.effectState().weaving());
     }
 
     public static BlockMovementSlowdownState fromBlockWorld(
-        double actorWidth,
-        double actorHeight,
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        boolean weaving
-    ) {
+            double actorWidth,
+            double actorHeight,
+            Vec3d physicalFeetPosition,
+            BlockCollisionWorld blockWorld,
+            boolean weaving) {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(blockWorld, "blockWorld");
         WorldCollisionBox actorBox = actorBox(actorWidth, actorHeight, physicalFeetPosition);
@@ -68,10 +59,7 @@ public final class BedrockBlockMovementSlowdownResolver {
     }
 
     private static BlockMovementSlowdownState fromActorBox(
-        WorldCollisionBox actorBox,
-        BlockCollisionWorld blockWorld,
-        boolean weaving
-    ) {
+            WorldCollisionBox actorBox, BlockCollisionWorld blockWorld, boolean weaving) {
         boolean cobweb = false;
         boolean sweetBerryBush = false;
         boolean powderSnow = false;
@@ -91,23 +79,17 @@ public final class BedrockBlockMovementSlowdownResolver {
         BlockMovementSlowdownState slowdownState = BlockMovementSlowdownState.NONE;
         if (cobweb) {
             slowdownState = BlockMovementSlowdownState.combine(
-                slowdownState,
-                weaving && !sweetBerryBush && !powderSnow
-                    ? BlockMovementSlowdownState.WEAVING_COBWEB
-                    : BlockMovementSlowdownState.COBWEB
-            );
+                    slowdownState,
+                    weaving && !sweetBerryBush && !powderSnow
+                            ? BlockMovementSlowdownState.WEAVING_COBWEB
+                            : BlockMovementSlowdownState.COBWEB);
         }
         if (sweetBerryBush) {
-            slowdownState = BlockMovementSlowdownState.combine(
-                slowdownState,
-                BlockMovementSlowdownState.SWEET_BERRY_BUSH
-            );
+            slowdownState =
+                    BlockMovementSlowdownState.combine(slowdownState, BlockMovementSlowdownState.SWEET_BERRY_BUSH);
         }
         if (powderSnow) {
-            slowdownState = BlockMovementSlowdownState.combine(
-                slowdownState,
-                BlockMovementSlowdownState.POWDER_SNOW
-            );
+            slowdownState = BlockMovementSlowdownState.combine(slowdownState, BlockMovementSlowdownState.POWDER_SNOW);
         }
         return slowdownState;
     }
@@ -130,30 +112,24 @@ public final class BedrockBlockMovementSlowdownResolver {
         }
         double radius = actorWidth * 0.5D;
         return new WorldCollisionBox(
-            physicalFeetPosition.x() - radius + ENTITY_INSIDE_AABB_CONTRACTION,
-            physicalFeetPosition.y() + ENTITY_INSIDE_AABB_CONTRACTION,
-            physicalFeetPosition.z() - radius + ENTITY_INSIDE_AABB_CONTRACTION,
-            physicalFeetPosition.x() + radius - ENTITY_INSIDE_AABB_CONTRACTION,
-            physicalFeetPosition.y() + actorHeight - ENTITY_INSIDE_AABB_CONTRACTION,
-            physicalFeetPosition.z() + radius - ENTITY_INSIDE_AABB_CONTRACTION
-        );
+                physicalFeetPosition.x() - radius + ENTITY_INSIDE_AABB_CONTRACTION,
+                physicalFeetPosition.y() + ENTITY_INSIDE_AABB_CONTRACTION,
+                physicalFeetPosition.z() - radius + ENTITY_INSIDE_AABB_CONTRACTION,
+                physicalFeetPosition.x() + radius - ENTITY_INSIDE_AABB_CONTRACTION,
+                physicalFeetPosition.y() + actorHeight - ENTITY_INSIDE_AABB_CONTRACTION,
+                physicalFeetPosition.z() + radius - ENTITY_INSIDE_AABB_CONTRACTION);
     }
 
     private static WorldCollisionBox sweptActorBox(
-        double actorWidth,
-        double actorHeight,
-        Vec3d previousPosition,
-        Vec3d nextPosition
-    ) {
+            double actorWidth, double actorHeight, Vec3d previousPosition, Vec3d nextPosition) {
         WorldCollisionBox previous = actorBox(actorWidth, actorHeight, previousPosition);
         WorldCollisionBox next = actorBox(actorWidth, actorHeight, nextPosition);
         return new WorldCollisionBox(
-            Math.min(previous.minX(), next.minX()),
-            Math.min(previous.minY(), next.minY()),
-            Math.min(previous.minZ(), next.minZ()),
-            Math.max(previous.maxX(), next.maxX()),
-            Math.max(previous.maxY(), next.maxY()),
-            Math.max(previous.maxZ(), next.maxZ())
-        );
+                Math.min(previous.minX(), next.minX()),
+                Math.min(previous.minY(), next.minY()),
+                Math.min(previous.minZ(), next.minZ()),
+                Math.max(previous.maxX(), next.maxX()),
+                Math.max(previous.maxY(), next.maxY()),
+                Math.max(previous.maxZ(), next.maxZ()));
     }
 }

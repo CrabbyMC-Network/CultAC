@@ -1,17 +1,17 @@
 package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.event.events.GrimJoinEvent;
-import ac.grim.grimac.api.event.events.GrimQuitEvent;
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.network.netty.channel.ChannelHelper;
 import ac.cult.cultac.network.protocol.player.User;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.platform.api.player.PlatformPlayerCache;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.floodgate.FloodgateUtil;
 import ac.cult.cultac.utils.floodgate.GeyserUtil;
+import ac.grim.grimac.api.event.events.GrimJoinEvent;
+import ac.grim.grimac.api.event.events.GrimQuitEvent;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
@@ -172,7 +172,9 @@ public class PlayerDataManager {
         clearExemptions(user);
         Channels.QUIT.fire(tracked);
         if (CultAPI.INSTANCE.getDataStoreLifecycle() != null) {
-            CultAPI.INSTANCE.getDataStoreLifecycle().liveWriteHooks()
+            CultAPI.INSTANCE
+                    .getDataStoreLifecycle()
+                    .liveWriteHooks()
                     .onQuitFromUserDisconnect(user, tracked, System.currentTimeMillis());
             CultAPI.INSTANCE.getDataStoreLifecycle().playerToggleStore().evict(uuid);
         }

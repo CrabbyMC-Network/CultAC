@@ -1,8 +1,5 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -10,11 +7,18 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import net.minecraft.world.InteractionHand;
 
-@CheckData(name = "MultiActionsE", stableKey = "cult.multiactions.swing_while_using", description = "Swinging while using an item", experimental = true)
+@CheckData(
+        name = "MultiActionsE",
+        stableKey = "cult.multiactions.swing_while_using",
+        description = "Swinging while using an item",
+        experimental = true)
 public class MultiActionsE extends Check implements CheckListener {
     private boolean dropping;
 
@@ -31,7 +35,8 @@ public class MultiActionsE extends Check implements CheckListener {
         if (!droppedBeforeSwing && isActivelyUsingItem()) {
             // This is possible to false on 1.7.
             if (!player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_7_10)
-                    && flag() && shouldModifyPackets()) {
+                    && flag()
+                    && shouldModifyPackets()) {
                 event.setCancelled(true);
                 player.onPacketCancel();
             }
@@ -39,19 +44,20 @@ public class MultiActionsE extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         // 1.15+ Minecraft#handleKeybinds swings right after a successful drop,
         // which is the only way to swing while using an item.
         if (player.getClientVersion().getProtocolVersion() >= 573) {
             PlayerAction action = packet.action();
-            dropping = action == PlayerAction.DROP_ITEM
-                    || action == PlayerAction.DROP_ALL_ITEMS;
+            dropping = action == PlayerAction.DROP_ITEM || action == PlayerAction.DROP_ALL_ITEMS;
         }
     }
 
     // The drop and its swing are sent before the tick's movement packet and tick end.
     @CultPacketHandler
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         dropping = false;
     }
 
@@ -63,6 +69,6 @@ public class MultiActionsE extends Check implements CheckListener {
     private boolean isActivelyUsingItem() {
         return player.packetStateData.isSlowedByUsingItem()
                 && (player.packetStateData.lastSlotSelected == player.packetStateData.getSlowedByUsingItemSlot()
-                || player.packetStateData.itemInUseHand == InteractionHand.OFF_HAND);
+                        || player.packetStateData.itemInUseHand == InteractionHand.OFF_HAND);
     }
 }

@@ -4,20 +4,22 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityShulker;
+import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import java.util.Objects;
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.block.BlockFace;
-import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import lombok.Getter;
-
-import java.util.Objects;
 
 public class ShulkerData {
     public static final int BLOCK_ANIMATION_TICKS = 10;
     public static final int MAX_ENTITY_ANIMATION_TICKS = 20;
 
     public final int lastTransactionSent;
-    @Getter private final boolean isClosing;
+
+    @Getter
+    private final boolean isClosing;
+
     private final int animationTicks;
 
     // Keep track of one of these two things, so we can remove this later

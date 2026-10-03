@@ -7,17 +7,15 @@ import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 
 public final class BedrockTravelTypeResolver {
-    private BedrockTravelTypeResolver() {
-    }
+    private BedrockTravelTypeResolver() {}
 
     public static BedrockTravelSelection resolve(
-        BedrockMovementContext context,
-        boolean inWaterFlag,
-        boolean lavaTravelFlag,
-        boolean onGround,
-        boolean actorGliding,
-        boolean onClimbable
-    ) {
+            BedrockMovementContext context,
+            boolean inWaterFlag,
+            boolean lavaTravelFlag,
+            boolean onGround,
+            boolean actorGliding,
+            boolean onClimbable) {
         BedrockTravelType type;
         Medium movementBranch;
         if (context.movementAbilityFlying()) {
@@ -40,26 +38,16 @@ public final class BedrockTravelTypeResolver {
             movementBranch = movementBranch(type);
         }
 
-        return new BedrockTravelSelection(
-            type,
-            movementBranch
-        );
+        return new BedrockTravelSelection(type, movementBranch);
     }
 
-    public static boolean waterActive(
-        BedrockMovementContext context,
-        Vec3d feet,
-        PlayerDimensionsState dimensions
-    ) {
+    public static boolean waterActive(BedrockMovementContext context, Vec3d feet, PlayerDimensionsState dimensions) {
         return context.liquidMovementMedium() != Medium.LAVA
-            && BedrockLiquidSensing.inWaterFlag(context, feet, dimensions);
+                && BedrockLiquidSensing.inWaterFlag(context, feet, dimensions);
     }
 
     public static Medium postMoveBranch(
-        BedrockMovementContext context,
-        BedrockCollisionFlags flags,
-        boolean waterActive
-    ) {
+            BedrockMovementContext context, BedrockCollisionFlags flags, boolean waterActive) {
         if (context.inLava() || context.liquidMovementMedium() == Medium.LAVA) {
             return Medium.LAVA;
         }

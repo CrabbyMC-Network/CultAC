@@ -2,10 +2,9 @@ package ac.cult.cultac.platform.bukkit.scheduler.folia;
 
 import ac.cult.cultac.platform.api.scheduler.TaskHandle;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import java.util.Objects;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 public class FoliaTaskHandle implements TaskHandle {
 

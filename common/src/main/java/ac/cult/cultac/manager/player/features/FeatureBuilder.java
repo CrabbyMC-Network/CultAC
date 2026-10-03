@@ -3,7 +3,6 @@ package ac.cult.cultac.manager.player.features;
 import ac.cult.cultac.manager.player.features.types.CultFeature;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import com.google.common.collect.ImmutableMap;
-
 import java.util.regex.Pattern;
 
 public class FeatureBuilder {
@@ -22,5 +21,4 @@ public class FeatureBuilder {
     public ImmutableMap<String, CultFeature> buildMap() {
         return mapBuilder.build();
     }
-
 }

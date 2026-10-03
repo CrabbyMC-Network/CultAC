@@ -17,7 +17,8 @@ public class BukkitPlatformServer implements PlatformServer {
 
     @Override
     public void dispatchCommand(Sender sender, String command) {
-        CommandSender commandSender = CultACBukkitLoaderPlugin.LOADER.getBukkitSenderFactory().reverse(sender);
+        CommandSender commandSender =
+                CultACBukkitLoaderPlugin.LOADER.getBukkitSenderFactory().reverse(sender);
         Bukkit.dispatchCommand(commandSender, command);
     }
 
@@ -28,7 +29,10 @@ public class BukkitPlatformServer implements PlatformServer {
 
     @Override
     public void registerOutgoingPluginChannel(String name) {
-        CultACBukkitLoaderPlugin.LOADER.getServer().getMessenger().registerOutgoingPluginChannel(CultACBukkitLoaderPlugin.LOADER, name);
+        CultACBukkitLoaderPlugin.LOADER
+                .getServer()
+                .getMessenger()
+                .registerOutgoingPluginChannel(CultACBukkitLoaderPlugin.LOADER, name);
     }
 
     @Override

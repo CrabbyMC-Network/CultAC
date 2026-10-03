@@ -1,8 +1,8 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation;
-import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import java.util.function.Consumer;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MoveEntityAbsolutePacket;
@@ -20,16 +20,26 @@ final class GeyserTeleportRecovery {
     private long lastInputTick;
     private int unconfirmedInputs;
 
-    boolean active() { return operation != null; }
-    BedrockTeleportOperation operation() { return operation; }
+    boolean active() {
+        return operation != null;
+    }
+
+    BedrockTeleportOperation operation() {
+        return operation;
+    }
 
     static void confirmRejectedInput(GeyserSession session, PlayerAuthInputPacket input) {
         if (!session.isSpawned() || session.getUnconfirmedTeleport() == null) return;
         session.confirmTeleport(input.getPosition().down((float) BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET));
     }
 
-    void begin(BedrockPacket packet, BedrockTeleportOperation operation, BedrockCoordinateFrame origin,
-               long inputTick, Consumer<BedrockPacket> writer, Consumer<SetEntityMotionPacket> resend) {
+    void begin(
+            BedrockPacket packet,
+            BedrockTeleportOperation operation,
+            BedrockCoordinateFrame origin,
+            long inputTick,
+            Consumer<BedrockPacket> writer,
+            Consumer<SetEntityMotionPacket> resend) {
         this.operation = operation;
         this.origin = origin;
         this.motion = null;

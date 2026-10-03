@@ -1,13 +1,12 @@
 package ac.cult.cultac.utils.collisions.datatypes;
 
-import org.bukkit.block.BlockFace;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.BlockPos;
-import org.bukkit.Location;
-import org.bukkit.util.Vector;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.Location;
+import org.bukkit.block.BlockFace;
+import org.bukkit.util.Vector;
 
 public class SimpleCollisionBox implements CollisionBox {
     public static final double COLLISION_EPSILON = 1.0E-7;
@@ -30,7 +29,8 @@ public class SimpleCollisionBox implements CollisionBox {
      * @param maxZ      z position of second corner
      * @param fullBlock - whether on not the box is a perfect 1x1x1 sized block
      */
-    public SimpleCollisionBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, boolean fullBlock) {
+    public SimpleCollisionBox(
+            double minX, double minY, double minZ, double maxX, double maxY, double maxZ, boolean fullBlock) {
         this.minX = minX;
         this.maxX = maxX;
         this.minY = minY;
@@ -216,16 +216,22 @@ public class SimpleCollisionBox implements CollisionBox {
 
     @Override
     public boolean isCollided(SimpleCollisionBox other) {
-        return other.maxX >= this.minX && other.minX <= this.maxX
-                && other.maxY >= this.minY && other.minY <= this.maxY
-                && other.maxZ >= this.minZ && other.minZ <= this.maxZ;
+        return other.maxX >= this.minX
+                && other.minX <= this.maxX
+                && other.maxY >= this.minY
+                && other.minY <= this.maxY
+                && other.maxZ >= this.minZ
+                && other.minZ <= this.maxZ;
     }
 
     @Override
     public boolean isIntersected(SimpleCollisionBox other) {
-        return other.maxX - SimpleCollisionBox.COLLISION_EPSILON > this.minX && other.minX + SimpleCollisionBox.COLLISION_EPSILON < this.maxX
-                && other.maxY - SimpleCollisionBox.COLLISION_EPSILON > this.minY && other.minY + SimpleCollisionBox.COLLISION_EPSILON < this.maxY
-                && other.maxZ - SimpleCollisionBox.COLLISION_EPSILON > this.minZ && other.minZ + SimpleCollisionBox.COLLISION_EPSILON < this.maxZ;
+        return other.maxX - SimpleCollisionBox.COLLISION_EPSILON > this.minX
+                && other.minX + SimpleCollisionBox.COLLISION_EPSILON < this.maxX
+                && other.maxY - SimpleCollisionBox.COLLISION_EPSILON > this.minY
+                && other.minY + SimpleCollisionBox.COLLISION_EPSILON < this.maxY
+                && other.maxZ - SimpleCollisionBox.COLLISION_EPSILON > this.minZ
+                && other.minZ + SimpleCollisionBox.COLLISION_EPSILON < this.maxZ;
     }
 
     public boolean isIntersected(CollisionBox other) {
@@ -245,9 +251,12 @@ public class SimpleCollisionBox implements CollisionBox {
     }
 
     public boolean collidesVertically(SimpleCollisionBox other) {
-        return other.maxX > this.minX && other.minX < this.maxX
-                && other.maxY >= this.minY && other.minY <= this.maxY
-                && other.maxZ > this.minZ && other.minZ < this.maxZ;
+        return other.maxX > this.minX
+                && other.minX < this.maxX
+                && other.maxY >= this.minY
+                && other.minY <= this.maxY
+                && other.maxZ > this.minZ
+                && other.minZ < this.maxZ;
     }
 
     public SimpleCollisionBox copy() {
@@ -294,6 +303,7 @@ public class SimpleCollisionBox implements CollisionBox {
     public boolean isHorizEmpty() {
         return minX == maxX && minZ == maxZ;
     }
+
     public boolean isEmpty() {
         return minX == maxX && minY == maxY && minZ == maxZ;
     }
@@ -308,8 +318,11 @@ public class SimpleCollisionBox implements CollisionBox {
     }
 
     public double collideX(SimpleCollisionBox other, double offsetX, AxisEpsilon epsilon) {
-        if (offsetX != 0 && (other.minY - maxY) < -epsilon.y && (other.maxY - minY) > epsilon.y &&
-                (other.minZ - maxZ) < -epsilon.z && (other.maxZ - minZ) > epsilon.z) {
+        if (offsetX != 0
+                && (other.minY - maxY) < -epsilon.y
+                && (other.maxY - minY) > epsilon.y
+                && (other.minZ - maxZ) < -epsilon.z
+                && (other.maxZ - minZ) > epsilon.z) {
 
             if (offsetX >= 0.0) {
                 double max_move = minX - other.maxX; // < 0.0 if no strict collision
@@ -338,8 +351,11 @@ public class SimpleCollisionBox implements CollisionBox {
     }
 
     public double collideY(SimpleCollisionBox other, double offsetY, AxisEpsilon epsilon) {
-        if (offsetY != 0 && (other.minX - maxX) < -epsilon.x && (other.maxX - minX) > epsilon.x &&
-                (other.minZ - maxZ) < -epsilon.z && (other.maxZ - minZ) > epsilon.z) {
+        if (offsetY != 0
+                && (other.minX - maxX) < -epsilon.x
+                && (other.maxX - minX) > epsilon.x
+                && (other.minZ - maxZ) < -epsilon.z
+                && (other.maxZ - minZ) > epsilon.z) {
             if (offsetY >= 0.0) {
                 double max_move = minY - other.maxY; // < 0.0 if no strict collision
                 if (max_move < -epsilon.y) {
@@ -367,8 +383,11 @@ public class SimpleCollisionBox implements CollisionBox {
     }
 
     public double collideZ(SimpleCollisionBox other, double offsetZ, AxisEpsilon epsilon) {
-        if (offsetZ != 0 && (other.minX - maxX) < -epsilon.x && (other.maxX - minX) > epsilon.x &&
-                (other.minY - maxY) < -epsilon.y && (other.maxY - minY) > epsilon.y) {
+        if (offsetZ != 0
+                && (other.minX - maxX) < -epsilon.x
+                && (other.maxX - minX) > epsilon.x
+                && (other.minY - maxY) < -epsilon.y
+                && (other.maxY - minY) > epsilon.y) {
             if (offsetZ >= 0.0) {
                 double max_move = minZ - other.maxZ; // < 0.0 if no strict collision
                 if (max_move < -epsilon.z) {
@@ -419,24 +438,31 @@ public class SimpleCollisionBox implements CollisionBox {
         return new Vec3(minX, minY, minZ);
     }
 
-    public SimpleCollisionBox toSimpleCollisionBox() { return new SimpleCollisionBox(minX, minY, minZ, maxX, maxY, maxZ); }
+    public SimpleCollisionBox toSimpleCollisionBox() {
+        return new SimpleCollisionBox(minX, minY, minZ, maxX, maxY, maxZ);
+    }
 
-    public double middleX() { return (minX + maxX) / 2.0D; }
+    public double middleX() {
+        return (minX + maxX) / 2.0D;
+    }
 
-    public double middleY() { return (minY + maxY) / 2.0D; }
+    public double middleY() {
+        return (minY + maxY) / 2.0D;
+    }
 
-    public double middleZ() { return (minZ + maxZ) / 2.0D; }
+    public double middleZ() {
+        return (minZ + maxZ) / 2.0D;
+    }
 
     @Override
     public String toString() {
-        return "SimpleCollisionBox{" +
-                "minX=" + minX +
-                ", minY=" + minY +
-                ", minZ=" + minZ +
-                ", maxX=" + maxX +
-                ", maxY=" + maxY +
-                ", maxZ=" + maxZ +
-                ", isFullBlock=" + isFullBlock +
-                '}';
+        return "SimpleCollisionBox{" + "minX="
+                + minX + ", minY="
+                + minY + ", minZ="
+                + minZ + ", maxX="
+                + maxX + ", maxY="
+                + maxY + ", maxZ="
+                + maxZ + ", isFullBlock="
+                + isFullBlock + '}';
     }
 }

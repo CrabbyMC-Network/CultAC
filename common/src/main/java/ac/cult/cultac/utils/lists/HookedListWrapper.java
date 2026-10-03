@@ -1,11 +1,10 @@
 package ac.cult.cultac.utils.lists;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import org.jetbrains.annotations.NotNull;
 
 // https://github.com/ThomasOM/Pledge/blob/master/src/main/java/dev/thomazz/pledge/util/collection/HookedListWrapper.java
 @SuppressWarnings({"unchecked"})

@@ -9,47 +9,38 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import java.util.List;
 
 final class BedrockVerticalCollisionSelection {
-    private BedrockVerticalCollisionSelection() {
-    }
+    private BedrockVerticalCollisionSelection() {}
 
     static List<BedrockProfileState.Entry> apply(
             List<BedrockProfileState.Entry> entries,
             BedrockMovementResult movementResult,
             boolean claimedCollision,
-            BedrockVerticalCollisionVerdict verdict
-    ) {
-        if (entries.isEmpty() || movementResult == null || movementResult.previousState().isVehicle() || !movementResult.travelActive()
+            BedrockVerticalCollisionVerdict verdict) {
+        if (entries.isEmpty()
+                || movementResult == null
+                || movementResult.previousState().isVehicle()
+                || !movementResult.travelActive()
                 || verdict != BedrockVerticalCollisionVerdict.LEGAL) {
             return entries;
         }
         double requestedY = movementResult.rawPredictedPhysicalFeetPosition().y()
                 - movementResult.previousState().physicalFeetPosition().y();
         return entries.stream()
-                .map(entry -> entry.withState(select(
-                        entry.state(),
-                        movementResult.previousState(),
-                        claimedCollision,
-                        requestedY)))
+                .map(entry -> entry.withState(
+                        select(entry.state(), movementResult.previousState(), claimedCollision, requestedY)))
                 .toList();
     }
 
     static BedrockMovementState select(
-            BedrockMovementState state,
-            BedrockMovementState previous,
-            boolean claimedCollision,
-            double requestedY
-    ) {
+            BedrockMovementState state, BedrockMovementState previous, boolean claimedCollision, double requestedY) {
         BedrockCollisionFlags current = state.collisionFlags();
         boolean onGround;
         boolean verticalCollisionBelow;
         if (claimedCollision) {
-            onGround = current.onGround()
-                    || current.verticalCollisionBelow()
-                    || requestedY < 0.0D;
+            onGround = current.onGround() || current.verticalCollisionBelow() || requestedY < 0.0D;
             verticalCollisionBelow = onGround;
         } else {
-            onGround = previous.collisionFlags().onGround()
-                    && Math.abs(requestedY) <= BedrockCollisionSweep.EPSILON;
+            onGround = previous.collisionFlags().onGround() && Math.abs(requestedY) <= BedrockCollisionSweep.EPSILON;
             verticalCollisionBelow = false;
         }
 
@@ -66,8 +57,7 @@ final class BedrockVerticalCollisionSelection {
         if (selected.equals(current) && branch == state.movementBranch()) {
             return state;
         }
-        return state.withVelocityAndCollisionFlags(state.velocity(), selected)
-                .withMovementBranch(branch);
+        return state.withVelocityAndCollisionFlags(state.velocity(), selected).withMovementBranch(branch);
     }
 
     private static Medium selectedBranch(Medium current, boolean onGround) {

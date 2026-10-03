@@ -9,38 +9,29 @@ import ac.cult.cultac.bedrock.prediction.world.WorldContactState;
 import java.util.Objects;
 
 public final class BedrockFluidStateResolver {
-    private BedrockFluidStateResolver() {
-    }
+    private BedrockFluidStateResolver() {}
 
     public static BedrockMovementContext withFluidStateFromBlockWorld(
-        BedrockMovementContext context,
-        Vec3d physicalFeetPosition
-    ) {
+            BedrockMovementContext context, Vec3d physicalFeetPosition) {
         return withFluidStateFromBlockWorld(context, physicalFeetPosition, context.playerDimensionsState());
     }
 
     public static BedrockMovementContext withFluidStateFromBlockWorld(
-        BedrockMovementContext context,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState sensingDimensions
-    ) {
+            BedrockMovementContext context, Vec3d physicalFeetPosition, PlayerDimensionsState sensingDimensions) {
         return withFluidStateFromBlockWorld(context, physicalFeetPosition, sensingDimensions, ExistingFluidState.KEEP);
     }
 
     public static BedrockMovementContext withCurrentTickFluidStateFromBlockWorld(
-        BedrockMovementContext context,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState sensingDimensions
-    ) {
-        return withFluidStateFromBlockWorld(context, physicalFeetPosition, sensingDimensions, ExistingFluidState.REPLACE);
+            BedrockMovementContext context, Vec3d physicalFeetPosition, PlayerDimensionsState sensingDimensions) {
+        return withFluidStateFromBlockWorld(
+                context, physicalFeetPosition, sensingDimensions, ExistingFluidState.REPLACE);
     }
 
     private static BedrockMovementContext withFluidStateFromBlockWorld(
-        BedrockMovementContext context,
-        Vec3d physicalFeetPosition,
-        PlayerDimensionsState sensingDimensions,
-        ExistingFluidState existingFluidState
-    ) {
+            BedrockMovementContext context,
+            Vec3d physicalFeetPosition,
+            PlayerDimensionsState sensingDimensions,
+            ExistingFluidState existingFluidState) {
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(sensingDimensions, "sensingDimensions");
@@ -51,93 +42,86 @@ public final class BedrockFluidStateResolver {
         // Start-of-tick liquid sensing must be derived from the trusted previous
         // feet position and block world, before the packet destination is applied.
         BedrockFluidResolution resolution = BedrockBlockFluidResolver.resolve(
-            world.blockCollisionWorld(),
-            BedrockLiquidGeometry.playerBox(physicalFeetPosition, sensingDimensions)
-        );
+                world.blockCollisionWorld(), BedrockLiquidGeometry.playerBox(physicalFeetPosition, sensingDimensions));
         if (resolution == BedrockFluidResolution.NONE) {
-            return withWorldState(context, worldWithFluid(
-                world,
-                Medium.AIR,
-                FluidState.NONE.withSwimSpeedMultiplier(world.fluidState().swimSpeedMultiplier()),
-                false,
-                false,
-                Medium.AIR
-            ));
+            return withWorldState(
+                    context,
+                    worldWithFluid(
+                            world,
+                            Medium.AIR,
+                            FluidState.NONE.withSwimSpeedMultiplier(
+                                    world.fluidState().swimSpeedMultiplier()),
+                            false,
+                            false,
+                            Medium.AIR));
         }
-        FluidState fluidState = withActorSwimming(resolution.fluidState(), world.fluidState().actorSwimming())
-            .withSwimSpeedMultiplier(world.fluidState().swimSpeedMultiplier());
-        return withWorldState(context, worldWithFluid(
-            world,
-            resolution.medium(),
-            fluidState,
-            resolution.waterContact(),
-            resolution.lavaContact(),
-            resolution.liquidMovementMedium()
-        ));
+        FluidState fluidState = withActorSwimming(
+                        resolution.fluidState(), world.fluidState().actorSwimming())
+                .withSwimSpeedMultiplier(world.fluidState().swimSpeedMultiplier());
+        return withWorldState(
+                context,
+                worldWithFluid(
+                        world,
+                        resolution.medium(),
+                        fluidState,
+                        resolution.waterContact(),
+                        resolution.lavaContact(),
+                        resolution.liquidMovementMedium()));
     }
 
-    public static BedrockMovementContext withSwimSpeedMultiplier(
-        BedrockMovementContext context, double multiplier
-    ) {
+    public static BedrockMovementContext withSwimSpeedMultiplier(BedrockMovementContext context, double multiplier) {
         WorldContactState world = context.worldState();
-        return withWorldState(context, worldWithFluid(world, world.medium(),
-            world.fluidState().withSwimSpeedMultiplier(multiplier), world.waterContact(),
-            world.lavaContact(), world.liquidMovementMedium()));
+        return withWorldState(
+                context,
+                worldWithFluid(
+                        world,
+                        world.medium(),
+                        world.fluidState().withSwimSpeedMultiplier(multiplier),
+                        world.waterContact(),
+                        world.lavaContact(),
+                        world.liquidMovementMedium()));
     }
 
-    private static BedrockMovementContext withWorldState(
-        BedrockMovementContext context,
-        WorldContactState world
-    ) {
+    private static BedrockMovementContext withWorldState(BedrockMovementContext context, WorldContactState world) {
         return new BedrockMovementContext(
-            context.effectState(),
-            context.attributeState(),
-            world,
-            context.equipmentState(),
-            context.entityContactState(),
-            context.modifierState(),
-            context.playerDimensionsState()
-        );
+                context.effectState(),
+                context.attributeState(),
+                world,
+                context.equipmentState(),
+                context.entityContactState(),
+                context.modifierState(),
+                context.playerDimensionsState());
     }
 
     private static WorldContactState worldWithFluid(
-        WorldContactState world,
-        Medium medium,
-        FluidState fluidState,
-        boolean waterContact,
-        boolean lavaContact,
-        Medium liquidMovementMedium
-    ) {
+            WorldContactState world,
+            Medium medium,
+            FluidState fluidState,
+            boolean waterContact,
+            boolean lavaContact,
+            Medium liquidMovementMedium) {
         return new WorldContactState(
-            medium,
-            fluidState,
-            waterContact,
-            lavaContact,
-            liquidMovementMedium,
-            world.blockCollisionWorld()
-        );
+                medium, fluidState, waterContact, lavaContact, liquidMovementMedium, world.blockCollisionWorld());
     }
 
     private static FluidState withActorSwimming(FluidState fluidState, boolean actorSwimming) {
         return new FluidState(
-            fluidState.current(),
-            fluidState.currentPositiveX(),
-            fluidState.currentNegativeX(),
-            fluidState.currentPositiveZ(),
-            fluidState.currentNegativeZ(),
-            fluidState.bubbleColumnUp(),
-            fluidState.bubbleColumnDown(),
-            fluidState.currentState(),
-            fluidState.bubbleColumnState(),
-            fluidState.waterWalkOnGroundComponentPresent(),
-            fluidState.swimSpeedMultiplier(),
-            actorSwimming
-        );
+                fluidState.current(),
+                fluidState.currentPositiveX(),
+                fluidState.currentNegativeX(),
+                fluidState.currentPositiveZ(),
+                fluidState.currentNegativeZ(),
+                fluidState.bubbleColumnUp(),
+                fluidState.bubbleColumnDown(),
+                fluidState.currentState(),
+                fluidState.bubbleColumnState(),
+                fluidState.waterWalkOnGroundComponentPresent(),
+                fluidState.swimSpeedMultiplier(),
+                actorSwimming);
     }
 
     private enum ExistingFluidState {
         KEEP,
         REPLACE
     }
-
 }

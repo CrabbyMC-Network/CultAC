@@ -1,28 +1,30 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.level.block.Blocks;
 
-@CheckData(name = "PositionBreakA", stableKey = "cult.breaking.position_break_a", description = "Tried to break a block face from an impossible eye position")
+@CheckData(
+        name = "PositionBreakA",
+        stableKey = "cult.breaking.position_break_a",
+        description = "Tried to break a block face from an impossible eye position")
 public class PositionBreakA extends Check implements BlockBreakListener {
     private static final Verbose V = Verbose.of("action={digging}, face={face}");
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
-
 
     private boolean didLastMovementIncludePosition;
 
@@ -31,16 +33,15 @@ public class PositionBreakA extends Check implements BlockBreakListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         didLastMovementIncludePosition = packet.hasPosition();
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
         if (player.inVehicle()
                 || blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK // PE DiggingAction.CANCELLED_DIGGING
-                || blockBreak.block.getBlock() == Blocks.REDSTONE_WIRE
-        ) return;
+                || blockBreak.block.getBlock() == Blocks.REDSTONE_WIRE) return;
 
         SimpleCollisionBox combined = blockBreak.getCombinedBox();
 
@@ -51,12 +52,14 @@ public class PositionBreakA extends Check implements BlockBreakListener {
             maxEyeHeight = Math.max(maxEyeHeight, height);
         }
 
-        SimpleCollisionBox eyePositions = new SimpleCollisionBox(player.x, player.y + minEyeHeight, player.z, player.x, player.y + maxEyeHeight, player.z);
+        SimpleCollisionBox eyePositions = new SimpleCollisionBox(
+                player.x, player.y + minEyeHeight, player.z, player.x, player.y + maxEyeHeight, player.z);
         if (!didLastMovementIncludePosition || canSkipTicks()) {
             eyePositions.expand(player.getMovementThreshold());
         }
 
-        // If the player is inside a block, then they can ray trace through the block and hit the other side of the block
+        // If the player is inside a block, then they can ray trace through the block and hit the other side of the
+        // block
         if (eyePositions.isIntersected(combined)) {
             return;
         }
@@ -73,9 +76,10 @@ public class PositionBreakA extends Check implements BlockBreakListener {
             default -> false;
         };
 
-        if (flag && flag(V.write(verbose())
-                .uint(VerboseCodecs.digging(blockBreak.action))
-                .uint(VerboseTags.enumId(blockBreak.face)))
+        if (flag
+                && flag(V.write(verbose())
+                        .uint(VerboseCodecs.digging(blockBreak.action))
+                        .uint(VerboseTags.enumId(blockBreak.face)))
                 && shouldModifyPackets()) {
             blockBreak.cancel();
         }
@@ -84,6 +88,6 @@ public class PositionBreakA extends Check implements BlockBreakListener {
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 }

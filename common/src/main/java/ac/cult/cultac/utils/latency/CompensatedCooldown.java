@@ -10,11 +10,10 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
 import ac.cult.cultac.utils.data.CooldownData;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /** ItemCooldowns uses the stack's cooldown group, including custom component overrides. */
 public class CompensatedCooldown extends CultProcessor implements PositionListener, ClientTickEndListener {
@@ -47,12 +46,15 @@ public class CompensatedCooldown extends CultProcessor implements PositionListen
     }
 
     public boolean hasItem(org.bukkit.inventory.ItemStack item) {
-        return !cooldowns.isEmpty() && item != null && !item.isEmpty()
+        return !cooldowns.isEmpty()
+                && item != null
+                && !item.isEmpty()
                 && cooldowns.containsKey(group(SpigotConversionUtil.toNmsItemStack(item)));
     }
 
     public static String group(ItemStack item) {
-        return NmsIdentifierUtil.useCooldownGroup(item.get(DataComponents.USE_COOLDOWN),
+        return NmsIdentifierUtil.useCooldownGroup(
+                item.get(DataComponents.USE_COOLDOWN),
                 NmsIdentifierUtil.registryKey(BuiltInRegistries.ITEM, item.getItem()));
     }
 

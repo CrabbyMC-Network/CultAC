@@ -1,29 +1,31 @@
 package ac.cult.cultac.events.packets.listeners;
 
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHappyGhast;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityNautilus;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import net.minecraft.world.phys.Vec3;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 
 public class PacketPlayerSteer {
-    //LOW
+    // LOW
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
+    public void onPlayerInput(
+            PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         if (event.isCancelled()) {
             return;
         }
         // For 1.8-1.21.1, LegacyViaInputBridge applies the original sneak
         // command or mounted steer packet in client order. Via's periodically
         // synthesized input must not undo it. 1.7 uses older packet layouts.
-        if (player.isBedrockMovement() || player.getClientVersion().isOlderThan(ClientVersion.V_1_8)
+        if (player.isBedrockMovement()
+                || player.getClientVersion().isOlderThan(ClientVersion.V_1_8)
                 || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)) {
             player.isSneaking = packet.shift();
         }
@@ -42,7 +44,8 @@ public class PacketPlayerSteer {
         player.boatData.nextVehicleJump = vehicleJump;
         final PacketEntity riding = player.compensatedEntities.getSelf().getRiding();
         Integer serverVehicleId = player.compensatedEntities.vehicles.serverPlayerVehicle;
-        PacketEntity serverVehicle = serverVehicleId == null ? null : player.compensatedEntities.getEntity(serverVehicleId);
+        PacketEntity serverVehicle =
+                serverVehicleId == null ? null : player.compensatedEntities.getEntity(serverVehicleId);
         boolean ridingAuthoritativeVehicle = usesStagedMoveVehicleInput(riding);
         boolean observedAuthoritativeVehicle = usesStagedMoveVehicleInput(serverVehicle);
         // MCP-Reborn ClientLevel#tickNonPassenger moves local-authoritative
@@ -70,5 +73,4 @@ public class PacketPlayerSteer {
                 || vehicle instanceof PacketEntityHappyGhast
                 || vehicle instanceof PacketEntityNautilus;
     }
-
 }

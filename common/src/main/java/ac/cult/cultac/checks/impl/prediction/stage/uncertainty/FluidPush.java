@@ -14,7 +14,14 @@ public class FluidPush implements UncertaintyHandler {
     private static final double WATER_ENTRY_RADIUS = 0.028D;
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         double waterRadius = flowingCurrentRadius(context, lastContext);
         double horizontalRadius = waterRadius;
         double verticalRadius = FluidPush.verticalRadius(waterRadius, start, end);
@@ -27,14 +34,13 @@ public class FluidPush implements UncertaintyHandler {
             adjusted = UncertaintyHelper.handleCircular(adjusted, end, horizontalRadius);
         }
 
-        return verticalRadius > 0.0D
-                ? UncertaintyHelper.handleVertical(adjusted, end, verticalRadius)
-                : adjusted;
+        return verticalRadius > 0.0D ? UncertaintyHelper.handleVertical(adjusted, end, verticalRadius) : adjusted;
     }
 
     private double flowingCurrentRadius(SimulationContext context, PredictionResult lastContext) {
         WorldData curWorldData = context.getWorldData();
-        WorldData lastWorldData = lastContext == null ? null : lastContext.getSimulationContext().getWorldData();
+        WorldData lastWorldData =
+                lastContext == null ? null : lastContext.getSimulationContext().getWorldData();
         boolean inFlowingLiquid = curWorldData.getInFlowingLiquid().determineOptimistically();
         boolean enteredFlowingLiquid = inFlowingLiquid
                 && (lastWorldData == null || !lastWorldData.getInFlowingLiquid().determinePessimistically());
@@ -57,6 +63,6 @@ public class FluidPush implements UncertaintyHandler {
     private boolean isPigOrStriderWater(SimulationContext context) {
         return isPigOrStriderRoot(context)
                 && (context.getWorldData().getInWater().determineOptimistically()
-                || context.getWorldData().getInFlowingLiquid().determineOptimistically());
+                        || context.getWorldData().getInFlowingLiquid().determineOptimistically());
     }
 }

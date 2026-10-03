@@ -3,15 +3,14 @@ package ac.cult.cultac.bedrock.prediction.input;
 import java.util.Set;
 
 public record BedrockInputFrame(
-    long clientTick,
-    float yaw,
-    float pitch,
-    boolean jumping,
-    boolean sneaking,
-    boolean sprinting,
-    Set<String> inputData,
-    boolean swimmingRequested
-) {
+        long clientTick,
+        float yaw,
+        float pitch,
+        boolean jumping,
+        boolean sneaking,
+        boolean sprinting,
+        Set<String> inputData,
+        boolean swimmingRequested) {
     public BedrockInputFrame {
         if (clientTick < 0L) {
             throw new IllegalArgumentException("clientTick must be non-negative");
@@ -22,25 +21,18 @@ public record BedrockInputFrame(
     }
 
     public BedrockInputFrame(
-        long clientTick,
-        float yaw,
-        float pitch,
-        boolean jumping,
-        boolean sneaking,
-        boolean sprinting,
-        Set<String> inputData
-    ) {
+            long clientTick,
+            float yaw,
+            float pitch,
+            boolean jumping,
+            boolean sneaking,
+            boolean sprinting,
+            Set<String> inputData) {
         this(clientTick, yaw, pitch, jumping, sneaking, sprinting, inputData, false);
     }
 
     public BedrockInputFrame(
-        long clientTick,
-        float yaw,
-        float pitch,
-        boolean jumping,
-        boolean sneaking,
-        boolean sprinting
-    ) {
+            long clientTick, float yaw, float pitch, boolean jumping, boolean sneaking, boolean sprinting) {
         this(clientTick, yaw, pitch, jumping, sneaking, sprinting, Set.of());
     }
 

@@ -37,7 +37,8 @@ public final class BedrockCollisionWorldBuilder {
     @SuppressWarnings("unchecked")
     private static net.minecraft.tags.TagKey<Block> optionalBarsTag() {
         try {
-            return (net.minecraft.tags.TagKey<Block>) BlockTags.class.getField("BARS").get(null);
+            return (net.minecraft.tags.TagKey<Block>)
+                    BlockTags.class.getField("BARS").get(null);
         } catch (NoSuchFieldException absentOnOlderServer) {
             return null;
         } catch (IllegalAccessException exception) {
@@ -64,9 +65,8 @@ public final class BedrockCollisionWorldBuilder {
                 continue;
             }
             List<WorldCollisionBox> boxes = collisionBoxes(entry.getKey(), state, query);
-            List<WorldCollisionBox> contactBoxes = movementResolvedContactUsesCollisionBoxes(state)
-                    ? boxes
-                    : List.of(fullBlockBox(entry.getKey()));
+            List<WorldCollisionBox> contactBoxes =
+                    movementResolvedContactUsesCollisionBoxes(state) ? boxes : List.of(fullBlockBox(entry.getKey()));
             String javaIdentifier = javaIdentifier(state);
             Map<String, Object> bedrockState = bedrockState(state);
             blocks.add(PlacedBlockCollision.sampled(
@@ -85,17 +85,14 @@ public final class BedrockCollisionWorldBuilder {
 
     public Map<String, Object> bedrockState(BlockState state) {
         java.util.OptionalLong mask = catalog.blockPropertyMask(Block.getId(state));
-        return mask.isPresent()
-                ? Map.of(BedrockBlockMetadata.BLOCK_PROPERTY_MASK, mask.getAsLong())
-                : Map.of();
+        return mask.isPresent() ? Map.of(BedrockBlockMetadata.BLOCK_PROPERTY_MASK, mask.getAsLong()) : Map.of();
     }
 
     public static boolean hasBedrockBehavior(BlockState state, BedrockCollisionOverrideCatalog catalog) {
         if (state == null || state.isAir()) {
             return false;
         }
-        return manualMovement(state)
-                || catalog != null && catalog.hasOverride(Block.getId(state));
+        return manualMovement(state) || catalog != null && catalog.hasOverride(Block.getId(state));
     }
 
     public static boolean dynamicMovement(BlockState state) {
@@ -160,10 +157,7 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private List<WorldCollisionBox> collisionBoxes(
-            BlockPosition position,
-            BlockState state,
-            BedrockCollisionShapeQuery query
-    ) {
+            BlockPosition position, BlockState state, BedrockCollisionShapeQuery query) {
         if (movingPistonBlock(state)) {
             return List.of();
         }
@@ -199,9 +193,7 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private static List<WorldCollisionBox> overrideCollisionBoxes(
-            BlockPosition position,
-            BedrockCollisionOverrideShape shape
-    ) {
+            BlockPosition position, BedrockCollisionOverrideShape shape) {
         List<WorldCollisionBox> boxes = new ArrayList<>(shape.boxes().size());
         for (BlockAabb box : shape.boxes()) {
             boxes.add(toWorldBox(position, box));
@@ -210,12 +202,8 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private static List<WorldCollisionBox> insideBlockContactBoxes(
-            BlockPosition position,
-            List<WorldCollisionBox> collisionBoxes
-    ) {
-        return collisionBoxes.isEmpty()
-                ? List.of(fullBlockBox(position))
-                : List.copyOf(collisionBoxes);
+            BlockPosition position, List<WorldCollisionBox> collisionBoxes) {
+        return collisionBoxes.isEmpty() ? List.of(fullBlockBox(position)) : List.copyOf(collisionBoxes);
     }
 
     private static boolean movementResolvedContactUsesCollisionBoxes(BlockState state) {
@@ -267,9 +255,7 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private static List<WorldCollisionBox> powderSnowCollisionBoxes(
-            BlockPosition position,
-            BedrockCollisionShapeQuery query
-    ) {
+            BlockPosition position, BedrockCollisionShapeQuery query) {
         if (query.actorCollisionQuery().isEmpty()) {
             return List.of();
         }
@@ -283,8 +269,8 @@ public final class BedrockCollisionWorldBuilder {
         BedrockPowderSnowCollisionShape.CollisionBranch branch = query.fallDistance() > 2.5F
                 ? BedrockPowderSnowCollisionShape.CollisionBranch.FALL_INTO_COLLISION
                 : query.leatherBoots()
-                ? BedrockPowderSnowCollisionShape.CollisionBranch.WALK_ON_TOP
-                : BedrockPowderSnowCollisionShape.CollisionBranch.EMPTY;
+                        ? BedrockPowderSnowCollisionShape.CollisionBranch.WALK_ON_TOP
+                        : BedrockPowderSnowCollisionShape.CollisionBranch.EMPTY;
         List<WorldCollisionBox> boxes = new ArrayList<>();
         for (BlockAabb box : BedrockPowderSnowCollisionShape.collisionAabbs(branch)) {
             boxes.add(toWorldBox(position, box));
@@ -292,10 +278,7 @@ public final class BedrockCollisionWorldBuilder {
         return List.copyOf(boxes);
     }
 
-    private static List<WorldCollisionBox> stairCollisionBoxes(
-            BlockPosition position,
-            BlockState state
-    ) {
+    private static List<WorldCollisionBox> stairCollisionBoxes(BlockPosition position, BlockState state) {
         boolean upsideDown = state.getValue(StairBlock.HALF) == Half.TOP;
         int weirdoDirection = stairWeirdoDirection(state.getValue(StairBlock.FACING));
 
@@ -320,12 +303,7 @@ public final class BedrockCollisionWorldBuilder {
         };
     }
 
-    private static void addStairStepBox(
-            List<BlockAabb> boxes,
-            int weirdoDirection,
-            double minY,
-            double maxY
-    ) {
+    private static void addStairStepBox(List<BlockAabb> boxes, int weirdoDirection, double minY, double maxY) {
         switch (weirdoDirection) {
             case 0 -> boxes.add(new BlockAabb(0.5D, minY, 0.0D, 1.0D, maxY, 1.0D));
             case 1 -> boxes.add(new BlockAabb(0.0D, minY, 0.0D, 0.5D, maxY, 1.0D));
@@ -335,10 +313,7 @@ public final class BedrockCollisionWorldBuilder {
         }
     }
 
-    private static List<WorldCollisionBox> fenceCollisionBoxes(
-            BlockPosition position,
-            BlockState state
-    ) {
+    private static List<WorldCollisionBox> fenceCollisionBoxes(BlockPosition position, BlockState state) {
         boolean negativeX = booleanProperty(state, BlockStateProperties.WEST);
         boolean positiveX = booleanProperty(state, BlockStateProperties.EAST);
         boolean negativeZ = booleanProperty(state, BlockStateProperties.NORTH);
@@ -346,22 +321,12 @@ public final class BedrockCollisionWorldBuilder {
 
         List<BlockAabb> localBoxes = new ArrayList<>(2);
         if (negativeZ || positiveZ) {
-            localBoxes.add(new BlockAabb(
-                    0.375D,
-                    0.0D,
-                    negativeZ ? 0.0D : 0.375D,
-                    0.625D,
-                    1.5D,
-                    positiveZ ? 1.0D : 0.625D));
+            localBoxes.add(
+                    new BlockAabb(0.375D, 0.0D, negativeZ ? 0.0D : 0.375D, 0.625D, 1.5D, positiveZ ? 1.0D : 0.625D));
         }
         if (negativeX || positiveX) {
-            localBoxes.add(new BlockAabb(
-                    negativeX ? 0.0D : 0.375D,
-                    0.0D,
-                    0.375D,
-                    positiveX ? 1.0D : 0.625D,
-                    1.5D,
-                    0.625D));
+            localBoxes.add(
+                    new BlockAabb(negativeX ? 0.0D : 0.375D, 0.0D, 0.375D, positiveX ? 1.0D : 0.625D, 1.5D, 0.625D));
         }
         if (localBoxes.isEmpty()) {
             localBoxes.add(new BlockAabb(0.375D, 0.0D, 0.375D, 0.625D, 1.5D, 0.625D));
@@ -369,10 +334,7 @@ public final class BedrockCollisionWorldBuilder {
         return toWorldBoxes(position, localBoxes);
     }
 
-    private static List<WorldCollisionBox> thinFenceCollisionBoxes(
-            BlockPosition position,
-            BlockState state
-    ) {
+    private static List<WorldCollisionBox> thinFenceCollisionBoxes(BlockPosition position, BlockState state) {
         boolean negativeX = booleanProperty(state, BlockStateProperties.WEST);
         boolean positiveX = booleanProperty(state, BlockStateProperties.EAST);
         boolean negativeZ = booleanProperty(state, BlockStateProperties.NORTH);
@@ -380,22 +342,12 @@ public final class BedrockCollisionWorldBuilder {
 
         List<BlockAabb> localBoxes = new ArrayList<>(2);
         if (negativeX || positiveX) {
-            localBoxes.add(new BlockAabb(
-                    negativeX ? 0.0D : 0.5D,
-                    0.0D,
-                    0.4375D,
-                    positiveX ? 1.0D : 0.5D,
-                    1.0D,
-                    0.5625D));
+            localBoxes.add(
+                    new BlockAabb(negativeX ? 0.0D : 0.5D, 0.0D, 0.4375D, positiveX ? 1.0D : 0.5D, 1.0D, 0.5625D));
         }
         if (negativeZ || positiveZ) {
-            localBoxes.add(new BlockAabb(
-                    0.4375D,
-                    0.0D,
-                    negativeZ ? 0.0D : 0.5D,
-                    0.5625D,
-                    1.0D,
-                    positiveZ ? 1.0D : 0.5D));
+            localBoxes.add(
+                    new BlockAabb(0.4375D, 0.0D, negativeZ ? 0.0D : 0.5D, 0.5625D, 1.0D, positiveZ ? 1.0D : 0.5D));
         }
         if (localBoxes.isEmpty()) {
             localBoxes.add(new BlockAabb(0.4375D, 0.0D, 0.4375D, 0.5625D, 1.0D, 0.5625D));
@@ -403,10 +355,7 @@ public final class BedrockCollisionWorldBuilder {
         return toWorldBoxes(position, localBoxes);
     }
 
-    private static List<WorldCollisionBox> chorusPlantCollisionBoxes(
-            BlockPosition position,
-            BlockState state
-    ) {
+    private static List<WorldCollisionBox> chorusPlantCollisionBoxes(BlockPosition position, BlockState state) {
         boolean down = booleanProperty(state, PipeBlock.DOWN);
         boolean east = booleanProperty(state, PipeBlock.EAST);
         boolean north = booleanProperty(state, PipeBlock.NORTH);
@@ -425,10 +374,7 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private static List<WorldCollisionBox> pistonArmCollisionBoxes(
-            BlockPosition position,
-            BlockState state,
-            double progress
-    ) {
+            BlockPosition position, BlockState state, double progress) {
         BedrockPistonArmCollisionShape.FacingDirection direction = pistonFacingDirection(state);
         return toWorldBoxes(position, BedrockPistonArmCollisionShape.collisionAabbs(direction, progress));
     }
@@ -445,9 +391,7 @@ public final class BedrockCollisionWorldBuilder {
     }
 
     private static List<WorldCollisionBox> scaffoldingCollisionBoxes(
-            BlockPosition position,
-            BedrockCollisionShapeQuery query
-    ) {
+            BlockPosition position, BedrockCollisionShapeQuery query) {
         if (query.scaffoldingPassThrough() || query.actorCollisionQuery().isEmpty()) {
             return List.of();
         }
@@ -459,7 +403,8 @@ public final class BedrockCollisionWorldBuilder {
         return List.of(block);
     }
 
-    private static boolean booleanProperty(BlockState state, net.minecraft.world.level.block.state.properties.BooleanProperty property) {
+    private static boolean booleanProperty(
+            BlockState state, net.minecraft.world.level.block.state.properties.BooleanProperty property) {
         return state.hasProperty(property) && state.getValue(property);
     }
 

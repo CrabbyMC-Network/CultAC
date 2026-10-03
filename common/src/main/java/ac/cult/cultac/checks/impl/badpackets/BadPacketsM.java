@@ -1,22 +1,25 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
-import ac.cult.cultac.protocol.value.ClientCommandAction;
-
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerCombatKill;
-import ac.cult.cultac.protocol.value.GameEventType;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerCombatKill;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
+import ac.cult.cultac.protocol.value.ClientCommandAction;
+import ac.cult.cultac.protocol.value.GameEventType;
 import net.minecraft.SharedConstants;
 
-@CheckData(name = "BadPacketsM", stableKey = "cult.badpackets.respawn_alive", description = "Tried to respawn while alive", experimental = true)
+@CheckData(
+        name = "BadPacketsM",
+        stableKey = "cult.badpackets.respawn_alive",
+        description = "Tried to respawn while alive",
+        experimental = true)
 public class BadPacketsM extends Check implements CheckListener {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
@@ -31,7 +34,8 @@ public class BadPacketsM extends Check implements CheckListener {
     private boolean menu;
 
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
+    public void onClientCommand(
+            PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         if (packet.action() != ClientCommandAction.PERFORM_RESPAWN) {
             return;
         }
@@ -50,7 +54,8 @@ public class BadPacketsM extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onGameEvent(PacketSendEvent<ClientboundGameEvent> event, CultPlayer player, ClientboundGameEvent packet) {
+    public void onGameEvent(
+            PacketSendEvent<ClientboundGameEvent> event, CultPlayer player, ClientboundGameEvent packet) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8)) {
             return;
         }
@@ -69,7 +74,6 @@ public class BadPacketsM extends Check implements CheckListener {
             });
         }
 
-
         if (packet.event() == GameEventType.IMMEDIATE_RESPAWN) {
             if (player.getClientVersion().getProtocolVersion() < 573 // PE ClientVersion.V_1_15
                     || SERVER_VERSION.getProtocolVersion() < 573) { // PE ServerVersion.V_1_15
@@ -82,9 +86,9 @@ public class BadPacketsM extends Check implements CheckListener {
         }
     }
 
-
     @CultPacketHandler
-    public void onPlayerCombatKill(PacketSendEvent<ClientboundPlayerCombatKill> event, CultPlayer player, ClientboundPlayerCombatKill packet) {
+    public void onPlayerCombatKill(
+            PacketSendEvent<ClientboundPlayerCombatKill> event, CultPlayer player, ClientboundPlayerCombatKill packet) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8)) {
             return;
         }

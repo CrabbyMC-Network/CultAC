@@ -1,15 +1,13 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.events.packets.PacketServerPlayerRotation;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.packet.ClientboundPackets;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
-import ac.cult.cultac.protocol.ConnectionPhase;
 import org.junit.Test;
-
-
-import static org.junit.Assert.*;
 
 public final class PacketServerPlayerRotationParityTest {
     @Test
@@ -38,18 +36,22 @@ public final class PacketServerPlayerRotationParityTest {
 
     @Test
     public void sanitizationPreservesRelativeFlagsAndFiniteAngles() {
-        for (float yaw : new float[]{30, Float.NaN, Float.POSITIVE_INFINITY}) {
-            for (float pitch : new float[]{-20, Float.NaN, Float.NEGATIVE_INFINITY}) {
+        for (float yaw : new float[] {30, Float.NaN, Float.POSITIVE_INFINITY}) {
+            for (float pitch : new float[] {-20, Float.NaN, Float.NEGATIVE_INFINITY}) {
                 var rotation = new ClientboundPlayerRotation(yaw, true, pitch, true);
                 var event = event(rotation, true);
                 new PacketServerPlayerRotation().onPlayerRotation(event, null, rotation);
-                assertEquals(new ClientboundPlayerRotation(Float.isFinite(yaw) ? yaw : 0, true,
-                        Float.isFinite(pitch) ? pitch : 0, true), event.getPacket());
+                assertEquals(
+                        new ClientboundPlayerRotation(
+                                Float.isFinite(yaw) ? yaw : 0, true, Float.isFinite(pitch) ? pitch : 0, true),
+                        event.getPacket());
             }
         }
     }
 
-    private static PacketSendEvent<ClientboundPlayerRotation> event(ClientboundPlayerRotation packet, boolean insideBundle) {
-        return new PacketSendEvent<>(null, ConnectionPhase.PLAY, ClientboundPackets.PLAYER_ROTATION, packet, insideBundle);
+    private static PacketSendEvent<ClientboundPlayerRotation> event(
+            ClientboundPlayerRotation packet, boolean insideBundle) {
+        return new PacketSendEvent<>(
+                null, ConnectionPhase.PLAY, ClientboundPackets.PLAYER_ROTATION, packet, insideBundle);
     }
 }

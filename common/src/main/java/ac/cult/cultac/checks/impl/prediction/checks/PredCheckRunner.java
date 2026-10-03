@@ -16,8 +16,7 @@ public class PredCheckRunner extends CultProcessor {
             new VehicleOffsetCheck(),
             new NoFall(),
             player.knockbackHandler,
-            player.explosionHandler
-    );
+            player.explosionHandler);
 
     public PredCheckRunner(CultPlayer player) {
         super(player);

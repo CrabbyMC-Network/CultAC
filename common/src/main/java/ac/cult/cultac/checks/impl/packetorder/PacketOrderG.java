@@ -1,9 +1,5 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
-
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
@@ -11,13 +7,19 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundClientCommand;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import java.util.ArrayDeque;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-
-@CheckData(name = "PacketOrderG", stableKey = "cult.packetorder.hotbar_inventory_manage_order", description = "Managed hotbar or inventory while performing another conflicting action", experimental = true)
+@CheckData(
+        name = "PacketOrderG",
+        stableKey = "cult.packetorder.hotbar_inventory_manage_order",
+        description = "Managed hotbar or inventory while performing another conflicting action",
+        experimental = true)
 public class PacketOrderG extends Check implements PostPredictionListener {
     private static final Verbose V = Verbose.of(
             "action={str}, attacking={bool}, releasing={bool}, rightClicking={bool}, picking={bool}, digging={bool}");
@@ -42,26 +44,25 @@ public class PacketOrderG extends Check implements PostPredictionListener {
     }
 
     private static int action(@Nullable PlayerAction action) {
-        return action == null ? ACTION_OPEN_INVENTORY
+        return action == null
+                ? ACTION_OPEN_INVENTORY
                 : action == PlayerAction.SWAP_ITEM_WITH_OFFHAND ? ACTION_SWAP : ACTION_DROP;
     }
 
-
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         final PlayerAction action = packet.action();
         if (action != PlayerAction.SWAP_ITEM_WITH_OFFHAND
                 && action != PlayerAction.DROP_ITEM
-
-                && action != PlayerAction.DROP_ALL_ITEMS
-        ) return;
+                && action != PlayerAction.DROP_ALL_ITEMS) return;
 
         onAction(event, player, action);
     }
 
-
     @CultPacketHandler
-    public void onClientCommand(PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
+    public void onClientCommand(
+            PacketReceiveEvent<ServerboundClientCommand> event, CultPlayer player, ServerboundClientCommand packet) {
         // The 26.2 enum has no OPEN_INVENTORY_ACHIEVEMENT (removed in 1.12)
         if (packet.action().name().equals("OPEN_INVENTORY_ACHIEVEMENT")) {
             onAction(event, player, null);
@@ -82,12 +83,14 @@ public class PacketOrderG extends Check implements PostPredictionListener {
             boolean digging = player.packetOrderProcessor.isDigging();
             if (!player.canSkipTicks()) {
                 if (flag(V.write(verbose())
-                        .str(actionName(actionKind))
-                        .bool(attacking)
-                        .bool(releasing)
-                        .bool(rightClicking)
-                        .bool(picking)
-                        .bool(digging)) && shouldModifyPackets() && canCancel(action)) {
+                                .str(actionName(actionKind))
+                                .bool(attacking)
+                                .bool(releasing)
+                                .bool(rightClicking)
+                                .bool(picking)
+                                .bool(digging))
+                        && shouldModifyPackets()
+                        && canCancel(action)) {
                     event.setCancelled(true);
                     player.onPacketCancel();
                 }
@@ -97,12 +100,10 @@ public class PacketOrderG extends Check implements PostPredictionListener {
         }
     }
 
-
     private boolean canCancel(@Nullable PlayerAction action) {
         return action != PlayerAction.RELEASE_USE_ITEM
-                && ((action != PlayerAction.DROP_ITEM
-                && action != PlayerAction.DROP_ALL_ITEMS)
-                || player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8));
+                && ((action != PlayerAction.DROP_ITEM && action != PlayerAction.DROP_ALL_ITEMS)
+                        || player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8));
     }
 
     @Override
@@ -130,6 +131,5 @@ public class PacketOrderG extends Check implements PostPredictionListener {
             boolean releasing,
             boolean rightClicking,
             boolean picking,
-            boolean digging) {
-    }
+            boolean digging) {}
 }

@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 import ac.cult.cultac.manager.player.ActionManager;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.PacketStateData;
@@ -13,11 +16,12 @@ import org.geysermc.geyser.inventory.PlayerInventory;
 import org.geysermc.geyser.session.GeyserSession;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class GeyserInventoryActionsTest {
-    @BeforeClass public static void bootstrap() throws Exception { GeyserItemComponentsTest.bootstrap(); }
+    @BeforeClass
+    public static void bootstrap() throws Exception {
+        GeyserItemComponentsTest.bootstrap();
+    }
 
     private static CultPlayer player() throws Exception {
         var player = mock(CultPlayer.class);
@@ -41,15 +45,19 @@ public class GeyserInventoryActionsTest {
         return session;
     }
 
-    @Test public void unchangedGeyserSlotsDoNotOverwriteCompensatedState() throws Exception {
+    @Test
+    public void unchangedGeyserSlotsDoNotOverwriteCompensatedState() throws Exception {
         var player = player();
         var session = session();
         player.getInventory().inventory.getSlot(9).set(new ItemStack(Material.DIAMOND_SWORD));
         GeyserInventoryActions.translate(session, player, new MobEquipmentPacket(), () -> {});
-        assertEquals(Material.DIAMOND_SWORD, player.getInventory().inventory.getSlot(9).getItem().getType());
+        assertEquals(
+                Material.DIAMOND_SWORD,
+                player.getInventory().inventory.getSlot(9).getItem().getType());
     }
 
-    @Test public void nativeCloseUpdatesTheSharedModel() throws Exception {
+    @Test
+    public void nativeCloseUpdatesTheSharedModel() throws Exception {
         var player = player();
         player.hasInventoryOpen = true;
         player.getInventory().openWindowID = 3;
@@ -60,17 +68,22 @@ public class GeyserInventoryActionsTest {
         assertTrue(player.getInventory().menu.getCarried().isEmpty());
     }
 
-    @Test public void acceptedHotbarChangeUpdatesUseState() throws Exception {
+    @Test
+    public void acceptedHotbarChangeUpdatesUseState() throws Exception {
         var player = player();
         var session = session();
-        GeyserInventoryActions.translate(session, player, new MobEquipmentPacket(),
+        GeyserInventoryActions.translate(
+                session,
+                player,
+                new MobEquipmentPacket(),
                 () -> when(session.getPlayerInventory().getHeldItemSlot()).thenReturn(4));
         assertEquals(4, player.packetStateData.lastSlotSelected);
         assertEquals(4, player.getInventory().inventory.selected);
         verify(player.actionManager).selectHotbarSlot();
     }
 
-    @Test public void serverMenuIdentityGuardsNativeSlotChanges() throws Exception {
+    @Test
+    public void serverMenuIdentityGuardsNativeSlotChanges() throws Exception {
         var player = player();
         var target = player.getInventory();
         target.openWindowID = 3;

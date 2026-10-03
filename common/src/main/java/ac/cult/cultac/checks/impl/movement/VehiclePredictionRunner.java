@@ -7,23 +7,22 @@ import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.BoatTransform;
 import ac.cult.cultac.checks.impl.vehicle.VehicleC;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.checks.type.VehicleListener;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.VehiclePositionUpdate;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
+import ac.cult.cultac.utils.data.SprintingState;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import ac.cult.cultac.utils.data.packetentity.PacketEntityCamel;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHappyGhast;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
-import ac.cult.cultac.utils.data.packetentity.PacketEntityCamel;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityNautilus;
-import ac.cult.cultac.utils.data.SprintingState;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
+import java.util.Set;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Material;
-
-import java.util.Set;
 
 public class VehiclePredictionRunner extends CultProcessor implements VehicleListener, ClientTickEndListener {
     public VehiclePredictionRunner(CultPlayer playerData) {
@@ -79,7 +78,10 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
         boolean vehicleMovementFromClientTick = player.packetStateData.isVehicleMovementFromClientTick();
         PacketEntity riding = result.getSimulationContext().getVehicle();
         if (riding instanceof PacketEntityCamel camel) {
-            camel.lastPredictedInLiquid = result.getSimulationContext().getWorldData().getInWater().determineOptimistically()
+            camel.lastPredictedInLiquid = result.getSimulationContext()
+                            .getWorldData()
+                            .getInWater()
+                            .determineOptimistically()
                     || result.getSimulationContext().getWorldData().getInLava().determineOptimistically();
         }
 
@@ -112,10 +114,14 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
             // Entity#move refreshes onGround after every downward collision,
             // including consecutive grounded ticks. Legacy vehicle packets have
             // no wire bit to supply that result after this collision inference.
-            if ((!vehicleUpdate.isHasOnGround() || !reality.getSimulationContext().isOnGround())
-                    && downCollide != null && downCollide.isLikelyCollide()
+            if ((!vehicleUpdate.isHasOnGround()
+                            || !reality.getSimulationContext().isOnGround())
+                    && downCollide != null
+                    && downCollide.isLikelyCollide()
                     && valid.maxY + 0.001 < reality.getTarget().y // And their valid Y is below their actual movement
-                    && downCollide.inMovementSpace(reality.getSimulationContext().getLastStuckSpeed().y) + 0.001
+                    && downCollide.inMovementSpace(
+                                            reality.getSimulationContext().getLastStuckSpeed().y)
+                                    + 0.001
                             >= reality.getTarget().y) { // And they recovered by colliding
                 // Must be on the ground
                 lastOnGround = lastOnGround == null ? DesyncStatus.TRUE : lastOnGround.addBoolean(true);
@@ -132,7 +138,9 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
             nextLastOnGround = DesyncStatus.fromBoolean(vehicleUpdate.isOnGround());
         }
         player.checkManager.getSimulationProcessor().setLastOnGround(nextLastOnGround);
-        if (vehicleMovementFromClientTick && riding != null && !vehicleUpdate.isHasOnGround()
+        if (vehicleMovementFromClientTick
+                && riding != null
+                && !vehicleUpdate.isHasOnGround()
                 && !nextLastOnGround.isDesync()) {
             // Older MoveVehicle packets omit onGround. Carry ground transitions
             // proved by Entity#move's downward collision instead of overwriting
@@ -155,12 +163,14 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
             // those exact post-tick fields into the next vehicle prediction.
             BoatTransform.commitAcceptedBoatTickState(player, result);
         } else if (riding instanceof PacketEntityHappyGhast) {
-            Vec3 velocity = uniqueVelocity(player.checkManager.getSimulationProcessor().getValidPlayerStartingVels());
+            Vec3 velocity =
+                    uniqueVelocity(player.checkManager.getSimulationProcessor().getValidPlayerStartingVels());
             if (velocity != null) {
                 riding.deltaMovement = velocity;
             }
         } else if (riding instanceof PacketEntityNautilus nautilus) {
-            Vec3 velocity = uniqueVelocity(player.checkManager.getSimulationProcessor().getValidPlayerStartingVels());
+            Vec3 velocity =
+                    uniqueVelocity(player.checkManager.getSimulationProcessor().getValidPlayerStartingVels());
             if (velocity != null) {
                 riding.deltaMovement = velocity;
             }
@@ -233,11 +243,11 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
     private boolean usesStagedVehicleInput(PacketEntity root) {
         return root != null
                 && (EntityTypeUtil.isBoat(root.type)
-                || EntityTypeUtil.isHorseFamily(root.type)
-                || root.type == EntityTypesCompat.PIG
-                || root.type == EntityTypesCompat.STRIDER
-                || root instanceof PacketEntityHappyGhast
-                || root instanceof PacketEntityNautilus);
+                        || EntityTypeUtil.isHorseFamily(root.type)
+                        || root.type == EntityTypesCompat.PIG
+                        || root.type == EntityTypesCompat.STRIDER
+                        || root instanceof PacketEntityHappyGhast
+                        || root instanceof PacketEntityNautilus);
     }
 
     private Vec3 uniqueVelocity(Set<Vec3> velocities) {
@@ -251,5 +261,4 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
         }
         return unique;
     }
-
 }

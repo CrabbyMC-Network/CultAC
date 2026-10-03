@@ -10,7 +10,10 @@ import ac.cult.cultac.utils.math.VectorUtils;
 import net.minecraft.core.BlockPos;
 import org.bukkit.Material;
 
-@CheckData(name = "FarPlace", stableKey = "cult.scaffolding.far_place", description = "Placing blocks from too far away")
+@CheckData(
+        name = "FarPlace",
+        stableKey = "cult.scaffolding.far_place",
+        description = "Placing blocks from too far away")
 public class FarPlace extends BlockPlaceCheck {
     public FarPlace(CultPlayer player) {
         super(player);
@@ -43,5 +46,4 @@ public class FarPlace extends BlockPlaceCheck {
             }
         }
     }
-
 }

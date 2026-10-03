@@ -18,30 +18,40 @@ final class TestTransportRoutes {
         entries = new PacketDispatcher.Route[runtime.slotCount()];
         snapshot = new PacketRoutes(runtime, entries);
         dispatcher = new PacketDispatcher(runtime) {
-            @Override public Route get(PacketDirection direction, ConnectionPhase phase, int id) {
+            @Override
+            public Route get(PacketDirection direction, ConnectionPhase phase, int id) {
                 return snapshot.get(direction, phase, id);
             }
-            @Override public <R extends ServerboundPacket> void receive(PacketReceiveEvent<R> event, ReceiveRoute<? super R> routes) {
+
+            @Override
+            public <R extends ServerboundPacket> void receive(
+                    PacketReceiveEvent<R> event, ReceiveRoute<? super R> routes) {
                 routes.dispatch(event, null);
             }
-            @Override public void send(PacketSendEvent<?> event, PacketSendRoute<Object> route) {
+
+            @Override
+            public void send(PacketSendEvent<?> event, PacketSendRoute<Object> route) {
                 route.dispatch(event, null, event.getOriginalPacket());
             }
         };
     }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     <R extends ServerboundPacket> void receive(PacketType<R> type, Consumer<PacketReceiveEvent<R>> callback) {
         PacketReceiveHandler<Object> handler = (event, player, packet) -> callback.accept(event);
-        var route = new PacketDispatcher.ReceiveRoute<ServerboundPacket>(PacketReceiveRoute.empty(),
-                PacketReceiveRoute.of(new PacketReceiveHandler[]{handler}), PacketReceiveRoute.empty());
+        var route = new PacketDispatcher.ReceiveRoute<ServerboundPacket>(
+                PacketReceiveRoute.empty(),
+                PacketReceiveRoute.of(new PacketReceiveHandler[] {handler}),
+                PacketReceiveRoute.empty());
         entries[runtime.slot(type)] = new PacketDispatcher.Route(type, route, null);
         snapshot = new PacketRoutes(runtime, entries);
     }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     <R extends ClientboundPacket> void send(PacketType<R> type, Consumer<PacketSendEvent<R>> callback) {
         PacketSendHandler<Object> handler = (event, player, packet) -> callback.accept((PacketSendEvent) event);
-        entries[runtime.slot(type)] = new PacketDispatcher.Route(type, null,
-                PacketSendRoute.of(new PacketSendHandler[]{handler}));
+        entries[runtime.slot(type)] =
+                new PacketDispatcher.Route(type, null, PacketSendRoute.of(new PacketSendHandler[] {handler}));
         snapshot = new PacketRoutes(runtime, entries);
     }
 }

@@ -13,7 +13,8 @@ import java.util.function.Supplier;
 
 /** Producers snapshot records; only the logger's writer thread touches the file. */
 final class PacketLogCapture {
-    private record Record(byte[] bytes) { }
+    private record Record(byte[] bytes) {}
+
     private final ArrayDeque<Record> queue = new ArrayDeque<>();
     private final AtomicLong globalBytes;
     private final long captureLimit;
@@ -44,8 +45,9 @@ final class PacketLogCapture {
         if (stopReason != null) return;
         try {
             String value = snapshot.get();
-            byte[] bytes = ("seq=" + (sequence + 1) + " elapsed_ns=" + (System.nanoTime() - started)
-                    + " " + value + "\n").getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = ("seq=" + (sequence + 1) + " elapsed_ns=" + (System.nanoTime() - started) + " " + value
+                            + "\n")
+                    .getBytes(StandardCharsets.UTF_8);
             if (pendingBytes + bytes.length > captureLimit) {
                 stop("INCOMPLETE: per-capture queue overflow");
                 return;

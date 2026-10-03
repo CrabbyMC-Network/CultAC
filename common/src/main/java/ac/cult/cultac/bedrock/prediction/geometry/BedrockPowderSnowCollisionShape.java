@@ -6,8 +6,7 @@ import java.util.Objects;
 final class BedrockPowderSnowCollisionShape {
     private static final double FALL_INTO_MAX_Y = 0.899999976D;
 
-    private BedrockPowderSnowCollisionShape() {
-    }
+    private BedrockPowderSnowCollisionShape() {}
 
     enum CollisionBranch {
         EMPTY,

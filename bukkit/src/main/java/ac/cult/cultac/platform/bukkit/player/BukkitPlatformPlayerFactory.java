@@ -3,15 +3,13 @@ package ac.cult.cultac.platform.bukkit.player;
 import ac.cult.cultac.platform.api.player.AbstractPlatformPlayerFactory;
 import ac.cult.cultac.platform.api.player.OfflinePlatformPlayer;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.UUID;
-
 
 public class BukkitPlatformPlayerFactory extends AbstractPlatformPlayerFactory<Player> {
 

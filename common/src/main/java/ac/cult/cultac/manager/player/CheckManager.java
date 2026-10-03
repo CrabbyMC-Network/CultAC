@@ -1,8 +1,5 @@
 package ac.cult.cultac.manager.player;
 
-
-import ac.cult.cultac.protocol.PacketType;
-
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CultProcessor;
@@ -44,11 +41,11 @@ import ac.cult.cultac.checks.impl.prediction.DebugHandler;
 import ac.cult.cultac.checks.impl.prediction.FlagCaller;
 import ac.cult.cultac.checks.impl.prediction.OffsetHandler;
 import ac.cult.cultac.checks.impl.prediction.SuperDebug;
-import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.impl.prediction.checks.NoSlow;
 import ac.cult.cultac.checks.impl.prediction.checks.Phase;
 import ac.cult.cultac.checks.impl.prediction.checks.ServerStateNoSlow;
 import ac.cult.cultac.checks.impl.prediction.checks.psuedo.*;
+import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.impl.prediction.runner.ExplosionHandler;
 import ac.cult.cultac.checks.impl.prediction.runner.KnockbackHandler;
 import ac.cult.cultac.checks.impl.prediction.runner.SimulationProcessor;
@@ -57,7 +54,23 @@ import ac.cult.cultac.checks.impl.sprint.*;
 import ac.cult.cultac.checks.impl.vehicle.*;
 import ac.cult.cultac.checks.type.*;
 import ac.cult.cultac.events.packets.*;
+import ac.cult.cultac.network.PacketHandlerScanner;
+import ac.cult.cultac.network.PacketReceiveHandler;
+import ac.cult.cultac.network.PacketReceiveRoute;
+import ac.cult.cultac.network.PacketRouteBuilder;
+import ac.cult.cultac.network.PacketRouteBuilder.ReceiveStage;
+import ac.cult.cultac.network.PacketSendHandler;
+import ac.cult.cultac.network.PacketSendRoute;
+import ac.cult.cultac.network.event.PacketListenerPriority;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.platform.api.permissions.PermissionDefaultValue;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.PacketDirection;
+import ac.cult.cultac.protocol.PacketType;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
@@ -69,25 +82,8 @@ import ac.cult.cultac.utils.latency.CompensatedInventory;
 import ac.cult.cultac.utils.latency.KeepAliveProcessor;
 import ac.cult.cultac.utils.lists.EvictingQueue;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
-import ac.cult.cultac.network.PacketHandlerScanner;
-import ac.cult.cultac.network.PacketRouteBuilder;
-import ac.cult.cultac.network.PacketRouteBuilder.ReceiveStage;
-import ac.cult.cultac.network.event.PacketListenerPriority;
-import ac.cult.cultac.protocol.PacketDirection;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
-import ac.cult.cultac.network.PacketReceiveHandler;
-import ac.cult.cultac.network.PacketReceiveRoute;
-import ac.cult.cultac.network.PacketSendHandler;
-import ac.cult.cultac.network.PacketSendRoute;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.platform.api.permissions.PermissionDefaultValue;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import ac.cult.cultac.protocol.ConnectionPhase;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -98,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.minecraft.world.phys.Vec3;
 
 public class CheckManager {
     private static final List<Class<? extends CheckListener>> SEND_DISPATCH_LISTENER_TYPES = List.of(
@@ -115,8 +112,7 @@ public class CheckManager {
             BadPacketsP.class,
             BadPacketsM.class,
             PostCheck.class,
-            ExplosionHandler.class
-    );
+            ExplosionHandler.class);
 
     private final CultPlayer player;
 
@@ -213,23 +209,22 @@ public class CheckManager {
         registerCheckPermissionsOnce();
     }
 
-
     private static final AtomicBoolean checkPermissionsRegistered = new AtomicBoolean(false);
 
     private void registerCheckPermissionsOnce() {
         if (checkPermissionsRegistered.getAndSet(true)) return;
 
         final String[] permissions = {
-                "cult.exempt.",
-                "cult.nosetback.",
-                "cult.nomodifypacket.",
+            "cult.exempt.", "cult.nosetback.", "cult.nomodifypacket.",
         };
 
         for (final Check check : allChecks.values()) {
             if (check.getConfigName() == null) continue;
             final String id = check.getConfigName().toLowerCase();
             for (String permissionName : permissions) {
-                CultAPI.INSTANCE.getPermissionManager().registerPermission(permissionName + id, PermissionDefaultValue.FALSE);
+                CultAPI.INSTANCE
+                        .getPermissionManager()
+                        .registerPermission(permissionName + id, PermissionDefaultValue.FALSE);
             }
         }
     }
@@ -326,30 +321,24 @@ public class CheckManager {
     }
 
     private static ClassToInstanceMap<CheckListener> buildPositionChecks(CultPlayer player) {
-        return listenerMap(List.<CheckListener>of(
-                new CompensatedCooldown(player)));
+        return listenerMap(List.<CheckListener>of(new CompensatedCooldown(player)));
     }
 
     private static ClassToInstanceMap<RotationListener> buildRotationChecks(CultPlayer player) {
         return listenerMap(List.<RotationListener>of(
                 // AimProcessor attaches itself to the update before dependent checks consume it.
-                new AimProcessor(player),
-                new AimModulo360(player),
-                new AimDuplicateLook(player)));
+                new AimProcessor(player), new AimModulo360(player), new AimDuplicateLook(player)));
     }
 
     private static ClassToInstanceMap<VehicleListener> buildVehicleChecks(CultPlayer player) {
-        return listenerMap(List.<VehicleListener>of(
-                new VehiclePredictionRunner(player)));
+        return listenerMap(List.<VehicleListener>of(new VehiclePredictionRunner(player)));
     }
 
     // Runtime check identities which deliberately own no callback in the
     // baseline. Keeping them out of callback lists preserves registration and
     // configuration without inventing behavior.
     private static ClassToInstanceMap<CheckListener> buildIdentityChecks(CultPlayer player) {
-        return listenerMap(List.<CheckListener>of(
-                new VehicleC(player),
-                new BedrockMovement(player)));
+        return listenerMap(List.<CheckListener>of(new VehicleC(player), new BedrockMovement(player)));
     }
 
     private static ClassToInstanceMap<PostPredictionListener> buildPostPredictionChecks(CultPlayer player) {
@@ -563,18 +552,33 @@ public class CheckManager {
         // receive dispatch would throw in registerReceive at CheckManager construction.
 
         for (Class<? extends PostPredictionListener> type : List.of(
-                PacketOrderA.class, PacketOrderE.class, PacketOrderF.class, PacketOrderG.class,
-                PacketOrderH.class, PacketOrderI.class, PacketOrderJ.class, PacketOrderK.class,
-                PacketOrderL.class, PacketOrderM.class, BadPacketsX.class, SprintD.class,
+                PacketOrderA.class,
+                PacketOrderE.class,
+                PacketOrderF.class,
+                PacketOrderG.class,
+                PacketOrderH.class,
+                PacketOrderI.class,
+                PacketOrderJ.class,
+                PacketOrderK.class,
+                PacketOrderL.class,
+                PacketOrderM.class,
+                BadPacketsX.class,
+                SprintD.class,
                 SprintE.class,
-                MultiInteractA.class, MultiInteractB.class, ElytraB.class,
-                ElytraC.class, ElytraD.class, ElytraE.class, ElytraF.class, ElytraG.class,
-                ElytraH.class, ElytraI.class)) {
+                MultiInteractA.class,
+                MultiInteractB.class,
+                ElytraB.class,
+                ElytraC.class,
+                ElytraD.class,
+                ElytraE.class,
+                ElytraF.class,
+                ElytraG.class,
+                ElytraH.class,
+                ElytraI.class)) {
             registerReceive(registrations, postPredictionCheck.get(type));
         }
         for (Class<? extends BlockPlaceCheck> type : List.of(
-                MultiPlace.class, MultiActionsF.class, MultiActionsG.class, PositionPlace.class,
-                PacketOrderN.class)) {
+                MultiPlace.class, MultiActionsF.class, MultiActionsG.class, PositionPlace.class, PacketOrderN.class)) {
             registerReceive(registrations, blockPlaceCheck.get(type));
         }
 
@@ -608,7 +612,8 @@ public class CheckManager {
                     registration.handler().handle(event, player, packet);
                 }
             };
-            packetRegistrations.receive.receiveRoute(registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.EARLY);
+            packetRegistrations.receive.receiveRoute(
+                    registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.EARLY);
         }
     }
 
@@ -628,8 +633,8 @@ public class CheckManager {
             return;
         }
         if (!(listener instanceof DecodedPacketReceiveListener decodedListener)) {
-            throw new IllegalStateException(listener.getClass().getName()
-                    + " is not a decoded packet receive listener");
+            throw new IllegalStateException(
+                    listener.getClass().getName() + " is not a decoded packet receive listener");
         }
         decodedReceiveListeners.add(decodedListener);
     }
@@ -655,8 +660,8 @@ public class CheckManager {
         tickEndHandlers.add(new TickEndHandlerRegistration(tickEndListener));
     }
 
-    private void registerReceive(PacketRouteBuilder handlers,
-                                 Set<CheckListener> registeredListeners, CheckListener listener) {
+    private void registerReceive(
+            PacketRouteBuilder handlers, Set<CheckListener> registeredListeners, CheckListener listener) {
         if (listener == null) {
             return;
         }
@@ -668,7 +673,8 @@ public class CheckManager {
         List<PacketHandlerScanner.ReceiveRegistration> registrations = recordScanner.receiveHandlers(listener);
         if (registrations.isEmpty()) {
             if (!recordScanner.hasReceiveHandlerDeclaration(listener.getClass())) {
-                throw new IllegalStateException("No receive @CultPacketHandler methods on " + listener.getClass().getName());
+                throw new IllegalStateException("No receive @CultPacketHandler methods on "
+                        + listener.getClass().getName());
             }
             return;
         }
@@ -678,12 +684,13 @@ public class CheckManager {
                     registration.handler().handle(event, player, packet);
                 }
             };
-            handlers.receiveRoute(registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.ORDINARY);
+            handlers.receiveRoute(
+                    registration.packetType(), PacketListenerPriority.NORMAL, handler, ReceiveStage.ORDINARY);
         }
     }
 
-    private void registerSend(PacketRouteBuilder handlers,
-                              Set<CheckListener> registeredListeners, CheckListener listener) {
+    private void registerSend(
+            PacketRouteBuilder handlers, Set<CheckListener> registeredListeners, CheckListener listener) {
         if (listener == null) {
             return;
         }
@@ -695,7 +702,8 @@ public class CheckManager {
         List<PacketHandlerScanner.SendRegistration> registrations = recordScanner.sendHandlers(listener);
         if (registrations.isEmpty()) {
             if (!recordScanner.hasSendHandlerDeclaration(listener.getClass())) {
-                throw new IllegalStateException("No send @CultPacketHandler methods on " + listener.getClass().getName());
+                throw new IllegalStateException("No send @CultPacketHandler methods on "
+                        + listener.getClass().getName());
             }
             return;
         }
@@ -725,8 +733,7 @@ public class CheckManager {
             }
         }
         if (!missing.isEmpty()) {
-            throw new IllegalStateException("Unregistered packet handler declarations: "
-                    + String.join(", ", missing));
+            throw new IllegalStateException("Unregistered packet handler declarations: " + String.join(", ", missing));
         }
     }
 
@@ -738,9 +745,7 @@ public class CheckManager {
     }
 
     private boolean shouldRegister(CheckListener listener) {
-        return !(listener instanceof Check check)
-                || !player.isBedrockMovement()
-                || check.isBedrockSupported();
+        return !(listener instanceof Check check) || !player.isBedrockMovement() || check.isBedrockSupported();
     }
 
     private boolean shouldDispatch(CheckListener listener) {
@@ -869,7 +874,8 @@ public class CheckManager {
             player.z = claimed.z;
 
             if (player.inVehicle()) {
-                Vec3 posFromVehicle = BoundingBoxSize.getRidingOffsetFromVehicle(player.compensatedEntities.getSelf().getRiding(), player);
+                Vec3 posFromVehicle = BoundingBoxSize.getRidingOffsetFromVehicle(
+                        player.compensatedEntities.getSelf().getRiding(), player);
                 player.x = posFromVehicle.x;
                 player.y = posFromVehicle.y;
                 player.z = posFromVehicle.z;
@@ -990,7 +996,6 @@ public class CheckManager {
         breaksToCheck.add(blockBreak);
     }
 
-
     private ExplosionHandler explosionHandlerCache;
 
     public ExplosionHandler getExplosionHandler() {
@@ -1032,6 +1037,7 @@ public class CheckManager {
     }
 
     private Angle angleCheck;
+
     public Angle getAngleCheck() {
         if (angleCheck == null) {
             angleCheck = getListener(Angle.class);
@@ -1063,11 +1069,13 @@ public class CheckManager {
         final PacketRouteBuilder prePredictionReceive;
         final PacketRouteBuilder receive;
         final PacketRouteBuilder send;
+
         PacketRegistrations(PacketHandlerScanner scanner) {
             prePredictionReceive = new PacketRouteBuilder(scanner);
             receive = new PacketRouteBuilder(scanner);
             send = new PacketRouteBuilder(scanner);
         }
+
         final Set<CheckListener> receiveListeners = Collections.newSetFromMap(new IdentityHashMap<>());
         final Set<CheckListener> sendListeners = Collections.newSetFromMap(new IdentityHashMap<>());
     }
@@ -1077,7 +1085,4 @@ public class CheckManager {
             listener.onPlayerTickEnd(event);
         }
     }
-
-
-
 }

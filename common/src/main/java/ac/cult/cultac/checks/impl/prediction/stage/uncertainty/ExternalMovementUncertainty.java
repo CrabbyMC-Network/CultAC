@@ -8,8 +8,7 @@ import ac.cult.cultac.utils.data.PistonPushes;
 import net.minecraft.world.phys.Vec3;
 
 public final class ExternalMovementUncertainty {
-    private ExternalMovementUncertainty() {
-    }
+    private ExternalMovementUncertainty() {}
 
     public static Snapshot capture(PredictionResult result, PredictionResult lastResult) {
         Snapshot movement = capture(result.getSimulationContext(), lastResult);
@@ -20,14 +19,13 @@ public final class ExternalMovementUncertainty {
                 movement.currentPistonTargetEnvelope(),
                 movement.currentShulkerTargetEnvelope(),
                 movement.combinedTargetEnvelope(),
-                movement.combinedClientPositionOnlyEnvelope()
-        );
+                movement.combinedClientPositionOnlyEnvelope());
     }
 
     public static Snapshot capture(SimulationContext context, PredictionResult lastResult) {
         PistonPushes lastPush = lastResult == null
-                || lastResult.getSimulationContext() == null
-                || lastResult.getSimulationContext().getWorldData() == null
+                        || lastResult.getSimulationContext() == null
+                        || lastResult.getSimulationContext().getWorldData() == null
                 ? null
                 : lastResult.getSimulationContext().getWorldData().getPistonPushes();
         PistonPushes currentPush = context.getWorldData().getPistonPushes();
@@ -35,7 +33,8 @@ public final class ExternalMovementUncertainty {
         // Legacy block-entity effects are captured after the preceding movement
         // handlers. They already belong to this packet; do not reuse that same
         // shove for an additional tick after its snapshot expires.
-        SimpleCollisionBox lastPiston = currentPush != null && currentPush.isPistonMovementPhased() ? emptyBox()
+        SimpleCollisionBox lastPiston = currentPush != null && currentPush.isPistonMovementPhased()
+                ? emptyBox()
                 : scalePistonPushForStuckSpeedTarget(push(lastPush, true), context);
         SimpleCollisionBox lastShulker = push(lastPush, false);
         // Minecraft#tick runs ClientLevel#tickEntities, then ClientLevel#tickBlockEntities,
@@ -62,8 +61,7 @@ public final class ExternalMovementUncertainty {
                 currentPiston,
                 currentShulker,
                 combined,
-                multiplyEnvelope(combined, context.getLastStuckSpeed())
-        );
+                multiplyEnvelope(combined, context.getLastStuckSpeed()));
     }
 
     private static SimpleCollisionBox push(PistonPushes pushes, boolean piston) {
@@ -74,7 +72,8 @@ public final class ExternalMovementUncertainty {
         return box == null ? emptyBox() : box.copy();
     }
 
-    private static SimpleCollisionBox scalePistonPushForStuckSpeedTarget(SimpleCollisionBox push, SimulationContext context) {
+    private static SimpleCollisionBox scalePistonPushForStuckSpeedTarget(
+            SimpleCollisionBox push, SimulationContext context) {
         if (push.isEmpty()) {
             return push;
         }
@@ -120,8 +119,7 @@ public final class ExternalMovementUncertainty {
                 Math.min(minZ, maxZ),
                 Math.max(minX, maxX),
                 Math.max(minY, maxY),
-                Math.max(minZ, maxZ)
-        );
+                Math.max(minZ, maxZ));
     }
 
     private static SimpleCollisionBox emptyBox() {
@@ -151,8 +149,7 @@ public final class ExternalMovementUncertainty {
             SimpleCollisionBox currentPistonTargetEnvelope,
             SimpleCollisionBox currentShulkerTargetEnvelope,
             SimpleCollisionBox combinedTargetEnvelope,
-            SimpleCollisionBox combinedClientPositionOnlyEnvelope
-    ) {
+            SimpleCollisionBox combinedClientPositionOnlyEnvelope) {
         public boolean hasAnyUncertainty() {
             return hasExternalMove();
         }
@@ -180,8 +177,7 @@ public final class ExternalMovementUncertainty {
             return new Vec3(
                     Math.max(Math.abs(box.minX), Math.abs(box.maxX)),
                     Math.max(Math.abs(box.minY), Math.abs(box.maxY)),
-                    Math.max(Math.abs(box.minZ), Math.abs(box.maxZ))
-            );
+                    Math.max(Math.abs(box.minZ), Math.abs(box.maxZ)));
         }
     }
 }

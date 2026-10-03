@@ -18,14 +18,16 @@ import org.jetbrains.annotations.NotNull;
 public interface MigrationContext {
 
     /** OLD user file as parsed by snakeyaml, read-only. */
-    @NotNull YamlMap input();
+    @NotNull
+    YamlMap input();
 
     /**
      * NEW file's writeable view. Starts as the bundled default with any
      * trivially-liftable user overrides already auto-applied (the diff path).
      * Migrations only touch what they explicitly need to.
      */
-    @NotNull YamlMap output();
+    @NotNull
+    YamlMap output();
 
     /**
      * Read-or-write view of a sibling file. Reads see that file's current
@@ -34,5 +36,6 @@ public interface MigrationContext {
      *
      * @param fileName the sibling file's bare name, e.g. {@code "discord.yml"}.
      */
-    @NotNull YamlMap otherFile(@NotNull String fileName);
+    @NotNull
+    YamlMap otherFile(@NotNull String fileName);
 }

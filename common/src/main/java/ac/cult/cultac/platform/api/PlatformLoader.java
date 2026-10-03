@@ -1,6 +1,5 @@
 package ac.cult.cultac.platform.api;
 
-import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.cult.cultac.platform.api.command.CommandService;
 import ac.cult.cultac.platform.api.manager.ItemResetHandler;
 import ac.cult.cultac.platform.api.manager.MessagePlaceHolderManager;
@@ -9,6 +8,7 @@ import ac.cult.cultac.platform.api.manager.PlatformPluginManager;
 import ac.cult.cultac.platform.api.player.PlatformPlayerFactory;
 import ac.cult.cultac.platform.api.scheduler.PlatformScheduler;
 import ac.cult.cultac.platform.api.sender.SenderFactory;
+import ac.grim.grimac.api.plugin.GrimPlugin;
 import org.jetbrains.annotations.NotNull;
 
 public interface PlatformLoader {

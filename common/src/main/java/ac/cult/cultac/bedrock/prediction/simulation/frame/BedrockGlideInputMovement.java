@@ -6,23 +6,16 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 
 final class BedrockGlideInputMovement {
-    private BedrockGlideInputMovement() {
-    }
+    private BedrockGlideInputMovement() {}
 
     static Vec3d apply(
-        Vec3d velocity,
-        BedrockMovementState current,
-        BedrockInputIntent intent,
-        BedrockMovementContext context,
-        BedrockGlideState gliding
-    ) {
+            Vec3d velocity,
+            BedrockMovementState current,
+            BedrockInputIntent intent,
+            BedrockMovementContext context,
+            BedrockGlideState gliding) {
 
         return BedrockAerialMovement.glideInputSystemVelocity(
-            velocity,
-            current,
-            intent,
-            context,
-            gliding.activeAtGlideInputSystem()
-        );
+                velocity, current, intent, context, gliding.activeAtGlideInputSystem());
     }
 }

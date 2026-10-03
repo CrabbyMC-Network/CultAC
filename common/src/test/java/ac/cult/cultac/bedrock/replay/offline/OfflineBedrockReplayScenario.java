@@ -25,7 +25,8 @@ final class OfflineBedrockReplayScenario {
         Objects.requireNonNull(root, "root");
         Path normalized = root.toAbsolutePath().normalize();
         Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(normalized.resolve("fixture.properties"), StandardCharsets.UTF_8)) {
+        try (Reader reader =
+                Files.newBufferedReader(normalized.resolve("fixture.properties"), StandardCharsets.UTF_8)) {
             properties.load(reader);
         }
 

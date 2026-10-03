@@ -5,7 +5,7 @@ import org.cloudburstmc.protocol.bedrock.packet.InventoryTransactionPacket;
 import org.geysermc.geyser.session.GeyserSession;
 
 final class GeyserEntityInteractions {
-    private GeyserEntityInteractions() { }
+    private GeyserEntityInteractions() {}
 
     static void observe(GeyserSession session, CultPlayer player, InventoryTransactionPacket packet) {
         var entity = session.getEntityCache().getEntityByGeyserId(packet.getRuntimeEntityId());

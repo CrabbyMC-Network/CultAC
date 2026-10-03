@@ -3,16 +3,18 @@ package ac.cult.cultac.checks.impl.movement.timer;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.PositionListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
 
 /** Caps movement backlog alongside the precise TimerA check. */
 public class DumbTimer extends CultProcessor implements PositionListener {
     private static final long DEFAULT_BACKLOG_LIMIT = 1_000_000_000L;
 
-    public DumbTimer(CultPlayer cultPlayer) { super(cultPlayer); }
+    public DumbTimer(CultPlayer cultPlayer) {
+        super(cultPlayer);
+    }
 
     double balance = System.nanoTime() - DEFAULT_BACKLOG_LIMIT;
     double lastLongTeleport = System.nanoTime();
@@ -21,7 +23,7 @@ public class DumbTimer extends CultProcessor implements PositionListener {
     private boolean isServerTickingNormally() {
         return Math.abs(player.packetStateData.serverTickRate - 20.0F) < 1.0E-3F
                 && (!player.packetStateData.serverTicksFrozen
-                || player.packetStateData.serverFrozenTickStepsRemaining > 0);
+                        || player.packetStateData.serverFrozenTickStepsRemaining > 0);
     }
 
     public void resetTimerWindow() {
@@ -77,8 +79,8 @@ public class DumbTimer extends CultProcessor implements PositionListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet);
     }
 

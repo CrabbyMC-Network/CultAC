@@ -1,24 +1,28 @@
 package ac.cult.cultac.network;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.network.Connection;
 import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class PacketConnectionsTest {
     private final PacketConnections connections = new PacketConnections();
 
-    @BeforeEach void bootstrap() { OfflineCultTestBootstrap.installConfig(); }
+    @BeforeEach
+    void bootstrap() {
+        OfflineCultTestBootstrap.installConfig();
+    }
 
     private CultConnection session(UUID uuid) throws Exception {
         var channel = new EmbeddedChannel();
@@ -29,7 +33,8 @@ class PacketConnectionsTest {
         profile.setAccessible(true);
         profile.set(listener, new com.mojang.authlib.GameProfile(uuid, "ConnectionTest"));
         when(nativeConnection.getPacketListener()).thenReturn(listener);
-        var session = new CultConnection(nativeConnection, channel, CultAPI.INSTANCE.getNetworkManager().dispatcher(), ignored -> null);
+        var session = new CultConnection(
+                nativeConnection, channel, CultAPI.INSTANCE.getNetworkManager().dispatcher(), ignored -> null);
         session.phase(PacketDirection.SERVERBOUND, ConnectionPhase.CONFIGURATION);
         session.phase(PacketDirection.CLIENTBOUND, ConnectionPhase.CONFIGURATION);
         connections.attach(session);
@@ -43,7 +48,8 @@ class PacketConnectionsTest {
         channel.finishAndReleaseAll();
     }
 
-    @Test void oldChannelClosePreservesReplacementAndItsExemption() throws Exception {
+    @Test
+    void oldChannelClosePreservesReplacementAndItsExemption() throws Exception {
         var uuid = UUID.randomUUID();
         var first = session(uuid);
         var second = session(uuid);
@@ -64,15 +70,20 @@ class PacketConnectionsTest {
             assertSame(second.player(), players.getPlayer(second.user()));
             assertTrue(players.isExemptUser(second.user()));
             assertEquals(1, connections.snapshot().size());
-        } finally { close(first); close(second); }
+        } finally {
+            close(first);
+            close(second);
+        }
         assertTrue(connections.snapshot().isEmpty());
         assertNull(connections.getUser(uuid));
     }
 
-    @Test void closingInsideAuthenticationCannotPublishAPartialPlayer() throws Exception {
+    @Test
+    void closingInsideAuthenticationCannotPublishAPartialPlayer() throws Exception {
         var calls = new AtomicInteger();
         connections.hooks(new UserLifecycleHooks() {
-            @Override public void onAuthenticated(User user) {
+            @Override
+            public void onAuthenticated(User user) {
                 calls.incrementAndGet();
                 assertNull(user.getCultPlayer());
                 user.getCultConnection().channel().close();
@@ -87,10 +98,13 @@ class PacketConnectionsTest {
             assertNull(session.player());
             assertNull(connections.getUser(session.user().getUUID()));
             assertTrue(connections.snapshot().isEmpty());
-        } finally { close(session); }
+        } finally {
+            close(session);
+        }
     }
 
-    @Test void disconnectAndShutdownShareIdempotentOwnerCleanup() throws Exception {
+    @Test
+    void disconnectAndShutdownShareIdempotentOwnerCleanup() throws Exception {
         var session = session(UUID.randomUUID());
         try {
             session.prepare();
@@ -106,10 +120,13 @@ class PacketConnectionsTest {
             assertTrue(connections.snapshot().isEmpty());
             CultAPI.INSTANCE.getPlayerDataManager().addUser(user);
             assertNull(user.getCultPlayer(), "A disconnected session cannot be tracked again");
-        } finally { close(session); }
+        } finally {
+            close(session);
+        }
     }
 
-    @Test void removingPlayerTrackingLeavesTheConnectionAvailable() throws Exception {
+    @Test
+    void removingPlayerTrackingLeavesTheConnectionAvailable() throws Exception {
         var session = session(UUID.randomUUID());
         try {
             session.prepare();
@@ -120,6 +137,8 @@ class PacketConnectionsTest {
             assertFalse(session.disconnected());
             assertSame(user, connections.getUser(user.getUUID()));
             assertSame(session, connections.get(session.channel()));
-        } finally { close(session); }
+        } finally {
+            close(session);
+        }
     }
 }

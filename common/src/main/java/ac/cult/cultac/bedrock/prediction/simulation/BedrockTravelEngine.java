@@ -15,8 +15,7 @@ import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockVelocitySystem
 final class BedrockTravelEngine {
     static final BedrockTravelEngine INSTANCE = new BedrockTravelEngine();
 
-    private BedrockTravelEngine() {
-    }
+    private BedrockTravelEngine() {}
 
     BedrockMovementResult move(BedrockTravelInput input) {
         return travel(input).movementResult();

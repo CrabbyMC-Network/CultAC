@@ -7,21 +7,19 @@ import ac.cult.cultac.manager.datastore.PlayerToggleStore;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.platform.api.sender.Sender;
+import java.util.Objects;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
-
 public class CultVerbose implements BuildableCommand {
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("verbose")
-                        .permission("cult.verbose")
-                        .handler(this::handleVerbose)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("verbose")
+                .permission("cult.verbose")
+                .handler(this::handleVerbose));
     }
 
     private void handleVerbose(@NotNull CommandContext<Sender> context) {

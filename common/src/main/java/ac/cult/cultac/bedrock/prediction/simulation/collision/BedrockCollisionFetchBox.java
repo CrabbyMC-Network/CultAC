@@ -10,8 +10,7 @@ public final class BedrockCollisionFetchBox {
     private static final float VERTICAL_PROBE_DOWN = 0.2F;
     private static final float VERTICAL_PROBE_UP = 0.08F;
 
-    private BedrockCollisionFetchBox() {
-    }
+    private BedrockCollisionFetchBox() {}
 
     public static WorldCollisionBox of(WorldCollisionBox actor, Vec3d requestedMove, double maxUpStep) {
         float dx = (float) requestedMove.x(), dy = (float) requestedMove.y(), dz = (float) requestedMove.z();
@@ -34,8 +33,7 @@ public final class BedrockCollisionFetchBox {
     private static Box sneakVolume(Box box, float dx, float dz, float step) {
         Box shrunk = box.shrinkXz(SNEAK_SHRINK);
         float down = step * SNEAK_STEP_SCALE;
-        Box lowered = new Box(shrunk.minX, shrunk.minY - down, shrunk.minZ,
-                shrunk.maxX, shrunk.maxY, shrunk.maxZ);
+        Box lowered = new Box(shrunk.minX, shrunk.minY - down, shrunk.minZ, shrunk.maxX, shrunk.maxY, shrunk.maxZ);
         return lowered.offset(dx, 0.0F).union(lowered.offset(0.0F, dz)).union(lowered.offset(dx, dz));
     }
 
@@ -44,19 +42,34 @@ public final class BedrockCollisionFetchBox {
     }
 
     private static Box verticalVolume(Box box, float dy) {
-        return new Box(box.minX, box.minY + (-VERTICAL_PROBE_DOWN - Math.abs(dy)), box.minZ,
-                box.maxX, box.maxY + VERTICAL_PROBE_UP, box.maxZ);
+        return new Box(
+                box.minX,
+                box.minY + (-VERTICAL_PROBE_DOWN - Math.abs(dy)),
+                box.minZ,
+                box.maxX,
+                box.maxY + VERTICAL_PROBE_UP,
+                box.maxZ);
     }
 
     private record Box(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
         static Box of(WorldCollisionBox box) {
-            return new Box((float) box.minX(), (float) box.minY(), (float) box.minZ(),
-                    (float) box.maxX(), (float) box.maxY(), (float) box.maxZ());
+            return new Box(
+                    (float) box.minX(),
+                    (float) box.minY(),
+                    (float) box.minZ(),
+                    (float) box.maxX(),
+                    (float) box.maxY(),
+                    (float) box.maxZ());
         }
 
         Box expand(float x, float y, float z) {
-            return new Box(x < 0.0F ? minX + x : minX, y < 0.0F ? minY + y : minY, z < 0.0F ? minZ + z : minZ,
-                    x > 0.0F ? maxX + x : maxX, y > 0.0F ? maxY + y : maxY, z > 0.0F ? maxZ + z : maxZ);
+            return new Box(
+                    x < 0.0F ? minX + x : minX,
+                    y < 0.0F ? minY + y : minY,
+                    z < 0.0F ? minZ + z : minZ,
+                    x > 0.0F ? maxX + x : maxX,
+                    y > 0.0F ? maxY + y : maxY,
+                    z > 0.0F ? maxZ + z : maxZ);
         }
 
         Box shrinkXz(float amount) {
@@ -72,8 +85,13 @@ public final class BedrockCollisionFetchBox {
         }
 
         Box union(Box other) {
-            return new Box(Math.min(minX, other.minX), Math.min(minY, other.minY), Math.min(minZ, other.minZ),
-                    Math.max(maxX, other.maxX), Math.max(maxY, other.maxY), Math.max(maxZ, other.maxZ));
+            return new Box(
+                    Math.min(minX, other.minX),
+                    Math.min(minY, other.minY),
+                    Math.min(minZ, other.minZ),
+                    Math.max(maxX, other.maxX),
+                    Math.max(maxY, other.maxY),
+                    Math.max(maxZ, other.maxZ));
         }
 
         WorldCollisionBox toWorld() {

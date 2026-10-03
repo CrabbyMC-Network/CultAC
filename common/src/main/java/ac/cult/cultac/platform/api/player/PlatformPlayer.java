@@ -28,7 +28,8 @@ public interface PlatformPlayer extends CultEntity, OfflinePlatformPlayer {
 
     PlatformInventory getInventory();
 
-    @Nullable CultEntity getVehicle();
+    @Nullable
+    CultEntity getVehicle();
 
     GameMode getGameMode();
 

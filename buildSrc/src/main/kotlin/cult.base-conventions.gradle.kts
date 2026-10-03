@@ -3,7 +3,7 @@ import versioning.BuildConfig
 plugins {
     `java-library`
     id("io.freefair.lombok")
-    id("com.diffplug.spotless")
+    id("cult.format-conventions")
 }
 
 group = rootProject.group
@@ -23,32 +23,10 @@ java {
     withJavadocJar()
 }
 
-// Spotless configuration
-spotless {
-    java {
-        endWithNewline()
-        indentWithSpaces(4)
-        removeUnusedImports()
-        trimTrailingWhitespace()
-        targetExclude("build/generated/**/*")
-    }
-
-    kotlinGradle {
-        endWithNewline()
-        indentWithSpaces(4)
-        trimTrailingWhitespace()
-    }
-}
-
 tasks {
     withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
         options.release.set(17)
-    }
-
-    build {
-        // Ensure spotlessApply runs before build
-        dependsOn(tasks.named("spotlessApply"))
     }
 
     // Process resources (e.g., for plugin metadata files)

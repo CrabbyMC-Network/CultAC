@@ -14,7 +14,6 @@ import ac.cult.cultac.protocol.value.Hand;
 import ac.cult.cultac.protocol.value.SwingKind;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-
 import java.util.List;
 
 public final class SwingCodec implements VariantCodec<ServerboundSwing> {
@@ -23,7 +22,9 @@ public final class SwingCodec implements VariantCodec<ServerboundSwing> {
     private static final int PUNCH = 1;
 
     @Override
-    public List<String> variants() { return VARIANTS; }
+    public List<String> variants() {
+        return VARIANTS;
+    }
 
     @Override
     public ServerboundSwing read(ByteBuf input, ProtocolContext context) {

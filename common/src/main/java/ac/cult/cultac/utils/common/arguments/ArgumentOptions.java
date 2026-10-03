@@ -1,11 +1,10 @@
 package ac.cult.cultac.utils.common.arguments;
 
-import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
 public class ArgumentOptions<T> {

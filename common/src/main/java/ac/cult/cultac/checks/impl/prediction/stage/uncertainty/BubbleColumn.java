@@ -13,14 +13,25 @@ import net.minecraft.world.phys.Vec3;
 
 public class BubbleColumn implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
-        if (context.getVehicle() != null && !player.isBedrockMovement() && ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaMovementEngine.contextUsesExactEffects(context)) return start;
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
+        if (context.getVehicle() != null
+                && !player.isBedrockMovement()
+                && ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaMovementEngine.contextUsesExactEffects(
+                        context)) return start;
         if (beforeElytra(context)) return start;
         return apply(context, lastResult, start, end.y);
     }
 
     static boolean beforeElytra(SimulationContext context) {
-        return context.getVehicle() == null && context.usesFallFlyingMovement()
+        return context.getVehicle() == null
+                && context.usesFallFlyingMovement()
                 && !context.getWorldData().mustBeInLiquid()
                 && context.getVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_1);
     }
@@ -38,8 +49,10 @@ public class BubbleColumn implements UncertaintyHandler {
         double decreaseDown = bubbleColumnData.getDown() * -0.03;
 
         // Vehicles are weird... true to the original code though
-        if (context.getVehicle() instanceof PacketEntityHorse || context.getVehicle() instanceof PacketEntityStrider
-                || (context.getVehicle() != null && ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type))) {
+        if (context.getVehicle() instanceof PacketEntityHorse
+                || context.getVehicle() instanceof PacketEntityStrider
+                || (context.getVehicle() != null
+                        && ac.cult.cultac.utils.nmsutil.EntityTypeUtil.isBoat(context.getVehicle().type))) {
             increaseAirUp *= 2;
             increaseUp *= 2;
             decreaseAirDown *= 2;

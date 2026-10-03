@@ -4,7 +4,7 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataMap;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 
 public final class GeyserPlayerSleepMetadata {
-    private GeyserPlayerSleepMetadata() { }
+    private GeyserPlayerSleepMetadata() {}
 
     public static Boolean sleeping(EntityDataMap metadata) {
         Byte flags = metadata.get(EntityDataTypes.PLAYER_FLAGS);

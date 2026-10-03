@@ -1,15 +1,18 @@
 package ac.cult.cultac.checks.impl.scaffolding;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Material;
 
-@CheckData(name = "FabricatedPlace", stableKey = "cult.scaffolding.fabricated_place", description = "Sent out of bounds cursor position")
+@CheckData(
+        name = "FabricatedPlace",
+        stableKey = "cult.scaffolding.fabricated_place",
+        description = "Sent out of bounds cursor position")
 public class FabricatedPlace extends BlockPlaceCheck {
     private static final Verbose V = Verbose.of("cursor={cursor} limit={f64:%.16f}");
 
@@ -58,13 +61,15 @@ public class FabricatedPlace extends BlockPlaceCheck {
         // Near 0.0, 'float' has extremely high resolution (down to E-45).
         // It acts like a double. When the client has a tiny calculation error (e.g. -4.44E-16),
         // the float cast preserves it exactly. We only need to account for the arithmetic noise.
-        if (cursor.x < minBound - MAX_DOUBLE_ERROR ||
-                cursor.y < minBound - MAX_DOUBLE_ERROR ||
-                cursor.z < minBound - MAX_DOUBLE_ERROR) {
+        if (cursor.x < minBound - MAX_DOUBLE_ERROR
+                || cursor.y < minBound - MAX_DOUBLE_ERROR
+                || cursor.z < minBound - MAX_DOUBLE_ERROR) {
 
             // Alert logic
             double limit = minBound - MAX_DOUBLE_ERROR;
-            var buf = V.write(verbose()).cursor((float) cursor.x, (float) cursor.y, (float) cursor.z).f64(limit);
+            var buf = V.write(verbose())
+                    .cursor((float) cursor.x, (float) cursor.y, (float) cursor.z)
+                    .f64(limit);
             if (flag(buf) && shouldModifyPackets() && shouldCancel()) {
                 place.resync();
             }
@@ -82,17 +87,18 @@ public class FabricatedPlace extends BlockPlaceCheck {
         // Note: Effectively Math.max(MAX_DOUBLE_ERROR, FLOAT_STEP_AT_ONE)
         // but since FLOAT_STEP is always larger in MC coordinates, we just use it.
 
-        if (cursor.x > maxBound + upperTolerance ||
-                cursor.y > maxBound + upperTolerance ||
-                cursor.z > maxBound + upperTolerance) {
+        if (cursor.x > maxBound + upperTolerance
+                || cursor.y > maxBound + upperTolerance
+                || cursor.z > maxBound + upperTolerance) {
 
             // Alert logic
             double limit = maxBound + upperTolerance;
-            var buf = V.write(verbose()).cursor((float) cursor.x, (float) cursor.y, (float) cursor.z).f64(limit);
+            var buf = V.write(verbose())
+                    .cursor((float) cursor.x, (float) cursor.y, (float) cursor.z)
+                    .f64(limit);
             if (flag(buf) && shouldModifyPackets() && shouldCancel()) {
                 place.resync();
             }
         }
     }
-
 }

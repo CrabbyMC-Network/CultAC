@@ -1,5 +1,12 @@
 package ac.cult.cultac;
 
+import ac.cult.cultac.manager.config.ConfigManagerFileImpl;
+import ac.cult.cultac.manager.init.start.StartableInitable;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.anticheat.LogUtil;
+import ac.cult.cultac.utils.anticheat.MessageUtil;
+import ac.cult.cultac.utils.common.ConfigReloadObserver;
+import ac.cult.cultac.utils.common.PropertiesUtil;
 import ac.grim.grimac.api.GrimAbstractAPI;
 import ac.grim.grimac.api.GrimUser;
 import ac.grim.grimac.api.alerts.AlertManager;
@@ -8,24 +15,16 @@ import ac.grim.grimac.api.event.EventBus;
 import ac.grim.grimac.api.event.events.GrimReloadEvent;
 import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.grim.grimac.api.storage.backend.BackendRegistry;
-import ac.cult.cultac.manager.config.ConfigManagerFileImpl;
-import ac.cult.cultac.manager.init.start.StartableInitable;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.LogUtil;
-import ac.cult.cultac.utils.anticheat.MessageUtil;
-import ac.cult.cultac.utils.common.ConfigReloadObserver;
-import ac.cult.cultac.utils.common.PropertiesUtil;
-import lombok.Getter;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import lombok.Getter;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 // This is used for cult's external API. It has its own class just for organization.
 public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, StartableInitable {
@@ -34,14 +33,18 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
     // so a plain static-final would see a null CultAPI.INSTANCE. Holder
     // init runs on first fire, after CultAPI is fully built.
     private static final class Channels {
-        static final GrimReloadEvent.Channel RELOAD = CultAPI.INSTANCE.getEventBus().get(GrimReloadEvent.class);
+        static final GrimReloadEvent.Channel RELOAD =
+                CultAPI.INSTANCE.getEventBus().get(GrimReloadEvent.class);
     }
 
     private final CultAPI api;
+
     @Getter
     private final Map<String, Function<GrimUser, String>> variableReplacements = new ConcurrentHashMap<>();
+
     @Getter
     private final Map<String, String> staticReplacements = new ConcurrentHashMap<>();
+
     private final Map<String, Function<Object, Object>> functions = new ConcurrentHashMap<>();
     private final ConfigManagerFileImpl configManagerFile = new ConfigManagerFileImpl();
     private final String grimVersion;
@@ -173,8 +176,10 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
     @Override
     public void reload(ConfigManager config) {
         if (config.isLoadedAsync() && started) {
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> successfulReload(config));
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> successfulReload(config));
         } else {
             successfulReload(config);
         }
@@ -184,8 +189,10 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
     public CompletableFuture<Boolean> reloadAsync(ConfigManager config) {
         if (config.isLoadedAsync() && started) {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> future.complete(successfulReload(config)));
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> future.complete(successfulReload(config)));
             return future;
         }
         return CompletableFuture.completedFuture(successfulReload(config));
@@ -198,15 +205,19 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
             if (started) CultAPI.INSTANCE.getConfigManager().start();
             onReload(config);
             if (started)
-                CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(),
-                        () -> Channels.RELOAD.fire(true));
+                CultAPI.INSTANCE
+                        .getScheduler()
+                        .getAsyncScheduler()
+                        .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> Channels.RELOAD.fire(true));
             return true;
         } catch (Exception e) {
             LogUtil.error("Failed to reload config", e);
         }
         if (started)
-            CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> Channels.RELOAD.fire(false));
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getAsyncScheduler()
+                    .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> Channels.RELOAD.fire(false));
         return false;
     }
 
@@ -224,9 +235,12 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
         CultAPI.INSTANCE.getAlertManager().reload(configManager);
         CultAPI.INSTANCE.getDiscordManager().reload();
         CultAPI.INSTANCE.getSpectateManager().reload();
-        // First-load guard: load() calls reload() before start() runs, so this fires once with started=false before the datastore exists. Subsequent /cult reload calls see started=true and proceed (including disabled→enabled flips — DataStoreLifecycle.reload() re-evaluates builder.enabled() each time).
+        // First-load guard: load() calls reload() before start() runs, so this fires once with started=false before the
+        // datastore exists. Subsequent /cult reload calls see started=true and proceed (including disabled→enabled
+        // flips — DataStoreLifecycle.reload() re-evaluates builder.enabled() each time).
         if (!started) return;
-        // Hot-reload picks up backend swaps + routing + connection-pool edits without a server restart. Drains in-flight writes for shutdown-drain-timeout-ms then drops; brief mid-reload unavailability is the tradeoff.
+        // Hot-reload picks up backend swaps + routing + connection-pool edits without a server restart. Drains
+        // in-flight writes for shutdown-drain-timeout-ms then drops; brief mid-reload unavailability is the tradeoff.
         if (CultAPI.INSTANCE.getDataStoreLifecycle() != null) {
             CultAPI.INSTANCE.getDataStoreLifecycle().reload();
         }
@@ -241,13 +255,21 @@ public class CultExternalAPI implements GrimAbstractAPI, ConfigReloadObserver, S
         variableReplacements.putIfAbsent("%uuid%", user -> user.getUniqueId().toString());
         variableReplacements.putIfAbsent("%ping%", user -> user.getTransactionPing() + "");
         variableReplacements.putIfAbsent("%brand%", GrimUser::getBrand);
-        variableReplacements.putIfAbsent("%h_sensitivity%", user -> ((int) Math.round(user.getHorizontalSensitivity() * 200)) + "");
-        variableReplacements.putIfAbsent("%v_sensitivity%", user -> ((int) Math.round(user.getVerticalSensitivity() * 200)) + "");
+        variableReplacements.putIfAbsent(
+                "%h_sensitivity%", user -> ((int) Math.round(user.getHorizontalSensitivity() * 200)) + "");
+        variableReplacements.putIfAbsent(
+                "%v_sensitivity%", user -> ((int) Math.round(user.getVerticalSensitivity() * 200)) + "");
         variableReplacements.putIfAbsent("%fast_math%", user -> !user.isVanillaMath() + "");
-        variableReplacements.putIfAbsent("%tps%", user -> String.format("%.2f", CultAPI.INSTANCE.getPlatformServer().getTPS()));
+        variableReplacements.putIfAbsent(
+                "%tps%",
+                user -> String.format(
+                        "%.2f", CultAPI.INSTANCE.getPlatformServer().getTPS()));
         variableReplacements.putIfAbsent("%version%", GrimUser::getVersionName);
         // static variables
-        staticReplacements.put("%prefix%", MessageUtil.translateAlternateColorCodes('&', CultAPI.INSTANCE.getConfigManager().getPrefix()));
+        staticReplacements.put(
+                "%prefix%",
+                MessageUtil.translateAlternateColorCodes(
+                        '&', CultAPI.INSTANCE.getConfigManager().getPrefix()));
         staticReplacements.putIfAbsent("%cult_version%", getGrimVersion());
     }
 }

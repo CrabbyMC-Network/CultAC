@@ -5,11 +5,10 @@ import ac.cult.cultac.manager.datastore.PlayerToggleStore;
 import ac.cult.cultac.network.netty.channel.ChannelHelper;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHooks {
 
@@ -19,8 +18,8 @@ public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHoo
             return;
         }
 
-        PlatformPlayer platformPlayer = CultAPI.INSTANCE.getPlatformPlayerFactory()
-                .getFromNativePlayerType(player);
+        PlatformPlayer platformPlayer =
+                CultAPI.INSTANCE.getPlatformPlayerFactory().getFromNativePlayerType(player);
         var config = CultAPI.INSTANCE.getConfigManager();
 
         if (config.getConfig().getBooleanElse("debug-pipeline-on-join", false)) {
@@ -29,16 +28,31 @@ public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHoo
         }
 
         PlayerToggleStore toggles = CultAPI.INSTANCE.getDataStoreLifecycle().playerToggleStore();
-        applyToggle(platformPlayer, toggles, PlayerToggleStore.KEY_ALERTS,
-                "cult.alerts", "cult.alerts.enable-on-join", "cult.alerts.enable-on-join.silent",
+        applyToggle(
+                platformPlayer,
+                toggles,
+                PlayerToggleStore.KEY_ALERTS,
+                "cult.alerts",
+                "cult.alerts.enable-on-join",
+                "cult.alerts.enable-on-join.silent",
                 (p, silent) -> CultAPI.INSTANCE.getAlertManager().toggleAlerts(p, silent),
                 (p, value) -> CultAPI.INSTANCE.getAlertManager().setAlertsEnabled(p, value, true));
-        applyToggle(platformPlayer, toggles, PlayerToggleStore.KEY_VERBOSE,
-                "cult.verbose", "cult.verbose.enable-on-join", "cult.verbose.enable-on-join.silent",
+        applyToggle(
+                platformPlayer,
+                toggles,
+                PlayerToggleStore.KEY_VERBOSE,
+                "cult.verbose",
+                "cult.verbose.enable-on-join",
+                "cult.verbose.enable-on-join.silent",
                 (p, silent) -> CultAPI.INSTANCE.getAlertManager().toggleVerbose(p, silent),
                 (p, value) -> CultAPI.INSTANCE.getAlertManager().setVerboseEnabled(p, value, true));
-        applyToggle(platformPlayer, toggles, PlayerToggleStore.KEY_BRANDS,
-                "cult.brand", "cult.brand.enable-on-join", "cult.brand.enable-on-join.silent",
+        applyToggle(
+                platformPlayer,
+                toggles,
+                PlayerToggleStore.KEY_BRANDS,
+                "cult.brand",
+                "cult.brand.enable-on-join",
+                "cult.brand.enable-on-join.silent",
                 (p, silent) -> CultAPI.INSTANCE.getAlertManager().toggleBrands(p, silent),
                 (p, value) -> CultAPI.INSTANCE.getAlertManager().setBrandsEnabled(p, value, true));
 
@@ -47,18 +61,21 @@ public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHoo
             CultAPI.INSTANCE.getSpectateManager().onLogin(platformPlayer.getUniqueId());
         }
 
-        CultAPI.INSTANCE.getDataStoreLifecycle().liveWriteHooks()
+        CultAPI.INSTANCE
+                .getDataStoreLifecycle()
+                .liveWriteHooks()
                 .onJoinFromUserLogin(platformPlayer, user, System.currentTimeMillis());
     }
 
-    private static void applyToggle(@NotNull PlatformPlayer platformPlayer,
-                                    @NotNull PlayerToggleStore toggles,
-                                    @NotNull String key,
-                                    @NotNull String permTogglePath,
-                                    @NotNull String permEnableOnJoin,
-                                    @NotNull String permSilentJoin,
-                                    @NotNull BiConsumer<PlatformPlayer, Boolean> toggle,
-                                    @NotNull BiConsumer<PlatformPlayer, Boolean> applySilent) {
+    private static void applyToggle(
+            @NotNull PlatformPlayer platformPlayer,
+            @NotNull PlayerToggleStore toggles,
+            @NotNull String key,
+            @NotNull String permTogglePath,
+            @NotNull String permEnableOnJoin,
+            @NotNull String permSilentJoin,
+            @NotNull BiConsumer<PlatformPlayer, Boolean> toggle,
+            @NotNull BiConsumer<PlatformPlayer, Boolean> applySilent) {
         if (!platformPlayer.hasPermission(permTogglePath)) {
             return;
         }
@@ -79,5 +96,4 @@ public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHoo
             toggles.applyPermissionDefault(uuid, key, false);
         }
     }
-
 }

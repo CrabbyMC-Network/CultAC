@@ -13,11 +13,13 @@ final class GfpPacketRewriter {
 
     GfpPacketRewriter(WrapperFactory factory) throws ReflectiveOperationException {
         wrapper = factory.wrap(new SessionAdapter() {
-            @Override public void packetReceived(Session session, Packet packet) {
+            @Override
+            public void packetReceived(Session session, Packet packet) {
                 result = new Result(packet, false);
             }
 
-            @Override public void packetSending(PacketSendingEvent event) {
+            @Override
+            public void packetSending(PacketSendingEvent event) {
                 result = new Result(event.getPacket(), false);
             }
         });

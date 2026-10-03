@@ -16,7 +16,8 @@ public final class CultGeyserPacketLog implements BuildableCommand {
     @Override
     public void register(CommandManager<Sender> manager, CloudPlatformCommandArguments arguments) {
         manager.command(manager.commandBuilder("cult", "cultac", "grim", "grimac")
-                .literal("debug").literal("geyserpacketlog")
+                .literal("debug")
+                .literal("geyserpacketlog")
                 .permission("cult.debug")
                 .required("username", StringParser.quotedStringParser())
                 .flag(manager.flagBuilder("onjoin"))
@@ -37,14 +38,19 @@ public final class CultGeyserPacketLog implements BuildableCommand {
         boolean onJoin = context.flags().isPresent("onjoin");
         Player player = onJoin ? null : Bukkit.getPlayerExact(username);
         if (!onJoin && player == null) {
-            sender.sendMessage(Component.text("Player is offline. Use --onjoin with their Bedrock username to capture their next join."));
+            sender.sendMessage(Component.text(
+                    "Player is offline. Use --onjoin with their Bedrock username to capture their next join."));
             return;
         }
         try {
-            GeyserBedrockBridgeRuntime.configurePacketLog(username, player == null ? null : player.getUniqueId(),
-                    onJoin, message -> sender.sendMessage(Component.text(message)));
+            GeyserBedrockBridgeRuntime.configurePacketLog(
+                    username,
+                    player == null ? null : player.getUniqueId(),
+                    onJoin,
+                    message -> sender.sendMessage(Component.text(message)));
         } catch (RuntimeException | LinkageError failure) {
-            sender.sendMessage(Component.text("Geyser packet logger is unavailable: " + failure.getClass().getSimpleName()));
+            sender.sendMessage(Component.text(
+                    "Geyser packet logger is unavailable: " + failure.getClass().getSimpleName()));
         }
     }
 }

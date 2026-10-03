@@ -1,13 +1,12 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
-import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
-import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
-import org.junit.Test;
-
-import java.util.UUID;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
+import java.util.UUID;
+import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
+import org.junit.Test;
 
 public final class BedrockMovementProfileFlyingExemptionTest {
     @Test

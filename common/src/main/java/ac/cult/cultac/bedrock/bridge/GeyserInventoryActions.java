@@ -17,7 +17,7 @@ import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
 
 /** Applies only changes made while Geyser validates a native action. */
 final class GeyserInventoryActions {
-    private GeyserInventoryActions() { }
+    private GeyserInventoryActions() {}
 
     static void translate(GeyserSession session, CultPlayer player, BedrockPacket packet, Runnable translator) {
         if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.NetworkStackLatencyPacket
@@ -58,11 +58,13 @@ final class GeyserInventoryActions {
 
     private static ItemStack[] snapshot(Inventory inventory) {
         ItemStack[] result = new ItemStack[inventory.getSize()];
-        for (int slot = 0; slot < result.length; slot++) result[slot] = inventory.getItem(slot).copy().getItemStack();
+        for (int slot = 0; slot < result.length; slot++)
+            result[slot] = inventory.getItem(slot).copy().getItemStack();
         return result;
     }
 
-    private static Map<Integer, org.bukkit.inventory.ItemStack> changes(GeyserSession session, ItemStack[] before, Inventory inventory) {
+    private static Map<Integer, org.bukkit.inventory.ItemStack> changes(
+            GeyserSession session, ItemStack[] before, Inventory inventory) {
         var changed = new HashMap<Integer, org.bukkit.inventory.ItemStack>();
         for (int slot = 0; slot < before.length; slot++) {
             ItemStack after = inventory.getItem(slot).copy().getItemStack();

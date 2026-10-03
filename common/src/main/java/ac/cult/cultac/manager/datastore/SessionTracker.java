@@ -1,9 +1,8 @@
 package ac.cult.cultac.manager.datastore;
 
+import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Tracks a current session id per connected player. A session is bounded by
@@ -27,7 +26,8 @@ public interface SessionTracker {
      * Returns the current sessionId — callers use it as the {@code sessionId} field
      * on any downstream events submitted in the same logical activity tick.
      */
-    @NotNull UUID observeActivity(@NotNull UUID playerUuid, long now, @NotNull ClientMeta meta);
+    @NotNull
+    UUID observeActivity(@NotNull UUID playerUuid, long now, @NotNull ClientMeta meta);
 
     /**
      * Periodic heartbeat from {@code pollData}. Throttles internally; no-op
@@ -46,18 +46,15 @@ public interface SessionTracker {
      * Returns the current session id for a player, or {@code null} when this
      * tracker has never observed them.
      */
-    @Nullable UUID currentSessionId(@NotNull UUID playerUuid);
+    @Nullable
+    UUID currentSessionId(@NotNull UUID playerUuid);
 
     /**
      * Optional client/server metadata stamped on every session upsert.
      * {@code clientVersion} is a PacketEvents protocol-version number; {@code -1}
      * means unknown. Use {@link #empty()} when none of the fields are known.
      */
-    record ClientMeta(
-            String grimVersion,
-            String clientBrand,
-            int clientVersion,
-            String serverVersion) {
+    record ClientMeta(String grimVersion, String clientBrand, int clientVersion, String serverVersion) {
 
         public static ClientMeta empty() {
             return new ClientMeta(null, null, -1, null);
@@ -71,9 +68,20 @@ public interface SessionTracker {
      * persisted.
      */
     SessionTracker NOOP = new SessionTracker() {
-        @Override public @NotNull UUID observeActivity(@NotNull UUID p, long n, @NotNull ClientMeta m) { return UUID.randomUUID(); }
-        @Override public void pollHeartbeat(@NotNull UUID p, long n) {}
-        @Override public void close(@NotNull UUID p, long n, @NotNull ClientMeta m) {}
-        @Override public @Nullable UUID currentSessionId(@NotNull UUID p) { return null; }
+        @Override
+        public @NotNull UUID observeActivity(@NotNull UUID p, long n, @NotNull ClientMeta m) {
+            return UUID.randomUUID();
+        }
+
+        @Override
+        public void pollHeartbeat(@NotNull UUID p, long n) {}
+
+        @Override
+        public void close(@NotNull UUID p, long n, @NotNull ClientMeta m) {}
+
+        @Override
+        public @Nullable UUID currentSessionId(@NotNull UUID p) {
+            return null;
+        }
     };
 }

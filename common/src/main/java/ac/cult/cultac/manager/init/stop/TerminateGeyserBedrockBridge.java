@@ -10,7 +10,8 @@ public class TerminateGeyserBedrockBridge implements StoppableInitable {
         try {
             GeyserBedrockBridgeRuntime.stop();
         } catch (LinkageError error) {
-            LogUtil.warn("Unable to stop the Geyser Bedrock movement bridge cleanly: " + error.getClass().getSimpleName());
+            LogUtil.warn("Unable to stop the Geyser Bedrock movement bridge cleanly: "
+                    + error.getClass().getSimpleName());
         }
     }
 }

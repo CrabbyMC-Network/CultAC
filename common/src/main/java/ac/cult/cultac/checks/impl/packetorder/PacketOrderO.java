@@ -1,7 +1,5 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -11,8 +9,14 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "PacketOrderO", stableKey = "cult.packetorder.tick_end_order", description = "Sent packets after movement before the expected client tick end", experimental = true)
+@CheckData(
+        name = "PacketOrderO",
+        stableKey = "cult.packetorder.tick_end_order",
+        description = "Sent packets after movement before the expected client tick end",
+        experimental = true)
 public class PacketOrderO extends Check implements CheckListener {
     // Raw NMS exposes a namespaced packet type rather than PacketEvents' per-version
     // integer. Preserve the same semantic value with the transport-native string tag.
@@ -37,8 +41,7 @@ public class PacketOrderO extends Check implements CheckListener {
             flying = false;
         }
 
-        if (WrapperPlayClientPlayerFlying.isFlying(event)
-                && !player.packetStateData.lastPacketWasTeleport) {
+        if (WrapperPlayClientPlayerFlying.isFlying(event) && !player.packetStateData.lastPacketWasTeleport) {
             flying = true;
             return;
         }
@@ -49,8 +52,7 @@ public class PacketOrderO extends Check implements CheckListener {
 
         if (player.inVehicle() && packet instanceof ServerboundPlayerCommand command) {
             PlayerCommandAction action = command.action();
-            if (action == PlayerCommandAction.START_SPRINTING
-                    || action == PlayerCommandAction.STOP_SPRINTING) {
+            if (action == PlayerCommandAction.START_SPRINTING || action == PlayerCommandAction.STOP_SPRINTING) {
                 return;
             }
         }

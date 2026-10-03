@@ -5,18 +5,16 @@ import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 
 final class BedrockValidationSelectedState {
-    private BedrockValidationSelectedState() {
-    }
+    private BedrockValidationSelectedState() {}
 
     static BedrockMovementState nextTickBase(
-            BedrockMovementResult movementResult,
-            BedrockValidationSelection selection
-    ) {
+            BedrockMovementResult movementResult, BedrockValidationSelection selection) {
         if (movementResult == null || selection == null) {
             return null;
         }
         Vec3d nextTickBasePosition = nextTickBasePosition(selection);
-        BedrockMovementState selectedState = movementResult.predictedState()
+        BedrockMovementState selectedState = movementResult
+                .predictedState()
                 .withExternalDisplacement(selection.externalDisplacement())
                 .withObservedPosition(nextTickBasePosition, displacementSquared(selection, nextTickBasePosition));
 
@@ -31,9 +29,11 @@ final class BedrockValidationSelectedState {
                 nextTickBasePosition.subtract(selection.previousPosition()));
     }
 
-    static BedrockMovementState candidateBase(BedrockMovementResult movementResult, BedrockValidationSelection selection) {
+    static BedrockMovementState candidateBase(
+            BedrockMovementResult movementResult, BedrockValidationSelection selection) {
         Vec3d position = selection.validationSelectedPosition();
-        return movementResult.predictedState()
+        return movementResult
+                .predictedState()
                 .withExternalDisplacement(selection.externalDisplacement())
                 .withObservedPosition(position, displacementSquared(selection, position));
     }

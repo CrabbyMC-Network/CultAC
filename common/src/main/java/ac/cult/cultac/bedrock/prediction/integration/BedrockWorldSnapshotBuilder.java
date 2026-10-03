@@ -1,7 +1,7 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
-import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionOverrideCatalog;
+import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
 import ac.cult.cultac.bedrock.prediction.model.AttributeState;
 import ac.cult.cultac.bedrock.prediction.model.BedrockEffectState;
@@ -36,22 +36,13 @@ final class BedrockWorldSnapshotBuilder {
             SimulationContext context,
             BedrockCollisionOverrideCatalog geometry,
             BedrockAuthInputFrame frame,
-            BedrockPlayerContext playerContext
-    ) {
-        BedrockBlockCollisionWorldSampler.BedrockSampledBlockWorld sampledBlockWorld = blockWorld.sample(
-                player,
-                context,
-                geometry,
-                frame,
-                playerContext);
+            BedrockPlayerContext playerContext) {
+        BedrockBlockCollisionWorldSampler.BedrockSampledBlockWorld sampledBlockWorld =
+                blockWorld.sample(player, context, geometry, frame, playerContext);
         BlockCollisionWorld collisionWorld = withHardCollidingEntities(
-                sampledBlockWorld.world(),
-                context.getHardCollidingEntityCollisionsForMovementTick()).withCoordinateFrame(frame.getCoordinateFrame());
-        BedrockMovementContext movementContext = movementContext(
-                collisionWorld,
-                playerContext,
-                player,
-                context);
+                        sampledBlockWorld.world(), context.getHardCollidingEntityCollisionsForMovementTick())
+                .withCoordinateFrame(frame.getCoordinateFrame());
+        BedrockMovementContext movementContext = movementContext(collisionWorld, playerContext, player, context);
         return new BedrockWorldSnapshot(
                 movementContext,
                 collisionWorld,
@@ -67,8 +58,7 @@ final class BedrockWorldSnapshotBuilder {
             BlockCollisionWorld blockWorld,
             BedrockPlayerContext playerContext,
             CultPlayer player,
-            SimulationContext context
-    ) {
+            SimulationContext context) {
         return playerContext.applyTo(
                 new BedrockMovementContext(
                         BedrockEffectState.NONE,
@@ -101,19 +91,19 @@ final class BedrockWorldSnapshotBuilder {
     }
 
     private static boolean sourceWaterContact(SimulationContext context) {
-        return context != null && context.getWorldData() != null
+        return context != null
+                && context.getWorldData() != null
                 && context.getWorldData().getInWater().determinePessimistically();
     }
 
     private static boolean sourceLavaContact(SimulationContext context) {
-        return context != null && context.getWorldData() != null
+        return context != null
+                && context.getWorldData() != null
                 && context.getWorldData().getInLava().determinePessimistically();
     }
 
     static BlockCollisionWorld withHardCollidingEntities(
-            BlockCollisionWorld world,
-            List<SimulationContext.HardCollidingEntityCollision> hardCollisions
-    ) {
+            BlockCollisionWorld world, List<SimulationContext.HardCollidingEntityCollision> hardCollisions) {
         if (hardCollisions == null || hardCollisions.isEmpty()) {
             return world;
         }
@@ -128,30 +118,28 @@ final class BedrockWorldSnapshotBuilder {
     }
 
     private static PlacedBlockCollision hardCollidingEntityBlock(
-            SimulationContext.HardCollidingEntityCollision collision
-    ) {
+            SimulationContext.HardCollidingEntityCollision collision) {
         if (collision == null || collision.box() == null) {
             return null;
         }
         SimpleCollisionBox sourceBox = collision.box();
-        if (!Double.isFinite(sourceBox.minX) || !Double.isFinite(sourceBox.minY) || !Double.isFinite(sourceBox.minZ)
-                || !Double.isFinite(sourceBox.maxX) || !Double.isFinite(sourceBox.maxY) || !Double.isFinite(sourceBox.maxZ)
-                || sourceBox.minX >= sourceBox.maxX || sourceBox.minY >= sourceBox.maxY || sourceBox.minZ >= sourceBox.maxZ) {
+        if (!Double.isFinite(sourceBox.minX)
+                || !Double.isFinite(sourceBox.minY)
+                || !Double.isFinite(sourceBox.minZ)
+                || !Double.isFinite(sourceBox.maxX)
+                || !Double.isFinite(sourceBox.maxY)
+                || !Double.isFinite(sourceBox.maxZ)
+                || sourceBox.minX >= sourceBox.maxX
+                || sourceBox.minY >= sourceBox.maxY
+                || sourceBox.minZ >= sourceBox.maxZ) {
             return null;
         }
         WorldCollisionBox collisionBox = new WorldCollisionBox(
-                sourceBox.minX,
-                sourceBox.minY,
-                sourceBox.minZ,
-                sourceBox.maxX,
-                sourceBox.maxY,
-                sourceBox.maxZ);
+                sourceBox.minX, sourceBox.minY, sourceBox.minZ, sourceBox.maxX, sourceBox.maxY, sourceBox.maxZ);
         String identifier = hardCollidingEntityIdentifier(collision);
         return PlacedBlockCollision.manual(
-                new BlockPosition(
-                        (int) Math.floor(collisionBox.minX()),
-                        (int) Math.floor(collisionBox.minY()),
-                        (int) Math.floor(collisionBox.minZ())),
+                new BlockPosition((int) Math.floor(collisionBox.minX()), (int) Math.floor(collisionBox.minY()), (int)
+                        Math.floor(collisionBox.minZ())),
                 identifier,
                 identifier,
                 List.of(collisionBox),

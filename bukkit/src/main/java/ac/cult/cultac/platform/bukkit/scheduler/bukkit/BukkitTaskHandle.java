@@ -1,11 +1,10 @@
 package ac.cult.cultac.platform.bukkit.scheduler.bukkit;
 
 import ac.cult.cultac.platform.api.scheduler.TaskHandle;
+import java.util.Objects;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 public class BukkitTaskHandle implements TaskHandle {
 

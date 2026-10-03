@@ -1,33 +1,32 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
-import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import ac.cult.cultac.checks.impl.movement.timer.AbstractTimerCheck;
 import ac.cult.cultac.checks.impl.movement.timer.TimerCheck;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.packet.ClientboundPackets;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetPassengers;
 import ac.cult.cultac.utils.data.SetbackPosWithVector;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
-import ac.cult.cultac.protocol.ConnectionPhase;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetPassengers;
-import ac.cult.cultac.protocol.packet.ClientboundPackets;
-import ac.cult.cultac.protocol.ConnectionPhase;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public final class BedrockTransportAuthorityTest {
     @Test
@@ -38,15 +37,11 @@ public final class BedrockTransportAuthorityTest {
             TimerCheck timer = player.checkManager.getCheck(TimerCheck.class);
             timer.setEnabled(true);
             timer.resetTimerWindow();
-            assertEquals(
-                    TimerCheck.BedrockAuthInputDecision.ACCEPT,
-                    timer.onBedrockAuthInput());
+            assertEquals(TimerCheck.BedrockAuthInputDecision.ACCEPT, timer.onBedrockAuthInput());
 
             setTimerBalance(timer, System.nanoTime() + 1_000_000_000L);
 
-            assertEquals(
-                    TimerCheck.BedrockAuthInputDecision.REJECT,
-                    timer.onBedrockAuthInput());
+            assertEquals(TimerCheck.BedrockAuthInputDecision.REJECT, timer.onBedrockAuthInput());
             assertEquals(1, player.cancelledPackets.get());
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
@@ -59,32 +54,25 @@ public final class BedrockTransportAuthorityTest {
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
             int playerVehicle = 17;
-            ClientboundSetPassengers mount = passengersPacket(
-                    playerVehicle, player.entityID);
-            player.packetEntityReplication.onSetPassengers(
-                    sendEvent(player, mount), player, mount);
+            ClientboundSetPassengers mount = passengersPacket(playerVehicle, player.entityID);
+            player.packetEntityReplication.onSetPassengers(sendEvent(player, mount), player, mount);
 
             assertTrue(player.compensatedEntities.vehicles.isServerPlayerPassengerOf(playerVehicle));
             assertTrue(player.compensatedEntities.vehicles.hasPlayerPassengerState());
 
             int unrelatedVehicle = 29;
             ClientboundSetPassengers unrelated = passengersPacket(unrelatedVehicle, 1234);
-            player.packetEntityReplication.onSetPassengers(
-                    sendEvent(player, unrelated), player, unrelated);
+            player.packetEntityReplication.onSetPassengers(sendEvent(player, unrelated), player, unrelated);
 
-            assertEquals(
-                    Integer.valueOf(playerVehicle),
-                    player.compensatedEntities.vehicles.serverPlayerVehicle);
+            assertEquals(Integer.valueOf(playerVehicle), player.compensatedEntities.vehicles.serverPlayerVehicle);
             assertTrue(player.compensatedEntities.vehicles.isServerPlayerPassengerOf(playerVehicle));
             assertFalse(player.compensatedEntities.vehicles.isServerPlayerPassengerOf(unrelatedVehicle));
 
             player.compensatedEntities.addEntity(
                     unrelatedVehicle, EntityTypesCompat.OAK_BOAT, Vec3.ZERO, 0.0F, 0.0F, 0);
             assertTrue(player.compensatedEntities.vehicles.applyVehiclePassengers(
-                    unrelatedVehicle, new int[]{player.entityID}));
-            assertEquals(
-                    Integer.valueOf(playerVehicle),
-                    player.compensatedEntities.vehicles.serverPlayerVehicle);
+                    unrelatedVehicle, new int[] {player.entityID}));
+            assertEquals(Integer.valueOf(playerVehicle), player.compensatedEntities.vehicles.serverPlayerVehicle);
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
         }
@@ -96,10 +84,9 @@ public final class BedrockTransportAuthorityTest {
         CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
             int delayedVehicle = 31;
-            player.compensatedEntities.addEntity(
-                    delayedVehicle, EntityTypesCompat.OAK_BOAT, Vec3.ZERO, 0.0F, 0.0F, 0);
+            player.compensatedEntities.addEntity(delayedVehicle, EntityTypesCompat.OAK_BOAT, Vec3.ZERO, 0.0F, 0.0F, 0);
             assertTrue(player.compensatedEntities.vehicles.applyVehiclePassengers(
-                    delayedVehicle, new int[]{player.entityID}));
+                    delayedVehicle, new int[] {player.entityID}));
             assertTrue(player.compensatedEntities.vehicles.hasPlayerPassengerState());
 
             player.compensatedEntities.getSelf().eject();
@@ -124,7 +111,7 @@ public final class BedrockTransportAuthorityTest {
             player.getSetbackTeleportUtil().hasFullyLoaded = true;
             player.getSetbackTeleportUtil().hasFullyJoined = true;
             player.compensatedEntities.vehicles.setServerVehicle(
-                    vehicleId, new int[]{player.entityID}, player.lastTransactionSent.get());
+                    vehicleId, new int[] {player.entityID}, player.lastTransactionSent.get());
 
             player.getSetbackTeleportUtil().executeNonSimulatingSetback();
 
@@ -133,13 +120,15 @@ public final class BedrockTransportAuthorityTest {
             var registries = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(
                     net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
             var codec = net.minecraft.network.protocol.game.GameProtocols.CLIENTBOUND_TEMPLATE
-                    .bind(net.minecraft.network.RegistryFriendlyByteBuf.decorator(registries)).codec();
+                    .bind(net.minecraft.network.RegistryFriendlyByteBuf.decorator(registries))
+                    .codec();
             int sentVehicleSetbacks = 0;
             Object outbound;
             while ((outbound = channel.readOutbound()) != null) {
                 try {
                     if (outbound instanceof io.netty.buffer.ByteBuf frame) {
-                        var decoded = codec.decode(new net.minecraft.network.RegistryFriendlyByteBuf(frame, registries));
+                        var decoded =
+                                codec.decode(new net.minecraft.network.RegistryFriendlyByteBuf(frame, registries));
                         assertFalse(frame.isReadable());
                         if (decoded instanceof ClientboundMoveVehiclePacket correction) {
                             sentVehicleSetbacks++;
@@ -190,9 +179,16 @@ public final class BedrockTransportAuthorityTest {
             enableTransactionPackets(player);
             var teleports = player.getSetbackTeleportUtil();
             teleports.addSentTeleport(Vec3.ZERO, player.lastTransactionSent.get(), new RelativeFlag(0), false, 7);
-            teleports.addImmediateBedrockTransportTeleport(Vec3.ZERO, false, BedrockCoordinateFrame.IDENTITY, null,
-                    new BedrockTeleportOperation(1, BedrockTeleportProvenance.CULT_SETBACK,
-                            teleports.getRequiredSetBack().getTeleportData().getTransaction()), 0);
+            teleports.addImmediateBedrockTransportTeleport(
+                    Vec3.ZERO,
+                    false,
+                    BedrockCoordinateFrame.IDENTITY,
+                    null,
+                    new BedrockTeleportOperation(
+                            1,
+                            BedrockTeleportProvenance.CULT_SETBACK,
+                            teleports.getRequiredSetBack().getTeleportData().getTransaction()),
+                    0);
             var required = teleports.getRequiredSetBack();
             player.compensatedEntities.addEntity(43, EntityTypesCompat.OAK_BOAT, Vec3.ZERO, 0, 0, 0);
             var packet = passengersPacket(43, player.entityID);
@@ -224,8 +220,8 @@ public final class BedrockTransportAuthorityTest {
             Vec3 local = origin.toLocal(target);
             Vec3 packet = local.add(0, 1.6200103759765625, 0);
             var input = teleportInput(player, local, packet).resolveCoordinates(origin);
-            long revision = teleports.addImmediateBedrockTransportTeleport(target, false,
-                    origin, packet, operation, 10);
+            long revision =
+                    teleports.addImmediateBedrockTransportTeleport(target, false, origin, packet, operation, 10);
             player.lastTransactionReceived.set(10);
             assertFalse(teleports.acknowledgeBedrockTeleportFrame(input).isTeleport());
             Vec3 unrelated = target.add(5, 0, 0);
@@ -234,11 +230,19 @@ public final class BedrockTransportAuthorityTest {
             assertTrue(teleports.isPendingSetback());
             assertTrue(teleports.hasPendingBedrockTransportTeleport());
             teleports.confirmBedrockOrigin(revision, operation, origin, packet);
-            assertFalse(teleports.acknowledgeBedrockTeleportFrame(teleportInput(player, local.add(0.001, 0, 0), packet.add(0.001, 0, 0)).resolveCoordinates(origin)).isTeleport());
+            assertFalse(teleports
+                    .acknowledgeBedrockTeleportFrame(
+                            teleportInput(player, local.add(0.001, 0, 0), packet.add(0.001, 0, 0))
+                                    .resolveCoordinates(origin))
+                    .isTeleport());
             double nextWireY = Math.nextUp((float) packet.y);
-            assertFalse(teleports.acknowledgeBedrockTeleportFrame(teleportInput(player,
-                    local.add(0, nextWireY - packet.y, 0),
-                    new Vec3(packet.x, nextWireY, packet.z)).resolveCoordinates(origin)).isTeleport());
+            assertFalse(teleports
+                    .acknowledgeBedrockTeleportFrame(teleportInput(
+                                    player,
+                                    local.add(0, nextWireY - packet.y, 0),
+                                    new Vec3(packet.x, nextWireY, packet.z))
+                            .resolveCoordinates(origin))
+                    .isTeleport());
             assertTrue(teleports.hasPendingBedrockTransportTeleport());
             assertTrue(teleports.acknowledgeBedrockTeleportFrame(input).isTeleport());
             assertFalse(teleports.isPendingSetback());
@@ -249,8 +253,12 @@ public final class BedrockTransportAuthorityTest {
     }
 
     private static BedrockAuthInputFrame teleportInput(CultPlayer player, Vec3 localFeet, Vec3 localPacket) {
-        return BedrockAuthInputFrame.builder(player.playerUUID).clientTick(876).position(localFeet)
-                .packetPosition(localPacket).rawInputFlags(1L << PlayerAuthInputData.HANDLE_TELEPORT.ordinal()).build();
+        return BedrockAuthInputFrame.builder(player.playerUUID)
+                .clientTick(876)
+                .position(localFeet)
+                .packetPosition(localPacket)
+                .rawInputFlags(1L << PlayerAuthInputData.HANDLE_TELEPORT.ordinal())
+                .build();
     }
 
     private static void enableTransactionPackets(CultPlayer player) throws ReflectiveOperationException {
@@ -259,12 +267,15 @@ public final class BedrockTransportAuthorityTest {
         handle.set(player.user, Mockito.mock(ServerPlayer.class));
     }
 
-    private static PacketSendEvent<ClientboundSetPassengers> sendEvent(CultPlayer player, ClientboundSetPassengers packet) {
-        return new PacketSendEvent<>(player.user, ConnectionPhase.PLAY, ClientboundPackets.SET_PASSENGERS, packet, false);
+    private static PacketSendEvent<ClientboundSetPassengers> sendEvent(
+            CultPlayer player, ClientboundSetPassengers packet) {
+        return new PacketSendEvent<>(
+                player.user, ConnectionPhase.PLAY, ClientboundPackets.SET_PASSENGERS, packet, false);
     }
 
     private static ClientboundSetPassengers passengersPacket(int vehicleId, int... passengers) {
-        return new ClientboundSetPassengers(vehicleId, java.util.Arrays.stream(passengers).boxed().toList());
+        return new ClientboundSetPassengers(
+                vehicleId, java.util.Arrays.stream(passengers).boxed().toList());
     }
 
     private static void setTimerBalance(TimerCheck timer, long balance) throws ReflectiveOperationException {

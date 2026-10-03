@@ -1,5 +1,7 @@
 package ac.cult.cultac.network;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ac.cult.cultac.network.event.PacketListenerPriority;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.protocol.ConnectionPhase;
@@ -18,136 +20,182 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
-import net.minecraft.network.Connection;
-
 import java.util.UUID;
 import java.util.concurrent.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import net.minecraft.network.Connection;
 
 /** Real independent I/O/packet loops around the manager's actual User creation and close. */
 final class InboundConsumerFixture implements AutoCloseable {
-        final DefaultEventLoopGroup io = new DefaultEventLoopGroup(2);
-        final DefaultEventLoopGroup owners = new DefaultEventLoopGroup(1);
-        final io.netty.util.concurrent.EventExecutor owner;
-        final CultNetworkManager manager = new CultNetworkManager();
-        final UUID uuid = UUID.randomUUID();
-        final PacketDispatcher routes;
-        final CompletableFuture<User> connected = new CompletableFuture<>();
-        final CompletableFuture<User> observed = new CompletableFuture<>();
-        final CompletableFuture<Void> received = new CompletableFuture<>();
-        final ConcurrentLinkedQueue<Throwable> errors = new ConcurrentLinkedQueue<>();
-        final Channel listener, client, server;
-        final Connection connection;
-        final CultConnection transport;
+    final DefaultEventLoopGroup io = new DefaultEventLoopGroup(2);
+    final DefaultEventLoopGroup owners = new DefaultEventLoopGroup(1);
+    final io.netty.util.concurrent.EventExecutor owner;
+    final CultNetworkManager manager = new CultNetworkManager();
+    final UUID uuid = UUID.randomUUID();
+    final PacketDispatcher routes;
+    final CompletableFuture<User> connected = new CompletableFuture<>();
+    final CompletableFuture<User> observed = new CompletableFuture<>();
+    final CompletableFuture<Void> received = new CompletableFuture<>();
+    final ConcurrentLinkedQueue<Throwable> errors = new ConcurrentLinkedQueue<>();
+    final Channel listener, client, server;
+    final Connection connection;
+    final CultConnection transport;
 
-        InboundConsumerFixture() throws Exception { this(true); }
+    InboundConsumerFixture() throws Exception {
+        this(true);
+    }
 
-        InboundConsumerFixture(boolean separateOwner) throws Exception {
-            ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.installConfig();
-            var runtime = TestProtocolRuntime.create(ac.cult.cultac.protocol.data.ProtocolData.load(ProtocolVersion.V26_3));
-            manager.configureTransport(runtime, () -> { }, () -> CompletableFuture.completedFuture(null));
-            manager.setPacketOwnerResolver(channel -> separateOwner ? owners.next() : null);
-            manager.lifecycleHooks(new UserLifecycleHooks() {
-                @Override public void onAuthenticated(User user) {
-                    assertTrue(owner.inEventLoop());
-                    connected.complete(user);
-                }
-            });
-            manager.dispatcher().register(batch -> batch.receive(ServerboundPackets.PONG, PacketListenerPriority.NORMAL, (event, player, packet) -> {
-                assertTrue(event.getUser().getPacketExecutor().inEventLoop());
-                assertSame(connected.join(), event.getUser());
-                assertSame(event.getUser(), player.user);
-                observed.complete(event.getUser());
-            }));
+    InboundConsumerFixture(boolean separateOwner) throws Exception {
+        ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.installConfig();
+        var runtime = TestProtocolRuntime.create(ac.cult.cultac.protocol.data.ProtocolData.load(ProtocolVersion.V26_3));
+        manager.configureTransport(runtime, () -> {}, () -> CompletableFuture.completedFuture(null));
+        manager.setPacketOwnerResolver(channel -> separateOwner ? owners.next() : null);
+        manager.lifecycleHooks(new UserLifecycleHooks() {
+            @Override
+            public void onAuthenticated(User user) {
+                assertTrue(owner.inEventLoop());
+                connected.complete(user);
+            }
+        });
+        manager.dispatcher()
+                .register(batch -> batch.receive(
+                        ServerboundPackets.PONG, PacketListenerPriority.NORMAL, (event, player, packet) -> {
+                            assertTrue(event.getUser().getPacketExecutor().inEventLoop());
+                            assertSame(connected.join(), event.getUser());
+                            assertSame(event.getUser(), player.user);
+                            observed.complete(event.getUser());
+                        }));
 
-            var accepted = new CompletableFuture<Binding>();
-            listener = new ServerBootstrap().group(io).channel(LocalServerChannel.class)
-                    .childHandler(new ChannelInitializer<LocalChannel>() {
-                        @Override protected void initChannel(LocalChannel channel) throws Exception {
-                    try {
+        var accepted = new CompletableFuture<Binding>();
+        listener = new ServerBootstrap()
+                .group(io)
+                .channel(LocalServerChannel.class)
+                .childHandler(new ChannelInitializer<LocalChannel>() {
+                    @Override
+                    protected void initChannel(LocalChannel channel) throws Exception {
+                        try {
                             var selectedOwner = separateOwner ? owners.next() : channel.eventLoop();
                             channel.pipeline().addLast("splitter", new ChannelInboundHandlerAdapter());
                             channel.pipeline().addLast("decoder", new ChannelInboundHandlerAdapter());
                             channel.pipeline().addLast("prepender", new ChannelOutboundHandlerAdapter());
                             channel.pipeline().addLast("encoder", new ChannelOutboundHandlerAdapter());
-                            var nativeListener = org.mockito.Mockito.mock(net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class);
+                            var nativeListener = org.mockito.Mockito.mock(
+                                    net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class);
                             // Mockito may generate more than one subclass level; bind the declaring class directly.
-                            var profile = net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class.getDeclaredField("gameProfile");
-                            profile.setAccessible(true); profile.set(nativeListener, new com.mojang.authlib.GameProfile(uuid, "InboundConsumer"));
-                            var nativeConnection = org.mockito.Mockito.mock(Connection.class); nativeConnection.channel = channel;
-                            org.mockito.Mockito.when(nativeConnection.getPacketListener()).thenReturn(nativeListener);
+                            var profile = net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class
+                                    .getDeclaredField("gameProfile");
+                            profile.setAccessible(true);
+                            profile.set(nativeListener, new com.mojang.authlib.GameProfile(uuid, "InboundConsumer"));
+                            var nativeConnection = org.mockito.Mockito.mock(Connection.class);
+                            nativeConnection.channel = channel;
+                            org.mockito.Mockito.when(nativeConnection.getPacketListener())
+                                    .thenReturn(nativeListener);
                             var wire = manager.createConnection(nativeConnection, channel);
                             wire.phase(PacketDirection.SERVERBOUND, ConnectionPhase.CONFIGURATION);
                             wire.phase(PacketDirection.CLIENTBOUND, ConnectionPhase.CONFIGURATION);
-                            CultDecoder.install(wire); CultEncoder.install(wire);
+                            CultDecoder.install(wire);
+                            CultEncoder.install(wire);
                             channel.pipeline().addLast("bind_when_active", new ChannelInboundHandlerAdapter() {
-                                @Override public void channelActive(ChannelHandlerContext ctx) {
+                                @Override
+                                public void channelActive(ChannelHandlerContext ctx) {
                                     try {
                                         accepted.complete(new Binding(channel, nativeConnection, wire, selectedOwner));
-                                    } catch (Throwable failure) { accepted.completeExceptionally(failure); }
+                                    } catch (Throwable failure) {
+                                        accepted.completeExceptionally(failure);
+                                    }
                                     ctx.fireChannelActive();
                                 }
                             });
                             // Models the already-selected native interceptor's executor.
                             channel.pipeline().addLast("sink", new ChannelInboundHandlerAdapter() {
-                                @Override public void channelRead(ChannelHandlerContext ctx, Object message) {
+                                @Override
+                                public void channelRead(ChannelHandlerContext ctx, Object message) {
                                     ReferenceCountUtil.release(message);
                                     received.complete(null);
                                 }
-                                @Override public void exceptionCaught(ChannelHandlerContext ctx, Throwable failure) {
+
+                                @Override
+                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable failure) {
                                     errors.add(failure);
                                     received.completeExceptionally(failure);
                                 }
                             });
-                    } catch (Throwable failure) { accepted.completeExceptionally(failure); throw failure; }
+                        } catch (Throwable failure) {
+                            accepted.completeExceptionally(failure);
+                            throw failure;
                         }
-                    }).bind(new LocalAddress("cult-record-user-" + System.nanoTime())).sync().channel();
-            client = new Bootstrap().group(io).channel(LocalChannel.class)
-                    .handler(new ChannelInboundHandlerAdapter()).connect(listener.localAddress()).sync().channel();
-            Binding binding = accepted.get(5, TimeUnit.SECONDS);
-            server = binding.channel;
-            connection = binding.connection;
-            transport = binding.transport;
-            routes = transport.dispatcher();
-            owner = binding.owner;
-        }
-
-        void receive() throws Exception {
-            ByteBuf frame = Unpooled.buffer();
-            Wire.writeVarInt(frame, routes.runtime().data().packets(ConnectionPhase.CONFIGURATION, PacketDirection.SERVERBOUND).id("minecraft:pong"));
-            frame.writeInt(7);
-            server.eventLoop().submit(() -> server.pipeline().fireChannelRead(frame)).get(5, TimeUnit.SECONDS);
-            received.get(5, TimeUnit.SECONDS);
-            assertEquals(0, frame.refCnt());
-        }
-
-        void receivePlay(int id) throws Exception {
-            receivePlayFrame("minecraft:pong", frame -> frame.writeInt(id));
-        }
-
-        void receivePlayFrame(String name, java.util.function.Consumer<ByteBuf> payload) throws Exception {
-            ByteBuf frame = Unpooled.buffer();
-            Wire.writeVarInt(frame, routes.runtime().data().packets(ConnectionPhase.PLAY, PacketDirection.SERVERBOUND).id(name));
-            payload.accept(frame);
-            server.eventLoop().submit(() -> server.pipeline().fireChannelRead(frame)).get(5, TimeUnit.SECONDS);
-            owner.submit(() -> { }).get(5, TimeUnit.SECONDS);
-            server.eventLoop().submit(() -> { }).get(5, TimeUnit.SECONDS);
-            // Accepted bytes return through the I/O decoder before the final
-            // owner handler releases them; wait for that last hop too.
-            owner.submit(() -> { }).get(5, TimeUnit.SECONDS);
-            assertEquals(0, frame.refCnt());
-        }
-
-        @Override public void close() throws Exception {
-            client.close().sync();
-            server.close().sync();
-            listener.close().sync();
-            owner.submit(() -> { }).get(5, TimeUnit.SECONDS);
-            io.shutdownGracefully(0, 5, TimeUnit.SECONDS).sync();
-            owners.shutdownGracefully(0, 5, TimeUnit.SECONDS).sync();
-        }
-
-        private record Binding(Channel channel, Connection connection, CultConnection transport,
-                               io.netty.util.concurrent.EventExecutor owner) { }
+                    }
+                })
+                .bind(new LocalAddress("cult-record-user-" + System.nanoTime()))
+                .sync()
+                .channel();
+        client = new Bootstrap()
+                .group(io)
+                .channel(LocalChannel.class)
+                .handler(new ChannelInboundHandlerAdapter())
+                .connect(listener.localAddress())
+                .sync()
+                .channel();
+        Binding binding = accepted.get(5, TimeUnit.SECONDS);
+        server = binding.channel;
+        connection = binding.connection;
+        transport = binding.transport;
+        routes = transport.dispatcher();
+        owner = binding.owner;
     }
+
+    void receive() throws Exception {
+        ByteBuf frame = Unpooled.buffer();
+        Wire.writeVarInt(
+                frame,
+                routes.runtime()
+                        .data()
+                        .packets(ConnectionPhase.CONFIGURATION, PacketDirection.SERVERBOUND)
+                        .id("minecraft:pong"));
+        frame.writeInt(7);
+        server.eventLoop()
+                .submit(() -> server.pipeline().fireChannelRead(frame))
+                .get(5, TimeUnit.SECONDS);
+        received.get(5, TimeUnit.SECONDS);
+        assertEquals(0, frame.refCnt());
+    }
+
+    void receivePlay(int id) throws Exception {
+        receivePlayFrame("minecraft:pong", frame -> frame.writeInt(id));
+    }
+
+    void receivePlayFrame(String name, java.util.function.Consumer<ByteBuf> payload) throws Exception {
+        ByteBuf frame = Unpooled.buffer();
+        Wire.writeVarInt(
+                frame,
+                routes.runtime()
+                        .data()
+                        .packets(ConnectionPhase.PLAY, PacketDirection.SERVERBOUND)
+                        .id(name));
+        payload.accept(frame);
+        server.eventLoop()
+                .submit(() -> server.pipeline().fireChannelRead(frame))
+                .get(5, TimeUnit.SECONDS);
+        owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+        server.eventLoop().submit(() -> {}).get(5, TimeUnit.SECONDS);
+        // Accepted bytes return through the I/O decoder before the final
+        // owner handler releases them; wait for that last hop too.
+        owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+        assertEquals(0, frame.refCnt());
+    }
+
+    @Override
+    public void close() throws Exception {
+        client.close().sync();
+        server.close().sync();
+        listener.close().sync();
+        owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+        io.shutdownGracefully(0, 5, TimeUnit.SECONDS).sync();
+        owners.shutdownGracefully(0, 5, TimeUnit.SECONDS).sync();
+    }
+
+    private record Binding(
+            Channel channel,
+            Connection connection,
+            CultConnection transport,
+            io.netty.util.concurrent.EventExecutor owner) {}
+}

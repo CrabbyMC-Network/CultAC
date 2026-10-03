@@ -15,7 +15,8 @@ import io.netty.buffer.ByteBuf;
 public final class RemoveMobEffectCodec implements PacketCodec<ClientboundRemoveMobEffect> {
     @Override
     public ClientboundRemoveMobEffect read(ByteBuf input, ProtocolContext context) {
-        return new ClientboundRemoveMobEffect(Wire.readVarInt(input),
+        return new ClientboundRemoveMobEffect(
+                Wire.readVarInt(input),
                 context.data().registry("minecraft:mob_effect").name(Wire.readVarInt(input)));
     }
 }

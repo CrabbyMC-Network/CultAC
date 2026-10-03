@@ -8,7 +8,10 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
-@CheckData(name = "CrashA", stableKey = "cult.crash.large_position", description = "Sent a position outside the valid world bounds")
+@CheckData(
+        name = "CrashA",
+        stableKey = "cult.crash.large_position",
+        description = "Sent a position outside the valid world bounds")
 public class CrashA extends Check implements CheckListener {
     private static final double HARD_CODED_BORDER = 2.9999999E7D;
 
@@ -17,13 +20,15 @@ public class CrashA extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.packetStateData.lastPacketWasTeleport) return;
         if (!packet.hasPosition()) return;
 
         // Y technically is uncapped, but no player will reach these values legit
-        if (Math.abs(packet.xOr(0)) > HARD_CODED_BORDER || Math.abs(packet.zOr(0)) > HARD_CODED_BORDER || Math.abs(packet.yOr(0)) > Integer.MAX_VALUE) {
+        if (Math.abs(packet.xOr(0)) > HARD_CODED_BORDER
+                || Math.abs(packet.zOr(0)) > HARD_CODED_BORDER
+                || Math.abs(packet.yOr(0)) > Integer.MAX_VALUE) {
             flag(); // Ban
             executeViolationSetback();
             event.setCancelled(true);

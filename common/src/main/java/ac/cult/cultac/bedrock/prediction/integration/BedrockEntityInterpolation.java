@@ -7,13 +7,16 @@ import net.minecraft.world.phys.Vec3;
 
 /** Interpolates ordinary entity updates after their client receipt. */
 public final class BedrockEntityInterpolation {
-    public record Target(Vec3 packetPosition, float yaw, float pitch, float offset, boolean forceCompletion) { }
+    public record Target(Vec3 packetPosition, float yaw, float pitch, float offset, boolean forceCompletion) {}
+
     private Target target;
     private Target queued;
     private int remaining = 3;
     private int queuedSteps;
 
-    public BedrockEntityInterpolation(Target target) { this.target = target; }
+    public BedrockEntityInterpolation(Target target) {
+        this.target = target;
+    }
 
     public void update(Target next) {
         if (target.forceCompletion() && remaining != 0 && !next.forceCompletion()) {
@@ -47,7 +50,8 @@ public final class BedrockEntityInterpolation {
         float yaw = angle(entity.clientPhysicalYaw + yawOffset, target.yaw()) - yawOffset;
         float pitch = angle(entity.clientPhysicalPitch, target.pitch());
         entity.oldPacketLocation = null;
-        entity.setPositionRaw(GetBoundingBox.getPacketEntityBoundingBox(player, feet.x, feet.y, feet.z, entity), yaw, pitch);
+        entity.setPositionRaw(
+                GetBoundingBox.getPacketEntityBoundingBox(player, feet.x, feet.y, feet.z, entity), yaw, pitch);
         if (--remaining == 0 && queued == null) entity.bedrockInterpolation = null;
     }
 

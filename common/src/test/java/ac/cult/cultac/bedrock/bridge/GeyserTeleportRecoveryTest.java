@@ -1,25 +1,27 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import static org.junit.Assert.*;
+
+import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
-import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import java.util.ArrayList;
 import java.util.List;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
-import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MoveEntityAbsolutePacket;
+import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetEntityMotionPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.TeleportCache;
 import org.junit.Test;
 import org.mockito.Mockito;
-import static org.junit.Assert.*;
 
 public class GeyserTeleportRecoveryTest {
-    @Test public void rejectedMovementConfirmsGeyserQueueWithoutForwardingMovement() throws Exception {
+    @Test
+    public void rejectedMovementConfirmsGeyserQueueWithoutForwardingMovement() throws Exception {
         var session = Mockito.mock(GeyserSession.class, Mockito.CALLS_REAL_METHODS);
         Mockito.doReturn(true).when(session).isSpawned();
         var pending = Mockito.mock(TeleportCache.class);
@@ -42,7 +44,8 @@ public class GeyserTeleportRecoveryTest {
         Mockito.verify(session, Mockito.never()).sendDownstreamGamePacket(Mockito.any());
     }
 
-    @Test public void originChangeRetriesLogicalOperationImmediatelyAndKeepsMotion() {
+    @Test
+    public void originChangeRetriesLogicalOperationImmediatelyAndKeepsMotion() {
         var recovery = new GeyserTeleportRecovery();
         var operation = new BedrockTeleportOperation(7, BedrockTeleportProvenance.CULT_SETBACK, 42);
         var origin = new BedrockCoordinateFrame(512, 0, 1);
@@ -68,7 +71,8 @@ public class GeyserTeleportRecoveryTest {
         assertEquals(1, retries.size());
     }
 
-    @Test public void resetPrecedesTeleportAndUsesOnlyAnObservedTick() {
+    @Test
+    public void resetPrecedesTeleportAndUsesOnlyAnObservedTick() {
         var recovery = new GeyserTeleportRecovery();
         var operation = new BedrockTeleportOperation(1, BedrockTeleportProvenance.CULT_SETBACK, 1);
         var teleport = teleport();
@@ -86,11 +90,17 @@ public class GeyserTeleportRecoveryTest {
         assertTrue(writes.isEmpty());
     }
 
-    @Test public void unchangedOriginRetriesAfterTwentyDistinctInputs() {
+    @Test
+    public void unchangedOriginRetriesAfterTwentyDistinctInputs() {
         var recovery = new GeyserTeleportRecovery();
         List<SetEntityMotionPacket> retries = new ArrayList<>();
-        recovery.begin(teleport(), new BedrockTeleportOperation(1, BedrockTeleportProvenance.CULT_SETBACK, 1),
-                BedrockCoordinateFrame.IDENTITY, 50, ignored -> {}, retries::add);
+        recovery.begin(
+                teleport(),
+                new BedrockTeleportOperation(1, BedrockTeleportProvenance.CULT_SETBACK, 1),
+                BedrockCoordinateFrame.IDENTITY,
+                50,
+                ignored -> {},
+                retries::add);
         for (long tick = 51; tick < 70; tick++) {
             recovery.input(tick, true, BedrockCoordinateFrame.IDENTITY);
             recovery.input(tick, true, BedrockCoordinateFrame.IDENTITY);
@@ -100,7 +110,8 @@ public class GeyserTeleportRecoveryTest {
         assertEquals(1, retries.size());
     }
 
-    @Test public void absolutePlayerTeleportResetUsesTheSameFinalWireDestination() {
+    @Test
+    public void absolutePlayerTeleportResetUsesTheSameFinalWireDestination() {
         var teleport = new MoveEntityAbsolutePacket();
         teleport.setRuntimeEntityId(3);
         teleport.setPosition(Vector3f.from(56.96045, 65.144684, -90.754425));

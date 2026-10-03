@@ -4,16 +4,15 @@ package ac.cult.cultac.utils.data;
  * One packet-ordered decision for the Java projection of a Bedrock auth frame.
  */
 public final class BedrockTranslatedMovementGate {
-    public sealed interface Decision permits Player, Vehicle, Rejected {
-    }
+    public sealed interface Decision permits Player, Vehicle, Rejected {}
 
-    public record Player(boolean canonicalGround) implements Decision {
-    }
+    public record Player(boolean canonicalGround) implements Decision {}
 
-    public record Vehicle(int entityId) implements Decision {
-    }
+    public record Vehicle(int entityId) implements Decision {}
 
-    public enum Rejected implements Decision {INSTANCE}
+    public enum Rejected implements Decision {
+        INSTANCE
+    }
 
     private Decision pending;
 

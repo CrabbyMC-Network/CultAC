@@ -11,16 +11,14 @@ public final class BedrockRiptideMovement {
     private static final long GROUNDED_SPIN_TICKS = 5L;
     private static final long MAX_SPIN_TICKS = 19L;
 
-    private BedrockRiptideMovement() {
-    }
+    private BedrockRiptideMovement() {}
 
     static ActorNormalTick tickActorNormal(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        BedrockInputIntent intent,
-        BedrockMovementContext context,
-        Vec3d startingVelocity
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            BedrockInputIntent intent,
+            BedrockMovementContext context,
+            Vec3d startingVelocity) {
         int level = context.equipmentState().riptideLevel();
         boolean usable = context.riptideAvailable() && level > 0;
 
@@ -28,44 +26,39 @@ public final class BedrockRiptideMovement {
 
         boolean releaseRequested = usable && intent.itemUse().release();
         boolean releaseStartsSpinAttack = releaseRequested
-            && intent.riptide().startSpinAttack()
-            && wet
-            && current.riptideChargeTicks() > RELEASE_CHARGE_THRESHOLD_TICKS;
+                && intent.riptide().startSpinAttack()
+                && wet
+                && current.riptideChargeTicks() > RELEASE_CHARGE_THRESHOLD_TICKS;
         SpinState spin = nextSpinState(current, intent, releaseStartsSpinAttack);
         Vec3d nextVelocity = startingVelocity;
         if (releaseStartsSpinAttack) {
             nextVelocity = nextVelocity.add(BedrockAerialMovement.riptideImpulse(
-                frame,
-                level,
-                current.collisionFlags().onGround(),
-                current.wasInWaterFlag(),
-                current.cameraWater().headInWater()
-            ));
+                    frame,
+                    level,
+                    current.collisionFlags().onGround(),
+                    current.wasInWaterFlag(),
+                    current.cameraWater().headInWater()));
         }
 
         return new ActorNormalTick(
-            new Step(
-                nextChargeTicks(current, intent, usable, wet, releaseRequested),
-                spin.active(),
-                spin.ticks()
-            ),
-            nextVelocity,
-            releaseStartsSpinAttack
-        );
+                new Step(nextChargeTicks(current, intent, usable, wet, releaseRequested), spin.active(), spin.ticks()),
+                nextVelocity,
+                releaseStartsSpinAttack);
     }
 
     private static long nextChargeTicks(
-        BedrockMovementState current,
-        BedrockInputIntent intent,
-        boolean usable,
-        boolean wet,
-        boolean releaseRequested
-    ) {
+            BedrockMovementState current,
+            BedrockInputIntent intent,
+            boolean usable,
+            boolean wet,
+            boolean releaseRequested) {
         if (releaseRequested || intent.itemUse().stop()) {
             return 0L;
         }
         // Acknowledged USING_ITEM metadata bypasses the wet check, thanks mojang!
-        if (usable && (wet || intent.riptide().serverUsingItem()) && intent.riptide().chargeStart()) {
+        if (usable
+                && (wet || intent.riptide().serverUsingItem())
+                && intent.riptide().chargeStart()) {
             return 1L;
         }
         if (usable && current.riptideChargeTicks() > 0L) {
@@ -75,10 +68,7 @@ public final class BedrockRiptideMovement {
     }
 
     private static SpinState nextSpinState(
-        BedrockMovementState current,
-        BedrockInputIntent intent,
-        boolean releaseStartsSpinAttack
-    ) {
+            BedrockMovementState current, BedrockInputIntent intent, boolean releaseStartsSpinAttack) {
         // A spin request cannot create an impulse without a valid charged, wet release.
         if (releaseStartsSpinAttack) {
 
@@ -88,23 +78,17 @@ public final class BedrockRiptideMovement {
             return SpinState.INACTIVE;
         }
         if (current.collisionFlags().horizontalCollision()
-            || current.riptideSpinTicks() >= MAX_SPIN_TICKS
-            || current.riptideSpinTicks() >= GROUNDED_SPIN_TICKS
-                && current.collisionFlags().onGround()) {
+                || current.riptideSpinTicks() >= MAX_SPIN_TICKS
+                || current.riptideSpinTicks() >= GROUNDED_SPIN_TICKS
+                        && current.collisionFlags().onGround()) {
             return SpinState.INACTIVE;
         }
         return new SpinState(true, current.riptideSpinTicks() + 1L);
     }
 
-    record ActorNormalTick(Step step, Vec3d velocity, boolean spinAttackStarted) {
-    }
+    record ActorNormalTick(Step step, Vec3d velocity, boolean spinAttackStarted) {}
 
-    public record Step(
-        long nextChargeTicks,
-        boolean spinActive,
-        long spinTicks
-    ) {
-    }
+    public record Step(long nextChargeTicks, boolean spinActive, long spinTicks) {}
 
     private record SpinState(boolean active, long ticks) {
         private static final SpinState INACTIVE = new SpinState(false, 0L);

@@ -3,21 +3,30 @@ package ac.cult.cultac.checks.impl.prediction.stage.uncertainty;
 import ac.cult.cultac.checks.impl.prediction.PredVector;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.math.CultMath;
-import ac.cult.cultac.network.protocol.ClientVersion;
 import net.minecraft.world.phys.Vec3;
 
-public class SwimSpaceShift implements UncertaintyHandler{
+public class SwimSpaceShift implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
         if (!result.getSimulationContext().getWorldData().maybeInLiquid()) return start;
         if (context.getVehicle() != null) return start;
 
         if (end.y - start.y > 0) {
             double baseY = applyLivingEntityThresholdBeforeWaterJump(context, start.y);
             return start.withY(CultMath.clamp(end.y, baseY, baseY + 0.04F), "swim space");
-        } else if (context.isSneaking() && context.getVersion().isNewerThanOrEquals(ClientVersion.V_1_13)) { // Support for going down was added in 1.13+
+        } else if (context.isSneaking()
+                && context.getVersion()
+                        .isNewerThanOrEquals(ClientVersion.V_1_13)) { // Support for going down was added in 1.13+
             return start.withY(CultMath.clamp(end.y, start.y, start.y - 0.04F), "swim sneak");
         }
 

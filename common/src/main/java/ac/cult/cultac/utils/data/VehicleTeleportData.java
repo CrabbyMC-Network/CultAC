@@ -12,8 +12,8 @@ public class VehicleTeleportData {
     private final Boolean onGround;
     private final Vec3 deltaMovement;
 
-    public VehicleTeleportData(int entityId, Vec3 position, float yaw, float pitch,
-                               Boolean onGround, Vec3 deltaMovement) {
+    public VehicleTeleportData(
+            int entityId, Vec3 position, float yaw, float pitch, Boolean onGround, Vec3 deltaMovement) {
         this.entityId = entityId;
         this.position = position;
         this.yaw = yaw;

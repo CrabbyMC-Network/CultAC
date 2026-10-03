@@ -1,5 +1,9 @@
 package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.model.AttributeState;
@@ -11,38 +15,39 @@ import ac.cult.cultac.bedrock.prediction.model.MovementModifierState;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementUpdate;
+import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import ac.cult.cultac.bedrock.prediction.world.EntityContactState;
 import ac.cult.cultac.bedrock.prediction.world.FluidState;
 import ac.cult.cultac.bedrock.prediction.world.WorldContactState;
-import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public final class BedrockRiptideMovementTest {
     @Test
     public void groundedLaunchReadsCarriedHeadWaterBeforeCurrentSensing() {
         var current = state(10L, false, 0L, BedrockCollisionFlags.ON_GROUND).withWasInWaterFlag(true);
-        var release = new BedrockInputFrame(2, 0.0F, -40.0F, false, false, false,
-            Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
+        var release = new BedrockInputFrame(
+                2, 0.0F, -40.0F, false, false, false, Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
         var above = tick(current, release, context(false, false, 3));
-        var submerged = tick(current.withCameraWater(
-            new ac.cult.cultac.bedrock.prediction.state.BedrockCameraWaterState(0, 0, true, false)),
-            release, context(false, false, 3));
-        assertEquals(Vec3d.ZERO.add(BedrockAerialMovement.riptideImpulse(release, 3, true, true, false)), above.velocity());
-        assertEquals(Vec3d.ZERO.add(BedrockAerialMovement.riptideImpulse(release, 3, true, true, true)), submerged.velocity());
+        var submerged = tick(
+                current.withCameraWater(
+                        new ac.cult.cultac.bedrock.prediction.state.BedrockCameraWaterState(0, 0, true, false)),
+                release,
+                context(false, false, 3));
+        assertEquals(
+                Vec3d.ZERO.add(BedrockAerialMovement.riptideImpulse(release, 3, true, true, false)), above.velocity());
+        assertEquals(
+                Vec3d.ZERO.add(BedrockAerialMovement.riptideImpulse(release, 3, true, true, true)),
+                submerged.velocity());
         assertTrue(above.velocity().y() > submerged.velocity().y());
     }
 
     @Test
     public void chargedReleaseWithoutClientSpinDoesNotInventALaunch() {
-        var result = tick(state(20L, false, 0L, BedrockCollisionFlags.AIR),
-            frame("RELEASE_USING_ITEM"), context(true, false, 1));
+        var result = tick(
+                state(20L, false, 0L, BedrockCollisionFlags.AIR), frame("RELEASE_USING_ITEM"), context(true, false, 1));
         assertEquals(Vec3d.ZERO, result.velocity());
         assertFalse(result.step().spinActive());
         assertEquals(0L, result.step().nextChargeTicks());
@@ -52,25 +57,33 @@ public final class BedrockRiptideMovementTest {
     public void repeatedStartsResetChargeInsteadOfAcceleratingIt() {
         long charge = 0L;
         for (int tick = 0; tick < 100; tick++) {
-            var result = tick(state(charge, false, 0L, BedrockCollisionFlags.AIR),
-                frame("RIPTIDE_CHARGE_START"), context(true, false, 1));
+            var result = tick(
+                    state(charge, false, 0L, BedrockCollisionFlags.AIR),
+                    frame("RIPTIDE_CHARGE_START"),
+                    context(true, false, 1));
             charge = result.step().nextChargeTicks();
             assertEquals(1L, charge);
         }
-        var release = tick(state(charge, false, 0L, BedrockCollisionFlags.AIR),
-            frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(true, false, 1));
+        var release = tick(
+                state(charge, false, 0L, BedrockCollisionFlags.AIR),
+                frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"),
+                context(true, false, 1));
         assertEquals(Vec3d.ZERO, release.velocity());
         assertFalse(release.step().spinActive());
     }
 
     @Test
     public void repeatedReleaseAndSpinCannotReuseConsumedCharge() {
-        var first = tick(state(10L, false, 0L, BedrockCollisionFlags.AIR),
-            frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(true, false, 1));
+        var first = tick(
+                state(10L, false, 0L, BedrockCollisionFlags.AIR),
+                frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"),
+                context(true, false, 1));
         assertTrue(first.velocity().length() > 1.0D);
         for (int tick = 0; tick < 100; tick++) {
-            var repeated = tick(state(first.step().nextChargeTicks(), true, 1L, BedrockCollisionFlags.AIR),
-                frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(true, false, 1));
+            var repeated = tick(
+                    state(first.step().nextChargeTicks(), true, 1L, BedrockCollisionFlags.AIR),
+                    frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"),
+                    context(true, false, 1));
             assertEquals(Vec3d.ZERO, repeated.velocity());
             assertEquals(0L, repeated.step().nextChargeTicks());
         }
@@ -94,8 +107,8 @@ public final class BedrockRiptideMovementTest {
 
     @Test
     public void javaValidatedReleaseCannotReplaceBedrockCharge() {
-        BedrockMovementState state = state(0L, false, 0L, BedrockCollisionFlags.AIR)
-            .withWasInWaterFlag(true);
+        BedrockMovementState state =
+                state(0L, false, 0L, BedrockCollisionFlags.AIR).withWasInWaterFlag(true);
         BedrockInputFrame release = frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK", "RIPTIDE_RELEASE_VALID");
 
         BedrockRiptideMovement.ActorNormalTick result = tick(state, release, context(false, false, 1));
@@ -107,12 +120,10 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void impulseStrengthScalesForEveryVanillaRiptideLevel() {
         BedrockInputFrame horizontalRelease = new BedrockInputFrame(
-            2L, 0.0F, 0.0F, false, false, false, Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
+                2L, 0.0F, 0.0F, false, false, false, Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
         for (int level = 1; level <= 3; level++) {
             BedrockRiptideMovement.ActorNormalTick result = tick(
-                state(10L, false, 0L, BedrockCollisionFlags.AIR),
-                horizontalRelease,
-                context(true, false, level));
+                    state(10L, false, 0L, BedrockCollisionFlags.AIR), horizontalRelease, context(true, false, level));
             assertEquals(0.75D * (level + 1), result.velocity().length(), 5.0E-7D);
         }
     }
@@ -120,8 +131,13 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void currentBedrockSpinActionScalesGroundedVerticalDirection() {
         BedrockInputFrame release = new BedrockInputFrame(
-            234L, -112.29094F, -20.535568F, false, false, true,
-            Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK", "SPRINTING", "SPRINT_DOWN"));
+                234L,
+                -112.29094F,
+                -20.535568F,
+                false,
+                false,
+                true,
+                Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK", "SPRINTING", "SPRINT_DOWN"));
 
         Vec3d impulse = BedrockAerialMovement.riptideImpulse(release, 1, true, true, false);
 
@@ -131,10 +147,9 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void groundedReleaseUsesPersistedWaterComponentForSurfaceExitScale() {
         BedrockInputFrame release = new BedrockInputFrame(
-            234L, -112.29094F, -20.535568F, false, false, true,
-            Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
-        BedrockMovementState state = state(10L, false, 0L, BedrockCollisionFlags.ON_GROUND)
-            .withWasInWaterFlag(true);
+                234L, -112.29094F, -20.535568F, false, false, true, Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK"));
+        BedrockMovementState state =
+                state(10L, false, 0L, BedrockCollisionFlags.ON_GROUND).withWasInWaterFlag(true);
 
         BedrockRiptideMovement.ActorNormalTick result = tick(state, release, context(false, false, 1));
         Vec3d expected = BedrockAerialMovement.riptideImpulse(release, 1, true, true, false);
@@ -145,8 +160,13 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void airborneSpinActionUsesNormalizedViewDirection() {
         BedrockInputFrame release = new BedrockInputFrame(
-            571L, 169.65863F, -1.5891876F, true, false, false,
-            Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK", "JUMPING", "JUMP_CURRENT_RAW", "WANT_UP"));
+                571L,
+                169.65863F,
+                -1.5891876F,
+                true,
+                false,
+                false,
+                Set.of("RELEASE_USING_ITEM", "START_SPIN_ATTACK", "JUMPING", "JUMP_CURRENT_RAW", "WANT_UP"));
 
         Vec3d impulse = BedrockAerialMovement.riptideImpulse(release, 1, false, false, false);
 
@@ -157,8 +177,8 @@ public final class BedrockRiptideMovementTest {
     public void nineChargeTicksCannotRelease() {
         BedrockMovementState state = state(9L, false, 0L, BedrockCollisionFlags.AIR);
 
-        BedrockRiptideMovement.ActorNormalTick result = tick(
-            state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(true, false, 3));
+        BedrockRiptideMovement.ActorNormalTick result =
+                tick(state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(true, false, 3));
 
         assertEquals(Vec3d.ZERO, result.velocity());
         assertFalse(result.step().spinActive());
@@ -172,19 +192,19 @@ public final class BedrockRiptideMovementTest {
         assertEquals(7L, charging.step().nextChargeTicks());
 
         BedrockMovementState charged = state(10L, false, 0L, BedrockCollisionFlags.AIR);
-        BedrockRiptideMovement.ActorNormalTick release = tick(
-            charged, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 3));
+        BedrockRiptideMovement.ActorNormalTick release =
+                tick(charged, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 3));
         assertEquals(Vec3d.ZERO, release.velocity());
         assertFalse(release.step().spinActive());
     }
 
     @Test
     public void dryStateDoesNotAuthorizeReleaseOutsideWaterOrRain() {
-        BedrockMovementState state = state(10L, false, 0L, BedrockCollisionFlags.AIR)
-            .withMovementBranch(Medium.AIR);
+        BedrockMovementState state =
+                state(10L, false, 0L, BedrockCollisionFlags.AIR).withMovementBranch(Medium.AIR);
 
-        BedrockRiptideMovement.ActorNormalTick release = tick(
-            state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 1));
+        BedrockRiptideMovement.ActorNormalTick release =
+                tick(state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 1));
 
         assertFalse(release.step().spinActive());
         assertEquals(Vec3d.ZERO, release.velocity());
@@ -193,11 +213,11 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void retainedWaterAuthorizesSurfaceExitBeforeWaterStateRefresh() {
         BedrockMovementState state = state(10L, false, 0L, BedrockCollisionFlags.AIR)
-            .withWasInWaterFlag(true)
-            .withMovementBranch(Medium.AIR);
+                .withWasInWaterFlag(true)
+                .withMovementBranch(Medium.AIR);
 
-        BedrockRiptideMovement.ActorNormalTick release = tick(
-            state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 1));
+        BedrockRiptideMovement.ActorNormalTick release =
+                tick(state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, false, 1));
 
         assertTrue(release.step().spinActive());
         assertTrue(release.velocity().length() > 1.0D);
@@ -206,9 +226,7 @@ public final class BedrockRiptideMovementTest {
     @Test
     public void stoppedItemUseClearsCharge() {
         BedrockRiptideMovement.ActorNormalTick result = tick(
-            state(6L, false, 0L, BedrockCollisionFlags.AIR),
-            frame("STOP_USING_ITEM"),
-            context(true, false, 3));
+                state(6L, false, 0L, BedrockCollisionFlags.AIR), frame("STOP_USING_ITEM"), context(true, false, 3));
         assertEquals(0L, result.step().nextChargeTicks());
     }
 
@@ -216,12 +234,12 @@ public final class BedrockRiptideMovementTest {
     public void rainAllowsGroundedClientReleaseWithoutServerItemMove() {
         BedrockMovementState state = state(10L, false, 0L, BedrockCollisionFlags.ON_GROUND);
 
-        BedrockRiptideMovement.ActorNormalTick result = tick(
-            state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, true, 1));
+        BedrockRiptideMovement.ActorNormalTick result =
+                tick(state, frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), context(false, true, 1));
 
         assertTrue(result.step().spinActive());
         Vec3d expected = BedrockAerialMovement.riptideImpulse(
-            frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), 1, true, false, false);
+                frame("RELEASE_USING_ITEM", "START_SPIN_ATTACK"), 1, true, false, false);
         assertEquals(expected.x(), result.velocity().x(), 0.0D);
         assertEquals(expected.y(), result.velocity().y(), 0.0D);
         assertEquals(expected.z(), result.velocity().z(), 0.0D);
@@ -240,63 +258,53 @@ public final class BedrockRiptideMovementTest {
 
     @Test
     public void spinStopsAtBedrockGroundAndLifetimeBoundaries() {
-        BedrockRiptideMovement.ActorNormalTick grounded = tick(
-            state(0L, true, 5L, BedrockCollisionFlags.ON_GROUND), frame(), context(false, false, 0));
+        BedrockRiptideMovement.ActorNormalTick grounded =
+                tick(state(0L, true, 5L, BedrockCollisionFlags.ON_GROUND), frame(), context(false, false, 0));
         assertFalse(grounded.step().spinActive());
 
-        BedrockRiptideMovement.ActorNormalTick expired = tick(
-            state(0L, true, 19L, BedrockCollisionFlags.AIR), frame(), context(false, false, 0));
+        BedrockRiptideMovement.ActorNormalTick expired =
+                tick(state(0L, true, 19L, BedrockCollisionFlags.AIR), frame(), context(false, false, 0));
         assertFalse(expired.step().spinActive());
     }
 
     @Test
     public void explicitStopAndHorizontalCollisionEndSpin() {
         BedrockRiptideMovement.ActorNormalTick stopped = tick(
-            state(0L, true, 2L, BedrockCollisionFlags.AIR),
-            frame("STOP_SPIN_ATTACK"), context(false, false, 0));
+                state(0L, true, 2L, BedrockCollisionFlags.AIR), frame("STOP_SPIN_ATTACK"), context(false, false, 0));
         assertFalse(stopped.step().spinActive());
 
         BedrockCollisionFlags horizontal = new BedrockCollisionFlags(false, true, false);
-        BedrockRiptideMovement.ActorNormalTick collided = tick(
-            state(0L, true, 2L, horizontal), frame(), context(false, false, 0));
+        BedrockRiptideMovement.ActorNormalTick collided =
+                tick(state(0L, true, 2L, horizontal), frame(), context(false, false, 0));
         assertFalse(collided.step().spinActive());
     }
 
     private static BedrockRiptideMovement.ActorNormalTick tick(
-        BedrockMovementState state,
-        BedrockInputFrame frame,
-        BedrockMovementContext context
-    ) {
+            BedrockMovementState state, BedrockInputFrame frame, BedrockMovementContext context) {
         if (context.inWater()) {
             state = state.withWasInWaterFlag(true);
         }
-        return BedrockRiptideMovement.tickActorNormal(
-            state, frame, frame.intent(), context, Vec3d.ZERO);
+        return BedrockRiptideMovement.tickActorNormal(state, frame, frame.intent(), context, Vec3d.ZERO);
     }
 
     private static BedrockMovementState state(
-        long chargeTicks,
-        boolean spinActive,
-        long spinTicks,
-        BedrockCollisionFlags collisionFlags
-    ) {
+            long chargeTicks, boolean spinActive, long spinTicks, BedrockCollisionFlags collisionFlags) {
         BedrockMovementState initial = BedrockMovementState.fromPhysicalFeet(
-            Vec3d.ZERO, Vec3d.ZERO, BedrockInputFrame.idle(0L), collisionFlags);
+                Vec3d.ZERO, Vec3d.ZERO, BedrockInputFrame.idle(0L), collisionFlags);
         return initial.advance(new BedrockMovementUpdate(
-            Vec3d.ZERO,
-            Vec3d.ZERO,
-            BedrockInputFrame.idle(1L),
-            collisionFlags,
-            initial.boundingBoxMode(),
-            initial.playerDimensions(),
-            0.0F,
-            0L,
-            new BedrockMovementUpdate.Glide(false, false),
-            false,
-            0.0D,
-            new BedrockMovementUpdate.Riptide(chargeTicks, spinActive, spinTicks),
-            new BedrockMovementUpdate.ItemUse(false, 0L)
-        ));
+                Vec3d.ZERO,
+                Vec3d.ZERO,
+                BedrockInputFrame.idle(1L),
+                collisionFlags,
+                initial.boundingBoxMode(),
+                initial.playerDimensions(),
+                0.0F,
+                0L,
+                new BedrockMovementUpdate.Glide(false, false),
+                false,
+                0.0D,
+                new BedrockMovementUpdate.Riptide(chargeTicks, spinActive, spinTicks),
+                new BedrockMovementUpdate.ItemUse(false, 0L)));
     }
 
     private static BedrockInputFrame frame(String... input) {
@@ -306,14 +314,12 @@ public final class BedrockRiptideMovementTest {
     private static BedrockMovementContext context(boolean water, boolean rain, int level) {
         Medium medium = water ? Medium.WATER : Medium.AIR;
         return new BedrockMovementContext(
-            BedrockEffectState.NONE,
-            AttributeState.DEFAULT,
-            new WorldContactState(medium, FluidState.NONE, new BlockCollisionWorld(List.of())),
-            new EquipmentState(0, 0, 0, level, false, false),
-            EntityContactState.NONE,
-            new MovementModifierState(false, false, false, false, 0.05D, false,
-                level > 0, rain, false, 0.35D, 0L),
-            PlayerDimensionsState.DEFAULT
-        );
+                BedrockEffectState.NONE,
+                AttributeState.DEFAULT,
+                new WorldContactState(medium, FluidState.NONE, new BlockCollisionWorld(List.of())),
+                new EquipmentState(0, 0, 0, level, false, false),
+                EntityContactState.NONE,
+                new MovementModifierState(false, false, false, false, 0.05D, false, level > 0, rain, false, 0.35D, 0L),
+                PlayerDimensionsState.DEFAULT);
     }
 }

@@ -5,18 +5,29 @@ import ac.cult.cultac.utils.math.CultMath;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-
 @RequiredArgsConstructor
 public class MovementData {
 
     private final CultPlayer player;
 
-    @Getter private double x, y, z, lastX, lastY, lastZ,
-            deltaX, deltaY, deltaZ,
-            lastDeltaX, lastDeltaY, lastDeltaZ,
-            deltaXZ, lastDeltaXZ;
+    @Getter
+    private double x,
+            y,
+            z,
+            lastX,
+            lastY,
+            lastZ,
+            deltaX,
+            deltaY,
+            deltaZ,
+            lastDeltaX,
+            lastDeltaY,
+            lastDeltaZ,
+            deltaXZ,
+            lastDeltaXZ;
 
-    @Getter private boolean mathematicallyOnGround;
+    @Getter
+    private boolean mathematicallyOnGround;
 
     public void handle(double newX, double newY, double newZ) {
         this.lastX = this.x;
@@ -38,5 +49,4 @@ public class MovementData {
         //
         this.mathematicallyOnGround = newY % 0.015625 == 0.0;
     }
-
 }

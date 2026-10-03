@@ -1,23 +1,26 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.utils.inventory.InventoryClick;
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.cult.cultac.utils.inventory.InventoryClick;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
 
-@CheckData(name = "BadPacketsP", stableKey = "cult.badpackets.invalid_click", description = "Invalid window click packet", experimental = true)
+@CheckData(
+        name = "BadPacketsP",
+        stableKey = "cult.badpackets.invalid_click",
+        description = "Invalid window click packet",
+        experimental = true)
 public class BadPacketsP extends Check implements CheckListener {
-    private static final Verbose V =
-            Verbose.of("clickType={clicktype_lower}, button={sint}[, container={sint}]");
+    private static final Verbose V = Verbose.of("clickType={clicktype_lower}, button={sint}[, container={sint}]");
 
     private int containerType = -1;
     private int containerId = -1;
@@ -27,7 +30,8 @@ public class BadPacketsP extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onOpenScreen(final PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
+    public void onOpenScreen(
+            final PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
         this.containerType = MenuType.fromRegistryKey(packet.menuType()).getId();
         this.containerId = packet.containerId();
     }
@@ -48,7 +52,11 @@ public class BadPacketsP extends Check implements CheckListener {
         // Allowing this to false flag to debug and find issues faster
         if (flag) {
             boolean hasContainer = data.windowId() == containerId;
-            if (flag(V.write(verbose()).uint(VerboseTags.enumId(clickType)).sint(button).bool(hasContainer).sint(containerType))
+            if (flag(V.write(verbose())
+                            .uint(VerboseTags.enumId(clickType))
+                            .sint(button)
+                            .bool(hasContainer)
+                            .sint(containerType))
                     && shouldModifyPackets()) {
                 event.setCancelled(true);
                 player.onPacketCancel();

@@ -1,8 +1,7 @@
 package ac.cult.cultac.utils.nmsutil;
 
-import net.minecraft.world.entity.EntityType;
-
 import java.lang.reflect.Field;
+import net.minecraft.world.entity.EntityType;
 
 /**
  * Cross-version access to vanilla entity type constants. 26.2 moved the constants
@@ -68,8 +67,7 @@ public final class EntityTypesCompat {
     public static final EntityType ZOMBIE_HORSE = constant("ZOMBIE_HORSE");
     public static final EntityType ZOMBIFIED_PIGLIN = constant("ZOMBIFIED_PIGLIN");
 
-    private EntityTypesCompat() {
-    }
+    private EntityTypesCompat() {}
 
     private static Class<?> resolveHolder() {
         try {

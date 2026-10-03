@@ -8,10 +8,10 @@ import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.integration.BedrockMovementInputFactory.Input;
 import ac.cult.cultac.bedrock.prediction.integration.BedrockProfileState.Entry;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
+import ac.cult.cultac.bedrock.prediction.simulation.BedrockForwardTick;
 import ac.cult.cultac.bedrock.prediction.simulation.BedrockImmobileTick;
 import ac.cult.cultac.bedrock.prediction.simulation.BedrockImmobileTick.Result;
 import ac.cult.cultac.bedrock.prediction.simulation.BedrockSimulation;
-import ac.cult.cultac.bedrock.prediction.simulation.BedrockForwardTick;
 import ac.cult.cultac.bedrock.prediction.simulation.BedrockSimulation.Candidate;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockActorDimensions;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockMobJumpComponentState;
@@ -29,11 +29,11 @@ import ac.cult.cultac.checks.impl.prediction.pipeline.MovementEngine;
 import ac.cult.cultac.checks.impl.prediction.stage.MovementModifiers;
 import ac.cult.cultac.checks.impl.prediction.stage.VelocityTransformer;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.CollisionModifier;
+import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.CollisionModifier.ProbeDimensions;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.PistonShulkerPush;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.StepTransform;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.UncertaintyHandler;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.ValidMovements;
-import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.CollisionModifier.ProbeDimensions;
 import ac.cult.cultac.checks.impl.prediction.stage.world.WorldData;
 import ac.cult.cultac.checks.impl.prediction.stage.world.WorldStageBuilder;
 import ac.cult.cultac.player.CultPlayer;
@@ -53,19 +53,19 @@ import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 
 public final class BedrockMovementEngine implements MovementEngine {
     public static final BedrockMovementEngine INSTANCE = new BedrockMovementEngine();
-    static final List<UncertaintyHandler> UNCERTAINTY_HANDLERS = List.of(
-        new PistonShulkerPush(), new CollisionModifier(), new StepTransform()
-    );
+    static final List<UncertaintyHandler> UNCERTAINTY_HANDLERS =
+            List.of(new PistonShulkerPush(), new CollisionModifier(), new StepTransform());
     private final BedrockMovementInputFactory inputFactory = new BedrockMovementInputFactory();
 
-    private BedrockMovementEngine() {
-    }
+    private BedrockMovementEngine() {}
 
-    public PredictionCommit relocatePassenger(PredictionCarry carry, Vec3 position,
-            ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame coordinates) {
-        var entries = BedrockProfileState.profileEntries(carry).stream().map(entry -> entry.withState(
-                entry.state().withCoordinateFrame(coordinates)
-                        .withPhysicalFeetPosition(BedrockVectorAdapter.toBedrock(position), 0.0D))).toList();
+    public PredictionCommit relocatePassenger(
+            PredictionCarry carry, Vec3 position, ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame coordinates) {
+        var entries = BedrockProfileState.profileEntries(carry).stream()
+                .map(entry -> entry.withState(entry.state()
+                        .withCoordinateFrame(coordinates)
+                        .withPhysicalFeetPosition(BedrockVectorAdapter.toBedrock(position), 0.0D)))
+                .toList();
         return new PredictionCommit(new BedrockNextTickStates(entries), Set.of(Vec3.ZERO));
     }
 
@@ -75,43 +75,39 @@ public final class BedrockMovementEngine implements MovementEngine {
         var entries = BedrockProfileState.profileEntries(carry);
         if (entries.isEmpty()) entries = List.of(new Entry(input.previousState(), input.mobJumpComponent()));
         final var position = input.previousState().physicalFeetPosition();
-        var relocated = new BedrockNextTickStates(entries.stream().map(entry -> entry.withState(
-                entry.state().withCoordinateFrame(input.previousState().coordinateFrame())
-                        .withPhysicalFeetPosition(position, 0.0D))).toList());
+        var relocated = new BedrockNextTickStates(entries.stream()
+                .map(entry -> entry.withState(entry.state()
+                        .withCoordinateFrame(input.previousState().coordinateFrame())
+                        .withPhysicalFeetPosition(position, 0.0D)))
+                .toList());
         return input.actorMovementTick()
                 ? applyImmobileStateToCarry(relocated, input.inputFrame(), trustedMayFly(player), input.worldSnapshot())
                 : new PredictionCommit(relocated, Set.of(Vec3.ZERO));
     }
 
     public WorldData buildWorld(
-        WorldStageBuilder builder,
-        CultPlayer player,
-        SimulationContext context,
-        PredictionResult lastPrediction,
-        DesyncStatus lastOnGround
-    ) {
+            WorldStageBuilder builder,
+            CultPlayer player,
+            SimulationContext context,
+            PredictionResult lastPrediction,
+            DesyncStatus lastOnGround) {
         BedrockMovementState previous = BedrockProfileState.previousState(context);
         DesyncStatus grounded = previous == null ? lastOnGround : DesyncStatus.fromBoolean(previous.movementGrounded());
         return builder.generateWorldData(player, context, lastPrediction, grounded);
     }
 
     public List<PredVector> applyModifiers(
-        MovementModifiers modifiers,
-        CultPlayer player,
-        Set<Vec3> startingVelocities,
-        SimulationContext context,
-        PredictionResult lastPrediction,
-        boolean canTickSkip
-    ) {
+            MovementModifiers modifiers,
+            CultPlayer player,
+            Set<Vec3> startingVelocities,
+            SimulationContext context,
+            PredictionResult lastPrediction,
+            boolean canTickSkip) {
         return modifiers.applyBedrockModifiers(player, startingVelocities, context, lastPrediction, canTickSkip);
     }
 
     public List<PredVector> startingVelocities(
-        VelocityTransformer transformer,
-        CultPlayer player,
-        List<PredVector> input,
-        SimulationContext context
-    ) {
+            VelocityTransformer transformer, CultPlayer player, List<PredVector> input, SimulationContext context) {
         if (input == null || input.isEmpty()) {
             return input;
         }
@@ -122,66 +118,80 @@ public final class BedrockMovementEngine implements MovementEngine {
 
         LinkedHashMap<CandidateKey, PredVector> output = new LinkedHashMap<>();
         for (PredVector vector : input) {
-            for (Entry previousEntry : BedrockStartingVelocityProfiles.previousEntriesForJavaStartingVelocity(context, bedrockInput, vector)) {
-                BedrockMovementState boundingBoxState = player.bedrockState == null || previousEntry.state().isVehicle()
-                    ? previousEntry.state()
-                    : player.bedrockState.applyConfirmedBoundingBoxSize(previousEntry.state(), bedrockInput.inputFrame());
-                Input selectedInput = bedrockInput.withPreviousState(boundingBoxState, previousEntry.mobJumpComponent());
+            for (Entry previousEntry : BedrockStartingVelocityProfiles.previousEntriesForJavaStartingVelocity(
+                    context, bedrockInput, vector)) {
+                BedrockMovementState boundingBoxState =
+                        player.bedrockState == null || previousEntry.state().isVehicle()
+                                ? previousEntry.state()
+                                : player.bedrockState.applyConfirmedBoundingBoxSize(
+                                        previousEntry.state(), bedrockInput.inputFrame());
+                Input selectedInput =
+                        bedrockInput.withPreviousState(boundingBoxState, previousEntry.mobJumpComponent());
                 BedrockSimulation.Input simulationInput = new BedrockSimulation.Input(
-                    selectedInput.previousState(),
-                    selectedInput.inputFrame(),
-                    selectedInput.inputIntent(),
-                    selectedInput.worldSnapshot(),
-                    true,
-                    selectedInput.maxUpStep(),
-                    selectedInput.mobJumpComponent(),
-                    selectedInput.actorMovementTick(),
-                    context.isBedrockTeleportTick(),
-                    BedrockControlInput.control(selectedInput.authFrame(), selectedInput.previousState()),
-                    !selectedInput.previousState().isVehicle() && player.bedrockState.movementEffects.glideBoost(
-                        selectedInput.authFrame(), selectedInput.actorMovementTick())
-                );
+                        selectedInput.previousState(),
+                        selectedInput.inputFrame(),
+                        selectedInput.inputIntent(),
+                        selectedInput.worldSnapshot(),
+                        true,
+                        selectedInput.maxUpStep(),
+                        selectedInput.mobJumpComponent(),
+                        selectedInput.actorMovementTick(),
+                        context.isBedrockTeleportTick(),
+                        BedrockControlInput.control(selectedInput.authFrame(), selectedInput.previousState()),
+                        !selectedInput.previousState().isVehicle()
+                                && player.bedrockState.movementEffects.glideBoost(
+                                        selectedInput.authFrame(), selectedInput.actorMovementTick()));
                 simulationInput = player.bedrockState.movementCorrections.prepareInput(simulationInput);
-                selectedInput = selectedInput.withPreviousState(simulationInput.previousState(), simulationInput.mobJumpComponent());
+                selectedInput = selectedInput.withPreviousState(
+                        simulationInput.previousState(), simulationInput.mobJumpComponent());
                 for (Candidate movementCandidate : BedrockForwardTick.simulate(simulationInput)) {
                     BedrockMovementResult movementResult = movementCandidate.movementResult();
-                    addCandidate(output, selectedInput, simulationInput, movementCandidate, vector, movementResult, candidateDelta(movementResult));
-                    if (!movementResult.steppedUp()) {
-                        Vec3d previous = movementResult.previousState().physicalFeetPosition();
-                        addCandidate(
+                    addCandidate(
                             output,
                             selectedInput,
                             simulationInput,
                             movementCandidate,
                             vector,
                             movementResult,
-                            BedrockVectorAdapter.toJava(movementResult.predictedPosition().subtract(previous))
-                        );
+                            candidateDelta(movementResult));
+                    if (!movementResult.steppedUp()) {
+                        Vec3d previous = movementResult.previousState().physicalFeetPosition();
+                        addCandidate(
+                                output,
+                                selectedInput,
+                                simulationInput,
+                                movementCandidate,
+                                vector,
+                                movementResult,
+                                BedrockVectorAdapter.toJava(
+                                        movementResult.predictedPosition().subtract(previous)));
                     }
                 }
             }
         }
         return output.isEmpty()
-            ? BedrockStartingVelocityProfiles.profileStateVelocities(input)
-            : new ArrayList<>(output.values());
+                ? BedrockStartingVelocityProfiles.profileStateVelocities(input)
+                : new ArrayList<>(output.values());
     }
 
     private static void addCandidate(
-        LinkedHashMap<CandidateKey, PredVector> output,
-        Input selectedInput,
-        BedrockSimulation.Input simulationInput,
-        Candidate movementCandidate,
-        PredVector source,
-        BedrockMovementResult movementResult,
-        Vec3 delta
-    ) {
+            LinkedHashMap<CandidateKey, PredVector> output,
+            Input selectedInput,
+            BedrockSimulation.Input simulationInput,
+            Candidate movementCandidate,
+            PredVector source,
+            BedrockMovementResult movementResult,
+            Vec3 delta) {
         BedrockPredVector candidate = new BedrockPredVector(
-            selectedInput, simulationInput, movementResult, movementCandidate.mobJumpComponent(), source, delta
-        );
+                selectedInput, simulationInput, movementResult, movementCandidate.mobJumpComponent(), source, delta);
         CandidateKey key = new CandidateKey(
-            candidate.x, candidate.y, candidate.z, movementResult.horizontalInputLimit(),
-            movementResult.predictedState(), movementCandidate.mobJumpComponent(), movementResult.groundJumpApplied()
-        );
+                candidate.x,
+                candidate.y,
+                candidate.z,
+                movementResult.horizontalInputLimit(),
+                movementResult.predictedState(),
+                movementCandidate.mobJumpComponent(),
+                movementResult.groundJumpApplied());
         PredVector retained = output.putIfAbsent(key, candidate);
         if (retained != null) {
             retained.mergePacketModifierProvenance(candidate);
@@ -189,52 +199,44 @@ public final class BedrockMovementEngine implements MovementEngine {
     }
 
     public ValidMovements createValidMovements(
-        PredVector initialStartingVelocity,
-        CultPlayer player,
-        PredictionResult result,
-        boolean canStep
-    ) {
+            PredVector initialStartingVelocity, CultPlayer player, PredictionResult result, boolean canStep) {
         return new ValidMovements(initialStartingVelocity, player, result, canStep, UNCERTAINTY_HANDLERS);
     }
 
     public CollideAxisData probeCollisions(
-        CollisionModifier modifier,
-        CultPlayer player,
-        SimulationContext context,
-        double minY,
-        Vec3 target,
-        Vec3 playerPos,
-        PredVector initialStartingVelocity,
-        SimpleCollisionBox attemptedMovementExtents,
-        boolean canStep
-    ) {
+            CollisionModifier modifier,
+            CultPlayer player,
+            SimulationContext context,
+            double minY,
+            Vec3 target,
+            Vec3 playerPos,
+            PredVector initialStartingVelocity,
+            SimpleCollisionBox attemptedMovementExtents,
+            boolean canStep) {
         if (context.isBedrockTeleportTick()) {
             return BedrockCollisionAxisData.neutral();
         }
         Input input = initialStartingVelocity instanceof BedrockPredVector candidate
-            ? candidate.input()
-            : inputFactory.create(player, context);
+                ? candidate.input()
+                : inputFactory.create(player, context);
         if (input == null) {
             return BedrockCollisionAxisData.neutral();
         }
         PlayerDimensionsState dimensions = BedrockActorDimensions.committedMovementDimensions(
-            input.previousState(), input.movementContext(), input.inputFrame()
-        );
+                input.previousState(), input.movementContext(), input.inputFrame());
         SimpleCollisionBox playerBox = GetBoundingBox.getBoundingBoxFromPosAndSize(
-            playerPos.x, playerPos.y, playerPos.z, (float) dimensions.width(), (float) dimensions.height()
-        );
-        AxisEpsilon epsilon = bedrockCollisionEpsilon(playerBox, input.previousState().coordinateFrame());
+                playerPos.x, playerPos.y, playerPos.z, (float) dimensions.width(), (float) dimensions.height());
+        AxisEpsilon epsilon =
+                bedrockCollisionEpsilon(playerBox, input.previousState().coordinateFrame());
         CollideAxisData result = modifier.probeCollisions(
-            player,
-            context,
-            minY,
-            target,
-            playerPos,
-            attemptedMovementExtents,
-            new ProbeDimensions(
-                (float) dimensions.width(), (float) dimensions.height(), (float) dimensions.height(), epsilon
-            )
-        );
+                player,
+                context,
+                minY,
+                target,
+                playerPos,
+                attemptedMovementExtents,
+                new ProbeDimensions(
+                        (float) dimensions.width(), (float) dimensions.height(), (float) dimensions.height(), epsilon));
         canonicalizePacketEquivalentCollisionEndpoints(result, target, epsilon);
         return result;
     }
@@ -254,47 +256,63 @@ public final class BedrockMovementEngine implements MovementEngine {
         if (candidate.getFlagSeverity() > currentBest.getFlagSeverity()) {
             return false;
         }
-        BedrockPredictionResult candidateResult = (BedrockPredictionResult) candidate.getProfileResult(BedrockPredictionResult.class);
-        BedrockPredictionResult currentResult = (BedrockPredictionResult) currentBest.getProfileResult(BedrockPredictionResult.class);
+        BedrockPredictionResult candidateResult =
+                (BedrockPredictionResult) candidate.getProfileResult(BedrockPredictionResult.class);
+        BedrockPredictionResult currentResult =
+                (BedrockPredictionResult) currentBest.getProfileResult(BedrockPredictionResult.class);
         return candidateResult != null
-            && currentResult != null
-            && candidateResult.collisionClaimMatchesCandidate()
-            && !currentResult.collisionClaimMatchesCandidate();
+                && currentResult != null
+                && candidateResult.collisionClaimMatchesCandidate()
+                && !currentResult.collisionClaimMatchesCandidate();
     }
 
     public PredictionCommit commitNextTick(
-        CultPlayer player,
-        PredictionResult result,
-        PredictionResult lastPrediction,
-        Vec3 acceptedDiff,
-        PredictionCarry currentCarry
-    ) {
+            CultPlayer player,
+            PredictionResult result,
+            PredictionResult lastPrediction,
+            Vec3 acceptedDiff,
+            PredictionCarry currentCarry) {
         BedrockPredictionResult bedrockResult = result == null
-            ? null
-            : (BedrockPredictionResult) result.getProfileResult(BedrockPredictionResult.class);
+                ? null
+                : (BedrockPredictionResult) result.getProfileResult(BedrockPredictionResult.class);
         if (bedrockResult != null && bedrockResult.nextTickBaseState() != null) {
             var movement = bedrockResult.movementResult();
             var state = bedrockResult.nextTickBaseState();
             var frame = result.getSimulationContext().getBedrockInput();
-            List<Entry> entries = BedrockForwardTick.finish(movement, state,
-                frame.getReportedEndOfTickVelocity() == null ? null
-                    : BedrockVectorAdapter.toBedrock(frame.getReportedEndOfTickVelocity())).stream()
-                .map(next -> new Entry(next, bedrockResult.nextTickBaseMobJumpComponent())).toList();
+            List<Entry> entries = BedrockForwardTick.finish(
+                            movement,
+                            state,
+                            frame.getReportedEndOfTickVelocity() == null
+                                    ? null
+                                    : BedrockVectorAdapter.toBedrock(frame.getReportedEndOfTickVelocity()))
+                    .stream()
+                    .map(next -> new Entry(next, bedrockResult.nextTickBaseMobJumpComponent()))
+                    .toList();
             if (result.isExempt() && frame.getReportedEndOfTickVelocity() != null) {
                 var position = BedrockVectorAdapter.toBedrock(frame.getPosition());
                 var velocity = BedrockVectorAdapter.toBedrock(frame.getReportedEndOfTickVelocity());
-                entries = List.of(entries.getFirst().withState(entries.getFirst().state()
-                    .withPhysicalFeetPosition(position, position.subtract(movement.previousState().physicalFeetPosition()))
-                    .withVelocityAndCollisionFlags(velocity, entries.getFirst().state().collisionFlags())));
+                entries = List.of(entries.getFirst()
+                        .withState(entries.getFirst()
+                                .state()
+                                .withPhysicalFeetPosition(
+                                        position,
+                                        position.subtract(
+                                                movement.previousState().physicalFeetPosition()))
+                                .withVelocityAndCollisionFlags(
+                                        velocity, entries.getFirst().state().collisionFlags())));
             }
             if (entries.size() > 1 && frame.getReportedEndOfTickVelocity() != null) {
                 var reported = BedrockVectorAdapter.toBedrock(frame.getReportedEndOfTickVelocity());
-                entries = entries.stream().sorted(java.util.Comparator.comparingDouble(
-                    entry -> entry.state().velocity().subtract(reported).length())).toList();
+                entries = entries.stream()
+                        .sorted(java.util.Comparator.comparingDouble(entry ->
+                                entry.state().velocity().subtract(reported).length()))
+                        .toList();
             }
-            result.setProfileResult(bedrockResult.withNextTickBaseState(entries.getFirst().state()));
-            return new PredictionCommit(new BedrockNextTickStates(entries),
-                BedrockNextTickVelocityDerivation.profileStateVelocities(entries));
+            result.setProfileResult(
+                    bedrockResult.withNextTickBaseState(entries.getFirst().state()));
+            return new PredictionCommit(
+                    new BedrockNextTickStates(entries),
+                    BedrockNextTickVelocityDerivation.profileStateVelocities(entries));
         }
 
         return new PredictionCommit(null, Set.of());
@@ -302,10 +320,7 @@ public final class BedrockMovementEngine implements MovementEngine {
 
     /** Applies the configured, bounded position reconciliation after this frame has been validated. */
     public PredictionCommit reconcileCommittedPosition(
-        PredictionCommit commit,
-        Vec3 claimedPosition,
-        double maximumStep
-    ) {
+            PredictionCommit commit, Vec3 claimedPosition, double maximumStep) {
         if (commit == null || claimedPosition == null || !Double.isFinite(maximumStep) || maximumStep <= 0.0D) {
             return commit;
         }
@@ -315,64 +330,63 @@ public final class BedrockMovementEngine implements MovementEngine {
         }
 
         Vec3d target = BedrockVectorAdapter.toBedrock(claimedPosition);
-        List<Entry> reconciled = entries.stream().map(entry -> {
-            BedrockMovementState state = entry.state();
-            Vec3d correction = target.subtract(state.physicalFeetPosition());
-            double distance = correction.length();
-            if (distance == 0.0D) {
-                return entry;
-            }
+        List<Entry> reconciled = entries.stream()
+                .map(entry -> {
+                    BedrockMovementState state = entry.state();
+                    Vec3d correction = target.subtract(state.physicalFeetPosition());
+                    double distance = correction.length();
+                    if (distance == 0.0D) {
+                        return entry;
+                    }
 
-            Vec3d adjustment = distance <= maximumStep
-                ? correction
-                : correction.scale(maximumStep / distance);
-            Vec3d position = state.physicalFeetPosition().add(adjustment);
-            BedrockMovementState moved = state.withObservedPosition(
-                position, state.lastPhysicalDisplacementSquared());
-            return entry.withState(moved);
-        }).toList();
+                    Vec3d adjustment = distance <= maximumStep ? correction : correction.scale(maximumStep / distance);
+                    Vec3d position = state.physicalFeetPosition().add(adjustment);
+                    BedrockMovementState moved =
+                            state.withObservedPosition(position, state.lastPhysicalDisplacementSquared());
+                    return entry.withState(moved);
+                })
+                .toList();
 
         if (reconciled.equals(entries)) {
             return commit;
         }
         return new PredictionCommit(
-            new BedrockNextTickStates(reconciled),
-            BedrockNextTickVelocityDerivation.profileStateVelocities(reconciled));
+                new BedrockNextTickStates(reconciled),
+                BedrockNextTickVelocityDerivation.profileStateVelocities(reconciled));
     }
 
     public PredictionSetbackState prepareSetbackState(CultPlayer player, PredictionResult result) {
         BedrockPredictionResult bedrockResult = result == null
-            ? null
-            : (BedrockPredictionResult) result.getProfileResult(BedrockPredictionResult.class);
+                ? null
+                : (BedrockPredictionResult) result.getProfileResult(BedrockPredictionResult.class);
         if (bedrockResult == null || bedrockResult.movementResult() == null) {
             return null;
         }
         BedrockMovementState continuation = bedrockResult.movementResult().predictedState();
         List<Entry> entries = BedrockForwardTick.finish(bedrockResult.movementResult(), continuation).stream()
-            .map(state -> new Entry(state, bedrockResult.nextTickBaseMobJumpComponent())).toList();
+                .map(state -> new Entry(state, bedrockResult.nextTickBaseMobJumpComponent()))
+                .toList();
         PredictionCommit commit = new PredictionCommit(
-            new BedrockNextTickStates(entries),
-            BedrockNextTickVelocityDerivation.profileStateVelocities(entries)
-        );
+                new BedrockNextTickStates(entries), BedrockNextTickVelocityDerivation.profileStateVelocities(entries));
         BedrockMovementState canonical = entries.getFirst().state();
         return new PredictionSetbackState(
-            commit,
-            BedrockVectorAdapter.toJava(canonical.physicalFeetPosition()),
-            BedrockVectorAdapter.toJava(canonical.velocity()),
-            canonical.movementGrounded()
-        );
-    }
-
-    public PredictionSetbackState captureSetbackState(PredictionCommit commit) {
-        if (commit != null && commit.carry() instanceof BedrockNextTickStates nextTickStates
-            && !nextTickStates.profileEntries().isEmpty()) {
-            BedrockMovementState canonical = nextTickStates.profileEntries().getFirst().state();
-            return new PredictionSetbackState(
                 commit,
                 BedrockVectorAdapter.toJava(canonical.physicalFeetPosition()),
                 BedrockVectorAdapter.toJava(canonical.velocity()),
-                canonical.movementGrounded()
-            );
+                canonical.movementGrounded());
+    }
+
+    public PredictionSetbackState captureSetbackState(PredictionCommit commit) {
+        if (commit != null
+                && commit.carry() instanceof BedrockNextTickStates nextTickStates
+                && !nextTickStates.profileEntries().isEmpty()) {
+            BedrockMovementState canonical =
+                    nextTickStates.profileEntries().getFirst().state();
+            return new PredictionSetbackState(
+                    commit,
+                    BedrockVectorAdapter.toJava(canonical.physicalFeetPosition()),
+                    BedrockVectorAdapter.toJava(canonical.velocity()),
+                    canonical.movementGrounded());
         }
         return null;
     }
@@ -382,35 +396,36 @@ public final class BedrockMovementEngine implements MovementEngine {
             return null;
         }
         Vec3d position = BedrockVectorAdapter.toBedrock(teleport.getLocation());
-        List<Entry> rebasedEntries = nextTickStates.profileEntries().stream().map(entry -> {
-            BedrockMovementState state = entry.state().withCoordinateFrame(teleport.getBedrockCoordinateFrame());
+        List<Entry> rebasedEntries = nextTickStates.profileEntries().stream()
+                .map(entry -> {
+                    BedrockMovementState state =
+                            entry.state().withCoordinateFrame(teleport.getBedrockCoordinateFrame());
 
-            // MovePlayer TELEPORT resets velocity; any subsequent SetEntityMotion
-            // enters through the existing packet modifiers, not Java teleport delta flags.
-            Vec3d velocity = Vec3d.ZERO;
-            BedrockMovementState rebased = restoreCorrectedState(state, position, velocity);
-            if (teleport.getBedrockOnGround() != null) {
+                    // MovePlayer TELEPORT resets velocity; any subsequent SetEntityMotion
+                    // enters through the existing packet modifiers, not Java teleport delta flags.
+                    Vec3d velocity = Vec3d.ZERO;
+                    BedrockMovementState rebased = restoreCorrectedState(state, position, velocity);
+                    if (teleport.getBedrockOnGround() != null) {
 
-                rebased = rebased.withVelocityAndCollisionFlags(
-                    rebased.velocity(), rebased.collisionFlags().withTeleportOnGround(teleport.getBedrockOnGround())
-                );
-            }
-            return entry.withState(rebased);
-        }).toList();
+                        rebased = rebased.withVelocityAndCollisionFlags(
+                                rebased.velocity(),
+                                rebased.collisionFlags().withTeleportOnGround(teleport.getBedrockOnGround()));
+                    }
+                    return entry.withState(rebased);
+                })
+                .toList();
         return rebasedEntries.isEmpty()
-            ? null
-            : new PredictionCommit(
-                new BedrockNextTickStates(rebasedEntries),
-                BedrockNextTickVelocityDerivation.profileStateVelocities(rebasedEntries)
-            );
+                ? null
+                : new PredictionCommit(
+                        new BedrockNextTickStates(rebasedEntries),
+                        BedrockNextTickVelocityDerivation.profileStateVelocities(rebasedEntries));
     }
 
     public PredictionCommit applyImmobileStateToCarry(
-        CultPlayer player,
-        PredictionCarry carry,
-        AuthoredMovementFrame authoredMovementFrame,
-        SimulationContext context
-    ) {
+            CultPlayer player,
+            PredictionCarry carry,
+            AuthoredMovementFrame authoredMovementFrame,
+            SimulationContext context) {
         if (authoredMovementFrame == null) {
             return applyImmobileStateToCarry(carry, null, trustedMayFly(player), null);
         }
@@ -422,71 +437,71 @@ public final class BedrockMovementEngine implements MovementEngine {
             return new PredictionCommit(carry, Set.of(Vec3.ZERO));
         }
         BedrockNextTickStates states = carry instanceof BedrockNextTickStates previous
-            && !previous.profileEntries().isEmpty() ? previous
-            : new BedrockNextTickStates(List.of(new Entry(input.previousState(), input.mobJumpComponent())));
+                        && !previous.profileEntries().isEmpty()
+                ? previous
+                : new BedrockNextTickStates(List.of(new Entry(input.previousState(), input.mobJumpComponent())));
         if (!input.actorMovementTick()) {
-            return new PredictionCommit(new BedrockNextTickStates(states.profileEntries().stream()
-                .map(entry -> entry.withState(entry.state().withoutActorMovementTick(input.inputFrame()))).toList()),
-                Set.of(Vec3.ZERO));
+            return new PredictionCommit(
+                    new BedrockNextTickStates(states.profileEntries().stream()
+                            .map(entry -> entry.withState(entry.state().withoutActorMovementTick(input.inputFrame())))
+                            .toList()),
+                    Set.of(Vec3.ZERO));
         }
         return applyImmobileStateToCarry(states, input.inputFrame(), trustedMayFly(player), input.worldSnapshot());
     }
 
     public PredictionCarry applyAcknowledgedGlidingToCarry(PredictionCarry carry, boolean actorGliding) {
         return carry instanceof BedrockNextTickStates states
-            ? new BedrockNextTickStates(
-                states.profileEntries().stream()
-                    .map(entry -> entry.withState(entry.state().withAcknowledgedGliding(actorGliding)))
-                    .toList()
-            )
-            : carry;
+                ? new BedrockNextTickStates(states.profileEntries().stream()
+                        .map(entry -> entry.withState(entry.state().withAcknowledgedGliding(actorGliding)))
+                        .toList())
+                : carry;
     }
 
     public PredictionCarry applyAcknowledgedSprintingToCarry(PredictionCarry carry, boolean sprinting) {
         return carry instanceof BedrockNextTickStates states
-            ? new BedrockNextTickStates(states.profileEntries().stream()
-                .map(entry -> entry.state().isVehicle() ? entry : entry.withState(entry.state().withSprinting(sprinting)))
-                .toList())
-            : carry;
+                ? new BedrockNextTickStates(states.profileEntries().stream()
+                        .map(entry -> entry.state().isVehicle()
+                                ? entry
+                                : entry.withState(entry.state().withSprinting(sprinting)))
+                        .toList())
+                : carry;
     }
 
     @Override
-    public PredictionCarry applyAcknowledgedPoseToCarry(PredictionCarry carry,
-        Boolean crawling, Boolean swimming, Boolean spinning) {
+    public PredictionCarry applyAcknowledgedPoseToCarry(
+            PredictionCarry carry, Boolean crawling, Boolean swimming, Boolean spinning) {
         return carry instanceof BedrockNextTickStates states
-            ? new BedrockNextTickStates(states.profileEntries().stream()
-                .map(entry -> entry.withState(entry.state().withAcknowledgedPose(crawling, swimming, spinning))).toList())
-            : carry;
+                ? new BedrockNextTickStates(states.profileEntries().stream()
+                        .map(entry -> entry.withState(entry.state().withAcknowledgedPose(crawling, swimming, spinning)))
+                        .toList())
+                : carry;
     }
 
     PredictionCommit applyImmobileStateToCarry(
-        PredictionCarry carry,
-        BedrockInputFrame frame,
-        boolean mayFly,
-        BedrockWorldSnapshot snapshot
-    ) {
-        if (!(carry instanceof BedrockNextTickStates nextTickStates) || nextTickStates.profileEntries().isEmpty()) {
+            PredictionCarry carry, BedrockInputFrame frame, boolean mayFly, BedrockWorldSnapshot snapshot) {
+        if (!(carry instanceof BedrockNextTickStates nextTickStates)
+                || nextTickStates.profileEntries().isEmpty()) {
             return new PredictionCommit(null, Set.of(Vec3.ZERO));
         }
         if (frame != null && snapshot == null) {
             return new PredictionCommit(carry, Set.of(Vec3.ZERO));
         }
         List<Entry> immobileEntries = nextTickStates.profileEntries().stream()
-            .map(entry -> immobileEntry(entry, frame, mayFly, snapshot))
-            .toList();
+                .map(entry -> immobileEntry(entry, frame, mayFly, snapshot))
+                .toList();
         return new PredictionCommit(
-            new BedrockNextTickStates(immobileEntries),
-            BedrockNextTickVelocityDerivation.profileStateVelocities(immobileEntries)
-        );
+                new BedrockNextTickStates(immobileEntries),
+                BedrockNextTickVelocityDerivation.profileStateVelocities(immobileEntries));
     }
 
-    private static Entry immobileEntry(Entry entry, BedrockInputFrame frame, boolean mayFly, BedrockWorldSnapshot snapshot) {
+    private static Entry immobileEntry(
+            Entry entry, BedrockInputFrame frame, boolean mayFly, BedrockWorldSnapshot snapshot) {
         if (frame == null) {
             return entry.withState(entry.state().afterImmobileBoundary());
         }
         Result result = BedrockImmobileTick.advance(
-            entry.state(), frame, Objects.requireNonNull(snapshot), entry.mobJumpComponent(), mayFly
-        );
+                entry.state(), frame, Objects.requireNonNull(snapshot), entry.mobJumpComponent(), mayFly);
         return new Entry(result.state(), result.mobJumpComponent());
     }
 
@@ -494,36 +509,38 @@ public final class BedrockMovementEngine implements MovementEngine {
         return player != null && player.canFly;
     }
 
-    private static BedrockMovementState restoreCorrectedState(BedrockMovementState state, Vec3d position, Vec3d velocity) {
+    private static BedrockMovementState restoreCorrectedState(
+            BedrockMovementState state, Vec3d position, Vec3d velocity) {
         return state.afterServerTeleport(position, velocity);
     }
 
     private static boolean attachCandidateMetadata(PredictionResult result) {
         PredVector selected = selectedPredictionVector(result);
-        BedrockPredVector candidate = selected == null ? null : (BedrockPredVector) selected.firstInLineage(BedrockPredVector.class);
+        BedrockPredVector candidate =
+                selected == null ? null : (BedrockPredVector) selected.firstInLineage(BedrockPredVector.class);
         if (candidate == null) {
             return false;
         }
         BedrockMovementResult movementResult = candidate.movementResult();
         BedrockMovementState nextTickBaseState = BedrockValidationSelectedState.candidateBase(
-            movementResult, BedrockValidationSelection.from(result, movementResult)
-        );
-        boolean claimedVerticalCollision = result.getSimulationContext().getBedrockInput()
-            .hasRawInputFlag(PlayerAuthInputData.VERTICAL_COLLISION);
+                movementResult, BedrockValidationSelection.from(result, movementResult));
+        boolean claimedVerticalCollision =
+                result.getSimulationContext().getBedrockInput().hasRawInputFlag(PlayerAuthInputData.VERTICAL_COLLISION);
         // Auth collision bits belong to the rider. Vehicle contact is produced by its collision result.
-        BedrockVerticalCollisionVerdict verticalCollisionVerdict = movementResult.previousState().isVehicle()
-            ? BedrockVerticalCollisionVerdict.LEGAL : BedrockVerticalCollisionClassifier.classify(
-                result, movementResult.predictedState(), claimedVerticalCollision);
+        BedrockVerticalCollisionVerdict verticalCollisionVerdict =
+                movementResult.previousState().isVehicle()
+                        ? BedrockVerticalCollisionVerdict.LEGAL
+                        : BedrockVerticalCollisionClassifier.classify(
+                                result, movementResult.predictedState(), claimedVerticalCollision);
         result.setProfileResult(new BedrockPredictionResult(
-            movementResult,
-            null,
-            nextTickBaseState,
-            candidate.mobJumpComponent(),
-            verticalCollisionVerdict,
-            movementResult.previousState().isVehicle() || BedrockVerticalCollisionClassifier.claimMatchesCandidate(
-                claimedVerticalCollision, movementResult.predictedState()
-            )
-        ));
+                movementResult,
+                null,
+                nextTickBaseState,
+                candidate.mobJumpComponent(),
+                verticalCollisionVerdict,
+                movementResult.previousState().isVehicle()
+                        || BedrockVerticalCollisionClassifier.claimMatchesCandidate(
+                                claimedVerticalCollision, movementResult.predictedState())));
         return true;
     }
 
@@ -533,15 +550,16 @@ public final class BedrockMovementEngine implements MovementEngine {
 
     private static Vec3 candidateDelta(BedrockMovementResult movementResult) {
         Vec3d previous = movementResult.previousState().physicalFeetPosition();
-        return BedrockVectorAdapter.toJava(movementResult.rawPredictedPhysicalFeetPosition().subtract(previous));
+        return BedrockVectorAdapter.toJava(
+                movementResult.rawPredictedPhysicalFeetPosition().subtract(previous));
     }
 
-    private static AxisEpsilon bedrockCollisionEpsilon(SimpleCollisionBox box, ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame frame) {
+    private static AxisEpsilon bedrockCollisionEpsilon(
+            SimpleCollisionBox box, ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame frame) {
         return new AxisEpsilon(
-            bedrockAxisEpsilon(box.minX - frame.originX(), box.maxX - frame.originX()),
-            bedrockAxisEpsilon(box.minY, box.maxY),
-            bedrockAxisEpsilon(box.minZ - frame.originZ(), box.maxZ - frame.originZ())
-        );
+                bedrockAxisEpsilon(box.minX - frame.originX(), box.maxX - frame.originX()),
+                bedrockAxisEpsilon(box.minY, box.maxY),
+                bedrockAxisEpsilon(box.minZ - frame.originZ(), box.maxZ - frame.originZ()));
     }
 
     private static double bedrockAxisEpsilon(double min, double max) {
@@ -551,10 +569,7 @@ public final class BedrockMovementEngine implements MovementEngine {
     }
 
     private static void canonicalizePacketEquivalentCollisionEndpoints(
-        CollideAxisData collision,
-        Vec3 target,
-        AxisEpsilon epsilon
-    ) {
+            CollideAxisData collision, Vec3 target, AxisEpsilon epsilon) {
         canonicalizeCollisionEndpoint(collision.getX(), target.x, epsilon.x());
         canonicalizeCollisionEndpoint(collision.getYPos(), target.y, epsilon.y());
         canonicalizeCollisionEndpoint(collision.getYNeg(), target.y, epsilon.y());
@@ -568,13 +583,11 @@ public final class BedrockMovementEngine implements MovementEngine {
     }
 
     private record CandidateKey(
-        double x,
-        double y,
-        double z,
-        double horizontalInputLimit,
-        BedrockMovementState predictedState,
-        BedrockMobJumpComponentState mobJumpComponent,
-        boolean groundJumpApplied
-    ) {
-    }
+            double x,
+            double y,
+            double z,
+            double horizontalInputLimit,
+            BedrockMovementState predictedState,
+            BedrockMobJumpComponentState mobJumpComponent,
+            boolean groundJumpApplied) {}
 }

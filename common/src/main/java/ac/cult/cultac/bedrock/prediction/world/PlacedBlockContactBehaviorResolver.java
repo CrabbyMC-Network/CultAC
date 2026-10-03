@@ -7,8 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 final class PlacedBlockContactBehaviorResolver {
-    private PlacedBlockContactBehaviorResolver() {
-    }
+    private PlacedBlockContactBehaviorResolver() {}
 
     static Set<BlockContactBehavior> copy(Set<BlockContactBehavior> behaviors) {
         Objects.requireNonNull(behaviors, "contactBehaviors");
@@ -19,10 +18,7 @@ final class PlacedBlockContactBehaviorResolver {
     }
 
     static Set<BlockContactBehavior> derive(
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState
-    ) {
+            String javaState, String bedrockIdentifier, Map<String, Object> bedrockState) {
         EnumSet<BlockContactBehavior> behaviors = EnumSet.noneOf(BlockContactBehavior.class);
         Object explicitBehaviors = BedrockBlockMetadata.value(bedrockState, BedrockBlockMetadata.CONTACT_BEHAVIORS);
         if (explicitBehaviors != null) {
@@ -47,13 +43,12 @@ final class PlacedBlockContactBehaviorResolver {
         if ("minecraft:cobweb".equals(javaIdentifier) || "minecraft:web".equals(bedrockId)) {
             behaviors.add(BlockContactBehavior.COBWEB);
         }
-        if ("minecraft:sweet_berry_bush".equals(javaIdentifier)
-            || "minecraft:sweet_berry_bush".equals(bedrockId)) {
+        if ("minecraft:sweet_berry_bush".equals(javaIdentifier) || "minecraft:sweet_berry_bush".equals(bedrockId)) {
             behaviors.add(BlockContactBehavior.SWEET_BERRY_BUSH);
         }
         if ("minecraft:powder_snow".equals(javaIdentifier)
-            || "minecraft:powder_snow".equals(bedrockId)
-            || "powder_snow".equals(bedrockId)) {
+                || "minecraft:powder_snow".equals(bedrockId)
+                || "powder_snow".equals(bedrockId)) {
             behaviors.add(BlockContactBehavior.POWDER_SNOW);
         }
         if ("minecraft:scaffolding".equals(javaIdentifier) || "minecraft:scaffolding".equals(bedrockId)) {
@@ -89,10 +84,7 @@ final class PlacedBlockContactBehaviorResolver {
                 || "slime".equals(identifier);
     }
 
-    private static void addExplicitContactBehaviors(
-        Set<BlockContactBehavior> behaviors,
-        Object explicit
-    ) {
+    private static void addExplicitContactBehaviors(Set<BlockContactBehavior> behaviors, Object explicit) {
         if (explicit == null) {
             return;
         }

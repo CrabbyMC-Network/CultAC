@@ -4,10 +4,10 @@ import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.world.phys.Vec3;
 
 public final class FluidFallingAdjustedMovement {
-    private FluidFallingAdjustedMovement() {
-    }
+    private FluidFallingAdjustedMovement() {}
 
-    public static Vec3 getFluidFallingAdjustedMovement(CultPlayer player, double gravity, boolean falling, Vec3 movement) {
+    public static Vec3 getFluidFallingAdjustedMovement(
+            CultPlayer player, double gravity, boolean falling, Vec3 movement) {
         if (gravity == 0 || player.isSprinting) {
             return movement;
         }

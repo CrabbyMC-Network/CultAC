@@ -1,12 +1,15 @@
 package ac.cult.cultac.utils.blockplace;
 
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
-import ac.cult.cultac.utils.nmsutil.NmsBucketUtil;
 import ac.cult.cultac.utils.math.VanillaMath;
+import ac.cult.cultac.utils.nmsutil.NmsBucketUtil;
+import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -43,10 +46,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 // Netty-thread-only placement simulator. This path must never read live world state.
 public final class NmsBlockPlaceResolver {
@@ -86,8 +85,8 @@ public final class NmsBlockPlaceResolver {
             throw new IllegalStateException("Unable to resolve vanilla's water potion", exception);
         }
     }
-    private NmsBlockPlaceResolver() {
-    }
+
+    private NmsBlockPlaceResolver() {}
 
     public static boolean applyBlockPlace(CultPlayer player, BlockPlace place) {
         // Live world access is forbidden here. Prediction must resolve only from the player's compensated state.
@@ -99,7 +98,8 @@ public final class NmsBlockPlaceResolver {
             return false;
         }
 
-        PlacementResult result = simulatePlace(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot, blockItem);
+        PlacementResult result =
+                simulatePlace(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot, blockItem);
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.getResyncReason() != null) {
                 player.sendMessage("Resolved place failed: " + result.getResyncReason());
@@ -120,7 +120,8 @@ public final class NmsBlockPlaceResolver {
 
     public static boolean applyIgnitionItem(CultPlayer player, BlockPlace place, boolean consumeInventory) {
         PlacementSnapshot snapshot = PlacementSnapshot.capture(player, place);
-        PlacementResult result = simulateIgnition(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
+        PlacementResult result =
+                simulateIgnition(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.getResyncReason() != null) {
                 player.sendMessage("Resolved ignition failed: " + result.getResyncReason());
@@ -132,14 +133,16 @@ public final class NmsBlockPlaceResolver {
             logResolvedChangeSet(player, result.getChangedBlocks());
         }
 
-        boolean applied = consumeInventory ? applyResolvedStates(place, result) : applyResolvedWorldStates(place, result);
+        boolean applied =
+                consumeInventory ? applyResolvedStates(place, result) : applyResolvedWorldStates(place, result);
         if (applied) applyAfterUseOn(player, snapshot);
         return applied;
     }
 
     public static boolean applyBucketPlace(CultPlayer player, BlockPlace place) {
         PlacementSnapshot snapshot = PlacementSnapshot.capture(player, place);
-        PlacementResult result = simulateBucketPlace(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
+        PlacementResult result =
+                simulateBucketPlace(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.getResyncReason() != null) {
                 player.sendMessage("Resolved bucket place failed: " + result.getResyncReason());
@@ -157,10 +160,12 @@ public final class NmsBlockPlaceResolver {
 
     public static Material applyBucketPickup(CultPlayer player, BlockPlace place) {
         PlacementSnapshot snapshot = PlacementSnapshot.capture(player, place);
-        BucketPickupResult result = simulateBucketPickup(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
+        BucketPickupResult result =
+                simulateBucketPickup(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
         if (!result.result().isSuccess()) {
             if (player.debugPlaces && result.result().getResyncReason() != null) {
-                player.sendMessage("Resolved bucket pickup failed: " + result.result().getResyncReason());
+                player.sendMessage(
+                        "Resolved bucket pickup failed: " + result.result().getResyncReason());
             }
             return null;
         }
@@ -179,8 +184,7 @@ public final class NmsBlockPlaceResolver {
                 PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld),
                 snapshot,
                 player.canUseGameMasterBlocks(),
-                player.isBedrockMovement() ? null : player.getClientVersion()
-        );
+                player.isBedrockMovement() ? null : player.getClientVersion());
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.resyncReason() != null) {
                 player.sendMessage("Resolved block use failed: " + result.resyncReason());
@@ -193,33 +197,37 @@ public final class NmsBlockPlaceResolver {
         }
 
         if (result.handAfter() != null) {
-            player.getInventory().applyClientSideUseItemOnResult(
-                    snapshot.getHand(),
-                    SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
-                    result.addedItems().stream().map(SpigotConversionUtil::fromNmsItemStack).toList());
+            player.getInventory()
+                    .applyClientSideUseItemOnResult(
+                            snapshot.getHand(),
+                            SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
+                            result.addedItems().stream()
+                                    .map(SpigotConversionUtil::fromNmsItemStack)
+                                    .toList());
         } else if (result.consumeInventory()) {
             player.getInventory().onBlockPlace(place);
         }
         for (PlacementResult.ChangedBlock changedBlock : result.changedBlocks()) {
-            place.applyResolvedSecondary(changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
+            place.applyResolvedSecondary(
+                    changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
         }
         return true;
     }
 
     public static boolean applyWorldModifyingUseItem(CultPlayer player, BlockPlace place) {
         PlacementSnapshot snapshot = PlacementSnapshot.capture(player, place);
-        if (!player.isBedrockMovement() && player.getClientVersion().isNewerThanOrEquals(
-                ac.cult.cultac.network.protocol.ClientVersion.V_26_3)
+        if (!player.isBedrockMovement()
+                && player.getClientVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_3)
                 && BLOCK_TRANSFORMER_COMPONENT != null
-                && BlockTransformations.usesTransformer(snapshot.getItemStack().getItem(),
+                && BlockTransformations.usesTransformer(
+                        snapshot.getItemStack().getItem(),
                         player.compensatedWorld.getBlockState(snapshot.getClickedBlockPos()))) {
             return BlockTransformations.apply(player, place, snapshot);
         }
         PlacementResult result = simulateWorldModifyingUseItem(
                 PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld),
                 snapshot,
-                mainHandUseIsBlockedByOffhand(player, snapshot)
-        );
+                mainHandUseIsBlockedByOffhand(player, snapshot));
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.getResyncReason() != null) {
                 player.sendMessage("Resolved item use failed: " + result.getResyncReason());
@@ -231,19 +239,26 @@ public final class NmsBlockPlaceResolver {
             logResolvedChangeSet(player, result.getChangedBlocks());
         }
 
-        return result.isConsumeInventory() ? applyResolvedStates(place, result) : applyResolvedWorldStates(place, result);
+        return result.isConsumeInventory()
+                ? applyResolvedStates(place, result)
+                : applyResolvedWorldStates(place, result);
     }
 
     public static boolean applyClientSideUseOnItem(CultPlayer player, BlockPlace place) {
         PlacementSnapshot snapshot = PlacementSnapshot.capture(player, place);
         ItemUseOnResult result;
-        if (!player.isBedrockMovement() && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)
+        if (!player.isBedrockMovement()
+                && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)
                 && snapshot.getItemStack().getItem() instanceof net.minecraft.world.item.CompassItem
-                && player.compensatedWorld.getBlockState(snapshot.getClickedBlockPos()).getBlock() == Blocks.LODESTONE) {
+                && player.compensatedWorld
+                                .getBlockState(snapshot.getClickedBlockPos())
+                                .getBlock()
+                        == Blocks.LODESTONE) {
             result = simulateCompassBinding(snapshot, player.dimension);
         } else {
             result = simulateClientSideUseOnItem(
-                    PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot,
+                    PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld),
+                    snapshot,
                     player.getInventory().inventory.hasItemType(Material.GLASS_BOTTLE));
         }
         if (!result.isSuccess()) {
@@ -257,21 +272,32 @@ public final class NmsBlockPlaceResolver {
             logResolvedChangeSet(player, result.changedBlocks());
         }
 
-        applyResolvedWorldStates(place, PlacementResult.success(result.changedBlocks(), snapshot.getClickedBlockPos(), false));
-        if (!player.isBedrockMovement() && player.getClientVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_3)) {
+        applyResolvedWorldStates(
+                place, PlacementResult.success(result.changedBlocks(), snapshot.getClickedBlockPos(), false));
+        if (!player.isBedrockMovement()
+                && player.getClientVersion()
+                        .isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_3)) {
             applyAfterUse(player, snapshot, snapshot.getItemStack(), result.handAfter(), result.addedItems());
         } else {
-            player.getInventory().applyClientSideUseItemOnResult(
-                    snapshot.getHand(),
-                    SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
-                    result.addedItems().stream().map(SpigotConversionUtil::fromNmsItemStack).toList());
+            player.getInventory()
+                    .applyClientSideUseItemOnResult(
+                            snapshot.getHand(),
+                            SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
+                            result.addedItems().stream()
+                                    .map(SpigotConversionUtil::fromNmsItemStack)
+                                    .toList());
         }
         return true;
     }
 
     public static void applyAfterUseOn(CultPlayer player, PlacementSnapshot before) {
-        if (!player.isBedrockMovement() && player.getClientVersion().isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_3)) {
-            applyAfterUse(player, before, before.getItemStack(),
+        if (!player.isBedrockMovement()
+                && player.getClientVersion()
+                        .isNewerThanOrEquals(ac.cult.cultac.network.protocol.ClientVersion.V_26_3)) {
+            applyAfterUse(
+                    player,
+                    before,
+                    before.getItemStack(),
                     SpigotConversionUtil.toNmsItemStack(player.getInventory().getHandItem(before.getHand())));
         }
     }
@@ -286,9 +312,9 @@ public final class NmsBlockPlaceResolver {
         Vec3 clientPosition = new Vec3(
                 player.packetStateData.clientSidePosition.x,
                 player.packetStateData.clientSidePosition.y,
-                player.packetStateData.clientSidePosition.z
-        );
-        BlockPos anchor = new BlockPos(Mth.floor(clientPosition.x), Mth.floor(clientPosition.y), Mth.floor(clientPosition.z));
+                player.packetStateData.clientSidePosition.z);
+        BlockPos anchor =
+                new BlockPos(Mth.floor(clientPosition.x), Mth.floor(clientPosition.y), Mth.floor(clientPosition.z));
         PlacementSnapshot snapshot = PlacementSnapshot.of(
                 hand,
                 bukkitHand,
@@ -310,10 +336,10 @@ public final class NmsBlockPlaceResolver {
                 player.food,
                 player.compensatedWorld.getMinHeight(),
                 player.compensatedWorld.getMaxHeight(),
-                false
-        );
+                false);
 
-        ItemUseResult result = simulateClientSideUseItem(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
+        ItemUseResult result =
+                simulateClientSideUseItem(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
         if (!result.isSuccess()) {
             if (player.debugPlaces && result.resyncReason() != null) {
                 player.sendMessage("Resolved item use failed: " + result.resyncReason());
@@ -321,10 +347,13 @@ public final class NmsBlockPlaceResolver {
             return false;
         }
 
-        player.getInventory().applyClientSideUseItemOnResult(
-                hand,
-                SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
-                result.addedItems().stream().map(SpigotConversionUtil::fromNmsItemStack).toList());
+        player.getInventory()
+                .applyClientSideUseItemOnResult(
+                        hand,
+                        SpigotConversionUtil.fromNmsItemStack(result.handAfter()),
+                        result.addedItems().stream()
+                                .map(SpigotConversionUtil::fromNmsItemStack)
+                                .toList());
         return true;
     }
 
@@ -350,7 +379,9 @@ public final class NmsBlockPlaceResolver {
         }
 
         BlockState blockState = world.getBlockState(pos);
-        if (CampfireBlock.canLight(blockState) || CandleBlock.canLight(blockState) || CandleCakeBlock.canLight(blockState)) {
+        if (CampfireBlock.canLight(blockState)
+                || CandleBlock.canLight(blockState)
+                || CandleCakeBlock.canLight(blockState)) {
             world.setBlock(pos, blockState.setValue(BlockStateProperties.LIT, true), PLACEMENT_FLAGS, MAX_UPDATE_DEPTH);
             return world.buildResult(pos);
         }
@@ -369,7 +400,8 @@ public final class NmsBlockPlaceResolver {
     }
 
     static PlacementResult simulateBucketPlace(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot) {
-        if (snapshot.getItemStack().isEmpty() || !(snapshot.getItemStack().getItem() instanceof BucketItem bucketItem)) {
+        if (snapshot.getItemStack().isEmpty()
+                || !(snapshot.getItemStack().getItem() instanceof BucketItem bucketItem)) {
             return PlacementResult.failed("not a fluid bucket");
         }
         if (NmsBucketUtil.content(bucketItem) == Fluids.EMPTY) {
@@ -379,7 +411,8 @@ public final class NmsBlockPlaceResolver {
         PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
         BlockPos clickedPos = snapshot.getClickedBlockPos();
         BlockState clickedState = world.getBlockState(clickedPos);
-        BlockPos placePos = clickedState.getBlock() instanceof LiquidBlockContainer && NmsBucketUtil.content(bucketItem) == Fluids.WATER
+        BlockPos placePos = clickedState.getBlock() instanceof LiquidBlockContainer
+                        && NmsBucketUtil.content(bucketItem) == Fluids.WATER
                 ? clickedPos
                 : clickedPos.relative(snapshot.getClickedFace());
 
@@ -389,10 +422,14 @@ public final class NmsBlockPlaceResolver {
 
         // Forks also patch emptyContents itself to query live Bukkit world configuration.
         // Vanilla added sneak-to-bypass-waterlogging in 1.21.9; 1.21.3 ignores it.
-        boolean secondaryUse = snapshot.isSecondaryUse()
-                && snapshot.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_9);
-        if (!ClientBucketPlacement.empty(NmsBucketUtil.content(bucketItem), world.level(), placePos,
-                SnapshotBlockPlaceContext.createHitResult(snapshot), secondaryUse)) {
+        boolean secondaryUse =
+                snapshot.isSecondaryUse() && snapshot.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_9);
+        if (!ClientBucketPlacement.empty(
+                NmsBucketUtil.content(bucketItem),
+                world.level(),
+                placePos,
+                SnapshotBlockPlaceContext.createHitResult(snapshot),
+                secondaryUse)) {
             return PlacementResult.failed("bucket fluid cannot be placed");
         }
 
@@ -419,12 +456,20 @@ public final class NmsBlockPlaceResolver {
         return BucketPickupResult.success(world.buildResult(pos), filledBucket);
     }
 
-    static BlockUseResult simulateBlockUse(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean canUseGameMasterBlocks) {
-        return simulateBlockUse(blockAccess, snapshot, canUseGameMasterBlocks,
+    static BlockUseResult simulateBlockUse(
+            PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean canUseGameMasterBlocks) {
+        return simulateBlockUse(
+                blockAccess,
+                snapshot,
+                canUseGameMasterBlocks,
                 ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion()));
     }
 
-    static BlockUseResult simulateBlockUse(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean canUseGameMasterBlocks, ClientVersion clientVersion) {
+    static BlockUseResult simulateBlockUse(
+            PlacementBlockAccess blockAccess,
+            PlacementSnapshot snapshot,
+            boolean canUseGameMasterBlocks,
+            ClientVersion clientVersion) {
         PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
         BlockPos pos = snapshot.getClickedBlockPos();
         if (snapshot.isOutsideBuildHeight(pos)) {
@@ -443,29 +488,20 @@ public final class NmsBlockPlaceResolver {
         }
         // MCP-Reborn c59f05e TntBlock.java:101-128 consumes ignition on the client,
         // while prime() at lines 84-97 mutates only a ServerLevel.
-        if (state.getBlock() == Blocks.TNT && (snapshot.getItemStack().getItem() == Items.FLINT_AND_STEEL
-                || snapshot.getItemStack().getItem() == Items.FIRE_CHARGE)) {
+        if (state.getBlock() == Blocks.TNT
+                && (snapshot.getItemStack().getItem() == Items.FLINT_AND_STEEL
+                        || snapshot.getItemStack().getItem() == Items.FIRE_CHARGE)) {
             return BlockUseResult.success(List.of(), false);
         }
         BlockHitResult hitResult = SnapshotBlockPlaceContext.createHitResult(snapshot);
 
-        InteractionResult result = NmsClientInteraction.paperPatchedBlockUse(
-                state,
-                world.level(),
-                pos
-        );
+        InteractionResult result = NmsClientInteraction.paperPatchedBlockUse(state, world.level(), pos);
         if (result == null) {
             result = ClientBlockItemUse.simulate(state, world.level(), pos, snapshot);
         }
         if (result == null) {
             result = NmsClientInteraction.playerFreeBlockUse(
-                    state,
-                    world.level(),
-                    pos,
-                    snapshot,
-                    hitResult,
-                    canUseGameMasterBlocks
-            );
+                    state, world.level(), pos, snapshot, hitResult, canUseGameMasterBlocks);
         }
         if (result == null) {
             result = NmsClientInteraction.playerItemUse(state, world.level(), pos, snapshot);
@@ -488,7 +524,8 @@ public final class NmsBlockPlaceResolver {
             // A BlockItem first asks the target block to consume the click. The
             // detached client level and null player keep this boundary incapable
             // of reaching a runtime player; other item/player interactions fail closed.
-            InteractionResult itemUse = state.useItemOn(snapshot.getItemStack(), world.level(), null, snapshot.getHand(), hitResult);
+            InteractionResult itemUse =
+                    state.useItemOn(snapshot.getItemStack(), world.level(), null, snapshot.getHand(), hitResult);
             if (itemUse instanceof InteractionResult.TryEmptyHandInteraction
                     && snapshot.getHand() == InteractionHand.MAIN_HAND) {
                 // MultiPlayerGameMode immediately retries this result through its
@@ -512,20 +549,20 @@ public final class NmsBlockPlaceResolver {
         return BlockUseResult.success(
                 world.buildResult(pos).getChangedBlocks(),
                 (result == InteractionResult.SUCCESS
-                        && state.getBlock() instanceof net.minecraft.world.level.block.RespawnAnchorBlock
-                        && snapshot.getItemStack().getItem() == Items.GLOWSTONE)
-                        || NmsClientInteraction.consumesHeldItem(state, snapshot)
-        );
+                                && state.getBlock() instanceof net.minecraft.world.level.block.RespawnAnchorBlock
+                                && snapshot.getItemStack().getItem() == Items.GLOWSTONE)
+                        || NmsClientInteraction.consumesHeldItem(state, snapshot));
     }
 
-    private static BlockUseResult simulateVersionedBlockUse(PlacementWorldAdapter world,
-                                                             PlacementSnapshot snapshot, ClientVersion version) {
+    private static BlockUseResult simulateVersionedBlockUse(
+            PlacementWorldAdapter world, PlacementSnapshot snapshot, ClientVersion version) {
         BlockPos pos = snapshot.getClickedBlockPos();
         BlockState state = world.getBlockState(pos);
         ItemStack hand = snapshot.getItemStack();
         // 1.21.5 TntBlock#prime moved ignition mutation behind ServerLevel.
         // The client's behavior is independent of the detached Level's native ABI.
-        if (state.getBlock() == Blocks.TNT && (hand.getItem() == Items.FLINT_AND_STEEL || hand.getItem() == Items.FIRE_CHARGE)) {
+        if (state.getBlock() == Blocks.TNT
+                && (hand.getItem() == Items.FLINT_AND_STEEL || hand.getItem() == Items.FIRE_CHARGE)) {
             if (version.isNewerThanOrEquals(ClientVersion.V_1_21_5)) return BlockUseResult.success(List.of(), false);
             world.setBlock(pos, Blocks.AIR.defaultBlockState(), 11, MAX_UPDATE_DEPTH);
             ItemStack handAfter = hand.copy();
@@ -538,7 +575,8 @@ public final class NmsBlockPlaceResolver {
         if (state.getBlock() instanceof net.minecraft.world.level.block.CaveVines
                 && state.getValue(BlockStateProperties.BERRIES)) {
             harvested = state.setValue(BlockStateProperties.BERRIES, false);
-        } else if (state.getBlock() == Blocks.SWEET_BERRY_BUSH && state.getValue(BlockStateProperties.AGE_3) > 1
+        } else if (state.getBlock() == Blocks.SWEET_BERRY_BUSH
+                && state.getValue(BlockStateProperties.AGE_3) > 1
                 && (hand.getItem() != Items.BONE_MEAL || state.getValue(BlockStateProperties.AGE_3) == 3)) {
             harvested = state.setValue(BlockStateProperties.AGE_3, 1);
         } else {
@@ -552,14 +590,21 @@ public final class NmsBlockPlaceResolver {
         // 26.3 registers axes as Item with BLOCK_TRANSFORMER. Older Java clients
         // and Geyser still use AxeItem behavior for these identities, regardless
         // of arbitrary components on other items in the native server registry.
-        return switch (NmsIdentifierUtil.registryKey(net.minecraft.core.registries.BuiltInRegistries.ITEM, stack.getItem())) {
-            case "minecraft:wooden_axe", "minecraft:stone_axe", "minecraft:copper_axe", "minecraft:iron_axe",
-                    "minecraft:golden_axe", "minecraft:diamond_axe", "minecraft:netherite_axe" -> true;
+        return switch (NmsIdentifierUtil.registryKey(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM, stack.getItem())) {
+            case "minecraft:wooden_axe",
+                    "minecraft:stone_axe",
+                    "minecraft:copper_axe",
+                    "minecraft:iron_axe",
+                    "minecraft:golden_axe",
+                    "minecraft:diamond_axe",
+                    "minecraft:netherite_axe" -> true;
             default -> false;
         };
     }
 
-    static PlacementResult simulateWorldModifyingUseItem(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean mainHandBlockedByOffhand) {
+    static PlacementResult simulateWorldModifyingUseItem(
+            PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean mainHandBlockedByOffhand) {
         if (snapshot.getItemStack().isEmpty()) {
             return PlacementResult.failed("empty item");
         }
@@ -589,7 +634,8 @@ public final class NmsBlockPlaceResolver {
         return PlacementResult.failed("item has no client-side world mutation");
     }
 
-    static ItemUseOnResult simulateCompassBinding(PlacementSnapshot snapshot,
+    static ItemUseOnResult simulateCompassBinding(
+            PlacementSnapshot snapshot,
             net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension) {
         // CompassItem.useOn modifies the client stack before ItemStack applies after-use components.
         var target = new net.minecraft.world.item.component.LodestoneTracker(
@@ -610,10 +656,7 @@ public final class NmsBlockPlaceResolver {
     }
 
     static ItemUseOnResult simulateClientSideUseOnItem(
-            PlacementBlockAccess blockAccess,
-            PlacementSnapshot snapshot,
-            boolean creativeHasBottle
-    ) {
+            PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, boolean creativeHasBottle) {
         ItemStack itemStack = snapshot.getItemStack();
         if (itemStack.isEmpty()) {
             return ItemUseOnResult.failed("empty item");
@@ -631,8 +674,8 @@ public final class NmsBlockPlaceResolver {
                 && !plant.isMaxAge(target)) {
             PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
             world.setBlock(snapshot.getClickedBlockPos(), plant.getMaxAgeState(target), 3, MAX_UPDATE_DEPTH);
-            return ItemUseOnResult.success(world.buildResult(snapshot.getClickedBlockPos()).getChangedBlocks(),
-                    itemStack.copy(), List.of());
+            return ItemUseOnResult.success(
+                    world.buildResult(snapshot.getClickedBlockPos()).getChangedBlocks(), itemStack.copy(), List.of());
         }
         // MapItem's banner update is server-only, but the client consumes the interaction.
         if (itemStack.getItem() instanceof net.minecraft.world.item.MapItem
@@ -643,7 +686,9 @@ public final class NmsBlockPlaceResolver {
         // MultiPlayerGameMode.java:320-329 and 361-370.
         if (itemStack.getItem() instanceof PotionItem
                 && snapshot.getClickedFace() != Direction.DOWN
-                && itemStack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).is(WATER_POTION)
+                && itemStack
+                        .getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY)
+                        .is(WATER_POTION)
                 && blockAccess.getBlockStateAt(snapshot.getClickedBlockPos()).is(CONVERTIBLE_TO_MUD)) {
             PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
             world.setBlock(snapshot.getClickedBlockPos(), Blocks.MUD.defaultBlockState(), 3, MAX_UPDATE_DEPTH);
@@ -659,10 +704,7 @@ public final class NmsBlockPlaceResolver {
                 addedItems = List.of(new ItemStack(Items.GLASS_BOTTLE));
             }
             return ItemUseOnResult.success(
-                    world.buildResult(snapshot.getClickedBlockPos()).getChangedBlocks(),
-                    handAfter,
-                    addedItems
-            );
+                    world.buildResult(snapshot.getClickedBlockPos()).getChangedBlocks(), handAfter, addedItems);
         }
         // Entity-placement items consult or construct runtime entities. The detached
         // predictor has no entity capability, so authoritative spawn/ack reconciles them.
@@ -704,11 +746,13 @@ public final class NmsBlockPlaceResolver {
         if (stripped == null) {
             return Optional.empty();
         }
-        return Optional.of(stripped.defaultBlockState().setValue(RotatedPillarBlock.AXIS, state.getValue(RotatedPillarBlock.AXIS)));
+        return Optional.of(stripped.defaultBlockState()
+                .setValue(RotatedPillarBlock.AXIS, state.getValue(RotatedPillarBlock.AXIS)));
     }
 
     private static Optional<BlockState> getWaxedOff(BlockState state) {
-        return Optional.ofNullable(HoneycombItem.WAX_OFF_BY_BLOCK.get().get(state.getBlock())).map(block -> block.withPropertiesOf(state));
+        return Optional.ofNullable(HoneycombItem.WAX_OFF_BY_BLOCK.get().get(state.getBlock()))
+                .map(block -> block.withPropertiesOf(state));
     }
 
     private static boolean mainHandUseIsBlockedByOffhand(CultPlayer player, PlacementSnapshot snapshot) {
@@ -716,7 +760,8 @@ public final class NmsBlockPlaceResolver {
             return false;
         }
 
-        ItemStack offhand = SpigotConversionUtil.toNmsItemStack(player.getInventory().getOffHand());
+        ItemStack offhand =
+                SpigotConversionUtil.toNmsItemStack(player.getInventory().getOffHand());
         return BLOCKS_ATTACKS_COMPONENT == null
                 ? offhand.getItem() == Items.SHIELD
                 : offhand.has(BLOCKS_ATTACKS_COMPONENT);
@@ -724,13 +769,15 @@ public final class NmsBlockPlaceResolver {
 
     private static DataComponentType<?> findDataComponent(String fieldName) {
         try {
-            return (DataComponentType<?>) DataComponents.class.getField(fieldName).get(null);
+            return (DataComponentType<?>)
+                    DataComponents.class.getField(fieldName).get(null);
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
 
-    private static PlacementResult simulatePlace(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, BlockItem blockItem) {
+    private static PlacementResult simulatePlace(
+            PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, BlockItem blockItem) {
         PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
         SnapshotBlockPlaceContext initialContext = SnapshotBlockPlaceContext.create(world.level(), snapshot);
         if (!initialContext.canPlace()) {
@@ -780,8 +827,10 @@ public final class NmsBlockPlaceResolver {
         }
 
         for (int i = 1; i < result.getChangedBlocks().size(); i++) {
-            PlacementResult.ChangedBlock changedBlock = result.getChangedBlocks().get(i);
-            place.applyResolvedSecondary(changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
+            PlacementResult.ChangedBlock changedBlock =
+                    result.getChangedBlocks().get(i);
+            place.applyResolvedSecondary(
+                    changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
         }
 
         return true;
@@ -789,7 +838,8 @@ public final class NmsBlockPlaceResolver {
 
     private static boolean applyResolvedWorldStates(BlockPlace place, PlacementResult result) {
         for (PlacementResult.ChangedBlock changedBlock : result.getChangedBlocks()) {
-            place.applyResolvedSecondary(changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
+            place.applyResolvedSecondary(
+                    changedBlock.position(), SpigotConversionUtil.fromNmsBlockState(changedBlock.state()));
         }
         return true;
     }
@@ -810,14 +860,23 @@ public final class NmsBlockPlaceResolver {
             boolean consumeInventory,
             ItemStack handAfter,
             List<ItemStack> addedItems,
-            String resyncReason
-    ) {
+            String resyncReason) {
         static BlockUseResult success(List<PlacementResult.ChangedBlock> changedBlocks, boolean consumeInventory) {
             return new BlockUseResult(true, List.copyOf(changedBlocks), consumeInventory, null, List.of(), null);
         }
 
-        static BlockUseResult success(List<PlacementResult.ChangedBlock> changedBlocks, ItemStack handAfter, List<ItemStack> addedItems, boolean consumeInventory) {
-            return new BlockUseResult(true, List.copyOf(changedBlocks), consumeInventory, handAfter.copy(), List.copyOf(addedItems), null);
+        static BlockUseResult success(
+                List<PlacementResult.ChangedBlock> changedBlocks,
+                ItemStack handAfter,
+                List<ItemStack> addedItems,
+                boolean consumeInventory) {
+            return new BlockUseResult(
+                    true,
+                    List.copyOf(changedBlocks),
+                    consumeInventory,
+                    handAfter.copy(),
+                    List.copyOf(addedItems),
+                    null);
         }
 
         static BlockUseResult failed(String reason) {
@@ -830,10 +889,11 @@ public final class NmsBlockPlaceResolver {
             List<PlacementResult.ChangedBlock> changedBlocks,
             ItemStack handAfter,
             List<ItemStack> addedItems,
-            String resyncReason
-    ) {
-        static ItemUseOnResult success(List<PlacementResult.ChangedBlock> changedBlocks, ItemStack handAfter, List<ItemStack> addedItems) {
-            return new ItemUseOnResult(true, List.copyOf(changedBlocks), handAfter.copy(), List.copyOf(addedItems), null);
+            String resyncReason) {
+        static ItemUseOnResult success(
+                List<PlacementResult.ChangedBlock> changedBlocks, ItemStack handAfter, List<ItemStack> addedItems) {
+            return new ItemUseOnResult(
+                    true, List.copyOf(changedBlocks), handAfter.copy(), List.copyOf(addedItems), null);
         }
 
         static ItemUseOnResult failed(String reason) {
@@ -841,12 +901,7 @@ public final class NmsBlockPlaceResolver {
         }
     }
 
-    record ItemUseResult(
-            boolean isSuccess,
-            ItemStack handAfter,
-            List<ItemStack> addedItems,
-            String resyncReason
-    ) {
+    record ItemUseResult(boolean isSuccess, ItemStack handAfter, List<ItemStack> addedItems, String resyncReason) {
         static ItemUseResult success(ItemStack handAfter, List<ItemStack> addedItems) {
             return new ItemUseResult(true, handAfter.copy(), List.copyOf(addedItems), null);
         }
@@ -875,7 +930,8 @@ public final class NmsBlockPlaceResolver {
             this.snapshot = snapshot;
         }
 
-        private static SnapshotBlockPlaceContext create(net.minecraft.world.level.Level world, PlacementSnapshot snapshot) {
+        private static SnapshotBlockPlaceContext create(
+                net.minecraft.world.level.Level world, PlacementSnapshot snapshot) {
             CONSTRUCTION_SNAPSHOT.set(snapshot);
             try {
                 return new SnapshotBlockPlaceContext(world, snapshot);
@@ -994,13 +1050,7 @@ public final class NmsBlockPlaceResolver {
         }
 
         private static Direction[] makeDirectionArray(Direction first, Direction second, Direction third) {
-            return new Direction[] {
-                    first,
-                    second,
-                    third,
-                    third.getOpposite(),
-                    second.getOpposite(),
-                    first.getOpposite()
+            return new Direction[] {first, second, third, third.getOpposite(), second.getOpposite(), first.getOpposite()
             };
         }
 
@@ -1009,28 +1059,38 @@ public final class NmsBlockPlaceResolver {
                     snapshot.getClickLocation(),
                     snapshot.getClickedFace(),
                     snapshot.getClickedBlockPos(),
-                    snapshot.isInsideBlock()
-            );
+                    snapshot.isInsideBlock());
         }
     }
 
     // These components exist since 1.21.2. Keep this path outside the transformer
     // class so a translated 26.3 client on an older server never links new registry types.
-    private static void applyAfterUse(CultPlayer player, PlacementSnapshot snapshot, ItemStack before, ItemStack after) {
+    private static void applyAfterUse(
+            CultPlayer player, PlacementSnapshot snapshot, ItemStack before, ItemStack after) {
         applyAfterUse(player, snapshot, before, after, java.util.List.of());
     }
 
-    private static void applyAfterUse(CultPlayer player, PlacementSnapshot snapshot, ItemStack before, ItemStack after,
-                              java.util.List<ItemStack> addedItems) {
+    private static void applyAfterUse(
+            CultPlayer player,
+            PlacementSnapshot snapshot,
+            ItemStack before,
+            ItemStack after,
+            java.util.List<ItemStack> addedItems) {
         var extras = new ArrayList<>(addedItems);
         var remainder = before.get(DataComponents.USE_REMAINDER);
         if (remainder != null) {
             after = remainder.convertIntoRemainder(after, before.getCount(), snapshot.isCreative(), extras::add);
         }
         var cooldown = before.get(DataComponents.USE_COOLDOWN);
-        if (cooldown != null) player.checkManager.getCompensatedCooldown().addPredictedCooldown(before, cooldown.ticks());
-        player.getInventory().applyClientSideUseItemOnResult(snapshot.getHand(), SpigotConversionUtil.fromNmsItemStack(after),
-                extras.stream().map(SpigotConversionUtil::fromNmsItemStack).toList());
+        if (cooldown != null)
+            player.checkManager.getCompensatedCooldown().addPredictedCooldown(before, cooldown.ticks());
+        player.getInventory()
+                .applyClientSideUseItemOnResult(
+                        snapshot.getHand(),
+                        SpigotConversionUtil.fromNmsItemStack(after),
+                        extras.stream()
+                                .map(SpigotConversionUtil::fromNmsItemStack)
+                                .toList());
     }
 
     /** Isolates component/provider types absent from older server runtimes. */
@@ -1041,7 +1101,8 @@ public final class NmsBlockPlaceResolver {
             @Override
             protected Class<?> computeValue(Class<?> type) {
                 try {
-                    return type.getMethod("useOn", net.minecraft.world.item.context.UseOnContext.class).getDeclaringClass();
+                    return type.getMethod("useOn", net.minecraft.world.item.context.UseOnContext.class)
+                            .getDeclaringClass();
                 } catch (NoSuchMethodException impossible) {
                     throw new IllegalStateException(impossible);
                 }
@@ -1052,38 +1113,49 @@ public final class NmsBlockPlaceResolver {
         // These overrides delegate to Item.useOn only when their first branch passes.
         static boolean usesTransformer(net.minecraft.world.item.Item item, BlockState target) {
             Class<?> implementation = USE_ON_IMPLEMENTATION.get(item.getClass());
-            if (implementation == net.minecraft.world.item.Item.class || implementation == BlockItem.class
+            if (implementation == net.minecraft.world.item.Item.class
+                    || implementation == BlockItem.class
                     || implementation == net.minecraft.world.item.SolidBucketItem.class) return true;
             if (implementation == net.minecraft.world.item.ShearsItem.class) {
                 return !(target.getBlock() instanceof net.minecraft.world.level.block.GrowingPlantHeadBlock plant)
                         || plant.isMaxAge(target);
             }
-            if (implementation == net.minecraft.world.item.CompassItem.class) return target.getBlock() != Blocks.LODESTONE;
+            if (implementation == net.minecraft.world.item.CompassItem.class)
+                return target.getBlock() != Blocks.LODESTONE;
             return implementation == net.minecraft.world.item.MapItem.class
                     && !target.getBlock().builtInRegistryHolder().is(net.minecraft.tags.BlockTags.BANNERS);
         }
 
         static boolean apply(CultPlayer player, BlockPlace place, PlacementSnapshot snapshot) {
-            var component = player.registryState == null ? blockTransformer(snapshot.getItemStack())
+            var component = player.registryState == null
+                    ? blockTransformer(snapshot.getItemStack())
                     : player.registryState.transformer(snapshot.getItemStack());
             if (component == null || snapshot.isOutsideBuildHeight(snapshot.getClickedBlockPos())) return false;
-            if (snapshot.getHand() == InteractionHand.MAIN_HAND && !snapshot.isSecondaryUse()
+            if (snapshot.getHand() == InteractionHand.MAIN_HAND
+                    && !snapshot.isSecondaryUse()
                     && BLOCKS_ATTACKS_COMPONENT != null
                     && snapshot.getOffHandItemStack().has(BLOCKS_ATTACKS_COMPONENT)) return false;
-            var world = PlacementWorldFactory.create(PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
+            var world = PlacementWorldFactory.create(
+                    PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot);
             var position = snapshot.getClickedBlockPos();
             for (var transform : component.value().transforms()) {
                 if (transform.disallowedFaces().contains(snapshot.getClickedFace())) continue;
-                var state = transform.blockStateProvider().value().getOptionalState(world.level(), world.level().getRandom(), position);
+                var state = transform
+                        .blockStateProvider()
+                        .value()
+                        .getOptionalState(world.level(), world.level().getRandom(), position);
                 if (state == null) continue;
-                var updated = transform.updateFromNeighbors() ? Block.updateFromNeighbourShapes(state, world.level(), position) : state;
+                var updated = transform.updateFromNeighbors()
+                        ? Block.updateFromNeighbourShapes(state, world.level(), position)
+                        : state;
                 ItemStack before = snapshot.getItemStack();
                 ItemStack after = before.copy();
                 // Client ItemStack#hurtAndBreak does not predict server durability damage.
                 if (after.isStackable() && transform.consumeOnUse() && !snapshot.isCreative()) after.shrink(1);
                 world.setBlock(position, updated, 11, 512);
                 for (var change : world.buildResult(position).getChangedBlocks()) {
-                    place.applyResolvedSecondary(change.position(), SpigotConversionUtil.fromNmsBlockState(change.state()));
+                    place.applyResolvedSecondary(
+                            change.position(), SpigotConversionUtil.fromNmsBlockState(change.state()));
                 }
                 if (before.getItem() == Items.POWDER_SNOW_BUCKET && !snapshot.isCreative()) {
                     after = new ItemStack(Items.BUCKET);
@@ -1100,6 +1172,5 @@ public final class NmsBlockPlaceResolver {
             return (Holder<net.minecraft.core.component.BlockTransformer>)
                     stack.get((DataComponentType) BLOCK_TRANSFORMER_COMPONENT);
         }
-
     }
 }

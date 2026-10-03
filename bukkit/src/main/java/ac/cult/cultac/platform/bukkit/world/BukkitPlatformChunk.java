@@ -5,6 +5,9 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.platform.api.Platform;
 import ac.cult.cultac.platform.api.world.PlatformChunk;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.SharedConstants;
 import net.minecraft.world.level.block.Block;
@@ -14,17 +17,14 @@ import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @RequiredArgsConstructor
 public class BukkitPlatformChunk implements PlatformChunk {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
     private static final boolean CUSTOMIZABLE_WORLD_HEIGHT = SERVER_VERSION.getProtocolVersion() >= 755;
-    private static final Map<BlockData, Integer> blockDataToId = CultAPI.INSTANCE.getPlatform() == Platform.FOLIA ? new ConcurrentHashMap<>() : new HashMap<>();
+    private static final Map<BlockData, Integer> blockDataToId =
+            CultAPI.INSTANCE.getPlatform() == Platform.FOLIA ? new ConcurrentHashMap<>() : new HashMap<>();
     private static final boolean isFlat = SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_13);
     private final @NotNull Chunk chunk;
 
@@ -37,11 +37,12 @@ public class BukkitPlatformChunk implements PlatformChunk {
         org.bukkit.block.Block block = chunk.getBlock(x, y, z);
 
         return isFlat // Cache blockDataToID because Strings are expensive
-                ? blockDataToId.computeIfAbsent(block.getBlockData(), data -> Block.getId(NmsBlockTags.toNmsState(data)))
+                ? blockDataToId.computeIfAbsent(
+                        block.getBlockData(), data -> Block.getId(NmsBlockTags.toNmsState(data)))
                 : getLegacyBlockID(block);
     }
 
-    @SuppressWarnings({ "deprecation", "UnstableApiUsage" })
+    @SuppressWarnings({"deprecation", "UnstableApiUsage"})
     private static int getLegacyBlockID(@NotNull org.bukkit.block.Block block) {
         return (block.getType().getId() << 4) | block.getData();
     }

@@ -4,6 +4,7 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.platform.api.world.PlatformChunk;
 import ac.cult.cultac.platform.api.world.PlatformWorld;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import java.util.UUID;
 import net.minecraft.SharedConstants;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -11,8 +12,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.UUID;
 
 public record BukkitPlatformWorld(@NotNull World bukkitWorld) implements PlatformWorld {
 

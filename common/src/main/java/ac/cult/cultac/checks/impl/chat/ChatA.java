@@ -7,10 +7,14 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.SharedConstants;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundCommandSuggestion;
+import net.minecraft.SharedConstants;
 
-@CheckData(name = "ChatA", stableKey = "cult.exploit.blank_tab_complete", description = "Sent a tab complete packet with no command or input text", experimental = true)
+@CheckData(
+        name = "ChatA",
+        stableKey = "cult.exploit.blank_tab_complete",
+        description = "Sent a tab complete packet with no command or input text",
+        experimental = true)
 public class ChatA extends Check implements CheckListener {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
@@ -26,7 +30,10 @@ public class ChatA extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCommandSuggestion(PacketReceiveEvent<ServerboundCommandSuggestion> event, CultPlayer player, ServerboundCommandSuggestion packet) {
+    public void onCommandSuggestion(
+            PacketReceiveEvent<ServerboundCommandSuggestion> event,
+            CultPlayer player,
+            ServerboundCommandSuggestion packet) {
         if (!isApplicable()) return;
         String text = packet.command();
         if (text.equals("/") || text.trim().isEmpty()) {

@@ -1,15 +1,15 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
+import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
 
-//@CheckData(name = "Timer", configName = "TimerA", setback = 10)
+// @CheckData(name = "Timer", configName = "TimerA", setback = 10)
 public abstract class AbstractTimerCheck extends Check implements CheckListener {
     private static final long ONE_CLIENT_TICK = 50_000_000L;
     private final boolean serverSupportsClientTickEnd;
@@ -56,7 +56,11 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
     // to guarantee that we are at least 50 ms back before adding the time
     public AbstractTimerCheck(CultPlayer cultPlayer, CheckInfo info) {
         super(cultPlayer, info);
-        serverSupportsClientTickEnd = CultAPI.INSTANCE.getNetworkManager().dispatcher().runtime().supports(ServerboundPackets.CLIENT_TICK_END);
+        serverSupportsClientTickEnd = CultAPI.INSTANCE
+                .getNetworkManager()
+                .dispatcher()
+                .runtime()
+                .supports(ServerboundPackets.CLIENT_TICK_END);
     }
 
     public void resetTimerWindow() {
@@ -90,18 +94,15 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
         movePacketsSinceLastClientTickEnd = 0;
     }
 
-    protected void recordTimerEvent(final PacketReceiveEvent event, boolean transactionResponse, boolean countClientTick) {
+    protected void recordTimerEvent(
+            final PacketReceiveEvent event, boolean transactionResponse, boolean countClientTick) {
         if (prepareTimerEvent(transactionResponse, countClientTick)) {
             doCheck(event);
         }
     }
 
-    protected final boolean recordTimerEventForPacketDecision(
-            boolean transactionResponse,
-            boolean countClientTick
-    ) {
-        return prepareTimerEvent(transactionResponse, countClientTick)
-                && doCheckForPacketDecision(null);
+    protected final boolean recordTimerEventForPacketDecision(boolean transactionResponse, boolean countClientTick) {
+        return prepareTimerEvent(transactionResponse, countClientTick) && doCheckForPacketDecision(null);
     }
 
     private boolean prepareTimerEvent(boolean transactionResponse, boolean countClientTick) {
@@ -118,7 +119,6 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
 
         return true;
     }
-
 
     public void doCheck(final PacketReceiveEvent event) {
         doCheckForPacketDecision(event);
@@ -152,8 +152,7 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
             return false;
         }
         // TODO: We need a second check for too many move packets!
-        return !usesClientTickEndBoundary()
-                && !player.packetStateData.lastPacketWasTeleport;
+        return !usesClientTickEndBoundary() && !player.packetStateData.lastPacketWasTeleport;
     }
 
     protected boolean shouldCountClientTickEndForTimer() {
@@ -175,6 +174,7 @@ public abstract class AbstractTimerCheck extends Check implements CheckListener 
 
     @Override
     public void reload() {
-        super.reload(); this.clockDrift = (long) (getConfig().getDoubleElse(getConfigName() + ".drift", 120.0) * 1e6);
+        super.reload();
+        this.clockDrift = (long) (getConfig().getDoubleElse(getConfigName() + ".drift", 120.0) * 1e6);
     }
 }

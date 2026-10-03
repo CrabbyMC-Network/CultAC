@@ -25,8 +25,7 @@ import net.minecraft.world.phys.Vec3;
 public final class JavaMovementEngine implements MovementEngine {
     public static final JavaMovementEngine INSTANCE = new JavaMovementEngine();
 
-    private JavaMovementEngine() {
-    }
+    private JavaMovementEngine() {}
 
     @Override
     public WorldData buildWorld(
@@ -34,8 +33,7 @@ public final class JavaMovementEngine implements MovementEngine {
             CultPlayer player,
             SimulationContext context,
             PredictionResult lastPrediction,
-            DesyncStatus lastOnGround
-    ) {
+            DesyncStatus lastOnGround) {
         return builder.generateWorldData(player, context, lastPrediction, lastOnGround);
     }
 
@@ -46,13 +44,15 @@ public final class JavaMovementEngine implements MovementEngine {
             Set<Vec3> startingVelocities,
             SimulationContext context,
             PredictionResult lastPrediction,
-            boolean canTickSkip
-    ) {
-        if (context.getProfileCarry() instanceof JavaPredictionCarry selected && !selected.states().isEmpty()
-                && player.checkManager.getSimulationProcessor().getCurrentPredictionCarry() instanceof JavaPredictionCarry committed
+            boolean canTickSkip) {
+        if (context.getProfileCarry() instanceof JavaPredictionCarry selected
+                && !selected.states().isEmpty()
+                && player.checkManager.getSimulationProcessor().getCurrentPredictionCarry()
+                        instanceof JavaPredictionCarry committed
                 && hasMatchingVelocity(committed, startingVelocities)) {
             var filtered = new java.util.HashSet<Vec3>();
-            for (var state : selected.states()) if (startingVelocities.contains(state.velocity())) filtered.add(state.velocity());
+            for (var state : selected.states())
+                if (startingVelocities.contains(state.velocity())) filtered.add(state.velocity());
             if (filtered.isEmpty()) return List.of();
             startingVelocities = filtered;
         }
@@ -61,21 +61,13 @@ public final class JavaMovementEngine implements MovementEngine {
 
     @Override
     public List<PredVector> startingVelocities(
-            VelocityTransformer transformer,
-            CultPlayer player,
-            List<PredVector> input,
-            SimulationContext context
-    ) {
+            VelocityTransformer transformer, CultPlayer player, List<PredVector> input, SimulationContext context) {
         return transformer.generateMovementVectors(player, input);
     }
 
     @Override
     public ValidMovements createValidMovements(
-            PredVector initialStartingVelocity,
-            CultPlayer player,
-            PredictionResult result,
-            boolean canStep
-    ) {
+            PredVector initialStartingVelocity, CultPlayer player, PredictionResult result, boolean canStep) {
         return new ValidMovements(initialStartingVelocity, player, result, canStep);
     }
 
@@ -89,11 +81,17 @@ public final class JavaMovementEngine implements MovementEngine {
             Vec3 playerPos,
             PredVector initialStartingVelocity,
             SimpleCollisionBox attemptedMovementExtents,
-            boolean canStep
-    ) {
-        return modifier.probeCollisions(player, context, minY, target, playerPos, attemptedMovementExtents,
+            boolean canStep) {
+        return modifier.probeCollisions(
+                player,
+                context,
+                minY,
+                target,
+                playerPos,
+                attemptedMovementExtents,
                 new CollisionModifier.ProbeDimensions(0.6F, 0.6F, 1.8F, SimpleCollisionBox.AxisEpsilon.JAVA),
-                JavaFallDistance.beforeMove(player, context, initialStartingVelocity), !canStep);
+                JavaFallDistance.beforeMove(player, context, initialStartingVelocity),
+                !canStep);
     }
 
     @Override
@@ -102,26 +100,41 @@ public final class JavaMovementEngine implements MovementEngine {
             PredictionResult result,
             PredictionResult lastPrediction,
             Vec3 acceptedDiff,
-            PredictionCarry currentCarry
-    ) {
+            PredictionCarry currentCarry) {
         if (contextUsesExactEffects(result.getSimulationContext())) {
             var moved = JavaFallDistance.afterCollision(player, result, acceptedDiff);
-            Set<Vec3> velocities = NextTickVelocityDeriver.beforeBlockEffects(player, result, lastPrediction, moved.movement());
+            Set<Vec3> velocities =
+                    NextTickVelocityDeriver.beforeBlockEffects(player, result, lastPrediction, moved.movement());
             var states = new java.util.LinkedHashSet<JavaPredictionCarry.State>();
             for (Vec3 velocity : velocities) {
-                var effects = JavaInsideBlockEffects.resolve(player, result, moved.movement(), moved.fallDistance(), velocity, moved.landed());
+                var effects = JavaInsideBlockEffects.resolve(
+                        player, result, moved.movement(), moved.fallDistance(), velocity, moved.landed());
                 effects = afterActorTick(player, result.getSimulationContext(), moved.movement(), effects);
-                effects = ac.cult.cultac.utils.nmsutil.GeyserVelocity.applyToState(player, result,
-                        result.getSimulationContext().getStart().add(moved.movement()), effects);
-                states.add(new JavaPredictionCarry.State(effects.velocity(), effects.fallDistance(), effects.stuckSpeed()));
+                effects = ac.cult.cultac.utils.nmsutil.GeyserVelocity.applyToState(
+                        player, result, result.getSimulationContext().getStart().add(moved.movement()), effects);
+                states.add(new JavaPredictionCarry.State(
+                        effects.velocity(), effects.fallDistance(), effects.stuckSpeed()));
             }
             var stateList = List.copyOf(states);
             Vec3 required = stateList.isEmpty() ? null : stateList.getFirst().stuckSpeed();
-            for (var state : states) if (!java.util.Objects.equals(required, state.stuckSpeed())) { required = null; break; }
+            for (var state : states)
+                if (!java.util.Objects.equals(required, state.stuckSpeed())) {
+                    required = null;
+                    break;
+                }
             // Contexts for subsequent ticks consume the complete per-candidate state below.
-            result.getSimulationContext().getWorldData().setStuckSpeed(new ac.cult.cultac.utils.data.StuckSpeedData(required, null));
-            var actor = result.getSimulationContext().getVehicle() == null ? player.compensatedEntities.getSelf() : result.getSimulationContext().getVehicle();
-            var carry = new JavaPredictionCarry(actor, stateList.isEmpty() ? moved.fallDistance() : stateList.getFirst().fallDistance(), stateList);
+            result.getSimulationContext()
+                    .getWorldData()
+                    .setStuckSpeed(new ac.cult.cultac.utils.data.StuckSpeedData(required, null));
+            var actor = result.getSimulationContext().getVehicle() == null
+                    ? player.compensatedEntities.getSelf()
+                    : result.getSimulationContext().getVehicle();
+            var carry = new JavaPredictionCarry(
+                    actor,
+                    stateList.isEmpty()
+                            ? moved.fallDistance()
+                            : stateList.getFirst().fallDistance(),
+                    stateList);
             var nextVelocities = new java.util.HashSet<Vec3>();
             for (var state : states) nextVelocities.add(state.velocity());
             return new PredictionCommit(carry, nextVelocities);
@@ -130,16 +143,22 @@ public final class JavaMovementEngine implements MovementEngine {
                 JavaFallDistance.commit(player, result, acceptedDiff),
                 NextTickVelocityDeriver.findVelocitiesForNextTick(player, result, lastPrediction, acceptedDiff));
     }
-    private static JavaInsideBlockEffects.State afterActorTick(CultPlayer player, SimulationContext context,
-                                                               Vec3 movement, JavaInsideBlockEffects.State state) {
+
+    private static JavaInsideBlockEffects.State afterActorTick(
+            CultPlayer player, SimulationContext context, Vec3 movement, JavaInsideBlockEffects.State state) {
         // Strider#tick -> floatStrider is AFTER LivingEntity's inside-block callbacks.
-        if (context.getVehicle() != null && context.getVehicle().isStrider()
+        if (context.getVehicle() != null
+                && context.getVehicle().isStrider()
                 && context.getWorldData().getInLava().determinePessimistically()) {
             Vec3 end = context.getStart().add(movement);
             boolean onSurface = ac.cult.cultac.utils.nmsutil.Above.isAbove(end.y)
-                    && !player.compensatedWorld.getFluidStateAt(net.minecraft.core.BlockPos.containing(end).above()).is(net.minecraft.tags.FluidTags.LAVA);
-            if (!onSurface) return new JavaInsideBlockEffects.State(state.fallDistance(),
-                    state.velocity().scale(0.5).add(0, 0.05, 0), state.stuckSpeed());
+                    && !player.compensatedWorld
+                            .getFluidStateAt(
+                                    net.minecraft.core.BlockPos.containing(end).above())
+                            .is(net.minecraft.tags.FluidTags.LAVA);
+            if (!onSurface)
+                return new JavaInsideBlockEffects.State(
+                        state.fallDistance(), state.velocity().scale(0.5).add(0, 0.05, 0), state.stuckSpeed());
         }
         return state;
     }

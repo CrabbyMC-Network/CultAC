@@ -4,13 +4,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 final class PlacementWorldFactory {
-    private static final boolean MODERN_LEVEL_ABI = classExists(
-            "net.minecraft.world.attribute.EnvironmentAttributeReader");
+    private static final boolean MODERN_LEVEL_ABI =
+            classExists("net.minecraft.world.attribute.EnvironmentAttributeReader");
     private static final boolean CLOCK_LEVEL_ABI = classExists("net.minecraft.world.clock.ClockManager");
     private static final boolean RC1_LEVEL_ABI = classExists("net.minecraft.world.entity.SteppedInterpolationHandler");
 
-    private PlacementWorldFactory() {
-    }
+    private PlacementWorldFactory() {}
 
     static PlacementWorldAdapter create(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot) {
         if (RC1_LEVEL_ABI) {
@@ -18,9 +17,11 @@ final class PlacementWorldFactory {
         }
         try {
             Class<?> implementation = Class.forName(
-                    CLOCK_LEVEL_ABI ? "ac.cult.cultac.utils.blockplace.CompensatedPlacementWorld26_2"
-                            : MODERN_LEVEL_ABI ? "ac.cult.cultac.utils.blockplace.CompensatedPlacementWorld1_21_11"
-                            : "ac.cult.cultac.utils.blockplace.LegacyCompensatedPlacementWorld",
+                    CLOCK_LEVEL_ABI
+                            ? "ac.cult.cultac.utils.blockplace.CompensatedPlacementWorld26_2"
+                            : MODERN_LEVEL_ABI
+                                    ? "ac.cult.cultac.utils.blockplace.CompensatedPlacementWorld1_21_11"
+                                    : "ac.cult.cultac.utils.blockplace.LegacyCompensatedPlacementWorld",
                     true,
                     PlacementWorldFactory.class.getClassLoader());
             Method create = implementation.getMethod("create", PlacementBlockAccess.class, PlacementSnapshot.class);

@@ -27,15 +27,17 @@ final class GeyserSprintAttributeTranslator extends PacketTranslator<Clientbound
     GeyserSprintAttributeTranslator(BiConsumer<GeyserSession, Attribute> movement, VehicleMovement vehicleMovement) {
         this.movement = movement;
         this.vehicleMovement = vehicleMovement;
-        delegate = (PacketTranslator<ClientboundUpdateAttributesPacket>) Registries.JAVA_PACKET_TRANSLATORS
-                .get(ClientboundUpdateAttributesPacket.class);
+        delegate = (PacketTranslator<ClientboundUpdateAttributesPacket>)
+                Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundUpdateAttributesPacket.class);
         if (delegate == null) throw new IllegalStateException("Missing Geyser attribute translator");
         Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundUpdateAttributesPacket.class, this);
     }
 
-    @Override public void translate(GeyserSession session, ClientboundUpdateAttributesPacket packet) {
+    @Override
+    public void translate(GeyserSession session, ClientboundUpdateAttributesPacket packet) {
         boolean self = packet.getEntityId() == session.getPlayerEntity().getEntityId();
-        var entity = self ? session.getPlayerEntity() : session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        var entity =
+                self ? session.getPlayerEntity() : session.getEntityCache().getEntityByJavaId(packet.getEntityId());
         if (!self && (!(entity instanceof org.geysermc.geyser.entity.vehicle.ClientVehicle) || !entity.isValid())) {
             delegate.translate(session, packet);
             return;
@@ -45,10 +47,10 @@ final class GeyserSprintAttributeTranslator extends PacketTranslator<Clientbound
             if (attribute.getType() == AttributeType.Builtin.MOVEMENT_SPEED) {
                 if (self) movement.accept(session, attribute);
                 else vehicleMovement.accept(session, entity, attribute);
-            }
-            else remaining.add(attribute);
+            } else remaining.add(attribute);
         }
-        if (!remaining.isEmpty()) delegate.translate(session, new ClientboundUpdateAttributesPacket(packet.getEntityId(), remaining));
+        if (!remaining.isEmpty())
+            delegate.translate(session, new ClientboundUpdateAttributesPacket(packet.getEntityId(), remaining));
     }
 
     void close() {

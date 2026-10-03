@@ -1,22 +1,24 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.packetentity.PacketEntity;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.Vec3d;
-
+import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import java.util.Optional;
 
-@CheckData(name = "BadPacketsT", stableKey = "cult.badpackets.invalid_interact_vector", description = "Sent an entity interaction vector outside the target player's hitbox")
+@CheckData(
+        name = "BadPacketsT",
+        stableKey = "cult.badpackets.invalid_interact_vector",
+        description = "Sent an entity interaction vector outside the target player's hitbox")
 public class BadPacketsT extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("{f64:%.5f}/{f64:%.5f}/{f64:%.5f}");
 
@@ -39,7 +41,8 @@ public class BadPacketsT extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(final PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            final PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (!isApplicable()) return;
 
         // Only INTERACT_AT actually has an interaction vector
@@ -48,7 +51,9 @@ public class BadPacketsT extends Check implements CheckListener {
         if (target.isEmpty()) return; // shouldn't ever happen, but whatever
         final Vec3d targetVector = target.get();
 
-        if (!Double.isFinite(targetVector.x()) || !Double.isFinite(targetVector.y()) || !Double.isFinite(targetVector.z())) {
+        if (!Double.isFinite(targetVector.x())
+                || !Double.isFinite(targetVector.y())
+                || !Double.isFinite(targetVector.z())) {
             flag(V.write(verbose()).f64(targetVector.x()).f64(targetVector.y()).f64(targetVector.z()));
             return;
         }
@@ -65,9 +70,9 @@ public class BadPacketsT extends Check implements CheckListener {
             return;
         }
 
-
         final float scale = packetEntity.scale;
-        if (targetVector.y() > (minVerticalDisplacement * scale) && targetVector.y() < (maxVerticalDisplacement * scale)
+        if (targetVector.y() > (minVerticalDisplacement * scale)
+                && targetVector.y() < (maxVerticalDisplacement * scale)
                 && Math.abs(targetVector.x()) < (maxHorizontalDisplacement * scale)
                 && Math.abs(targetVector.z()) < (maxHorizontalDisplacement * scale)) {
             return;

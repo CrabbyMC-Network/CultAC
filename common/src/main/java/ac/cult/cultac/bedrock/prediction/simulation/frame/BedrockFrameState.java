@@ -2,29 +2,28 @@ package ac.cult.cultac.bedrock.prediction.simulation.frame;
 
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputIntent;
-import ac.cult.cultac.bedrock.prediction.state.BedrockDolphinBoost;
 import ac.cult.cultac.bedrock.prediction.state.BedrockCameraWaterState;
+import ac.cult.cultac.bedrock.prediction.state.BedrockDolphinBoost;
 import ac.cult.cultac.bedrock.prediction.state.BedrockHorseState;
 import java.util.Objects;
 
 public record BedrockFrameState(
-    BedrockTravelInput input,
-    BedrockInputIntent inputIntent,
-    BedrockFrameFacts frameFacts,
-    BedrockGlideState gliding,
-    BedrockTravelBranch branch,
-    boolean travelActorSprinting,
-    BedrockTravelInputControl.InputControlState control,
-    BedrockRiptideMovement.Step riptide,
-    BedrockMobJumpComponentState mobJumpComponent,
-    Vec3d travelVelocity,
-    BedrockMobJump mobJump,
-    BedrockDolphinBoost dolphinBoost,
-    boolean groundJumpApplied,
-    BedrockCameraWaterState cameraWater,
-    BedrockHorseState horse,
-    BedrockBoatMovement.Step boat
-) {
+        BedrockTravelInput input,
+        BedrockInputIntent inputIntent,
+        BedrockFrameFacts frameFacts,
+        BedrockGlideState gliding,
+        BedrockTravelBranch branch,
+        boolean travelActorSprinting,
+        BedrockTravelInputControl.InputControlState control,
+        BedrockRiptideMovement.Step riptide,
+        BedrockMobJumpComponentState mobJumpComponent,
+        Vec3d travelVelocity,
+        BedrockMobJump mobJump,
+        BedrockDolphinBoost dolphinBoost,
+        boolean groundJumpApplied,
+        BedrockCameraWaterState cameraWater,
+        BedrockHorseState horse,
+        BedrockBoatMovement.Step boat) {
     public BedrockFrameState {
         Objects.requireNonNull(input, "input");
         Objects.requireNonNull(inputIntent, "inputIntent");

@@ -6,14 +6,10 @@ import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockClimbMovement;
 import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
 
 final class BedrockPostMoveAutoClimb {
-    private BedrockPostMoveAutoClimb() {
-    }
+    private BedrockPostMoveAutoClimb() {}
 
     static BedrockPostMoveFrame apply(
-        BedrockPostMoveContext context,
-        BedrockPostMoveFrame frame,
-        BedrockClimbableContact nextClimbableContact
-    ) {
+            BedrockPostMoveContext context, BedrockPostMoveFrame frame, BedrockClimbableContact nextClimbableContact) {
         if (context.gliding().activeAtTravelSensing()) {
             return frame;
         }
@@ -22,26 +18,16 @@ final class BedrockPostMoveAutoClimb {
         }
         Vec3d velocity = frame.velocity();
         return frame.withVelocityAndClimb(
-            new Vec3d(
-                velocity.x(),
-                BedrockClimbMovement.LADDER_ASCEND_VELOCITY,
-                velocity.z()
-            ),
-            true
-        );
+                new Vec3d(velocity.x(), BedrockClimbMovement.LADDER_ASCEND_VELOCITY, velocity.z()), true);
     }
 
     private static boolean applies(
-        BedrockPostMoveContext context,
-        BedrockCollisionFlags flags,
-        BedrockClimbableContact nextClimbableContact
-    ) {
+            BedrockPostMoveContext context, BedrockCollisionFlags flags, BedrockClimbableContact nextClimbableContact) {
         return !context.climb().inScaffolding()
-            && !context.inWater()
-            && !context.inLava()
-            && !context.intent().jump().start()
-            && nextClimbableContact.climbing()
-
-            && flags.horizontalCollision();
+                && !context.inWater()
+                && !context.inLava()
+                && !context.intent().jump().start()
+                && nextClimbableContact.climbing()
+                && flags.horizontalCollision();
     }
 }

@@ -11,16 +11,26 @@ public record ServerboundCustomPayload(String channel, byte[] data) implements S
         data = Objects.requireNonNull(data).clone();
     }
 
-    @Override public byte[] data() { return data.clone(); }
-
-    @Override public boolean equals(Object other) {
-        return other instanceof ServerboundCustomPayload payload
-                && channel.equals(payload.channel) && Arrays.equals(data, payload.data);
+    @Override
+    public byte[] data() {
+        return data.clone();
     }
 
-    @Override public int hashCode() { return 31 * channel.hashCode() + Arrays.hashCode(data); }
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof ServerboundCustomPayload payload
+                && channel.equals(payload.channel)
+                && Arrays.equals(data, payload.data);
+    }
 
-    @Override public String toString() {
-        return "ServerboundCustomPayload[channel=" + channel + ", data=" + HexFormat.of().formatHex(data) + "]";
+    @Override
+    public int hashCode() {
+        return 31 * channel.hashCode() + Arrays.hashCode(data);
+    }
+
+    @Override
+    public String toString() {
+        return "ServerboundCustomPayload[channel=" + channel + ", data="
+                + HexFormat.of().formatHex(data) + "]";
     }
 }

@@ -15,12 +15,19 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 
 public final class MoveMinecartCodec implements PacketCodec<ClientboundMoveMinecart> {
-    @Override public ClientboundMoveMinecart read(ByteBuf input, ProtocolContext context) {
+    @Override
+    public ClientboundMoveMinecart read(ByteBuf input, ProtocolContext context) {
         int id = Wire.readVarInt(input), count = Wire.readVarInt(input);
-        if (count < 0 || count > input.readableBytes() / 54) throw new MalformedPacketException("Invalid minecart step count " + count);
+        if (count < 0 || count > input.readableBytes() / 54)
+            throw new MalformedPacketException("Invalid minecart step count " + count);
         var steps = new ArrayList<ClientboundMoveMinecart.Step>(count);
-        for (int i = 0; i < count; i++) steps.add(new ClientboundMoveMinecart.Step(Wire.readVec3(input), Wire.readVec3(input),
-                Wire.readAngle(input), Wire.readAngle(input), input.readFloat()));
+        for (int i = 0; i < count; i++)
+            steps.add(new ClientboundMoveMinecart.Step(
+                    Wire.readVec3(input),
+                    Wire.readVec3(input),
+                    Wire.readAngle(input),
+                    Wire.readAngle(input),
+                    input.readFloat()));
         return new ClientboundMoveMinecart(id, steps);
     }
 }

@@ -9,7 +9,9 @@ public class PacketEntityCamel extends PacketEntityHorse {
     public int dashCooldown;
     public boolean lastPredictedInLiquid;
 
-    public PacketEntityCamel(CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) { super(player, entityId, type, x, y, z, xRot);
+    public PacketEntityCamel(
+            CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) {
+        super(player, entityId, type, x, y, z, xRot);
         applyCamelAttributeDefaults();
     }
 
@@ -35,7 +37,4 @@ public class PacketEntityCamel extends PacketEntityHorse {
         }
         this.dashing = dashing;
     }
-
-
-
 }

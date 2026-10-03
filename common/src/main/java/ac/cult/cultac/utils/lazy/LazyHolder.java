@@ -1,9 +1,8 @@
 package ac.cult.cultac.utils.lazy;
 
+import java.util.function.Supplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Supplier;
 
 public interface LazyHolder<T> {
     @Contract(value = "_ -> new", pure = true)

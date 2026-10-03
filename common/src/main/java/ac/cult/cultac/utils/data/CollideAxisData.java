@@ -1,13 +1,12 @@
 package ac.cult.cultac.utils.data;
 
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor

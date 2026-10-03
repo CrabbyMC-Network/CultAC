@@ -19,7 +19,8 @@ public class GenericContainerMenu extends AbstractContainerMenu {
         for (int i = 0; i < trailingSlots; i++) addSlot(new Slot(containerStorage, containerSlots + i));
     }
 
-    public GenericContainerMenu(CultPlayer player, Inventory playerInventory, int containerSlots, boolean includePlayerInventory) {
+    public GenericContainerMenu(
+            CultPlayer player, Inventory playerInventory, int containerSlots, boolean includePlayerInventory) {
         super(player, playerInventory);
 
         InventoryStorage containerStorage = new InventoryStorage(containerSlots);

@@ -23,14 +23,17 @@ final class BedrockPredVector extends PredVector {
             BedrockMovementResult movementResult,
             BedrockMobJumpComponentState mobJumpComponent,
             PredVector source,
-            Vec3 candidateDelta
-    ) {
+            Vec3 candidateDelta) {
         this(input, null, movementResult, mobJumpComponent, source, candidateDelta);
     }
 
-    BedrockPredVector(BedrockMovementInputFactory.Input input, BedrockSimulation.Input simulationInput,
-            BedrockMovementResult movementResult, BedrockMobJumpComponentState mobJumpComponent,
-            PredVector source, Vec3 candidateDelta) {
+    BedrockPredVector(
+            BedrockMovementInputFactory.Input input,
+            BedrockSimulation.Input simulationInput,
+            BedrockMovementResult movementResult,
+            BedrockMobJumpComponentState mobJumpComponent,
+            PredVector source,
+            Vec3 candidateDelta) {
         super(
                 Objects.requireNonNull(candidateDelta, "candidateDelta"),
                 Objects.requireNonNull(source, "source"),
@@ -38,9 +41,7 @@ final class BedrockPredVector extends PredVector {
         this.input = Objects.requireNonNull(input, "input");
         this.simulationInput = simulationInput;
         this.movementResult = Objects.requireNonNull(movementResult, "movementResult");
-        this.mobJumpComponent = mobJumpComponent == null
-                ? BedrockMobJumpComponentState.DEFAULT
-                : mobJumpComponent;
+        this.mobJumpComponent = mobJumpComponent == null ? BedrockMobJumpComponentState.DEFAULT : mobJumpComponent;
         if (movementResult.groundJumpApplied()) {
             setJump();
         }
@@ -50,7 +51,9 @@ final class BedrockPredVector extends PredVector {
         return input;
     }
 
-    BedrockSimulation.Input simulationInput() { return simulationInput; }
+    BedrockSimulation.Input simulationInput() {
+        return simulationInput;
+    }
 
     BedrockMovementResult movementResult() {
         return movementResult;
@@ -95,7 +98,6 @@ final class BedrockPredVector extends PredVector {
         Vec3d sourceMove = movementResult.rawPredictedPhysicalFeetPosition().subtract(previous);
         Vec3d requestedDelta = new Vec3d(end.x, sourceMove.y(), end.z);
         return BedrockSimulation.stepCandidate(movementResult, requestedDelta)
-
                 .map(position -> stepVector(new Vec3d(
                         movementResult.rawPredictedPhysicalFeetPosition().x(),
                         position.y(),
@@ -126,5 +128,4 @@ final class BedrockPredVector extends PredVector {
         Vec3 stepDelta = BedrockVectorAdapter.toJava(position.subtract(previous));
         return new PredVector(stepDelta, this, "bedrock step candidate");
     }
-
 }

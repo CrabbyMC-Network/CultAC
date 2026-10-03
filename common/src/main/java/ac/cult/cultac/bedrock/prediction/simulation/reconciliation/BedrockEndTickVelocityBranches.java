@@ -14,22 +14,17 @@ final class BedrockEndTickVelocityBranches {
     private static final int MAX_SWIM_HOP_VELOCITIES = 2;
     private static final int MAX_CLIMBABLE_VELOCITIES = 3;
 
-    private BedrockEndTickVelocityBranches() {
-    }
+    private BedrockEndTickVelocityBranches() {}
 
     static List<BedrockNextTickStateDeriver.DerivedState> fromAcceptedDiff(
             BedrockAcceptedEndpointEvidence evidence,
             BedrockMovementState acceptedDiffState,
-            BedrockMovementState source
-    ) {
+            BedrockMovementState source) {
         return derive(evidence, acceptedDiffState, source, null);
     }
 
     static List<BedrockNextTickStateDeriver.DerivedState> fromSimulated(
-            BedrockAcceptedEndpointEvidence evidence,
-            BedrockMovementState state,
-            BedrockMovementState source
-    ) {
+            BedrockAcceptedEndpointEvidence evidence, BedrockMovementState state, BedrockMovementState source) {
         return derive(evidence, state, source, evidence.movementResult().nonHopVelocity());
     }
 
@@ -37,12 +32,12 @@ final class BedrockEndTickVelocityBranches {
             BedrockAcceptedEndpointEvidence evidence,
             BedrockMovementState acceptedDiffState,
             BedrockMovementState source,
-            Vec3d nonHopVelocity
-    ) {
+            Vec3d nonHopVelocity) {
         BedrockMovementResult movementResult = evidence.movementResult();
         ArrayList<BedrockNextTickStateDeriver.DerivedState> states = new ArrayList<>();
         int swimHopStart = states.size();
-        boolean simulatedHop = nonHopVelocity != null && acceptedDiffState.collisionFlags().liquidClimbOut();
+        boolean simulatedHop =
+                nonHopVelocity != null && acceptedDiffState.collisionFlags().liquidClimbOut();
         if (simulatedHop) {
             states.add(new BedrockNextTickStateDeriver.DerivedState(acceptedDiffState, source));
         } else {
@@ -64,8 +59,7 @@ final class BedrockEndTickVelocityBranches {
             List<BedrockNextTickStateDeriver.DerivedState> states,
             BedrockAcceptedEndpointEvidence evidence,
             BedrockMovementState state,
-            BedrockMovementState source
-    ) {
+            BedrockMovementState source) {
         BedrockMovementResult movementResult = evidence.movementResult();
         BedrockMovementState climbOutState = liquidClimbOutState(movementResult, state);
         if (climbOutState == null) {
@@ -79,25 +73,22 @@ final class BedrockEndTickVelocityBranches {
     }
 
     private static double liquidClimbOutVelocityYAfterEntityInside(
-        BedrockAcceptedEndpointEvidence evidence,
-        BedrockMovementState state
-    ) {
+            BedrockAcceptedEndpointEvidence evidence, BedrockMovementState state) {
         Vec3d climbOutVelocity = new Vec3d(
-            state.velocity().x(),
-            BedrockLiquidClimbOutMovement.CLIMB_OUT_VELOCITY_Y,
-            state.velocity().z());
+                state.velocity().x(),
+                BedrockLiquidClimbOutMovement.CLIMB_OUT_VELOCITY_Y,
+                state.velocity().z());
         return BedrockEntityInsideMovement.applyBubbleColumns(
-            evidence.fluidContext(),
-            state.gliding(),
-            climbOutVelocity,
-            state.physicalFeetPosition(),
-            state.simulationTick()).y();
+                        evidence.fluidContext(),
+                        state.gliding(),
+                        climbOutVelocity,
+                        state.physicalFeetPosition(),
+                        state.simulationTick())
+                .y();
     }
 
     private static BedrockMovementState liquidClimbOutState(
-            BedrockMovementResult movementResult,
-            BedrockMovementState state
-    ) {
+            BedrockMovementResult movementResult, BedrockMovementState state) {
         if (state.collisionFlags().liquidClimbOut()) {
             return state;
         }
@@ -110,29 +101,27 @@ final class BedrockEndTickVelocityBranches {
         }
         Vec3d velocity = zeroBlockedHorizontalAxes(state.velocity(), climbOutFlags);
         if (!BedrockLiquidClimbOutMovement.applies(
-            true,
-            movementResult.previousState().physicalFeetPosition(),
-            state.physicalFeetPosition(),
-            velocity,
-            climbOutFlags,
-            movementResult.movementContext().worldState().blockCollisionWorld(),
-            movementResult.movementContext().playerDimensionsState())) {
+                true,
+                movementResult.previousState().physicalFeetPosition(),
+                state.physicalFeetPosition(),
+                velocity,
+                climbOutFlags,
+                movementResult.movementContext().worldState().blockCollisionWorld(),
+                movementResult.movementContext().playerDimensionsState())) {
             return null;
         }
         return state.withVelocityAndCollisionFlags(velocity, climbOutFlags);
     }
 
     private static BedrockCollisionFlags liquidClimbOutFlags(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state
-    ) {
+            BedrockMovementResult movementResult, BedrockMovementState state) {
         BedrockCollisionFlags flags = state.collisionFlags();
         if (flags.horizontalCollision() || flags.horizontalBlockContact()) {
             return flags;
         }
         BedrockCollisionFlags tickStartFlags = movementResult.previousState().collisionFlags();
         if (movementResult.previousState().waterTravelFlag()
-            && (tickStartFlags.horizontalCollision() || tickStartFlags.horizontalBlockContact())) {
+                && (tickStartFlags.horizontalCollision() || tickStartFlags.horizontalBlockContact())) {
             return tickStartFlags;
         }
         return flags;
@@ -140,26 +129,21 @@ final class BedrockEndTickVelocityBranches {
 
     private static Vec3d zeroBlockedHorizontalAxes(Vec3d velocity, BedrockCollisionFlags flags) {
         return new Vec3d(
-            flags.xCollision() ? 0.0D : velocity.x(),
-            velocity.y(),
-            flags.zCollision() ? 0.0D : velocity.z());
+                flags.xCollision() ? 0.0D : velocity.x(), velocity.y(), flags.zCollision() ? 0.0D : velocity.z());
     }
 
     private static boolean liquidTravelActive(BedrockMovementResult movementResult) {
         return movementResult.selectedWaterTravel()
-            || movementResult.movementContext().inLava()
-            || movementResult.movementContext().liquidMovementMedium() == Medium.LAVA;
+                || movementResult.movementContext().inLava()
+                || movementResult.movementContext().liquidMovementMedium() == Medium.LAVA;
     }
 
     private static void addClimbableVelocities(
             List<BedrockNextTickStateDeriver.DerivedState> states,
             BedrockMovementResult movementResult,
             BedrockMovementState state,
-            BedrockMovementState source
-    ) {
-        List<Double> velocityYBranches = BedrockClimbEndTickVelocityBranches.velocityYBranches(
-                movementResult,
-                state);
+            BedrockMovementState source) {
+        List<Double> velocityYBranches = BedrockClimbEndTickVelocityBranches.velocityYBranches(movementResult, state);
         for (double velocityY : velocityYBranches) {
             addClimbableVelocity(states, movementResult, state, velocityY, source);
         }
@@ -170,8 +154,7 @@ final class BedrockEndTickVelocityBranches {
             BedrockMovementResult movementResult,
             BedrockMovementState state,
             double velocityY,
-            BedrockMovementState source
-    ) {
+            BedrockMovementState source) {
         if (!Double.isFinite(velocityY)) {
             return;
         }
@@ -186,12 +169,12 @@ final class BedrockEndTickVelocityBranches {
             List<BedrockNextTickStateDeriver.DerivedState> states,
             BedrockMovementState state,
             double velocityY,
-            BedrockMovementState source
-    ) {
+            BedrockMovementState source) {
         if (!Double.isFinite(velocityY)) {
             return;
         }
-        Vec3d velocity = new Vec3d(state.velocity().x(), velocityY, state.velocity().z());
+        Vec3d velocity =
+                new Vec3d(state.velocity().x(), velocityY, state.velocity().z());
         BedrockMovementState nextState = state.withVelocityAndCollisionFlags(velocity, state.collisionFlags());
         states.add(new BedrockNextTickStateDeriver.DerivedState(nextState, source));
     }
@@ -201,8 +184,7 @@ final class BedrockEndTickVelocityBranches {
             return state;
         }
         return state.withVelocityAndCollisionFlags(
-                state.velocity(),
-                state.collisionFlags().withLiquidClimbOut(false));
+                state.velocity(), state.collisionFlags().withLiquidClimbOut(false));
     }
 
     private static BedrockMovementState withSwimHopEvent(BedrockMovementState state) {
@@ -210,16 +192,11 @@ final class BedrockEndTickVelocityBranches {
             return state;
         }
         return state.withVelocityAndCollisionFlags(
-                state.velocity(),
-                state.collisionFlags().withLiquidClimbOut(true));
+                state.velocity(), state.collisionFlags().withLiquidClimbOut(true));
     }
 
     private static void requireBoundedSource(
-            List<BedrockNextTickStateDeriver.DerivedState> states,
-            int startSize,
-            int maxAdded,
-            String source
-    ) {
+            List<BedrockNextTickStateDeriver.DerivedState> states, int startSize, int maxAdded, String source) {
         if (states.size() - startSize > maxAdded) {
             throw new IllegalStateException("Bedrock end-tick " + source + " velocities exceeded Java-shaped bound");
         }

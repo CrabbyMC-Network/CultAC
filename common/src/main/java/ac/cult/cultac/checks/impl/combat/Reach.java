@@ -20,29 +20,32 @@ import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
+import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
-import org.bukkit.GameMode;
-import net.minecraft.world.phys.Vec3;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
+import java.util.*;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.GameMode;
 import org.bukkit.util.Vector;
 
-import java.util.*;
-
 // You may not copy the check unless you are licensed under GPL
-//@CheckData(name = "Reach", configName = "Reach", setback = 10)
+// @CheckData(name = "Reach", configName = "Reach", setback = 10)
 public class Reach extends Check implements CheckListener, ClientTickEndListener {
-    private record QueuedAttack(int entityId, List<Vec3> fromCandidates, SimpleCollisionBox targetBox, EntityType type,
-                                boolean livingEntity, boolean exempt) {
-    }
+    private record QueuedAttack(
+            int entityId,
+            List<Vec3> fromCandidates,
+            SimpleCollisionBox targetBox,
+            EntityType type,
+            boolean livingEntity,
+            boolean exempt) {}
 
     private final List<QueuedAttack> playerAttackQueue = new ArrayList<>();
     private static final List<EntityType> blacklisted = Arrays.asList(EntityTypesCompat.SHULKER);
@@ -51,18 +54,24 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
     private double threshold;
     private double cancelBuffer; // For the next 4 hits after using reach, we aggressively cancel reach
 
-    public Reach(CultPlayer player) { super(player, CheckInfo.builder()
-            .name("Reach")
-            .stableKey("cult.combat.reach")
-            .description("Attacked an entity from too far away")
-            .build()); }
+    public Reach(CultPlayer player) {
+        super(
+                player,
+                CheckInfo.builder()
+                        .name("Reach")
+                        .stableKey("cult.combat.reach")
+                        .description("Attacked an entity from too far away")
+                        .build());
+    }
 
     private void handleInteract(final PacketReceiveEvent event, ServerboundInteract action) {
         if (!player.isDisabled() && action != null && action.action() == InteractAction.ATTACK) {
 
             // Don't let the player teleport to bypass reach
             if (player.getSetbackTeleportUtil().shouldBlockMovement()) {
-                debug(() -> { return "cancelled = teleport"; });
+                debug(() -> {
+                    return "cancelled = teleport";
+                });
                 event.setCancelled(true);
                 player.onPacketCancel();
                 return;
@@ -74,8 +83,11 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
             if (entity == null) {
                 // Only cancel if and only if we are tracking this entity
                 // This is because we don't track paintings.
-                if (shouldModifyPackets() && player.compensatedEntities.serverPositionsMap.containsKey(action.entityId())) {
-                    debug(() -> { return "cancelled = no entity"; });
+                if (shouldModifyPackets()
+                        && player.compensatedEntities.serverPositionsMap.containsKey(action.entityId())) {
+                    debug(() -> {
+                        return "cancelled = no entity";
+                    });
                     event.setCancelled(true);
                     player.onPacketCancel();
                 }
@@ -85,8 +97,7 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
             // Dead entities cause false flags (https://github.com/GrimAnticheat/Grim/issues/546)
             if (entity.isDead) return;
 
-            if (entity.type == EntityTypesCompat.ARMOR_STAND)
-                return;
+            if (entity.type == EntityTypesCompat.ARMOR_STAND) return;
 
             if (player.gamemode == GameMode.SPECTATOR || player.gamemode == GameMode.CREATIVE) return;
 
@@ -101,14 +112,15 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
                         getReachBox(entity),
                         entity.type,
                         entity.isLivingEntity(),
-                        isReachExempt(entity)
-                ));
+                        isReachExempt(entity)));
             }
 
             final boolean knownInvalid = isKnownInvalid(entity);
 
             if ((shouldModifyPackets() && cancelImpossibleHits && knownInvalid) || tooManyAttacks) {
-                debug(() -> { return "cancelled, many=" + tooManyAttacks + ", invalid=" + knownInvalid; });
+                debug(() -> {
+                    return "cancelled, many=" + tooManyAttacks + ", invalid=" + knownInvalid;
+                });
                 event.setCancelled(true);
                 player.onPacketCancel();
             }
@@ -116,11 +128,10 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         handleInteract(event, packet);
     }
-
-
 
     @Override
     public void onPlayerTickEnd(final PacketReceiveEvent event) {
@@ -137,8 +148,8 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
     // Meaning that the other check should be the only one that flags.
     private boolean isKnownInvalid(PacketEntity reachEntity) {
         // If the entity doesn't exist, or if it is exempt, or if it is dead
-        if ((isReachExempt(reachEntity) || !reachEntity.isLivingEntity()) && reachEntity.type != EntityTypesCompat.END_CRYSTAL)
-            return false; // exempt
+        if ((isReachExempt(reachEntity) || !reachEntity.isLivingEntity())
+                && reachEntity.type != EntityTypesCompat.END_CRYSTAL) return false; // exempt
 
         if (player.gamemode == GameMode.SPECTATOR || player.gamemode == GameMode.CREATIVE) return false;
 
@@ -153,14 +164,21 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
 
     private void tickBetterReachCheckWithAngle() {
         for (QueuedAttack attack : playerAttackQueue) {
-            String result = checkReach(attack.targetBox(), attack.type(), attack.livingEntity(), attack.exempt(), attack.fromCandidates(), false);
+            String result = checkReach(
+                    attack.targetBox(),
+                    attack.type(),
+                    attack.livingEntity(),
+                    attack.exempt(),
+                    attack.fromCandidates(),
+                    false);
             if (result != null) {
                 if ("Missed hitbox".equals(result)) {
                     player.checkManager.getCheck(Hitboxes.class).flag(result);
                 } else if (attack.type() == EntityTypesCompat.PLAYER) {
                     flag(result);
                 } else {
-                    flag(result + " type=" + EntityTypeUtil.getKey(attack.type()).getPath());
+                    flag(result + " type="
+                            + EntityTypeUtil.getKey(attack.type()).getPath());
                 }
             }
         }
@@ -200,12 +218,19 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
     }
 
     private String checkReach(PacketEntity reachEntity, Collection<Vec3> fromCandidates, boolean isPrediction) {
-        return checkReach(getReachBox(reachEntity), reachEntity.type, reachEntity.isLivingEntity(), isReachExempt(reachEntity), fromCandidates, isPrediction);
+        return checkReach(
+                getReachBox(reachEntity),
+                reachEntity.type,
+                reachEntity.isLivingEntity(),
+                isReachExempt(reachEntity),
+                fromCandidates,
+                isPrediction);
     }
 
     private SimpleCollisionBox getReachBox(PacketEntity reachEntity) {
         if (reachEntity.type == EntityTypesCompat.END_CRYSTAL) { // Hardcode end crystal box
-            return new SimpleCollisionBox(reachEntity.desyncClientPos.subtract(1, 0, 1), reachEntity.desyncClientPos.add(1, 2, 1));
+            return new SimpleCollisionBox(
+                    reachEntity.desyncClientPos.subtract(1, 0, 1), reachEntity.desyncClientPos.add(1, 2, 1));
         }
 
         SimpleCollisionBox movementBox = reachEntity.getPossibleCollisionBoxes();
@@ -217,13 +242,17 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
         reachBox.expand(
                 Math.max(0.0D, (reachWidth - movementWidth) / 2.0D),
                 Math.max(0.0D, reachHeight - movementHeight),
-                Math.max(0.0D, (reachWidth - movementWidth) / 2.0D)
-        );
+                Math.max(0.0D, (reachWidth - movementWidth) / 2.0D));
         return reachBox;
     }
 
-    private String checkReach(SimpleCollisionBox targetBox, EntityType type, boolean livingEntity, boolean exempt,
-                              Collection<Vec3> fromCandidates, boolean isPrediction) {
+    private String checkReach(
+            SimpleCollisionBox targetBox,
+            EntityType type,
+            boolean livingEntity,
+            boolean exempt,
+            Collection<Vec3> fromCandidates,
+            boolean isPrediction) {
         targetBox = targetBox.copy();
         targetBox.expand(threshold);
         targetBox.expand(player.getMovementThreshold());
@@ -245,9 +274,11 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
                 }
                 for (double eye : player.getPossibleEyeHeights()) {
                     Vector eyePos = new Vector(from.x, from.y + eye, from.z);
-                    Vector endReachPos = eyePos.clone().add(new Vector(lookVec.getX() * 6, lookVec.getY() * 6, lookVec.getZ() * 6));
+                    Vector endReachPos =
+                            eyePos.clone().add(new Vector(lookVec.getX() * 6, lookVec.getY() * 6, lookVec.getZ() * 6));
 
-                    Vector intercept = ReachUtils.calculateIntercept(targetBox, eyePos, endReachPos).getFirst();
+                    Vector intercept = ReachUtils.calculateIntercept(targetBox, eyePos, endReachPos)
+                            .getFirst();
 
                     if (ReachUtils.isVecInside(targetBox, eyePos)) {
                         minDistance = 0;

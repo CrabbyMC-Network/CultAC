@@ -10,49 +10,45 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 public final class BedrockActorDimensions {
     private static final double BEDROCK_LOW_POSE_HEIGHT = 0.6F;
 
-    private BedrockActorDimensions() {
-    }
+    private BedrockActorDimensions() {}
 
     public static PlayerDimensionsState committedMovementDimensions(
-        BedrockMovementState previousState,
-        BedrockMovementContext context,
-        BedrockInputFrame currentFrame
-    ) {
+            BedrockMovementState previousState, BedrockMovementContext context, BedrockInputFrame currentFrame) {
         return resolve(previousState, context, currentFrame).dimensions();
     }
 
     public static Resolved resolve(
-        BedrockMovementState previousState,
-        BedrockMovementContext context,
-        BedrockInputFrame currentFrame
-    ) {
+            BedrockMovementState previousState, BedrockMovementContext context, BedrockInputFrame currentFrame) {
         return resolve(previousState, context, currentFrame, previousState.riptideSpinActive(), false);
     }
 
     static Resolved resolve(
-        BedrockMovementState previousState,
-        BedrockMovementContext context,
-        BedrockInputFrame currentFrame,
-        boolean spinActive,
-        boolean spinAttackStarted
-    ) {
+            BedrockMovementState previousState,
+            BedrockMovementContext context,
+            BedrockInputFrame currentFrame,
+            boolean spinActive,
+            boolean spinAttackStarted) {
         PlayerDimensionsState currentDimensions = context.playerDimensionsState();
         if (previousState.isVehicle()) {
             return new Resolved(BedrockBoundingBoxMode.DEFAULT, currentDimensions);
         }
-        BedrockBoundingBoxMode mode = spinActive ? BedrockBoundingBoxMode.HORIZONTAL
-            : BedrockBoundingBoxMode.resolve(previousState, currentFrame);
+        BedrockBoundingBoxMode mode = spinActive
+                ? BedrockBoundingBoxMode.HORIZONTAL
+                : BedrockBoundingBoxMode.resolve(previousState, currentFrame);
         var definition = previousState.collisionDefinition();
         if (definition != null) {
             var intent = currentFrame.intent();
             boolean swimming = BedrockSwimmingMovement.initial(previousState, context, currentFrame)
-                .afterActions(intent, context.inWater()).nextActorSwimming();
+                    .afterActions(intent, context.inWater())
+                    .nextActorSwimming();
             boolean gliding = BedrockGlidingTravelMovement.resolve(previousState, intent, context)
-                .activeAfterActions();
+                    .activeAfterActions();
             boolean crawling = BedrockPoseInputData.crawlingAfterActions(currentFrame, previousState.horizontalPose());
-            mode = spinActive || swimming || gliding || crawling ? BedrockBoundingBoxMode.HORIZONTAL
-                : BedrockPoseInputData.sneakingAfterActions(currentFrame, currentFrame.sneaking())
-                    ? BedrockBoundingBoxMode.SNEAKING : BedrockBoundingBoxMode.DEFAULT;
+            mode = spinActive || swimming || gliding || crawling
+                    ? BedrockBoundingBoxMode.HORIZONTAL
+                    : BedrockPoseInputData.sneakingAfterActions(currentFrame, currentFrame.sneaking())
+                            ? BedrockBoundingBoxMode.SNEAKING
+                            : BedrockBoundingBoxMode.DEFAULT;
             if (!resizeRequested(previousState, currentFrame, spinActive, spinAttackStarted)
                     && !BedrockGlidingTravelMovement.requestsResize(previousState, intent, context)) {
                 return new Resolved(mode, previousState.playerDimensions());
@@ -79,27 +75,31 @@ public final class BedrockActorDimensions {
         return new Resolved(mode, currentDimensions);
     }
 
-    private static boolean resizeRequested(BedrockMovementState previous, BedrockInputFrame frame,
-                                           boolean spinning, boolean spinStarted) {
+    private static boolean resizeRequested(
+            BedrockMovementState previous, BedrockInputFrame frame, boolean spinning, boolean spinStarted) {
         if (spinStarted || spinning != previous.riptideSpinActive()) return true;
         return frame.inputData().stream().anyMatch(action -> switch (action) {
-            case BedrockPoseInputData.START_GLIDING, BedrockPoseInputData.STOP_GLIDING,
-                    BedrockPoseInputData.START_GLIDING_ACTION, BedrockPoseInputData.STOP_GLIDING_ACTION,
-                    BedrockPoseInputData.START_SWIMMING, BedrockPoseInputData.STOP_SWIMMING,
-                    BedrockPoseInputData.START_CRAWLING, BedrockPoseInputData.STOP_CRAWLING,
-                    BedrockPoseInputData.START_SNEAKING, BedrockPoseInputData.STOP_SNEAKING,
-                    "START_SPIN_ATTACK", "STOP_SPIN_ATTACK" -> true;
+            case BedrockPoseInputData.START_GLIDING,
+                    BedrockPoseInputData.STOP_GLIDING,
+                    BedrockPoseInputData.START_GLIDING_ACTION,
+                    BedrockPoseInputData.STOP_GLIDING_ACTION,
+                    BedrockPoseInputData.START_SWIMMING,
+                    BedrockPoseInputData.STOP_SWIMMING,
+                    BedrockPoseInputData.START_CRAWLING,
+                    BedrockPoseInputData.STOP_CRAWLING,
+                    BedrockPoseInputData.START_SNEAKING,
+                    BedrockPoseInputData.STOP_SNEAKING,
+                    "START_SPIN_ATTACK",
+                    "STOP_SPIN_ATTACK" -> true;
             default -> false;
         });
     }
 
     private static Resolved horizontalPoseDimensions(PlayerDimensionsState dimensions) {
         return new Resolved(
-            BedrockBoundingBoxMode.HORIZONTAL,
-            new PlayerDimensionsState(dimensions.width(), BEDROCK_LOW_POSE_HEIGHT)
-        );
+                BedrockBoundingBoxMode.HORIZONTAL,
+                new PlayerDimensionsState(dimensions.width(), BEDROCK_LOW_POSE_HEIGHT));
     }
 
-    public record Resolved(BedrockBoundingBoxMode mode, PlayerDimensionsState dimensions) {
-    }
+    public record Resolved(BedrockBoundingBoxMode mode, PlayerDimensionsState dimensions) {}
 }

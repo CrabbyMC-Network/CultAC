@@ -1,9 +1,5 @@
 package ac.cult.cultac.checks.impl.scaffolding;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.checks.type.PostPredictionListener;
@@ -11,20 +7,27 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.block.BlockFace;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@CheckData(name = "MultiPlace", stableKey = "cult.scaffolding.multi_place", description = "Placed multiple blocks in a tick", experimental = true)
+@CheckData(
+        name = "MultiPlace",
+        stableKey = "cult.scaffolding.multi_place",
+        description = "Placed multiple blocks in a tick",
+        experimental = true)
 public class MultiPlace extends BlockPlaceCheck implements PostPredictionListener {
-    private static final Verbose V = Verbose.of("face={face}, lastFace={face}, cursor={cursor}, lastCursor={cursor}, pos={mcpos}, lastPos={mcpos}");
+    private static final Verbose V = Verbose.of(
+            "face={face}, lastFace={face}, cursor={cursor}, lastCursor={cursor}, pos={mcpos}, lastPos={mcpos}");
 
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
@@ -49,13 +52,14 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
             final int faceId = VerboseTags.enumId(face);
             final int lastFaceId = VerboseTags.enumId(lastFace);
             if (!canSkipTicks()) {
-                var buf = V.write(verbose()).uint(faceId).uint(lastFaceId)
+                var buf = V.write(verbose())
+                        .uint(faceId)
+                        .uint(lastFaceId)
                         .cursor((float) cursor.x, (float) cursor.y, (float) cursor.z)
                         .cursor((float) lastCursor.x, (float) lastCursor.y, (float) lastCursor.z)
                         .mcPos(pos.getX(), pos.getY(), pos.getZ())
                         .mcPos(lastPos.getX(), lastPos.getY(), lastPos.getZ());
-                if (flag(buf)
-                        && shouldModifyPackets() && shouldCancel()) {
+                if (flag(buf) && shouldModifyPackets() && shouldCancel()) {
                     place.resync();
                 }
             } else {
@@ -71,8 +75,8 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
 
     // isTickPacket (guide §"Removed Check helpers"): a non-teleport movement packet ends the client tick
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.cameraEntity.isSelf() || !player.packetStateData.lastPacketWasTeleport) {
             hasPlaced = false;
         }
@@ -83,7 +87,7 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!player.cameraEntity.isSelf()
                 || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && !player.packetStateData.receivedMovementThisClientTick)) {
+                        && !player.packetStateData.receivedMovementThisClientTick)) {
             hasPlaced = false;
         }
     }
@@ -94,11 +98,16 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
 
         if (player.isTickingReliablyFor(3)) {
             for (FlagData data : flags) {
-                flag(V.write(verbose()).uint(data.face()).uint(data.lastFace())
+                flag(V.write(verbose())
+                        .uint(data.face())
+                        .uint(data.lastFace())
                         .cursor((float) data.cursor().x, (float) data.cursor().y, (float) data.cursor().z)
                         .cursor((float) data.lastCursor().x, (float) data.lastCursor().y, (float) data.lastCursor().z)
                         .mcPos(data.pos().getX(), data.pos().getY(), data.pos().getZ())
-                        .mcPos(data.lastPos().getX(), data.lastPos().getY(), data.lastPos().getZ()));
+                        .mcPos(
+                                data.lastPos().getX(),
+                                data.lastPos().getY(),
+                                data.lastPos().getZ()));
             }
         }
 
@@ -109,14 +118,8 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 
-    private record FlagData(
-            int face,
-            int lastFace,
-            Vec3 cursor,
-            Vec3 lastCursor,
-            BlockPos pos,
-            BlockPos lastPos) {}
+    private record FlagData(int face, int lastFace, Vec3 cursor, Vec3 lastCursor, BlockPos pos, BlockPos lastPos) {}
 }

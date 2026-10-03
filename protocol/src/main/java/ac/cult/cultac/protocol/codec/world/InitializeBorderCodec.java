@@ -15,8 +15,13 @@ import io.netty.buffer.ByteBuf;
 public final class InitializeBorderCodec implements PacketCodec<ClientboundInitializeBorder> {
     @Override
     public ClientboundInitializeBorder read(ByteBuf input, ProtocolContext context) {
-        var border = new ClientboundInitializeBorder(input.readDouble(), input.readDouble(),
-                input.readDouble(), input.readDouble(), Wire.readVarLong(input), Wire.readVarInt(input));
+        var border = new ClientboundInitializeBorder(
+                input.readDouble(),
+                input.readDouble(),
+                input.readDouble(),
+                input.readDouble(),
+                Wire.readVarLong(input),
+                Wire.readVarInt(input));
         Wire.readVarInt(input); // Warning blocks.
         Wire.readVarInt(input); // Warning time.
         return border;

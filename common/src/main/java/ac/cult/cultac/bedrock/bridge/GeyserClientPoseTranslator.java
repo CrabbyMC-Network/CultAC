@@ -19,25 +19,29 @@ final class GeyserClientPoseTranslator extends PacketTranslator<ClientboundSetEn
     @SuppressWarnings("unchecked")
     GeyserClientPoseTranslator(Predicate<GeyserSession> attached) {
         this.attached = attached;
-        delegate = (PacketTranslator<ClientboundSetEntityDataPacket>) Registries.JAVA_PACKET_TRANSLATORS
-                .get(ClientboundSetEntityDataPacket.class);
+        delegate = (PacketTranslator<ClientboundSetEntityDataPacket>)
+                Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundSetEntityDataPacket.class);
         if (delegate == null) throw new IllegalStateException("Missing Geyser metadata translator");
         Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundSetEntityDataPacket.class, this);
     }
 
-    @Override public void translate(GeyserSession session, ClientboundSetEntityDataPacket packet) {
+    @Override
+    public void translate(GeyserSession session, ClientboundSetEntityDataPacket packet) {
         var entity = session.getPlayerEntity();
         if (!attached.test(session) || packet.getEntityId() != entity.getEntityId()) {
             delegate.translate(session, packet);
             return;
         }
-        var filtered = filter(packet, entity.getFlag(EntityFlag.SNEAKING), entity.getFlag(EntityFlag.GLIDING),
+        var filtered = filter(
+                packet,
+                entity.getFlag(EntityFlag.SNEAKING),
+                entity.getFlag(EntityFlag.GLIDING),
                 entity.getFlag(EntityFlag.DAMAGE_NEARBY_MOBS));
         if (filtered.getMetadata().length != 0) delegate.translate(session, filtered);
     }
 
-    static ClientboundSetEntityDataPacket filter(ClientboundSetEntityDataPacket packet, boolean sneaking,
-                                                 boolean gliding, boolean spinning) {
+    static ClientboundSetEntityDataPacket filter(
+            ClientboundSetEntityDataPacket packet, boolean sneaking, boolean gliding, boolean spinning) {
         var metadata = new ArrayList<EntityMetadata<?, ?>>();
         for (var entry : packet.getMetadata()) {
             // EntityDefinitions.entityBase: shared flags are field 0; the Java pose is field 6.
@@ -58,7 +62,10 @@ final class GeyserClientPoseTranslator extends PacketTranslator<ClientboundSetEn
         return new ClientboundSetEntityDataPacket(packet.getEntityId(), metadata.toArray(EntityMetadata[]::new));
     }
 
-    boolean isInstalled() { return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundSetEntityDataPacket.class) == this; }
+    boolean isInstalled() {
+        return Registries.JAVA_PACKET_TRANSLATORS.get(ClientboundSetEntityDataPacket.class) == this;
+    }
+
     void close() {
         if (isInstalled()) Registries.JAVA_PACKET_TRANSLATORS.register(ClientboundSetEntityDataPacket.class, delegate);
     }

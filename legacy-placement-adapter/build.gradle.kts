@@ -1,6 +1,7 @@
 plugins {
     java
     id("io.papermc.paperweight.userdev")
+    cult.`format-conventions`
 }
 
 // Isolated compilation of the legacy block-placement logic against the Paper 1.21.3 API

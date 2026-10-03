@@ -1,12 +1,11 @@
 package ac.cult.cultac.manager.datastore;
 
 import ac.grim.grimac.api.config.ConfigManager;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Builds a legacy migration source from either a plugin data folder (SQLite
@@ -19,8 +18,12 @@ public final class V0Sources {
 
     private V0Sources() {}
 
-    public record V0Source(String type, String jdbcUrl, @Nullable String username,
-                           @Nullable String password, String summary) {}
+    public record V0Source(
+            String type,
+            String jdbcUrl,
+            @Nullable String username,
+            @Nullable String password,
+            String summary) {}
 
     /**
      * Returns {@code null} when no usable legacy source is found — either the
@@ -28,8 +31,7 @@ public final class V0Sources {
      * or {@code history.database.type} is set to {@code noop}.
      */
     public static @Nullable V0Source detect(@NotNull Path dataFolder, @NotNull ConfigManager cfg) {
-        String rawType = cfg.getStringElse("history.database.type", "SQLITE")
-                .toUpperCase(Locale.ROOT);
+        String rawType = cfg.getStringElse("history.database.type", "SQLITE").toUpperCase(Locale.ROOT);
         return switch (rawType) {
             case "MYSQL" -> mysqlSource(cfg);
             case "POSTGRESQL" -> postgresqlSource(cfg);
@@ -48,10 +50,7 @@ public final class V0Sources {
             legacy = fallback;
         }
         return new V0Source(
-                "sqlite",
-                "jdbc:sqlite:" + legacy.toAbsolutePath(),
-                null, null,
-                "sqlite file " + legacy.getFileName());
+                "sqlite", "jdbc:sqlite:" + legacy.toAbsolutePath(), null, null, "sqlite file " + legacy.getFileName());
     }
 
     private static V0Source mysqlSource(@NotNull ConfigManager cfg) {
@@ -61,8 +60,8 @@ public final class V0Sources {
         String username = cfg.getStringElse("history.database.username", "root");
         String password = cfg.getStringElse("history.database.password", "");
         String url = "jdbc:mysql://" + host + ":" + port + "/" + database;
-        return new V0Source("mysql", url, username, password,
-                "mysql " + host + ":" + port + "/" + database + " as " + username);
+        return new V0Source(
+                "mysql", url, username, password, "mysql " + host + ":" + port + "/" + database + " as " + username);
     }
 
     private static V0Source postgresqlSource(@NotNull ConfigManager cfg) {
@@ -72,7 +71,11 @@ public final class V0Sources {
         String username = cfg.getStringElse("history.database.username", "postgres");
         String password = cfg.getStringElse("history.database.password", "");
         String url = "jdbc:postgresql://" + host + ":" + port + "/" + database;
-        return new V0Source("postgresql", url, username, password,
+        return new V0Source(
+                "postgresql",
+                url,
+                username,
+                password,
                 "postgresql " + host + ":" + port + "/" + database + " as " + username);
     }
 }

@@ -1,28 +1,29 @@
 package ac.cult.cultac.utils.latency;
 
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.GlobalPalette;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.GlobalPalette;
 
 public final class SectionPool {
     private static final CachedSection CANONICAL_AIR = createCanonicalAir();
 
     static final long STABILITY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(5);
 
-    public static final java.util.concurrent.atomic.AtomicLong internCallCounter = new java.util.concurrent.atomic.AtomicLong(0);
-    public static final java.util.concurrent.atomic.AtomicLong internDedupCounter = new java.util.concurrent.atomic.AtomicLong(0);
-    public static final java.util.concurrent.atomic.AtomicLong tryReinternSuccessCounter = new java.util.concurrent.atomic.AtomicLong(0);
+    public static final java.util.concurrent.atomic.AtomicLong internCallCounter =
+            new java.util.concurrent.atomic.AtomicLong(0);
+    public static final java.util.concurrent.atomic.AtomicLong internDedupCounter =
+            new java.util.concurrent.atomic.AtomicLong(0);
+    public static final java.util.concurrent.atomic.AtomicLong tryReinternSuccessCounter =
+            new java.util.concurrent.atomic.AtomicLong(0);
 
     private List<CachedSection> nonUniformSections;
 
-    SectionPool() {
-    }
+    SectionPool() {}
 
     private static CachedSection createCanonicalAir() {
         CachedSection air = CachedSection.createAirSection();
@@ -54,7 +55,11 @@ public final class SectionPool {
         return intern(section, 0, ComparisonBudget.unlimited(), true).section();
     }
 
-    private ReinternResult intern(CachedSection section, int startComparisonIndex, ComparisonBudget comparisonBudget, boolean retainReference) {
+    private ReinternResult intern(
+            CachedSection section,
+            int startComparisonIndex,
+            ComparisonBudget comparisonBudget,
+            boolean retainReference) {
         internCallCounter.incrementAndGet();
 
         if (section.isEmpty() && !section.hasFluid()) {
@@ -126,11 +131,16 @@ public final class SectionPool {
         return tryReintern(section, startComparisonIndex, comparisonBudget, false);
     }
 
-    ReinternResult tryReinternRetained(CachedSection section, int startComparisonIndex, ComparisonBudget comparisonBudget) {
+    ReinternResult tryReinternRetained(
+            CachedSection section, int startComparisonIndex, ComparisonBudget comparisonBudget) {
         return tryReintern(section, startComparisonIndex, comparisonBudget, true);
     }
 
-    private ReinternResult tryReintern(CachedSection section, int startComparisonIndex, ComparisonBudget comparisonBudget, boolean retainReference) {
+    private ReinternResult tryReintern(
+            CachedSection section,
+            int startComparisonIndex,
+            ComparisonBudget comparisonBudget,
+            boolean retainReference) {
         if (section.isShared()) {
             return new ReinternResult(section, true, 0);
         }
@@ -184,11 +194,13 @@ public final class SectionPool {
         return SectionPoolRegistry.dimensionStats();
     }
 
-    static boolean tryMakeExclusiveForMutation(String dimension, int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
+    static boolean tryMakeExclusiveForMutation(
+            String dimension, int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
         return SectionPoolRegistry.tryMakeExclusiveForMutation(dimension, chunkX, sectionIndex, chunkZ, section);
     }
 
-    static void releaseSectionReference(String dimension, int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
+    static void releaseSectionReference(
+            String dimension, int chunkX, int sectionIndex, int chunkZ, CachedSection section) {
         SectionPoolRegistry.releaseSectionReference(dimension, chunkX, sectionIndex, chunkZ, section);
     }
 
@@ -271,8 +283,7 @@ public final class SectionPool {
         PalettedContainerAccessor.RawView va = PalettedContainerAccessor.getRawView(a.states());
         PalettedContainerAccessor.RawView vb = PalettedContainerAccessor.getRawView(b.states());
 
-        if (va.storage.getBits() != vb.storage.getBits()
-                || !Arrays.equals(va.storage.getRaw(), vb.storage.getRaw())) {
+        if (va.storage.getBits() != vb.storage.getBits() || !Arrays.equals(va.storage.getRaw(), vb.storage.getRaw())) {
             return false;
         }
 
@@ -302,7 +313,8 @@ public final class SectionPool {
         private int hashCalculationsRemaining;
         private int attemptedComparisonsRemaining;
 
-        private ComparisonBudget(int contentComparisonsRemaining, int hashCalculationsRemaining, int attemptedComparisonsRemaining) {
+        private ComparisonBudget(
+                int contentComparisonsRemaining, int hashCalculationsRemaining, int attemptedComparisonsRemaining) {
             this.contentComparisonsRemaining = contentComparisonsRemaining;
             this.hashCalculationsRemaining = hashCalculationsRemaining;
             this.attemptedComparisonsRemaining = attemptedComparisonsRemaining;
@@ -310,9 +322,7 @@ public final class SectionPool {
 
         static ComparisonBudget limited(int contentComparisons, int hashCalculations, int attemptedComparisons) {
             return new ComparisonBudget(
-                    Math.max(0, contentComparisons),
-                    Math.max(0, hashCalculations),
-                    Math.max(0, attemptedComparisons));
+                    Math.max(0, contentComparisons), Math.max(0, hashCalculations), Math.max(0, attemptedComparisons));
         }
 
         static ComparisonBudget unlimited() {
@@ -341,9 +351,7 @@ public final class SectionPool {
         }
     }
 
-    record ReinternResult(CachedSection section, boolean complete, int nextComparisonIndex) {
-    }
+    record ReinternResult(CachedSection section, boolean complete, int nextComparisonIndex) {}
 
-    public record DimensionStats(String dimension, int poolCount, int sectionReferences) {
-    }
+    public record DimensionStats(String dimension, int poolCount, int sectionReferences) {}
 }

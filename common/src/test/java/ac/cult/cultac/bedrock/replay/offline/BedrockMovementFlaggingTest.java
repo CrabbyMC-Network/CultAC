@@ -1,5 +1,7 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockMovementCorrection;
 import ac.cult.cultac.checks.impl.bedrock.BedrockMovement;
@@ -9,10 +11,9 @@ import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class BedrockMovementFlaggingTest {
-    @Test public void flagsResumeExactlyFiveClientTicksAfterEachVehicleTransition() {
+    @Test
+    public void flagsResumeExactlyFiveClientTicksAfterEachVehicleTransition() {
         OfflineCultTestBootstrap.installConfig();
         var player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
@@ -33,10 +34,13 @@ public class BedrockMovementFlaggingTest {
             }
             player.packetStateData.acceptedClientTick = 20;
             assertTrue(check.canFlagMovement());
-        } finally { OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player); }
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
     }
 
-    @Test public void dispatchesMovementViolationsButNotWhileARewindIsPending() throws Exception {
+    @Test
+    public void dispatchesMovementViolationsButNotWhileARewindIsPending() throws Exception {
         OfflineCultTestBootstrap.installConfig();
         var player = OfflineBedrockReplayRunnerTest.offlinePlayer();
         try {
@@ -51,8 +55,23 @@ public class BedrockMovementFlaggingTest {
             var runtimeId = corrections.getClass().getDeclaredField("runtimeId");
             runtimeId.setAccessible(true);
             runtimeId.setLong(corrections, -1);
-            corrections.observe(player, new BedrockMovementCorrection(1, corrections.generation(), -1, -1,
-                    1, Vec3.ZERO, Vec3.ZERO, 0, 0, false, BedrockCoordinateFrame.IDENTITY, -1, null, false));
+            corrections.observe(
+                    player,
+                    new BedrockMovementCorrection(
+                            1,
+                            corrections.generation(),
+                            -1,
+                            -1,
+                            1,
+                            Vec3.ZERO,
+                            Vec3.ZERO,
+                            0,
+                            0,
+                            false,
+                            BedrockCoordinateFrame.IDENTITY,
+                            -1,
+                            null,
+                            false));
             assertTrue(corrections.hasPendingCorrection());
             caller.onPredictionComplete(new PredictionComplete(result));
             assertEquals(1, check.violations, 0);
@@ -64,13 +83,20 @@ public class BedrockMovementFlaggingTest {
             assertEquals(2, check.violations, 0);
 
             var teleports = player.getSetbackTeleportUtil();
-            teleports.addSentTeleport(Vec3.ZERO, 10,
-                    new ac.cult.cultac.network.protocol.teleport.RelativeFlag(0), false, 1);
-            teleports.addImmediateBedrockTransportTeleport(Vec3.ZERO, false, BedrockCoordinateFrame.IDENTITY,
-                    null, new ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation(1,
-                            ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance.CULT_SETBACK, 10), 10);
+            teleports.addSentTeleport(
+                    Vec3.ZERO, 10, new ac.cult.cultac.network.protocol.teleport.RelativeFlag(0), false, 1);
+            teleports.addImmediateBedrockTransportTeleport(
+                    Vec3.ZERO,
+                    false,
+                    BedrockCoordinateFrame.IDENTITY,
+                    null,
+                    new ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation(
+                            1, ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance.CULT_SETBACK, 10),
+                    10);
             assertTrue(teleports.isPendingSetback());
             assertFalse(check.canFlagMovement());
-        } finally { OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player); }
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
     }
 }

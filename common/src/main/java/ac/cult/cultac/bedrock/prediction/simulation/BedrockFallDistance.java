@@ -5,20 +5,20 @@ import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockSurfaceMov
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockFrameFacts;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockLiquidSensing;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockUnderwaterSensing;
-import ac.cult.cultac.bedrock.prediction.state.BedrockCameraWaterState;
 import ac.cult.cultac.bedrock.prediction.simulation.postmove.BedrockPostMoveResult;
 import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockTravelPlan;
+import ac.cult.cultac.bedrock.prediction.state.BedrockCameraWaterState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 
 final class BedrockFallDistance {
-    private BedrockFallDistance() {
-    }
+    private BedrockFallDistance() {}
 
     static boolean wasInWaterAfterMove(BedrockTravelPlan plan, BedrockCollisionOutput collision) {
         BedrockFrameFacts facts = plan.frame().frameFacts();
-        return facts.inWater() || plan.frame().input().options().travelActive()
-            && BedrockLiquidSensing.inWaterFlag(
-                facts.context(), collision.blockMove().position(), facts.movementDimensions());
+        return facts.inWater()
+                || plan.frame().input().options().travelActive()
+                        && BedrockLiquidSensing.inWaterFlag(
+                                facts.context(), collision.blockMove().position(), facts.movementDimensions());
     }
 
     static BedrockCameraWaterState cameraWaterAfterMove(BedrockTravelPlan plan, BedrockCollisionOutput collision) {
@@ -27,37 +27,41 @@ final class BedrockFallDistance {
         // A move that started outside water can enter it. Resample at the new
         // position after the camera update, without advancing the camera again.
         return !frame.frameFacts().inWater() && frame.input().options().travelActive()
-            ? BedrockUnderwaterSensing.update(frame.input().previousState(), frame.cameraWater(), frame.frameFacts().context(),
-                collision.blockMove().position(), frame.frameFacts().movementDimensions())
-            : frame.cameraWater();
+                ? BedrockUnderwaterSensing.update(
+                        frame.input().previousState(),
+                        frame.cameraWater(),
+                        frame.frameFacts().context(),
+                        collision.blockMove().position(),
+                        frame.frameFacts().movementDimensions())
+                : frame.cameraWater();
     }
 
-    static float afterMove(
-        BedrockTravelPlan plan,
-        BedrockCollisionOutput collision,
-        BedrockPostMoveResult postMove
-    ) {
+    static float afterMove(BedrockTravelPlan plan, BedrockCollisionOutput collision, BedrockPostMoveResult postMove) {
         BedrockMovementState current = plan.frame().input().previousState();
         BedrockFrameFacts facts = plan.frame().frameFacts();
-        double resolvedY = collision.blockMove().position().y() - current.physicalFeetPosition().y();
+        double resolvedY = collision.blockMove().position().y()
+                - current.physicalFeetPosition().y();
         boolean reset = postMove.flags().onGround()
-            || facts.climb().climbing()
-            || collision.nextClimbableContact().climbing()
-            || facts.blockMovementSlowdownState().active()
-            || postMove.pendingBlockMovementSlowdownState().active()
-            || postMove.postMoveContext().inWater()
-            || postMove.postMoveContext().inUpwardBubbleColumn()
-            || postMove.postMoveContext().inDownwardBubbleColumn()
-            || facts.effectState().slowFalling()
-            || facts.effectState().levitationLevel() > 0
-            || plan.frame().branch().playerFlyingTravel()
-            || BedrockBlockSurfaceMovement.isHoneySliding(
-                current.velocity(),
-                facts.honeySlideState(),
-                current.physicalFeetPosition(),
-                facts.movementDimensions()
-            );
-        return update(current.fallDistance(), resolvedY, reset, postMove.postMoveContext().inLava());
+                || facts.climb().climbing()
+                || collision.nextClimbableContact().climbing()
+                || facts.blockMovementSlowdownState().active()
+                || postMove.pendingBlockMovementSlowdownState().active()
+                || postMove.postMoveContext().inWater()
+                || postMove.postMoveContext().inUpwardBubbleColumn()
+                || postMove.postMoveContext().inDownwardBubbleColumn()
+                || facts.effectState().slowFalling()
+                || facts.effectState().levitationLevel() > 0
+                || plan.frame().branch().playerFlyingTravel()
+                || BedrockBlockSurfaceMovement.isHoneySliding(
+                        current.velocity(),
+                        facts.honeySlideState(),
+                        current.physicalFeetPosition(),
+                        facts.movementDimensions());
+        return update(
+                current.fallDistance(),
+                resolvedY,
+                reset,
+                postMove.postMoveContext().inLava());
     }
 
     static float update(float current, double resolvedY, boolean reset, boolean inLava) {

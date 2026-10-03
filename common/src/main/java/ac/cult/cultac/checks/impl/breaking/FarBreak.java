@@ -1,27 +1,30 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.math.VectorUtils;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
-@CheckData(name = "FarBreak", stableKey = "cult.breaking.far_break", description = "Breaking blocks too far away", experimental = true)
+@CheckData(
+        name = "FarBreak",
+        stableKey = "cult.breaking.far_break",
+        description = "Breaking blocks too far away",
+        experimental = true)
 public class FarBreak extends Check implements BlockBreakListener {
     private static final Verbose V = Verbose.of("distance={f64:%.2f}");
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
-
 
     private boolean didLastMovementIncludePosition;
 
@@ -30,14 +33,16 @@ public class FarBreak extends Check implements BlockBreakListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         didLastMovementIncludePosition = packet.hasPosition();
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (!player.cameraEntity.isSelf() || player.inVehicle() || blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) // PE DiggingAction.CANCELLED_DIGGING
-            return; // falses
+        if (!player.cameraEntity.isSelf()
+                || player.inVehicle()
+                || blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) // PE DiggingAction.CANCELLED_DIGGING
+        return; // falses
 
         double min = Double.MAX_VALUE;
         for (double d : player.getPossibleEyeHeights()) {
@@ -63,6 +68,6 @@ public class FarBreak extends Check implements BlockBreakListener {
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 }

@@ -3,11 +3,7 @@ package ac.cult.cultac.bedrock.prediction.simulation.frame;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import java.util.Objects;
 
-public record BedrockMobJump(
-    Branch branch,
-    double swimUpImpulse,
-    BedrockMobJumpComponentState componentAfterMobJump
-) {
+public record BedrockMobJump(Branch branch, double swimUpImpulse, BedrockMobJumpComponentState componentAfterMobJump) {
     public static final BedrockMobJump NONE = new BedrockMobJump(Branch.NONE, BedrockMobJumpComponentState.DEFAULT);
 
     public BedrockMobJump {
@@ -28,17 +24,15 @@ public record BedrockMobJump(
 
     private BedrockMobJump(Branch branch, BedrockMobJumpComponentState component) {
         this(
-            branch,
-            component.swimUpImpulse(),
-            (branch == Branch.GROUND_JUMP_REQUEST || branch == Branch.SCAFFOLDING_OR_ASCENDABLE_BLOCK
-                ? component.afterJumpRequest() : component).afterSwimUpImpulseSelection()
-        );
+                branch,
+                component.swimUpImpulse(),
+                (branch == Branch.GROUND_JUMP_REQUEST || branch == Branch.SCAFFOLDING_OR_ASCENDABLE_BLOCK
+                                ? component.afterJumpRequest()
+                                : component)
+                        .afterSwimUpImpulseSelection());
     }
 
-    public static BedrockMobJump resolve(
-        BedrockMobJumpInput input,
-        BedrockMobJumpComponentState component
-    ) {
+    public static BedrockMobJump resolve(BedrockMobJumpInput input, BedrockMobJumpComponentState component) {
         // Decrement the carried cooldown before deciding whether held jump
         // can launch. Rewind must make that decision against its corrected ground state.
         component = component.beginTick(input.jumping());
@@ -54,8 +48,7 @@ public record BedrockMobJump(
     }
 
     public boolean zeroedWaterVelocity() {
-        return branch == Branch.WATER_AUTO_SURFACE_SWIM
-            || branch == Branch.WATER_SWIM_TRANSITION;
+        return branch == Branch.WATER_AUTO_SURFACE_SWIM || branch == Branch.WATER_SWIM_TRANSITION;
     }
 
     public boolean lavaSwimUpApplied() {
@@ -71,34 +64,18 @@ public record BedrockMobJump(
             return new Vec3d(velocity.x(), 0.0D, velocity.z());
         }
         return switch (branch) {
-            case SCAFFOLDING_OR_ASCENDABLE_BLOCK -> new Vec3d(
-                velocity.x(),
-                BedrockClimbMovement.SCAFFOLDING_ASCEND_VELOCITY,
-                velocity.z()
-            );
-            case LADDER_OR_POWDER_SNOW_AT_FEET -> new Vec3d(
-                velocity.x(),
-                BedrockClimbMovement.LADDER_ASCEND_VELOCITY,
-                velocity.z()
-            );
-            case WATER_NON_SWIMMER_SWIM_UP -> new Vec3d(
-                velocity.x(),
-                velocity.y() + swimUpImpulse,
-                velocity.z()
-            );
-            case LAVA_SWIM_UP -> new Vec3d(
-                velocity.x(),
-                BedrockLiquidVerticalMovement.lavaSwimUpVelocityY(velocity.y()),
-                velocity.z()
-            );
+            case SCAFFOLDING_OR_ASCENDABLE_BLOCK ->
+                new Vec3d(velocity.x(), BedrockClimbMovement.SCAFFOLDING_ASCEND_VELOCITY, velocity.z());
+            case LADDER_OR_POWDER_SNOW_AT_FEET ->
+                new Vec3d(velocity.x(), BedrockClimbMovement.LADDER_ASCEND_VELOCITY, velocity.z());
+            case WATER_NON_SWIMMER_SWIM_UP -> new Vec3d(velocity.x(), velocity.y() + swimUpImpulse, velocity.z());
+            case LAVA_SWIM_UP ->
+                new Vec3d(velocity.x(), BedrockLiquidVerticalMovement.lavaSwimUpVelocityY(velocity.y()), velocity.z());
             case NONE, WATER_AUTO_SURFACE_SWIM, WATER_SWIM_TRANSITION, GROUND_JUMP_REQUEST -> velocity;
         };
     }
 
-    private static Branch firstMatchingBranch(
-        BedrockMobJumpInput input,
-        BedrockMobJumpComponentState component
-    ) {
+    private static Branch firstMatchingBranch(BedrockMobJumpInput input, BedrockMobJumpComponentState component) {
         if (input.autoSurfaceSwim()) {
             return Branch.WATER_AUTO_SURFACE_SWIM;
         }
@@ -133,5 +110,4 @@ public record BedrockMobJump(
         LAVA_SWIM_UP,
         GROUND_JUMP_REQUEST
     }
-
 }

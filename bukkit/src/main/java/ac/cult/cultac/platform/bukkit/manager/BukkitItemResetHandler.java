@@ -5,6 +5,12 @@ import ac.cult.cultac.platform.api.manager.ItemResetHandler;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.platform.bukkit.utils.reflection.PaperUtils;
 import ac.cult.cultac.utils.reflection.ReflectionUtils;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import net.minecraft.SharedConstants;
 import net.minecraft.world.InteractionHand;
 import org.bukkit.Bukkit;
@@ -12,13 +18,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class BukkitItemResetHandler implements ItemResetHandler {
     private static final Consumer<Player> resetItemUsage;
@@ -41,10 +40,8 @@ public class BukkitItemResetHandler implements ItemResetHandler {
     }
 
     static {
-        final ClientVersion version =
-                ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
+        final ClientVersion version = ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
         final int serverProtocol = version.getProtocolVersion();
-
 
         final boolean legacy = version.isOlderThanOrEquals(ClientVersion.V_1_8);
 
@@ -59,7 +56,8 @@ public class BukkitItemResetHandler implements ItemResetHandler {
             } else {
                 nmsPackage = Bukkit.getServer().getClass().getPackageName().split("\\.")[3];
                 final String className = legacy ? "CraftHumanEntity" : "CraftLivingEntity";
-                getHandle = Class.forName("org.bukkit.craftbukkit." + nmsPackage + ".entity." + className).getMethod("getHandle");
+                getHandle = Class.forName("org.bukkit.craftbukkit." + nmsPackage + ".entity." + className)
+                        .getMethod("getHandle");
             }
 
             final boolean obfuscated = nmsPackage != null;
@@ -68,12 +66,15 @@ public class BukkitItemResetHandler implements ItemResetHandler {
             if (serverProtocol >= 210) {
                 isUsingItem = Player::isHandRaised;
             } else {
-                Method method = clazz.getMethod(switch (Objects.requireNonNull(nmsPackage, "nmsPackage")) {
-                    case "v1_8_R3" -> "bS";
-                    case "v1_9_R1" -> "cs";
-                    case "v1_9_R2" -> "ct";
-                    default -> throw new IllegalStateException("You are using an unsupported server version! (" + version.getReleaseName() + ")");
-                });
+                Method method = clazz.getMethod(
+                        switch (Objects.requireNonNull(nmsPackage, "nmsPackage")) {
+                            case "v1_8_R3" -> "bS";
+                            case "v1_9_R1" -> "cs";
+                            case "v1_9_R2" -> "ct";
+                            default ->
+                                throw new IllegalStateException("You are using an unsupported server version! ("
+                                        + version.getReleaseName() + ")");
+                        });
                 isUsingItem = player -> {
                     try {
                         return (boolean) method.invoke(getHandle.invoke(player));
@@ -88,41 +89,46 @@ public class BukkitItemResetHandler implements ItemResetHandler {
             } else if (PaperUtils.PAPER && serverProtocol >= 754) {
                 getItemUsageHand = player -> player.isHandRaised()
                         ? player.getHandRaised() == EquipmentSlot.OFF_HAND
-                          ? InteractionHand.OFF_HAND
-                          : InteractionHand.MAIN_HAND
+                                ? InteractionHand.OFF_HAND
+                                : InteractionHand.MAIN_HAND
                         : null;
             } else {
-                Method method = clazz.getMethod(nmsPackage != null ? switch (Objects.requireNonNull(nmsPackage, "nmsPackage")) {
-                    case "v1_9_R1" -> "ct";
-                    case "v1_9_R2" -> "cu";
-                    case "v1_10_R1" -> "cy";
-                    case "v1_11_R1" -> "cz";
-                    case "v1_12_R1" -> "cH";
-                    case "v1_13_R1", "v1_13_R2", "v1_14_R1" -> "cU";
-                    case "v1_15_R1", "v1_16_R1", "v1_16_R2", "v1_16_R3", "v1_17_R1" -> "getRaisedHand";
-                    case "v1_18_R1" -> "eM";
-                    case "v1_18_R2" -> "eN";
-                    case "v1_19_R1" -> "eU";
-                    case "v1_19_R2" -> "fa";
-                    case "v1_19_R3" -> "ff";
-                    case "v1_20_R1" -> "fj";
-                    case "v1_20_R2" -> "fn";
-                    case "v1_20_R3" -> "fo";
-                    case "v1_20_R4" -> "fw";
-                    case "v1_21_R1" -> "fs";
-                    case "v1_21_R2", "v1_21_R3", "v1_21_R4" -> "fA";
-                    case "v1_21_R5" -> "fH";
-                    case "v1_21_R6" -> "fP";
-                    case "v1_21_R7" -> "ga";
-                    default -> throw new IllegalStateException("You are using an unsupported server version! (" + version.getReleaseName() + ")");
-                } : "getUsedItemHand");
+                Method method = clazz.getMethod(
+                        nmsPackage != null
+                                ? switch (Objects.requireNonNull(nmsPackage, "nmsPackage")) {
+                                    case "v1_9_R1" -> "ct";
+                                    case "v1_9_R2" -> "cu";
+                                    case "v1_10_R1" -> "cy";
+                                    case "v1_11_R1" -> "cz";
+                                    case "v1_12_R1" -> "cH";
+                                    case "v1_13_R1", "v1_13_R2", "v1_14_R1" -> "cU";
+                                    case "v1_15_R1", "v1_16_R1", "v1_16_R2", "v1_16_R3", "v1_17_R1" -> "getRaisedHand";
+                                    case "v1_18_R1" -> "eM";
+                                    case "v1_18_R2" -> "eN";
+                                    case "v1_19_R1" -> "eU";
+                                    case "v1_19_R2" -> "fa";
+                                    case "v1_19_R3" -> "ff";
+                                    case "v1_20_R1" -> "fj";
+                                    case "v1_20_R2" -> "fn";
+                                    case "v1_20_R3" -> "fo";
+                                    case "v1_20_R4" -> "fw";
+                                    case "v1_21_R1" -> "fs";
+                                    case "v1_21_R2", "v1_21_R3", "v1_21_R4" -> "fA";
+                                    case "v1_21_R5" -> "fH";
+                                    case "v1_21_R6" -> "fP";
+                                    case "v1_21_R7" -> "ga";
+                                    default ->
+                                        throw new IllegalStateException("You are using an unsupported server version! ("
+                                                + version.getReleaseName() + ")");
+                                }
+                                : "getUsedItemHand");
 
                 getItemUsageHand = player -> {
                     try {
                         return isUsingItem.test(player)
                                 ? ((Enum<?>) method.invoke(getHandle.invoke(player))).ordinal() == 0
-                                  ? InteractionHand.MAIN_HAND
-                                  : InteractionHand.OFF_HAND
+                                        ? InteractionHand.MAIN_HAND
+                                        : InteractionHand.OFF_HAND
                                 : null;
                     } catch (IllegalAccessException | InvocationTargetException e) {
                         throw new RuntimeException(e);
@@ -141,42 +147,49 @@ public class BukkitItemResetHandler implements ItemResetHandler {
             }
 
             if (PaperUtils.PAPER && serverProtocol > 755) {
-                resetItemUsage = setLivingEntityFlag == null ? LivingEntity::clearActiveItem : player -> {
-                    try {
-                        setLivingEntityFlag.invoke(getHandle.invoke(player), 1, false);
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException(e);
-                    }
-                    player.clearActiveItem();
-                };
+                resetItemUsage = setLivingEntityFlag == null
+                        ? LivingEntity::clearActiveItem
+                        : player -> {
+                            try {
+                                setLivingEntityFlag.invoke(getHandle.invoke(player), 1, false);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                            player.clearActiveItem();
+                        };
             } else {
-                Method method = clazz.getMethod(obfuscated ? switch (nmsPackage) {
-                    case "v1_8_R3" -> "bV";
-                    case "v1_9_R1" -> "cz";
-                    case "v1_9_R2" -> "cA";
-                    case "v1_10_R1" -> "cE";
-                    case "v1_11_R1" -> "cF";
-                    case "v1_12_R1" -> "cN";
-                    case "v1_13_R1", "v1_13_R2" -> "da";
-                    case "v1_14_R1" -> "dp";
-                    case "v1_15_R1" -> "dH";
-                    case "v1_16_R1", "v1_16_R2", "v1_16_R3", "v1_17_R1" -> "clearActiveItem";
-                    case "v1_18_R1" -> "eR";
-                    case "v1_18_R2" -> "eS";
-                    case "v1_19_R1" -> "eZ";
-                    case "v1_19_R2" -> "ff";
-                    case "v1_19_R3" -> "fk";
-                    case "v1_20_R1" -> "fo";
-                    case "v1_20_R2" -> "fs";
-                    case "v1_20_R3" -> "ft";
-                    case "v1_20_R4" -> "fB";
-                    case "v1_21_R1" -> "fx";
-                    case "v1_21_R2", "v1_21_R3", "v1_21_R4" -> "fF";
-                    case "v1_21_R5" -> "fM";
-                    case "v1_21_R6" -> "fU";
-                    case "v1_21_R7" -> "gf";
-                    default -> throw new IllegalStateException("You are using an unsupported server version! (" + version.getReleaseName() + ")");
-                } : "stopUsingItem");
+                Method method = clazz.getMethod(
+                        obfuscated
+                                ? switch (nmsPackage) {
+                                    case "v1_8_R3" -> "bV";
+                                    case "v1_9_R1" -> "cz";
+                                    case "v1_9_R2" -> "cA";
+                                    case "v1_10_R1" -> "cE";
+                                    case "v1_11_R1" -> "cF";
+                                    case "v1_12_R1" -> "cN";
+                                    case "v1_13_R1", "v1_13_R2" -> "da";
+                                    case "v1_14_R1" -> "dp";
+                                    case "v1_15_R1" -> "dH";
+                                    case "v1_16_R1", "v1_16_R2", "v1_16_R3", "v1_17_R1" -> "clearActiveItem";
+                                    case "v1_18_R1" -> "eR";
+                                    case "v1_18_R2" -> "eS";
+                                    case "v1_19_R1" -> "eZ";
+                                    case "v1_19_R2" -> "ff";
+                                    case "v1_19_R3" -> "fk";
+                                    case "v1_20_R1" -> "fo";
+                                    case "v1_20_R2" -> "fs";
+                                    case "v1_20_R3" -> "ft";
+                                    case "v1_20_R4" -> "fB";
+                                    case "v1_21_R1" -> "fx";
+                                    case "v1_21_R2", "v1_21_R3", "v1_21_R4" -> "fF";
+                                    case "v1_21_R5" -> "fM";
+                                    case "v1_21_R6" -> "fU";
+                                    case "v1_21_R7" -> "gf";
+                                    default ->
+                                        throw new IllegalStateException("You are using an unsupported server version! ("
+                                                + version.getReleaseName() + ")");
+                                }
+                                : "stopUsingItem");
 
                 if (legacy) { // 1.8.8
                     resetItemUsage = player -> {

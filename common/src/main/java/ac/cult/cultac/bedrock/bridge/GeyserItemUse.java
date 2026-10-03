@@ -16,7 +16,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.BlockUtils;
 
 final class GeyserItemUse {
-    private GeyserItemUse() { }
+    private GeyserItemUse() {}
 
     static int sequence(GeyserSession session) {
         try {
@@ -27,23 +27,29 @@ final class GeyserItemUse {
             throw new IllegalStateException("Unsupported Geyser prediction sequence", failure);
         }
     }
+
     private static final Direction[] FACES = Direction.values();
 
     static boolean allow(GeyserSession session, CultPlayer player, InventoryTransactionPacket packet) {
-        if (packet.getTransactionType() != InventoryTransactionType.ITEM_USE || packet.getActionType() != 0) return true;
+        if (packet.getTransactionType() != InventoryTransactionType.ITEM_USE || packet.getActionType() != 0)
+            return true;
         if (!player.getSetbackTeleportUtil().isPendingSetback()) return true;
         var position = packet.getBlockPosition();
         BlockUtils.restoreCorrectBlock(session, position, packet.getHotbarSlot());
         if (packet.getBlockFace() >= 0 && packet.getBlockFace() < FACES.length) {
             var face = SpigotConversionUtil.toBukkitFace(FACES[packet.getBlockFace()]);
-            BlockUtils.restoreCorrectBlock(session, position.add(face.getModX(), face.getModY(), face.getModZ()), packet.getHotbarSlot());
+            BlockUtils.restoreCorrectBlock(
+                    session, position.add(face.getModX(), face.getModY(), face.getModZ()), packet.getHotbarSlot());
         }
         return false;
     }
 
-    static void observe(GeyserSession session, CultPlayer player, InventoryTransactionPacket packet, int previousSequence) {
+    static void observe(
+            GeyserSession session, CultPlayer player, InventoryTransactionPacket packet, int previousSequence) {
         switch (packet.getTransactionType()) {
-            case ITEM_RELEASE -> { if (packet.getActionType() == 0) player.actionManager.releaseItem(); }
+            case ITEM_RELEASE -> {
+                if (packet.getActionType() == 0) player.actionManager.releaseItem();
+            }
             case ITEM_USE_ON_ENTITY -> GeyserEntityInteractions.observe(session, player, packet);
             case ITEM_USE -> {
                 int sequence = sequence(session);
@@ -54,20 +60,28 @@ final class GeyserItemUse {
                     var cursor = packet.getClickPosition();
                     player.compensatedWorld.advanceClientPredictionSequence();
                     var worldPos = GeyserBedrockBridgeRuntime.worldBlock(session, pos);
-                    PlaceHandler.handleQueuedUseItemOn(player, new ServerboundUseItemOn(Hand.MAIN_HAND,
-                            new BlockPos(worldPos.getX(), worldPos.getY(), worldPos.getZ()), FACES[packet.getBlockFace()],
-                            new Vec3d(cursor.getX(), cursor.getY(), cursor.getZ()), false, false, sequence));
+                    PlaceHandler.handleQueuedUseItemOn(
+                            player,
+                            new ServerboundUseItemOn(
+                                    Hand.MAIN_HAND,
+                                    new BlockPos(worldPos.getX(), worldPos.getY(), worldPos.getZ()),
+                                    FACES[packet.getBlockFace()],
+                                    new Vec3d(cursor.getX(), cursor.getY(), cursor.getZ()),
+                                    false,
+                                    false,
+                                    sequence));
                 }
                 if (packet.getActionType() == 1 || sequence - previousSequence > 1) {
                     float yaw = session.getPlayerEntity().getJavaYaw();
                     float pitch = session.getPlayerEntity().getPitch();
                     player.compensatedWorld.advanceClientPredictionSequence();
-                    PlaceHandler.handleQueuedUseItem(player, new ServerboundUseItem(Hand.MAIN_HAND, sequence, yaw, pitch));
+                    PlaceHandler.handleQueuedUseItem(
+                            player, new ServerboundUseItem(Hand.MAIN_HAND, sequence, yaw, pitch));
                     player.actionManager.useItem(InteractionHand.MAIN_HAND);
                     player.getInventory().useItem(InteractionHand.MAIN_HAND, yaw, pitch);
                 }
             }
-            default -> { }
+            default -> {}
         }
     }
 }

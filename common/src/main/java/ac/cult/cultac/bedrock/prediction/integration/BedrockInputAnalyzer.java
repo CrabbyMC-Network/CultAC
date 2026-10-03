@@ -24,9 +24,7 @@ public final class BedrockInputAnalyzer implements EngineCheck {
     }
 
     private static BedrockPredictionResult withValidationObservation(
-            PredictionResult result,
-            BedrockPredictionResult bedrockResult
-    ) {
+            PredictionResult result, BedrockPredictionResult bedrockResult) {
         if (bedrockResult.observation() != null || bedrockResult.movementResult() == null) {
             return bedrockResult;
         }
@@ -36,7 +34,9 @@ public final class BedrockInputAnalyzer implements EngineCheck {
             return bedrockResult;
         }
         BedrockMovementObservation observation = BedrockMovementObservationFactory.fromForwardSelection(
-                movementResult, selection.packetPosition(), bedrockResult.nextTickBaseState(),
+                movementResult,
+                selection.packetPosition(),
+                bedrockResult.nextTickBaseState(),
                 selection.authFrame() == null ? null : selection.authFrame().getReportedEndOfTickVelocity(),
                 selection.authFrame() == null ? null : selection.authFrame().getMoveVector());
         BedrockPredictionResult updated = bedrockResult.withObservation(observation);

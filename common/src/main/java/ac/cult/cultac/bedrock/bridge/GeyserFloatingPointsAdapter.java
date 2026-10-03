@@ -49,8 +49,11 @@ final class GeyserFloatingPointsAdapter {
                 hooks.attach();
             } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
                 closed = true;
-                try { hooks.detach(); }
-                catch (ReflectiveOperationException | RuntimeException | LinkageError cleanup) { failure.addSuppressed(cleanup); }
+                try {
+                    hooks.detach();
+                } catch (ReflectiveOperationException | RuntimeException | LinkageError cleanup) {
+                    failure.addSuppressed(cleanup);
+                }
                 throw failure;
             }
         }
@@ -72,8 +75,10 @@ final class GeyserFloatingPointsAdapter {
                     var rewritten = hook.rewriter.receive(downstream, packet);
                     finishRewrite(hooks.offset(), operation);
                     if (!rewritten.cancelled()) {
-                        dispatch.withOperation(operation,
-                                () -> hook.delegates.forEach(listener -> listener.packetReceived(downstream, rewritten.packet())));
+                        dispatch.withOperation(
+                                operation,
+                                () -> hook.delegates.forEach(
+                                        listener -> listener.packetReceived(downstream, rewritten.packet())));
                     }
                     bindTeleportCache(beforeCache, operation);
                 } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
@@ -84,7 +89,10 @@ final class GeyserFloatingPointsAdapter {
     }
 
     synchronized void send(GfpSessionHooks.JavaHook hook, PacketSendingEvent event) {
-        if (closed) { event.setCancelled(true); return; }
+        if (closed) {
+            event.setCancelled(true);
+            return;
+        }
         TeleportCache beforeCache = session.getUnconfirmedTeleport();
         dispatch.begin();
         try {
@@ -143,15 +151,26 @@ final class GeyserFloatingPointsAdapter {
         else dispatch.enqueue(packet, write);
     }
 
-    synchronized boolean isClosed() { return closed; }
-    synchronized BedrockOriginDispatch.Emission takeEmission(BedrockPacket packet) { return dispatch.take(packet); }
-    synchronized BedrockCoordinateFrame coordinateFrame() { return dispatch.frame(); }
+    synchronized boolean isClosed() {
+        return closed;
+    }
+
+    synchronized BedrockOriginDispatch.Emission takeEmission(BedrockPacket packet) {
+        return dispatch.take(packet);
+    }
+
+    synchronized BedrockCoordinateFrame coordinateFrame() {
+        return dispatch.frame();
+    }
 
     synchronized void close() {
         closed = true;
         clear();
-        try { hooks.detach(); }
-        catch (ReflectiveOperationException | RuntimeException | LinkageError failure) { fail(failure); }
+        try {
+            hooks.detach();
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+            fail(failure);
+        }
     }
 
     synchronized void fail(Throwable failure) {

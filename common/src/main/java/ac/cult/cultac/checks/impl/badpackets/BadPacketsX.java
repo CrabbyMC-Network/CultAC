@@ -1,7 +1,5 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.DecodedPacketReceiveListener;
@@ -11,11 +9,16 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-@CheckData(name = "BadPacketsX", stableKey = "cult.badpackets.extra_input_actions", description = "Sent duplicate sneak or sprint input actions before the next movement packet", experimental = true)
+@CheckData(
+        name = "BadPacketsX",
+        stableKey = "cult.badpackets.extra_input_actions",
+        description = "Sent duplicate sneak or sprint input actions before the next movement packet",
+        experimental = true)
 public class BadPacketsX extends Check implements PostPredictionListener, DecodedPacketReceiveListener {
     private boolean sprint;
     private boolean sneak;
@@ -53,12 +56,12 @@ public class BadPacketsX extends Check implements PostPredictionListener, Decode
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+    public void onPlayerCommand(
+            PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (!player.cameraEntity.isSelf()) {
             sprint = sneak = false;
             return;
         }
-
 
         switch (packet.action()) {
             case PRESS_SHIFT_KEY, RELEASE_SHIFT_KEY -> {
@@ -79,8 +82,7 @@ public class BadPacketsX extends Check implements PostPredictionListener, Decode
 
                 sprint = true;
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -98,8 +100,8 @@ public class BadPacketsX extends Check implements PostPredictionListener, Decode
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.cameraEntity.isSelf() || !player.packetStateData.lastPacketWasTeleport) {
             sprint = sneak = false;
         }
@@ -110,7 +112,7 @@ public class BadPacketsX extends Check implements PostPredictionListener, Decode
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!player.cameraEntity.isSelf()
                 || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && !player.packetStateData.receivedMovementThisClientTick)) {
+                        && !player.packetStateData.receivedMovementThisClientTick)) {
             sprint = sneak = false;
         }
     }

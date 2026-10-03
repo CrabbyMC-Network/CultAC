@@ -4,11 +4,13 @@ import net.minecraft.world.phys.Vec3;
 
 public class NumFormatter {
     public static String formatVector(Vec3 vector) {
-        return padLeft(formatNumberStandard(vector.x)) + " " + padLeft(formatNumberStandard(vector.y)) + " " + padLeft(formatNumberStandard(vector.z));
+        return padLeft(formatNumberStandard(vector.x)) + " " + padLeft(formatNumberStandard(vector.y)) + " "
+                + padLeft(formatNumberStandard(vector.z));
     }
 
     public static String formatVectorDebug(Vec3 vector) {
-        return padLeft(formatNumberDebug(vector.x)) + " " + padLeft(formatNumberDebug(vector.y)) + " " + formatNumberDebug(vector.z);
+        return padLeft(formatNumberDebug(vector.x)) + " " + padLeft(formatNumberDebug(vector.y)) + " "
+                + formatNumberDebug(vector.z);
     }
 
     // Spaces are 3 characters

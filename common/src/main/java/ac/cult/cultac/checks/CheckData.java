@@ -33,5 +33,4 @@ public @interface CheckData {
     double setback() default DEFAULT_SETBACK;
 
     boolean experimental() default false;
-
 }

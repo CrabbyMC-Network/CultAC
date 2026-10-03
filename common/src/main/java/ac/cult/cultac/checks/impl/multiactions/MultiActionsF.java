@@ -1,11 +1,5 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
-
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
@@ -14,20 +8,28 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.SharedConstants;
 
-@CheckData(name = "MultiActionsF", stableKey = "cult.multiactions.block_and_entity_interact", description = "Interacting with a block and an entity in the same tick", experimental = true)
+@CheckData(
+        name = "MultiActionsF",
+        stableKey = "cult.multiactions.block_and_entity_interact",
+        description = "Interacting with a block and an entity in the same tick",
+        experimental = true)
 public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener, PostPredictionListener {
     // Shape index == ACTION_* constant value.
-    private static final Verbose V = Verbose.of("action=place").or("action=entity").or("action=dig");
+    private static final Verbose V =
+            Verbose.of("action=place").or("action=entity").or("action=dig");
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
@@ -61,15 +63,16 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
     }
 
     @CultPacketHandler
-    public void onInteractEntity(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteractEntity(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         onEntityAction(event);
     }
 
-
-
-
     @CultPacketHandler
-    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
+    public void onSpectatorAction(
+            PacketReceiveEvent<ServerboundSpectatorAction> event,
+            CultPlayer player,
+            ServerboundSpectatorAction packet) {
         onEntityAction(event);
     }
 
@@ -89,8 +92,8 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.packetStateData.lastPacketWasTeleport) {
             block = entity = false;
         }
@@ -106,7 +109,8 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
     }
 
     public void onBlockBreak(BlockBreak blockBreak) {
-        if (blockBreak.action == PlayerAction.START_DESTROY_BLOCK || blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK) {
+        if (blockBreak.action == PlayerAction.START_DESTROY_BLOCK
+                || blockBreak.action == PlayerAction.STOP_DESTROY_BLOCK) {
             block = true;
             if (entity) {
                 if (!canSkipTicks()) {
@@ -136,9 +140,8 @@ public class MultiActionsF extends BlockPlaceCheck implements BlockBreakListener
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 
     private record FlagData(int action) {}
-
 }

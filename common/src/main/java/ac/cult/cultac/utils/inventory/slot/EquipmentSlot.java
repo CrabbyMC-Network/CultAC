@@ -3,9 +3,9 @@ package ac.cult.cultac.utils.inventory.slot;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.inventory.EquipmentType;
 import ac.cult.cultac.utils.inventory.InventoryStorage;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.GameMode;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemStack;
 
 public class EquipmentSlot extends Slot {
     EquipmentType type;
@@ -27,6 +27,9 @@ public class EquipmentSlot extends Slot {
 
     public boolean mayPickup(CultPlayer p_39744_) {
         ItemStack itemstack = this.getItem();
-        return (itemstack.isEmpty() || p_39744_.gamemode == GameMode.CREATIVE || itemstack.getEnchantmentLevel(Enchantment.BINDING_CURSE) == 0) && super.mayPickup(p_39744_);
+        return (itemstack.isEmpty()
+                        || p_39744_.gamemode == GameMode.CREATIVE
+                        || itemstack.getEnchantmentLevel(Enchantment.BINDING_CURSE) == 0)
+                && super.mayPickup(p_39744_);
     }
 }

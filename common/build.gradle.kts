@@ -224,7 +224,3 @@ for (variant in listOf("apiElements", "runtimeElements")) {
         attributes.attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
     }
 }
-
-// Shared validation fixture sources belong to their own tree; format only files
-// owned by this module (Spotless rejects targets outside the project directory).
-spotless { java { target("src/**/*.java") } }

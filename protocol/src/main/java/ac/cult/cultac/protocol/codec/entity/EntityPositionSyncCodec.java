@@ -17,7 +17,8 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 
 public final class EntityPositionSyncCodec implements PacketCodec<ClientboundEntityPositionSync> {
-    @Override public ClientboundEntityPositionSync read(ByteBuf input, ProtocolContext context) {
+    @Override
+    public ClientboundEntityPositionSync read(ByteBuf input, ProtocolContext context) {
         int id = Wire.readVarInt(input);
         PositionPath position;
         if (context.version().atLeast(ProtocolVersion.V26_3)) position = readPath(input);
@@ -25,14 +26,16 @@ public final class EntityPositionSyncCodec implements PacketCodec<ClientboundEnt
             position = new PositionPath.Linear(Wire.readVec3(input));
             input.skipBytes(24); // Legacy PositionMoveRotation delta: not consumed by this route.
         }
-        return new ClientboundEntityPositionSync(id, position, input.readFloat(), input.readFloat(), input.readBoolean());
+        return new ClientboundEntityPositionSync(
+                id, position, input.readFloat(), input.readFloat(), input.readBoolean());
     }
 
     private static PositionPath readPath(ByteBuf input) {
         // Native ByIdMap uses LINEAR for every unknown type ID.
         if (Wire.readVarInt(input) != 1) return new PositionPath.Linear(Wire.readVec3(input));
         int count = Wire.readVarInt(input);
-        if (count <= 0 || count > input.readableBytes() / 25) throw new MalformedPacketException("Invalid position step count " + count);
+        if (count <= 0 || count > input.readableBytes() / 25)
+            throw new MalformedPacketException("Invalid position step count " + count);
         var steps = new ArrayList<PositionPath.Step>(count);
         for (int i = 0; i < count; i++) steps.add(new PositionPath.Step(Wire.readVec3(input), Wire.readVarInt(input)));
         return new PositionPath.Stepped(steps);

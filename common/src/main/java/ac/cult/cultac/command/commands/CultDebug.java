@@ -108,8 +108,10 @@ public class CultDebug implements BuildableCommand {
             return;
         }
         boolean enabled = target.checkManager.getDebugHandler().toggleRewindListener(sender);
-        sender.sendMessage(Component.text((enabled ? "Enabled" : "Disabled") + " rewind debugging for "
-                + target.getName() + (enabled ? ": c=client, s=server, o=c-s" : ""), NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(
+                (enabled ? "Enabled" : "Disabled") + " rewind debugging for " + target.getName()
+                        + (enabled ? ": c=client, s=server, o=c-s" : ""),
+                NamedTextColor.GRAY));
     }
 
     private void handleDebugPlaces(@NotNull CommandContext<Sender> context) {
@@ -155,7 +157,8 @@ public class CultDebug implements BuildableCommand {
                 ? null
                 : CultAPI.INSTANCE.getPlayerDataManager().getPlayer(bukkitPlayer.getUniqueId());
         if (target == null || target.bukkitPlayer == null) {
-            sender.sendMessage(Component.text("Player is not available for validation block control", NamedTextColor.RED));
+            sender.sendMessage(
+                    Component.text("Player is not available for validation block control", NamedTextColor.RED));
             return;
         }
 
@@ -174,9 +177,7 @@ public class CultDebug implements BuildableCommand {
         String blockToken = tokens[4];
         BlockData blockData;
         try {
-            blockData = "*".equals(blockToken)
-                    ? Material.AIR.createBlockData()
-                    : Bukkit.createBlockData(blockToken);
+            blockData = "*".equals(blockToken) ? Material.AIR.createBlockData() : Bukkit.createBlockData(blockToken);
         } catch (IllegalArgumentException exception) {
             sender.sendMessage(Component.text("Unknown block " + blockToken, NamedTextColor.RED));
             return;
@@ -189,11 +190,13 @@ public class CultDebug implements BuildableCommand {
             // The compensated world only reflects the ghost once the outbound packet
             // has been through Cult's send pipeline, so verify and log two ticks out.
             CultPlayer logTarget = target;
-            CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().runDelayed(
-                    CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> logValidationBlock(logTarget, x, y, z, expectedId, "packet"),
-                    2L
-            );
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getGlobalRegionScheduler()
+                    .runDelayed(
+                            CultAPI.INSTANCE.getGrimPlugin(),
+                            () -> logValidationBlock(logTarget, x, y, z, expectedId, "packet"),
+                            2L);
             return;
         }
 
@@ -220,26 +223,30 @@ public class CultDebug implements BuildableCommand {
         Sender sender = context.sender();
         PlayerSelector playerSelector = context.getOrDefault("target", null);
 
-        CultPlayer targetCultPlayer = parseTarget(sender, playerSelector == null ? sender : playerSelector.getSinglePlayer());
+        CultPlayer targetCultPlayer =
+                parseTarget(sender, playerSelector == null ? sender : playerSelector.getSinglePlayer());
         if (targetCultPlayer == null) {
-            sender.sendMessage(MessageUtil.getParsedComponent(sender, "player-not-found", "%prefix% &cPlayer is exempt or offline!"));
+            sender.sendMessage(MessageUtil.getParsedComponent(
+                    sender, "player-not-found", "%prefix% &cPlayer is exempt or offline!"));
             return;
         }
 
         if (sender.isConsole()) {
             targetCultPlayer.checkManager.getDebugHandler().toggleConsoleOutput();
         } else if (sender.isPlayer()) {
-            CultPlayer senderCultPlayer = CultAPI.INSTANCE.getPlayerDataManager().getPlayer(sender.getUniqueId());
+            CultPlayer senderCultPlayer =
+                    CultAPI.INSTANCE.getPlayerDataManager().getPlayer(sender.getUniqueId());
             if (senderCultPlayer == null) {
-                sender.sendMessage(MessageUtil.getParsedComponent(sender, "sender-not-found", "%prefix% &cYou cannot be exempt to use this command!"));
+                sender.sendMessage(MessageUtil.getParsedComponent(
+                        sender, "sender-not-found", "%prefix% &cYou cannot be exempt to use this command!"));
                 return;
             }
             targetCultPlayer.checkManager.getDebugHandler().toggleListener(senderCultPlayer.bukkitPlayer);
         } else {
-            sender.sendMessage(MessageUtil.getParsedComponent(sender,
+            sender.sendMessage(MessageUtil.getParsedComponent(
+                    sender,
                     "run-as-player-or-console",
-                    "%prefix% &cThis command can only be used by players or the console!")
-            );
+                    "%prefix% &cThis command can only be used by players or the console!"));
         }
     }
 
@@ -252,8 +259,10 @@ public class CultDebug implements BuildableCommand {
 
         String requestedState = context.getOrDefault("state", "toggle");
         boolean isOutput = switch (requestedState.toLowerCase(java.util.Locale.ROOT)) {
-            case "on", "true", "enable", "enabled" -> cultPlayer.checkManager.getDebugHandler().setConsoleOutput(true);
-            case "off", "false", "disable", "disabled" -> cultPlayer.checkManager.getDebugHandler().setConsoleOutput(false);
+            case "on", "true", "enable", "enabled" ->
+                cultPlayer.checkManager.getDebugHandler().setConsoleOutput(true);
+            case "off", "false", "disable", "disabled" ->
+                cultPlayer.checkManager.getDebugHandler().setConsoleOutput(false);
             default -> cultPlayer.checkManager.getDebugHandler().toggleConsoleOutput();
         };
         String playerName = cultPlayer.user.getProfile().getName(); // Use user profile for name
@@ -270,7 +279,8 @@ public class CultDebug implements BuildableCommand {
 
     private @Nullable CultPlayer parseTarget(@NotNull Sender sender, @Nullable Sender t) {
         if (sender.isConsole() && t == null) {
-            sender.sendMessage(MessageUtil.getParsedComponent(sender, "console-specify-target", "%prefix% &cYou must specify a target as the console!"));
+            sender.sendMessage(MessageUtil.getParsedComponent(
+                    sender, "console-specify-target", "%prefix% &cYou must specify a target as the console!"));
             return null;
         }
         Sender target = t == null ? sender : t;
@@ -278,15 +288,19 @@ public class CultDebug implements BuildableCommand {
         CultPlayer cultPlayer = CultAPI.INSTANCE.getPlayerDataManager().getPlayer(target.getUniqueId());
         if (cultPlayer == null) {
             PlatformPlayer platformPlayer = sender.getPlatformPlayer();
-            User user = platformPlayer == null ? null : CultAPI.INSTANCE.getPlayerDataManager().getUser((Player) platformPlayer.getNative());
-            sender.sendMessage(MessageUtil.getParsedComponent(sender, "player-not-found", "%prefix% &cPlayer is exempt or offline!"));
+            User user = platformPlayer == null
+                    ? null
+                    : CultAPI.INSTANCE.getPlayerDataManager().getUser((Player) platformPlayer.getNative());
+            sender.sendMessage(MessageUtil.getParsedComponent(
+                    sender, "player-not-found", "%prefix% &cPlayer is exempt or offline!"));
 
             if (user == null) {
                 sender.sendMessage(Component.text("Unknown user", NamedTextColor.RED));
             } else {
                 boolean isExempt = CultAPI.INSTANCE.getPlayerDataManager().shouldCheck(user);
                 if (!isExempt) {
-                    sender.sendMessage(Component.text("User connection state: " + user.getConnectionState(), NamedTextColor.RED));
+                    sender.sendMessage(
+                            Component.text("User connection state: " + user.getConnectionState(), NamedTextColor.RED));
                 }
             }
         }

@@ -1,19 +1,19 @@
 package ac.cult.cultac.utils.common.arguments;
 
 import ac.cult.cultac.platform.api.Platform;
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jetbrains.annotations.NotNull;
 
-public record SystemArgumentFactory(Map<String, String> arguments,
-                                    Map<Class<?>, Function<String, ?>> parsers,
-                                    Consumer<SystemArgument<?>> creationListener,
-                                    Consumer<ArgumentOptions.Builder<?>> optionModifier) {
+public record SystemArgumentFactory(
+        Map<String, String> arguments,
+        Map<Class<?>, Function<String, ?>> parsers,
+        Consumer<SystemArgument<?>> creationListener,
+        Consumer<ArgumentOptions.Builder<?>> optionModifier) {
 
     public static class Builder {
 
@@ -38,8 +38,7 @@ public record SystemArgumentFactory(Map<String, String> arguments,
 
         private final String prefix;
         private boolean envSupport = false;
-        private Consumer<SystemArgument<?>> registerListener = argument -> {
-        };
+        private Consumer<SystemArgument<?>> registerListener = argument -> {};
         private final Map<Class<?>, Function<String, ?>> parseBuilder;
         private Consumer<ArgumentOptions.Builder<?>> optionModifier = null;
 
@@ -92,7 +91,8 @@ public record SystemArgumentFactory(Map<String, String> arguments,
                 }
             }
 
-            return new SystemArgumentFactory(Map.copyOf(builder), Map.copyOf(parseBuilder), registerListener, optionModifier);
+            return new SystemArgumentFactory(
+                    Map.copyOf(builder), Map.copyOf(parseBuilder), registerListener, optionModifier);
         }
 
         protected @NotNull Map<String, String> getSystemPropertiesMap(String findPrefix) {
@@ -116,10 +116,13 @@ public record SystemArgumentFactory(Map<String, String> arguments,
     private <T> SystemArgument<T> createDefaultSupplier(ArgumentOptions<T> options) {
         T value = options.getModifier().apply(options.getDefaultSupplier().get());
         if (value == null && !options.isNullable())
-            throw new IllegalArgumentException("Default value cannot be null for startup argument \"" + options.getKey() + "\"");
+            throw new IllegalArgumentException(
+                    "Default value cannot be null for startup argument \"" + options.getKey() + "\"");
         if ((value != null && !options.getVerifier().test(value)))
-            throw new IllegalArgumentException("Invalid default value for startup argument \"" + options.getKey() + "\"");
-        SystemArgument<T> argument = new SystemArgument<>(options.getKey(), options.getClazz(), value, false, options.getVisibility());
+            throw new IllegalArgumentException(
+                    "Invalid default value for startup argument \"" + options.getKey() + "\"");
+        SystemArgument<T> argument =
+                new SystemArgument<>(options.getKey(), options.getClazz(), value, false, options.getVisibility());
         creationListener.accept(argument);
         return argument;
     }
@@ -135,9 +138,9 @@ public record SystemArgumentFactory(Map<String, String> arguments,
             Function<String, T> parser = (Function<String, T>) parsers.get(options.getClazz());
             if (parser == null) return createDefaultSupplier(options);
             T parsed = options.getModifier().apply(parser.apply(value));
-            if (parsed == null || !options.getVerifier().test(parsed))
-                return createDefaultSupplier(options);
-            SystemArgument<T> newArgument = new SystemArgument<>(options.getKey(), options.getClazz(), parsed, true, options.getVisibility());
+            if (parsed == null || !options.getVerifier().test(parsed)) return createDefaultSupplier(options);
+            SystemArgument<T> newArgument =
+                    new SystemArgument<>(options.getKey(), options.getClazz(), parsed, true, options.getVisibility());
             creationListener.accept(newArgument);
             return newArgument;
         } catch (Exception e) {
@@ -150,14 +153,13 @@ public record SystemArgumentFactory(Map<String, String> arguments,
         return arguments;
     }
 
-    //TODO: add back logging once LogUtil has been refactored
+    // TODO: add back logging once LogUtil has been refactored
 
     private static void exception(String message, Exception e) {
-        //LogUtil.exception(message, e);
+        // LogUtil.exception(message, e);
     }
 
     private static void warn(String message) {
-        //LogUtil.warn(message);
+        // LogUtil.warn(message);
     }
-
 }

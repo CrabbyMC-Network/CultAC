@@ -10,10 +10,10 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 
 public final class WaterCurrent {
-    private WaterCurrent() {
-    }
+    private WaterCurrent() {}
 
-    public static Vec3 calculateWaterCurrent(CultPlayer player, SimulationContext context, Vec3 position, Vec3 velocityBeforeCurrent) {
+    public static Vec3 calculateWaterCurrent(
+            CultPlayer player, SimulationContext context, Vec3 position, Vec3 velocityBeforeCurrent) {
         SimpleCollisionBox fluidInteractionBox = getWaterCurrentInteractionBox(player, context, position);
         PacketEntity vehicle = context.getVehicle();
         if (vehicle != null) {
@@ -33,7 +33,8 @@ public final class WaterCurrent {
         return calculateWaterCurrent(player, fluidInteractionBox, true, velocityBeforeCurrent);
     }
 
-    public static Vec3 calculateLavaCurrent(CultPlayer player, SimulationContext context, Vec3 position, Vec3 velocityBeforeCurrent) {
+    public static Vec3 calculateLavaCurrent(
+            CultPlayer player, SimulationContext context, Vec3 position, Vec3 velocityBeforeCurrent) {
         PacketEntity vehicle = context.getVehicle();
         if (vehicle instanceof ac.cult.cultac.utils.data.packetentity.PacketEntityNautilus) {
             return null;
@@ -43,7 +44,8 @@ public final class WaterCurrent {
         return calculateFluidCurrent(player, entityBox, vehicle == null, velocityBeforeCurrent, FluidTags.LAVA, scale);
     }
 
-    public static Vec3 calculateNonPlayerWaterCurrent(CultPlayer player, SimpleCollisionBox entityBox, Vec3 velocityBeforeCurrent) {
+    public static Vec3 calculateNonPlayerWaterCurrent(
+            CultPlayer player, SimpleCollisionBox entityBox, Vec3 velocityBeforeCurrent) {
         return calculateWaterCurrent(player, entityBox, false, velocityBeforeCurrent);
     }
 
@@ -86,7 +88,8 @@ public final class WaterCurrent {
         return accumulatedCurrent.normalize().scale(0.014D);
     }
 
-    public static SimpleCollisionBox getWaterCurrentInteractionBox(CultPlayer player, SimulationContext context, Vec3 position) {
+    public static SimpleCollisionBox getWaterCurrentInteractionBox(
+            CultPlayer player, SimulationContext context, Vec3 position) {
         PacketEntity vehicle = context.getVehicle();
         if (vehicle != null) {
             return GetBoundingBox.getPacketEntityBoundingBox(player, position.x, position.y, position.z, vehicle);
@@ -102,17 +105,21 @@ public final class WaterCurrent {
                 position.y,
                 position.z,
                 context.getPose().width * context.getScale(),
-                context.getPose().height * context.getScale()
-        );
+                context.getPose().height * context.getScale());
     }
 
-    private static Vec3 calculateWaterCurrent(CultPlayer player, SimpleCollisionBox entityBox, boolean playerEntity, Vec3 velocityBeforeCurrent) {
+    private static Vec3 calculateWaterCurrent(
+            CultPlayer player, SimpleCollisionBox entityBox, boolean playerEntity, Vec3 velocityBeforeCurrent) {
         return calculateFluidCurrent(player, entityBox, playerEntity, velocityBeforeCurrent, FluidTags.WATER, 0.014D);
     }
 
-    private static Vec3 calculateFluidCurrent(CultPlayer player, SimpleCollisionBox entityBox, boolean playerEntity,
-                                              Vec3 velocityBeforeCurrent, net.minecraft.tags.TagKey<net.minecraft.world.level.material.Fluid> fluidTag,
-                                              double scale) {
+    private static Vec3 calculateFluidCurrent(
+            CultPlayer player,
+            SimpleCollisionBox entityBox,
+            boolean playerEntity,
+            Vec3 velocityBeforeCurrent,
+            net.minecraft.tags.TagKey<net.minecraft.world.level.material.Fluid> fluidTag,
+            double scale) {
         SimpleCollisionBox fluidBox = entityBox.copy().expand(-0.001D);
 
         int minX = (int) Math.floor(fluidBox.minX);
@@ -161,8 +168,11 @@ public final class WaterCurrent {
         // MCP-Reborn EntityFluidInteraction.Tracker#applyCurrentTo averages water
         // current only for Player entities. Other entities, including boats,
         // normalize accumulated current before scaling it by 0.014.
-        Vec3 current = (playerEntity ? accumulatedCurrent.scale(1.0 / currentCount) : accumulatedCurrent.normalize()).scale(scale);
-        if (Math.abs(velocityBeforeCurrent.x) < 0.003 && Math.abs(velocityBeforeCurrent.z) < 0.003 && current.length() < 0.0045000000000000005) {
+        Vec3 current = (playerEntity ? accumulatedCurrent.scale(1.0 / currentCount) : accumulatedCurrent.normalize())
+                .scale(scale);
+        if (Math.abs(velocityBeforeCurrent.x) < 0.003
+                && Math.abs(velocityBeforeCurrent.z) < 0.003
+                && current.length() < 0.0045000000000000005) {
             current = current.normalize().scale(0.0045000000000000005);
         }
         return current;

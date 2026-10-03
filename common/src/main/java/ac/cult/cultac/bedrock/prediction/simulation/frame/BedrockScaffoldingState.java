@@ -7,5 +7,4 @@ public enum BedrockScaffoldingState {
     public boolean descendingThroughBlock() {
         return this == DESCENDING;
     }
-
 }

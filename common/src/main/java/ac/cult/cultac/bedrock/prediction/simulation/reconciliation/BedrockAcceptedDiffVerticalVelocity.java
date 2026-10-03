@@ -15,8 +15,7 @@ import ac.cult.cultac.bedrock.prediction.world.BounceBlockState;
 import java.util.OptionalDouble;
 
 final class BedrockAcceptedDiffVerticalVelocity {
-    private BedrockAcceptedDiffVerticalVelocity() {
-    }
+    private BedrockAcceptedDiffVerticalVelocity() {}
 
     static double resolve(BedrockAcceptedEndpointEvidence evidence) {
         BedrockMovementResult movementResult = evidence.movementResult();
@@ -50,8 +49,8 @@ final class BedrockAcceptedDiffVerticalVelocity {
             return liquidVelocity.getAsDouble();
         }
         return airTravelDerivesVelocity(movementResult)
-            ? BedrockAcceptedDiffVelocity.airDraggedVelocityWithGravity(acceptedDiff.y())
-            : state.velocity().y();
+                ? BedrockAcceptedDiffVelocity.airDraggedVelocityWithGravity(acceptedDiff.y())
+                : state.velocity().y();
     }
 
     private static OptionalDouble verticalCollisionDerivedVelocity(BedrockAcceptedEndpointEvidence evidence) {
@@ -60,8 +59,8 @@ final class BedrockAcceptedDiffVerticalVelocity {
         var projection = evidence.collisionProjection();
 
         boolean verticalCollision = projection == null
-            ? state.collisionFlags().verticalCollision()
-            : projection.move().collisionFlags().verticalCollision();
+                ? state.collisionFlags().verticalCollision()
+                : projection.move().collisionFlags().verticalCollision();
         if (!verticalCollision || state.collisionFlags().liquidClimbOut()) {
             return OptionalDouble.empty();
         }
@@ -81,42 +80,40 @@ final class BedrockAcceptedDiffVerticalVelocity {
         BedrockMovementResult movementResult = evidence.movementResult();
         BedrockMovementState state = evidence.state();
         Vec3d acceptedDiff = evidence.acceptedDiff();
-        BlockCollisionWorld blockWorld = movementResult.movementContext().worldState().blockCollisionWorld();
+        BlockCollisionWorld blockWorld =
+                movementResult.movementContext().worldState().blockCollisionWorld();
         if (blockWorld.isEmpty()) {
             return OptionalDouble.empty();
         }
         var projection = evidence.collisionProjection();
         if (projection == null
-            || !projection.move().collisionFlags().onGround()
-            || projection.requestedDelta().y() >= 0.0D) {
+                || !projection.move().collisionFlags().onGround()
+                || projection.requestedDelta().y() >= 0.0D) {
             return OptionalDouble.empty();
         }
 
         // The projected move fetches its own shapes, exactly as the predicted move does.
         var fetchBox = BedrockCollisionFetchBox.of(
-            movementResult.previousState().collisionBox(movementResult.movementContext().playerDimensionsState()),
-            projection.requestedDelta(),
-            movementResult.maxUpStep()
-        );
+                movementResult
+                        .previousState()
+                        .collisionBox(movementResult.movementContext().playerDimensionsState()),
+                projection.requestedDelta(),
+                movementResult.maxUpStep());
         var standingBlock = BedrockStandingBlockResolver.resolveFetched(
-                state.physicalFeetPosition(), blockWorld, evidence.committedDimensions(), fetchBox
-            )
-            .flatMap(support -> BounceBlockState.fromCollisionBlock(support.block(), support.surfaceY()));
+                        state.physicalFeetPosition(), blockWorld, evidence.committedDimensions(), fetchBox)
+                .flatMap(support -> BounceBlockState.fromCollisionBlock(support.block(), support.surfaceY()));
         if (standingBlock.isEmpty()) {
             return OptionalDouble.empty();
         }
         Vec3d currentFeetPosition = state.physicalFeetPosition().subtract(acceptedDiff);
         BedrockBounceBlockMovement.Result bounce = BedrockBounceBlockMovement.applyAfterVerticalReset(
-            currentFeetPosition,
-            projection.move().velocity(),
-            projection.requestedDelta().y(),
-            movementResult.predictedState().inputFrame(),
-            standingBlock.get(),
-            !movementResult.selectedGlidingTravel()
-        );
-        return bounce.bounced()
-            ? OptionalDouble.of(bounce.velocity().y())
-            : OptionalDouble.empty();
+                currentFeetPosition,
+                projection.move().velocity(),
+                projection.requestedDelta().y(),
+                movementResult.predictedState().inputFrame(),
+                standingBlock.get(),
+                !movementResult.selectedGlidingTravel());
+        return bounce.bounced() ? OptionalDouble.of(bounce.velocity().y()) : OptionalDouble.empty();
     }
 
     private static OptionalDouble acceptedPostMoveBubbleColumnVelocity(BedrockAcceptedEndpointEvidence evidence) {
@@ -124,39 +121,37 @@ final class BedrockAcceptedDiffVerticalVelocity {
         BedrockMovementState state = evidence.state();
         Vec3d acceptedDiff = evidence.acceptedDiff();
         BedrockMovementContext acceptedEndpointContext = evidence.fluidContext();
-        boolean explicitBubbleLayers = !acceptedEndpointContext.worldState().fluidState()
-            .bubbleColumnState().layers().isEmpty();
+        boolean explicitBubbleLayers = !acceptedEndpointContext
+                .worldState()
+                .fluidState()
+                .bubbleColumnState()
+                .layers()
+                .isEmpty();
         if (!explicitBubbleLayers
-            && !acceptedEndpointContext.inUpwardBubbleColumn()
-            && !acceptedEndpointContext.inDownwardBubbleColumn()) {
+                && !acceptedEndpointContext.inUpwardBubbleColumn()
+                && !acceptedEndpointContext.inDownwardBubbleColumn()) {
             return OptionalDouble.empty();
         }
         double baseVelocityY = acceptedDiffBaseVelocityY(movementResult, state, acceptedDiff);
         Vec3d velocity = BedrockEntityInsideMovement.applyBubbleColumns(
-            acceptedEndpointContext,
-            state.gliding(),
-            new Vec3d(state.velocity().x(), baseVelocityY, state.velocity().z()),
-            state.physicalFeetPosition(),
-            state.simulationTick());
+                acceptedEndpointContext,
+                state.gliding(),
+                new Vec3d(state.velocity().x(), baseVelocityY, state.velocity().z()),
+                state.physicalFeetPosition(),
+                state.simulationTick());
         return OptionalDouble.of(velocity.y());
     }
 
     private static double acceptedDiffBaseVelocityY(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult movementResult, BedrockMovementState state, Vec3d acceptedDiff) {
         double liquidMoveY = state.collisionFlags().verticalCollision() ? 0.0D : acceptedDiff.y();
         if (waterTravelEffects(movementResult)) {
             if (state.isHorse()) return BedrockLiquidVerticalMovement.mobWaterNextTickVelocityY(liquidMoveY);
             return BedrockLiquidVerticalMovement.waterNextTickVelocityY(
-                liquidMoveY,
-                waterGravityApplies(movementResult, state));
+                    liquidMoveY, waterGravityApplies(movementResult, state));
         }
         if (lavaTravelEffects(movementResult)) {
-            return BedrockLiquidVerticalMovement.lavaNextTickVelocityY(
-                liquidMoveY,
-                lavaGravityApplies(movementResult));
+            return BedrockLiquidVerticalMovement.lavaNextTickVelocityY(liquidMoveY, lavaGravityApplies(movementResult));
         }
         if (airTravelDerivesVelocity(movementResult)) {
             return BedrockAcceptedDiffVelocity.airDraggedVelocityWithGravity(acceptedDiff.y());
@@ -169,29 +164,24 @@ final class BedrockAcceptedDiffVerticalVelocity {
     }
 
     private static OptionalDouble liquidTravelDerivedVelocity(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult movementResult, BedrockMovementState state, Vec3d acceptedDiff) {
         if (waterTravelEffects(movementResult)) {
             if (state.isHorse()) {
                 return OptionalDouble.of(BedrockLiquidVerticalMovement.mobWaterNextTickVelocityY(acceptedDiff.y()));
             }
             return OptionalDouble.of(BedrockLiquidVerticalMovement.waterNextTickVelocityY(
-                acceptedDiff.y(),
-                waterGravityApplies(movementResult, state)));
+                    acceptedDiff.y(), waterGravityApplies(movementResult, state)));
         }
         if (lavaTravelEffects(movementResult)) {
             return OptionalDouble.of(BedrockLiquidVerticalMovement.lavaNextTickVelocityY(
-                acceptedDiff.y(),
-                lavaGravityApplies(movementResult)));
+                    acceptedDiff.y(), lavaGravityApplies(movementResult)));
         }
         return OptionalDouble.empty();
     }
 
     private static boolean airTravelDerivesVelocity(BedrockMovementResult movementResult) {
         return !movementResult.movementContext().inWater()
-            && !movementResult.movementContext().inLava();
+                && !movementResult.movementContext().inLava();
     }
 
     private static boolean liquidTravelEffects(BedrockMovementResult movementResult) {
@@ -200,12 +190,12 @@ final class BedrockAcceptedDiffVerticalVelocity {
 
     private static boolean waterTravelEffects(BedrockMovementResult movementResult) {
         return movementResult.movementContext().inWater()
-            && movementResult.movementContext().liquidMovementMedium() != Medium.LAVA;
+                && movementResult.movementContext().liquidMovementMedium() != Medium.LAVA;
     }
 
     private static boolean lavaTravelEffects(BedrockMovementResult movementResult) {
         return movementResult.movementContext().inLava()
-            || movementResult.movementContext().liquidMovementMedium() == Medium.LAVA;
+                || movementResult.movementContext().liquidMovementMedium() == Medium.LAVA;
     }
 
     private static boolean waterGravityApplies(BedrockMovementResult movementResult, BedrockMovementState state) {

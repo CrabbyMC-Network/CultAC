@@ -9,13 +9,13 @@ import java.util.function.IntUnaryOperator;
 
 /** The clientbound mapping order used by GeyserSpigotLegacyNativeWorldManager. */
 public final class BedrockServerStateMappings {
-    private BedrockServerStateMappings() {
-    }
+    private BedrockServerStateMappings() {}
 
     public static int[] create(int serverProtocol, int serverStateCount, int catalogProtocol, int catalogStateCount) {
         if (serverProtocol == catalogProtocol) {
             if (serverStateCount != catalogStateCount) {
-                throw new IllegalStateException("Server and collision catalog registry sizes differ for protocol " + serverProtocol);
+                throw new IllegalStateException(
+                        "Server and collision catalog registry sizes differ for protocol " + serverProtocol);
             }
             return translate(serverStateCount, catalogStateCount, List.of());
         }
@@ -36,7 +36,8 @@ public final class BedrockServerStateMappings {
                 }
             }
             if (mapped >= catalogStateCount) {
-                throw new IllegalStateException("Translated block state " + mapped + " is outside the collision catalog for server state " + serverId);
+                throw new IllegalStateException("Translated block state " + mapped
+                        + " is outside the collision catalog for server state " + serverId);
             }
             result[serverId] = mapped;
         }
@@ -49,7 +50,8 @@ public final class BedrockServerStateMappings {
             var manager = Via.getManager().getProtocolManager();
             List<ProtocolPathEntry> path = manager.getProtocolPath(catalogProtocol, serverProtocol);
             if (path == null) {
-                throw new IllegalStateException("ViaVersion has no path from Java protocol " + serverProtocol + " to catalog protocol " + catalogProtocol);
+                throw new IllegalStateException("ViaVersion has no path from Java protocol " + serverProtocol
+                        + " to catalog protocol " + catalogProtocol);
             }
             List<IntUnaryOperator> steps = new ArrayList<>();
             for (int i = path.size() - 1; i >= 0; i--) {

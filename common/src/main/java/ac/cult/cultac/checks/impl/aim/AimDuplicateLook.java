@@ -6,7 +6,10 @@ import ac.cult.cultac.checks.type.RotationListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.RotationUpdate;
 
-@CheckData(name = "AimDuplicateLook", stableKey = "cult.aim.duplicate_look", description = "Sent a duplicate rotation update without changing look direction")
+@CheckData(
+        name = "AimDuplicateLook",
+        stableKey = "cult.aim.duplicate_look",
+        description = "Sent a duplicate rotation update without changing look direction")
 public class AimDuplicateLook extends Check implements RotationListener {
     private boolean exempt;
 

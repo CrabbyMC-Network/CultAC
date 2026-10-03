@@ -14,6 +14,10 @@ public class BukkitMessagePlaceHolderManager implements MessagePlaceHolderManage
     @Override
     public @NotNull String replacePlaceholders(@Nullable PlatformPlayer player, @NotNull String string) {
         if (!hasPlaceholderAPI) return string;
-        return PlaceholderAPI.setPlaceholders(player instanceof BukkitPlatformPlayer bukkitPlatformPlayer ? bukkitPlatformPlayer.getBukkitPlayer() : null, string);
+        return PlaceholderAPI.setPlaceholders(
+                player instanceof BukkitPlatformPlayer bukkitPlatformPlayer
+                        ? bukkitPlatformPlayer.getBukkitPlayer()
+                        : null,
+                string);
     }
 }

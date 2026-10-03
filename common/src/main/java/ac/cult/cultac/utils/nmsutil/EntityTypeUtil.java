@@ -1,5 +1,13 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -8,22 +16,12 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.animal.Animal;
 import org.bukkit.craftbukkit.entity.CraftEntityType;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 public final class EntityTypeUtil {
     private static final Map<EntityType<?>, Class<? extends Entity>> NMS_ENTITY_CLASSES = resolveNmsEntityClasses();
     private static final Method ENTITY_TYPE_GET_KEY = resolveGetKey();
     private static final Map<EntityType<?>, EntityKey> KEYS = new ConcurrentHashMap<>();
 
-    private EntityTypeUtil() {
-    }
+    private EntityTypeUtil() {}
 
     public static EntityKey getKey(EntityType<?> handle) {
         if (handle == null) {
@@ -58,7 +56,8 @@ public final class EntityTypeUtil {
 
     public static boolean isProjectile(EntityType<?> type) {
         Class<? extends Entity> entityClass = nmsEntityClass(type);
-        return entityClass != null && net.minecraft.world.entity.projectile.Projectile.class.isAssignableFrom(entityClass);
+        return entityClass != null
+                && net.minecraft.world.entity.projectile.Projectile.class.isAssignableFrom(entityClass);
     }
 
     public static boolean isLiving(EntityType<?> type) {
@@ -86,7 +85,8 @@ public final class EntityTypeUtil {
                     || org.bukkit.entity.AbstractHorse.class.isAssignableFrom(entityClass)
                     || org.bukkit.entity.Strider.class.isAssignableFrom(entityClass);
         }
-        return type != null && (type.getCategory() == MobCategory.CREATURE || type.getCategory() == MobCategory.AXOLOTLS);
+        return type != null
+                && (type.getCategory() == MobCategory.CREATURE || type.getCategory() == MobCategory.AXOLOTLS);
     }
 
     public static boolean isAgeable(EntityType<?> type) {
@@ -104,7 +104,8 @@ public final class EntityTypeUtil {
 
     public static boolean isHorseFamily(EntityType<?> type) {
         Class<? extends Entity> nmsClass = nmsEntityClass(type);
-        if (isSubclassNamed(nmsClass,
+        if (isSubclassNamed(
+                nmsClass,
                 "net.minecraft.world.entity.animal.horse.AbstractHorse",
                 "net.minecraft.world.entity.animal.equine.AbstractHorse")) {
             return true;
@@ -116,7 +117,8 @@ public final class EntityTypeUtil {
 
     public static boolean isChestedHorseFamily(EntityType<?> type) {
         Class<? extends Entity> nmsClass = nmsEntityClass(type);
-        if (isSubclassNamed(nmsClass,
+        if (isSubclassNamed(
+                nmsClass,
                 "net.minecraft.world.entity.animal.horse.AbstractChestedHorse",
                 "net.minecraft.world.entity.animal.equine.AbstractChestedHorse")) {
             return true;
@@ -140,7 +142,8 @@ public final class EntityTypeUtil {
 
     public static boolean isBoat(EntityType<?> type) {
         Class<? extends Entity> nmsClass = nmsEntityClass(type);
-        if (isSubclassNamed(nmsClass,
+        if (isSubclassNamed(
+                nmsClass,
                 "net.minecraft.world.entity.vehicle.AbstractBoat",
                 "net.minecraft.world.entity.vehicle.boat.AbstractBoat")) {
             return true;
@@ -173,7 +176,8 @@ public final class EntityTypeUtil {
 
     public static boolean isMinecart(EntityType<?> type) {
         Class<? extends Entity> nmsClass = nmsEntityClass(type);
-        if (isSubclassNamed(nmsClass,
+        if (isSubclassNamed(
+                nmsClass,
                 "net.minecraft.world.entity.vehicle.AbstractMinecart",
                 "net.minecraft.world.entity.vehicle.minecart.AbstractMinecart")) {
             return true;

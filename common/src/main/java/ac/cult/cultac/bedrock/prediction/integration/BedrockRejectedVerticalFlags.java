@@ -10,18 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class BedrockRejectedVerticalFlags {
-    private BedrockRejectedVerticalFlags() {
-    }
+    private BedrockRejectedVerticalFlags() {}
 
-    static List<Entry> apply(
-        BedrockPredictionResult bedrockResult,
-        List<Entry> entries,
-        double positionFlagThreshold
-    ) {
+    static List<Entry> apply(BedrockPredictionResult bedrockResult, List<Entry> entries, double positionFlagThreshold) {
         BedrockMovementObservation observation = bedrockResult.observation();
         BedrockMovementResult movementResult = bedrockResult.movementResult();
-        if (observation == null || movementResult == null || entries.isEmpty()
-            || observation.verticalOffset() < positionFlagThreshold) {
+        if (observation == null
+                || movementResult == null
+                || entries.isEmpty()
+                || observation.verticalOffset() < positionFlagThreshold) {
             return entries;
         }
         BedrockMovementState admitted = movementResult.predictedState();
@@ -36,24 +33,20 @@ final class BedrockRejectedVerticalFlags {
     }
 
     private static BedrockMovementState realign(
-        BedrockMovementState state,
-        BedrockMovementState admitted,
-        BedrockCollisionFlags admittedFlags
-    ) {
+            BedrockMovementState state, BedrockMovementState admitted, BedrockCollisionFlags admittedFlags) {
         BedrockCollisionFlags flags = state.collisionFlags();
         BedrockCollisionFlags realigned = new BedrockCollisionFlags(
-            admittedFlags.onGround(),
-            flags.horizontalCollision(),
-            admittedFlags.verticalCollision(),
-            flags.horizontalBlockContact(),
-            flags.liquidClimbOut(),
-            admittedFlags.verticalCollisionBelow(),
-            flags.xCollision(),
-            flags.zCollision()
-        );
+                admittedFlags.onGround(),
+                flags.horizontalCollision(),
+                admittedFlags.verticalCollision(),
+                flags.horizontalBlockContact(),
+                flags.liquidClimbOut(),
+                admittedFlags.verticalCollisionBelow(),
+                flags.xCollision(),
+                flags.zCollision());
         return realigned.equals(flags) && state.movementBranch() == admitted.movementBranch()
-            ? state
-            : state.withVelocityAndCollisionFlags(state.velocity(), realigned)
-                .withMovementBranch(admitted.movementBranch());
+                ? state
+                : state.withVelocityAndCollisionFlags(state.velocity(), realigned)
+                        .withMovementBranch(admitted.movementBranch());
     }
 }

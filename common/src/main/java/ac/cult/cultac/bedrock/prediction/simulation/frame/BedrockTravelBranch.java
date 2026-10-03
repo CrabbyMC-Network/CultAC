@@ -32,7 +32,6 @@ public record BedrockTravelBranch(BedrockTravelSelection selection) {
     }
 
     public boolean defaultMoveSystems() {
-        return selection.type() == BedrockTravelType.GROUND
-            || selection.type() == BedrockTravelType.AIR;
+        return selection.type() == BedrockTravelType.GROUND || selection.type() == BedrockTravelType.AIR;
     }
 }

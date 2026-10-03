@@ -12,7 +12,7 @@ import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
 
 final class SpawnInfoCodec {
-    private SpawnInfoCodec() { }
+    private SpawnInfoCodec() {}
 
     static PlayerSpawnInfo read(ByteBuf input, boolean varIntGameMode) {
         int dimensionType = Wire.readVarInt(input);

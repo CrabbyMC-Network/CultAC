@@ -2,7 +2,6 @@ package ac.cult.cultac.protocol.data;
 
 import ac.cult.cultac.protocol.MalformedPacketException;
 import ac.cult.cultac.protocol.ProtocolResolutionException;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

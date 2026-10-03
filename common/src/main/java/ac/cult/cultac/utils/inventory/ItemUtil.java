@@ -26,8 +26,7 @@ public final class ItemUtil {
         }
     }
 
-    private ItemUtil() {
-    }
+    private ItemUtil() {}
 
     public static ItemStack empty() {
         return ItemStack.empty();
@@ -75,8 +74,7 @@ public final class ItemUtil {
         }
         if (first instanceof CraftItemStack || second instanceof CraftItemStack) {
             return net.minecraft.world.item.ItemStack.isSameItemSameComponents(
-                    CraftItemStack.asNMSCopy(first),
-                    CraftItemStack.asNMSCopy(second));
+                    CraftItemStack.asNMSCopy(first), CraftItemStack.asNMSCopy(second));
         }
         return java.util.Objects.equals(first.getItemMeta(), second.getItemMeta());
     }

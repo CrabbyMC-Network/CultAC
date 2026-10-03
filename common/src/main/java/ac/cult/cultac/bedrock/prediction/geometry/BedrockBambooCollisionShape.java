@@ -14,13 +14,9 @@ final class BedrockBambooCollisionShape {
     private static final int OFFSET_POSITIONS = 16;
     private static final PositionOffset ORIGIN_OFFSET = positionOffset(0, 0);
 
-    private BedrockBambooCollisionShape() {
-    }
+    private BedrockBambooCollisionShape() {}
 
-    static List<WorldCollisionBox> at(
-            BlockPosition position,
-            BedrockCollisionOverrideShape originShape
-    ) {
+    static List<WorldCollisionBox> at(BlockPosition position, BedrockCollisionOverrideShape originShape) {
         PositionOffset offset = positionOffset(position.x(), position.z());
         double deltaX = offset.x() - ORIGIN_OFFSET.x();
         double deltaZ = offset.z() - ORIGIN_OFFSET.z();
@@ -86,6 +82,5 @@ final class BedrockBambooCollisionShape {
         return MIN_OFFSET + (float) Math.floor(unit * OFFSET_POSITIONS) * step;
     }
 
-    private record PositionOffset(float x, float z) {
-    }
+    private record PositionOffset(float x, float z) {}
 }

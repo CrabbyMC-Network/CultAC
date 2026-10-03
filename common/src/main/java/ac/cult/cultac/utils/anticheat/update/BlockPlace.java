@@ -11,62 +11,88 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import net.minecraft.tags.BlockTags;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.block.BlockFace;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 import net.minecraft.world.phys.Vec3;
-import lombok.Getter;
-import lombok.Setter;
+import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
-
 
 public class BlockPlace {
     @Setter
     BlockPos blockPosition;
+
     @Getter
     InteractionHand hand;
+
     @Getter
     @Setter
     boolean replaceClicked;
+
     boolean isCancelled = false;
+
     @Getter
     @Setter
     boolean isUseItem = false;
+
     CultPlayer player;
+
     @Getter
     ItemStack itemStack;
+
     @Getter
     final Material material;
-    @Getter @Nullable
+
+    @Getter
+    @Nullable
     HitData hitData;
+
     @Setter
     BlockFace face;
+
     @Getter
     @Setter
     boolean isInside;
+
     @Getter
     Vec3 cursor;
 
-    @Getter private boolean placed;
+    @Getter
+    private boolean placed;
 
-    @Getter private final boolean block;
+    @Getter
+    private final boolean block;
+
     public final int sequence;
 
-    public BlockPlace(CultPlayer player, InteractionHand hand, BlockPos blockPosition, BlockFace face, ItemStack itemStack, HitData hitData) {
+    public BlockPlace(
+            CultPlayer player,
+            InteractionHand hand,
+            BlockPos blockPosition,
+            BlockFace face,
+            ItemStack itemStack,
+            HitData hitData) {
         this(player, hand, blockPosition, face, itemStack, hitData, 0);
     }
 
-    public BlockPlace(CultPlayer player, InteractionHand hand, BlockPos blockPosition, BlockFace face,
-                      ItemStack itemStack, HitData hitData, int sequence) {
+    public BlockPlace(
+            CultPlayer player,
+            InteractionHand hand,
+            BlockPos blockPosition,
+            BlockFace face,
+            ItemStack itemStack,
+            HitData hitData,
+            int sequence) {
         this.player = player;
         this.hand = hand;
         this.face = face;
@@ -116,23 +142,32 @@ public class BlockPlace {
     }
 
     public Material getPlacedAgainstMaterial() {
-        return player.compensatedWorld.getBlockDataAt(getPlacedAgainstBlockLocation()).getMaterial();
+        return player.compensatedWorld
+                .getBlockDataAt(getPlacedAgainstBlockLocation())
+                .getMaterial();
     }
 
     // TODO: Rely on NMS?
     private boolean canBeReplaced(Material heldItem, BlockData state, BlockFace face) {
-        // Cave vines and weeping vines have a special case... that always returns false (just like the base case for it!)
+        // Cave vines and weeping vines have a special case... that always returns false (just like the base case for
+        // it!)
         boolean baseReplaceable = state.getMaterial() != heldItem && NmsBlockTags.isReplaceable(state.getMaterial());
         BlockState nmsState = NmsBlockTags.toNmsState(state);
 
         if (nmsState.is(BlockTags.CANDLES)) {
-            return heldItem == state.getMaterial() && NmsBlockTags.getInt(nmsState, BlockStateProperties.CANDLES, 0) < 4 && !isSecondaryUse();
+            return heldItem == state.getMaterial()
+                    && NmsBlockTags.getInt(nmsState, BlockStateProperties.CANDLES, 0) < 4
+                    && !isSecondaryUse();
         }
         if (state.getMaterial() == Material.SEA_PICKLE) {
-            return heldItem == state.getMaterial() && NmsBlockTags.getInt(nmsState, BlockStateProperties.PICKLES, 0) < 4 && !isSecondaryUse();
+            return heldItem == state.getMaterial()
+                    && NmsBlockTags.getInt(nmsState, BlockStateProperties.PICKLES, 0) < 4
+                    && !isSecondaryUse();
         }
         if (state.getMaterial() == Material.TURTLE_EGG) {
-            return heldItem == state.getMaterial() && NmsBlockTags.getInt(nmsState, BlockStateProperties.EGGS, 0) < 4 && !isSecondaryUse();
+            return heldItem == state.getMaterial()
+                    && NmsBlockTags.getInt(nmsState, BlockStateProperties.EGGS, 0) < 4
+                    && !isSecondaryUse();
         }
         // Glow lichen can be replaced if it has an open face, or the player is placing something
         if (state.getMaterial() == Material.GLOW_LICHEN) {
@@ -154,7 +189,8 @@ public class BlockPlace {
             if (slabType == SlabType.DOUBLE || state.getMaterial() != heldItem) return false;
 
             // Here vanilla refers from
-            // Set check can replace -> get block -> call block canBeReplaced -> check can replace boolean (default true)
+            // Set check can replace -> get block -> call block canBeReplaced -> check can replace boolean (default
+            // true)
             // uh... what?  I'm unsure what Mojang is doing here.  I think they just made a stupid mistake.
             // as this code is quite old.
             boolean flag = getClickedLocation().getY() > 0.5D;
@@ -176,8 +212,7 @@ public class BlockPlace {
         if (state.getMaterial() == Material.VINE) {
             if (baseReplaceable) return true;
             if (heldItem != state.getMaterial()) return false;
-            if (!NmsBlockTags.hasDirection(nmsState, BlockFace.UP))
-                return true;
+            if (!NmsBlockTags.hasDirection(nmsState, BlockFace.UP)) return true;
             if (!NmsBlockTags.hasDirection(nmsState, BlockFace.NORTH)) return true;
             if (!NmsBlockTags.hasDirection(nmsState, BlockFace.SOUTH)) return true;
             if (!NmsBlockTags.hasDirection(nmsState, BlockFace.EAST)) return true;
@@ -266,20 +301,23 @@ public class BlockPlace {
         }
 
         // Check for min and max bounds of world
-        if (player.compensatedWorld.getMaxHeight() <= position.getY() || position.getY() < player.compensatedWorld.getMinHeight()) {
+        if (player.compensatedWorld.getMaxHeight() <= position.getY()
+                || position.getY() < player.compensatedWorld.getMinHeight()) {
             return;
         }
 
         // Check for waterlogged
         BlockState nmsState = NmsBlockTags.toNmsState(state);
         if (nmsState.hasProperty(BlockStateProperties.WATERLOGGED)) {
-            boolean waterlogged = existingState.getMaterial() == Material.WATER && NmsBlockTags.isWaterSource(existingState);
+            boolean waterlogged =
+                    existingState.getMaterial() == Material.WATER && NmsBlockTags.isWaterSource(existingState);
             state = withWaterlogged(nmsState, waterlogged);
         }
         if (player.debugPlaces) player.sendMessage("Block actually placed " + formatState(state) + " at " + position);
         placed = true;
         player.getInventory().onBlockPlace(this);
-        BlockData original = player.compensatedWorld.updateBlock(position.getX(), position.getY(), position.getZ(), NmsBlockTags.toNmsState(state));
+        BlockData original = player.compensatedWorld.updateBlock(
+                position.getX(), position.getY(), position.getZ(), NmsBlockTags.toNmsState(state));
         GhostBlockMitigator mitigator = player.getGhostBlockMitigator();
 
         mitigator.handleBlockPlace(position, original, state, this);
@@ -326,15 +364,18 @@ public class BlockPlace {
 
     private static BlockData withWaterlogged(BlockState nmsState, boolean waterlogged) {
         BlockState adjusted = nmsState.setValue(BlockStateProperties.WATERLOGGED, waterlogged);
-        return ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(adjusted).clone();
+        return ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(adjusted)
+                .clone();
     }
 
-    private boolean applyResolvedState(BlockPos position, BlockData state, boolean consumeItem, boolean checkIntersections) {
+    private boolean applyResolvedState(
+            BlockPos position, BlockData state, boolean consumeItem, boolean checkIntersections) {
         CollisionBox box = ClientBlockShapes.movement(player, state, position.getX(), position.getY(), position.getZ());
 
         if (checkIntersections && state.getMaterial() != Material.SCAFFOLDING) {
             if (box.isIntersected(player.boundingBox)) {
-                if (player.debugPlaces) player.sendMessage("Resolved place rejected: collision with player at " + position);
+                if (player.debugPlaces)
+                    player.sendMessage("Resolved place rejected: collision with player at " + position);
                 return false;
             }
 
@@ -348,23 +389,27 @@ public class BlockPlace {
 
                 if (interpWidth - width > 0.05 || interpHeight - height > 0.05) {
                     Vec3 entityPos = entity.desyncClientPos;
-                    interpBox = GetBoundingBox.getPacketEntityBoundingBox(player, entityPos.x, entityPos.y, entityPos.z, entity);
+                    interpBox = GetBoundingBox.getPacketEntityBoundingBox(
+                            player, entityPos.x, entityPos.y, entityPos.z, entity);
                 }
 
                 if (box.isIntersected(interpBox)) {
-                    if (player.debugPlaces) player.sendMessage("Resolved place rejected: collision with entity at " + position);
+                    if (player.debugPlaces)
+                        player.sendMessage("Resolved place rejected: collision with entity at " + position);
                     return false;
                 }
             }
         }
 
         // Check for min and max bounds of world
-        if (player.compensatedWorld.getMaxHeight() <= position.getY() || position.getY() < player.compensatedWorld.getMinHeight()) {
+        if (player.compensatedWorld.getMaxHeight() <= position.getY()
+                || position.getY() < player.compensatedWorld.getMinHeight()) {
             return false;
         }
 
         if (player.debugPlaces) {
-            player.sendMessage("Applying resolved " + formatState(state) + " at " + position + " consume=" + consumeItem);
+            player.sendMessage(
+                    "Applying resolved " + formatState(state) + " at " + position + " consume=" + consumeItem);
         }
 
         placed = true;
@@ -372,7 +417,8 @@ public class BlockPlace {
             player.getInventory().onBlockPlace(this);
         }
 
-        BlockData original = player.compensatedWorld.updateBlock(position.getX(), position.getY(), position.getZ(), NmsBlockTags.toNmsState(state));
+        BlockData original = player.compensatedWorld.updateBlock(
+                position.getX(), position.getY(), position.getZ(), NmsBlockTags.toNmsState(state));
         player.getGhostBlockMitigator().handleBlockPlace(position, original, state, this);
         return true;
     }
@@ -409,7 +455,8 @@ public class BlockPlace {
 
         Vector eyePos = new Vector(player.x, player.y + player.getBukkitHeight(), player.z);
         Vector endReachPos = eyePos.clone().add(new Vector(look.getX() * 6, look.getY() * 6, look.getZ() * 6));
-        Vector intercept = ReachUtils.calculateIntercept(box, eyePos, endReachPos).getFirst();
+        Vector intercept =
+                ReachUtils.calculateIntercept(box, eyePos, endReachPos).getFirst();
 
         // Bring this back to relative to the block
         // The player didn't even click the block... (we should force resync BEFORE we get here!)

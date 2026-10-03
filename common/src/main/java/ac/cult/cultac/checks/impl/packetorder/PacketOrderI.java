@@ -1,38 +1,39 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
-
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
-import ac.grim.grimac.api.config.ConfigManager;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
-import net.minecraft.core.BlockPos;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
+import ac.grim.grimac.api.config.ConfigManager;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import java.util.ArrayDeque;
+import net.minecraft.core.BlockPos;
 import org.bukkit.GameMode;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayDeque;
-
-@CheckData(name = "PacketOrderI", stableKey = "cult.packetorder.input_tick_order", description = "Sent combat, use, release, or digging packets in an invalid tick order", experimental = true)
+@CheckData(
+        name = "PacketOrderI",
+        stableKey = "cult.packetorder.input_tick_order",
+        description = "Sent combat, use, release, or digging packets in an invalid tick order",
+        experimental = true)
 public class PacketOrderI extends Check implements PostPredictionListener {
-    private static final Verbose V = Verbose
-            .of("type={str}[, attacking={bool}][, rightClicking={bool}][, picking={bool}][, releasing={bool}], digging={bool}");
+    private static final Verbose V = Verbose.of(
+            "type={str}[, attacking={bool}][, rightClicking={bool}][, picking={bool}][, releasing={bool}], digging={bool}");
 
     static final int TYPE_INTERACT = 0;
     static final int TYPE_PLACE_USE = 1;
@@ -70,26 +71,25 @@ public class PacketOrderI extends Check implements PostPredictionListener {
      * attack; releasing for everything but release; digging always.
      */
     private Verbose.Writer write(
-            int type,
-            boolean attacking,
-            boolean rightClicking,
-            boolean picking,
-            boolean releasing,
-            boolean digging) {
+            int type, boolean attacking, boolean rightClicking, boolean picking, boolean releasing, boolean digging) {
         boolean release = type == TYPE_RELEASE;
         boolean attack = type == TYPE_ATTACK;
         return V.write(verbose())
                 .str(typeName(type))
-                .bool(release).bool(attacking)
-                .bool(release || attack).bool(rightClicking)
-                .bool(release || attack).bool(picking)
-                .bool(!release).bool(releasing)
+                .bool(release)
+                .bool(attacking)
+                .bool(release || attack)
+                .bool(rightClicking)
+                .bool(release || attack)
+                .bool(picking)
+                .bool(!release)
+                .bool(releasing)
                 .bool(digging);
     }
 
-
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (packet.action() == InteractAction.ATTACK) {
             onAttack(event, player);
         } else if (player.packetOrderProcessor.isReleasing() || player.packetOrderProcessor.isDigging()) {
@@ -108,12 +108,11 @@ public class PacketOrderI extends Check implements PostPredictionListener {
         resetOnCameraSwitch(player);
     }
 
-
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
+    public void onUseItemOn(
+            PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         onPlaceUse(event, player);
     }
-
 
     @CultPacketHandler
     public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
@@ -149,23 +148,25 @@ public class PacketOrderI extends Check implements PostPredictionListener {
         resetOnCameraSwitch(player);
     }
 
-
-
-
-
     @CultPacketHandler
-    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
+    public void onSpectatorAction(
+            PacketReceiveEvent<ServerboundSpectatorAction> event,
+            CultPlayer player,
+            ServerboundSpectatorAction packet) {
         onAttack(event, player);
         resetOnCameraSwitch(player);
     }
 
-
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         switch (packet.action()) {
             case STAB -> onAttack(event, player);
             case RELEASE_USE_ITEM -> {
-                if (player.packetOrderProcessor.isAttackingOrStabbing() || player.packetOrderProcessor.isRightClicking() || player.packetOrderProcessor.isPicking() || player.packetOrderProcessor.isDigging()) {
+                if (player.packetOrderProcessor.isAttackingOrStabbing()
+                        || player.packetOrderProcessor.isRightClicking()
+                        || player.packetOrderProcessor.isPicking()
+                        || player.packetOrderProcessor.isDigging()) {
                     boolean attacking = player.packetOrderProcessor.isAttackingOrStabbing();
                     boolean rightClicking = player.packetOrderProcessor.isRightClicking();
                     boolean picking = player.packetOrderProcessor.isPicking();
@@ -192,8 +193,7 @@ public class PacketOrderI extends Check implements PostPredictionListener {
             case ABORT_DESTROY_BLOCK -> cancelledDigging = shouldCheckPlacingWhileDigging();
 
             case STOP_DESTROY_BLOCK -> digging = shouldCheckPlacingWhileDigging();
-            default -> {
-            }
+            default -> {}
         }
 
         resetOnCameraSwitch(player);
@@ -201,8 +201,8 @@ public class PacketOrderI extends Check implements PostPredictionListener {
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.cameraEntity.isSelf() || !player.packetStateData.lastPacketWasTeleport) {
             resetDiggingState();
         }
@@ -213,7 +213,7 @@ public class PacketOrderI extends Check implements PostPredictionListener {
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!player.cameraEntity.isSelf()
                 || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && !player.packetStateData.receivedMovementThisClientTick)) {
+                        && !player.packetStateData.receivedMovementThisClientTick)) {
             resetDiggingState();
         }
     }
@@ -246,8 +246,14 @@ public class PacketOrderI extends Check implements PostPredictionListener {
 
         if (player.isTickingReliablyFor(3)) {
             for (FlagData data : flags) {
-                if (flag(write(data.type(), data.attacking(), data.rightClicking(), data.picking(),
-                        data.releasing(), data.digging())) && setback) {
+                if (flag(write(
+                                data.type(),
+                                data.attacking(),
+                                data.rightClicking(),
+                                data.picking(),
+                                data.releasing(),
+                                data.digging()))
+                        && setback) {
                     setbackIfAboveSetbackVL();
                     setback = false;
                 }
@@ -259,13 +265,17 @@ public class PacketOrderI extends Check implements PostPredictionListener {
     }
 
     private void onAttack(PacketReceiveEvent event, CultPlayer player) {
-        if (player.packetOrderProcessor.isRightClicking() || player.packetOrderProcessor.isPicking() || player.packetOrderProcessor.isReleasing() || player.packetOrderProcessor.isDigging()) {
+        if (player.packetOrderProcessor.isRightClicking()
+                || player.packetOrderProcessor.isPicking()
+                || player.packetOrderProcessor.isReleasing()
+                || player.packetOrderProcessor.isDigging()) {
             boolean rightClicking = player.packetOrderProcessor.isRightClicking();
             boolean picking = player.packetOrderProcessor.isPicking();
             boolean releasing = player.packetOrderProcessor.isReleasing();
             boolean digging = player.packetOrderProcessor.isDigging();
             if (!player.canSkipTicks()) {
-                if (flag(write(TYPE_ATTACK, false, rightClicking, picking, releasing, digging)) && shouldModifyPackets()) {
+                if (flag(write(TYPE_ATTACK, false, rightClicking, picking, releasing, digging))
+                        && shouldModifyPackets()) {
                     event.setCancelled(true);
                     player.onPacketCancel();
                 }
@@ -281,10 +291,5 @@ public class PacketOrderI extends Check implements PostPredictionListener {
     }
 
     private record FlagData(
-            int type,
-            boolean attacking,
-            boolean rightClicking,
-            boolean picking,
-            boolean releasing,
-            boolean digging) {}
+            int type, boolean attacking, boolean rightClicking, boolean picking, boolean releasing, boolean digging) {}
 }

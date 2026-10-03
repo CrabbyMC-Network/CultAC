@@ -15,11 +15,14 @@ import io.netty.buffer.ByteBuf;
 public final class OpenScreenCodec implements PacketCodec<ClientboundOpenScreen> {
     @Override
     public ClientboundOpenScreen read(ByteBuf input, ProtocolContext context) {
-        return new ClientboundOpenScreen(Wire.readVarInt(input),
+        return new ClientboundOpenScreen(
+                Wire.readVarInt(input),
                 context.data().registry("minecraft:menu").name(Wire.readVarInt(input)));
     }
 
     // The title is unused; forwarding retains its original bytes without parsing a component.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

@@ -33,14 +33,21 @@ public class LatencyUtils {
 
     private Thread nettyThread = null;
 
-    public boolean isThreadDebugEnabled() { return this.nettyThread != null; }
+    public boolean isThreadDebugEnabled() {
+        return this.nettyThread != null;
+    }
 
-    public void disableThreadDebug() { this.nettyThread = null; }
+    public void disableThreadDebug() {
+        this.nettyThread = null;
+    }
 
-    public void enableThreadDebug() { this.nettyThread = Thread.currentThread(); }
+    public void enableThreadDebug() {
+        this.nettyThread = Thread.currentThread();
+    }
 
     private void assertNettyThread() {
-        if (this.nettyThread != null && Thread.currentThread() != this.nettyThread) throw new RuntimeException("Task ran on incorrect thread!");
+        if (this.nettyThread != null && Thread.currentThread() != this.nettyThread)
+            throw new RuntimeException("Task ran on incorrect thread!");
     }
 
     public void addRealTimeTask(int transaction, boolean async, Runnable task) {
@@ -49,16 +56,19 @@ public class LatencyUtils {
             return;
         }
         assertNettyThread();
-        if (player.lastTransactionReceived.get() >= transaction) { // If the player already responded to this transaction
+        if (player.lastTransactionReceived.get()
+                >= transaction) { // If the player already responded to this transaction
             task.run();
             return;
         }
         transactionMap.add(transaction, task);
     }
 
-    public void addRealTimeTaskWithNextTransaction(int transaction, Runnable runnable, Runnable nextTransactionRunnable) {
+    public void addRealTimeTaskWithNextTransaction(
+            int transaction, Runnable runnable, Runnable nextTransactionRunnable) {
         assertNettyThread();
-        if (player.lastTransactionReceived.get() >= transaction) { // If the player already responded to this transaction
+        if (player.lastTransactionReceived.get()
+                >= transaction) { // If the player already responded to this transaction
             runnable.run();
             addRealTimeTask(transaction + 1, nextTransactionRunnable);
             return;

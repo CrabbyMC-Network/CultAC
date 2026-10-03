@@ -1,5 +1,6 @@
 package ac.cult.cultac.utils.blockplace;
 
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -12,21 +13,14 @@ import net.minecraft.world.level.block.CandleCakeBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
-import java.util.List;
-
 final class PaperPatchedCakeUseResolver {
     private static final int PLACEMENT_FLAGS = Block.UPDATE_ALL_IMMEDIATE;
     private static final int MAX_UPDATE_DEPTH = 512;
 
-    private PaperPatchedCakeUseResolver() {
-    }
+    private PaperPatchedCakeUseResolver() {}
 
     static NmsBlockPlaceResolver.BlockUseResult trySimulate(
-            PlacementWorldAdapter world,
-            PlacementSnapshot snapshot,
-            BlockState state,
-            BlockPos pos
-    ) {
+            PlacementWorldAdapter world, PlacementSnapshot snapshot, BlockState state, BlockPos pos) {
         if (state.getBlock() == Blocks.CAKE) {
             return simulateCakeUse(world, snapshot, state, pos);
         }
@@ -35,7 +29,8 @@ final class PaperPatchedCakeUseResolver {
                 && candleCakeHit(snapshot)
                 && state.getValue(BlockStateProperties.LIT)) {
             world.setBlock(pos, state.setValue(BlockStateProperties.LIT, false), PLACEMENT_FLAGS, MAX_UPDATE_DEPTH);
-            return NmsBlockPlaceResolver.BlockUseResult.success(world.buildResult(pos).getChangedBlocks(), false);
+            return NmsBlockPlaceResolver.BlockUseResult.success(
+                    world.buildResult(pos).getChangedBlocks(), false);
         }
         if (state.getBlock() instanceof CandleCakeBlock && needsCakeEatingPatch(snapshot, state)) {
             return snapshot.getHand() == InteractionHand.MAIN_HAND
@@ -54,17 +49,15 @@ final class PaperPatchedCakeUseResolver {
     }
 
     private static NmsBlockPlaceResolver.BlockUseResult simulateCakeUse(
-            PlacementWorldAdapter world,
-            PlacementSnapshot snapshot,
-            BlockState state,
-            BlockPos pos
-    ) {
+            PlacementWorldAdapter world, PlacementSnapshot snapshot, BlockState state, BlockPos pos) {
         ItemStack itemStack = snapshot.getItemStack();
-        if (state.getValue(CakeBlock.BITES) == 0 && Block.byItem(itemStack.getItem()) instanceof CandleBlock candleBlock) {
+        if (state.getValue(CakeBlock.BITES) == 0
+                && Block.byItem(itemStack.getItem()) instanceof CandleBlock candleBlock) {
             // Paper wraps vanilla cake changes in Bukkit events and ServerPlayer-only updates.
             // Mirror the client-side state change directly on the compensated world.
             world.setBlock(pos, CandleCakeBlock.byCandle(candleBlock), PLACEMENT_FLAGS, MAX_UPDATE_DEPTH);
-            return NmsBlockPlaceResolver.BlockUseResult.success(world.buildResult(pos).getChangedBlocks(), true);
+            return NmsBlockPlaceResolver.BlockUseResult.success(
+                    world.buildResult(pos).getChangedBlocks(), true);
         }
 
         return snapshot.getHand() == InteractionHand.MAIN_HAND
@@ -81,8 +74,7 @@ final class PaperPatchedCakeUseResolver {
             PlacementSnapshot snapshot,
             BlockState state,
             BlockPos pos,
-            boolean emptyHandConsumesWhenFull
-    ) {
+            boolean emptyHandConsumesWhenFull) {
         if (!canEatCake(snapshot)) {
             return emptyHandConsumesWhenFull && snapshot.getMainHandItemStack().isEmpty()
                     ? NmsBlockPlaceResolver.BlockUseResult.success(List.of(), false)
@@ -95,7 +87,8 @@ final class PaperPatchedCakeUseResolver {
         } else {
             world.removeBlock(pos, false);
         }
-        return NmsBlockPlaceResolver.BlockUseResult.success(world.buildResult(pos).getChangedBlocks(), false);
+        return NmsBlockPlaceResolver.BlockUseResult.success(
+                world.buildResult(pos).getChangedBlocks(), false);
     }
 
     private static boolean canEatCake(PlacementSnapshot snapshot) {

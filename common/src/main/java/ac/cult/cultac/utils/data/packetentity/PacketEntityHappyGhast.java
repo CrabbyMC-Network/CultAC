@@ -11,7 +11,8 @@ public class PacketEntityHappyGhast extends PacketEntityTrackXRot {
     public float movementSpeedAttribute = 0.05F;
     public float flyingSpeedAttribute = 0.05F;
 
-    public PacketEntityHappyGhast(CultPlayer player, int entityId, EntityType type, double x, double y, double z, float yaw) {
+    public PacketEntityHappyGhast(
+            CultPlayer player, int entityId, EntityType type, double x, double y, double z, float yaw) {
         super(player, entityId, type, x, y, z, yaw);
     }
 
@@ -54,7 +55,8 @@ public class PacketEntityHappyGhast extends PacketEntityTrackXRot {
             return Vec3.ZERO;
         }
 
-        Vec3 scaled = (lengthSqr > 1.0D ? riddenInput.normalize() : riddenInput).scale(flyingSpeedAttribute * 5.0F / 3.0F);
+        Vec3 scaled =
+                (lengthSqr > 1.0D ? riddenInput.normalize() : riddenInput).scale(flyingSpeedAttribute * 5.0F / 3.0F);
         float yawRadians = yaw * ((float) Math.PI / 180F);
         float sin = player.trigHandler.sin(yawRadians);
         float cos = player.trigHandler.cos(yawRadians);

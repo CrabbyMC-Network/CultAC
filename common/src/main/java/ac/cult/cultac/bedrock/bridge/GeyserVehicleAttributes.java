@@ -25,16 +25,24 @@ final class GeyserVehicleAttributes {
         for (var modifier : attribute.getModifiers()) {
             String key;
             // Geyser-Spigot relocates Adventure Key across the plugin classloader boundary.
-            try { key = modifier.getClass().getMethod("getId").invoke(modifier).toString(); }
-            catch (ReflectiveOperationException failure) { throw new IllegalStateException("Cannot read Java modifier ID", failure); }
+            try {
+                key = modifier.getClass().getMethod("getId").invoke(modifier).toString();
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Cannot read Java modifier ID", failure);
+            }
             String id = switch (key) {
                 case "minecraft:effect.speed" -> SPEED;
                 case "minecraft:effect.slowness" -> SLOWNESS;
                 case "minecraft:sprinting" -> BedrockMovementAttributeState.SPRINT_ID;
-                default -> UUID.nameUUIDFromBytes(("cultac:java-attribute:" + key).getBytes(StandardCharsets.UTF_8)).toString();
+                default ->
+                    UUID.nameUUIDFromBytes(("cultac:java-attribute:" + key).getBytes(StandardCharsets.UTF_8))
+                            .toString();
             };
-            String name = id.equals(SPEED) ? "MovementSpeed" : id.equals(SLOWNESS) ? "MovementSlowdown"
-                    : id.equals(BedrockMovementAttributeState.SPRINT_ID) ? "Sprinting speed boost" : key;
+            String name = id.equals(SPEED)
+                    ? "MovementSpeed"
+                    : id.equals(SLOWNESS)
+                            ? "MovementSlowdown"
+                            : id.equals(BedrockMovementAttributeState.SPRINT_ID) ? "Sprinting speed boost" : key;
             int operation = switch (modifier.getOperation()) {
                 case ADD -> 0;
                 case ADD_MULTIPLIED_BASE -> 1;
@@ -43,21 +51,27 @@ final class GeyserVehicleAttributes {
             modifiers.add(new Modifier(id, name, (float) modifier.getAmount(), operation, 2, false));
         }
         float base = (float) attribute.getValue();
-        return publish(runtimeId, new BedrockMovementAttributeState(base, 0, 1024, 0, 1024, base, List.of())
-                .recalculate(modifiers));
+        return publish(
+                runtimeId,
+                new BedrockMovementAttributeState(base, 0, 1024, 0, 1024, base, List.of()).recalculate(modifiers));
     }
 
     /** Write before the effect so duplicate adds and refreshes retain the translated value. */
     UpdateAttributesPacket beforeEffect(MobEffectPacket effect) {
         var previous = movement.get(effect.getRuntimeEntityId());
-        String id = switch (effect.getEffectId()) { case 1 -> SPEED; case 2 -> SLOWNESS; default -> null; };
+        String id = switch (effect.getEffectId()) {
+            case 1 -> SPEED;
+            case 2 -> SLOWNESS;
+            default -> null;
+        };
         if (previous == null || id == null || effect.getEvent() == MobEffectPacket.Event.NONE) return null;
         var modifiers = new ArrayList<>(previous.modifiers().stream()
-                .filter(modifier -> !modifier.id().equalsIgnoreCase(id)).toList());
+                .filter(modifier -> !modifier.id().equalsIgnoreCase(id))
+                .toList());
         if (effect.getEvent() != MobEffectPacket.Event.REMOVE) {
             float amount = (effect.getEffectId() == 1 ? 0.2F : -0.15F) * (effect.getAmplifier() + 1);
-            modifiers.add(new Modifier(id, effect.getEffectId() == 1 ? "MovementSpeed" : "MovementSlowdown",
-                    amount, 2, 2, false));
+            modifiers.add(new Modifier(
+                    id, effect.getEffectId() == 1 ? "MovementSpeed" : "MovementSlowdown", amount, 2, 2, false));
         }
         return publish(effect.getRuntimeEntityId(), previous.recalculate(modifiers));
     }
@@ -74,11 +88,20 @@ final class GeyserVehicleAttributes {
         var value = pending.remove(packet);
         if (value != null) movement.put(packet.getRuntimeEntityId(), value);
         else if (movement.containsKey(packet.getRuntimeEntityId())) {
-            packet.getAttributes().stream().filter(attribute -> attribute.getName().equals("minecraft:movement"))
-                    .findFirst().ifPresent(attribute -> movement.put(packet.getRuntimeEntityId(), GeyserMovementAttributeCodec.capture(attribute)));
+            packet.getAttributes().stream()
+                    .filter(attribute -> attribute.getName().equals("minecraft:movement"))
+                    .findFirst()
+                    .ifPresent(attribute ->
+                            movement.put(packet.getRuntimeEntityId(), GeyserMovementAttributeCodec.capture(attribute)));
         }
     }
 
-    void remove(long runtimeId) { movement.remove(runtimeId); }
-    void clear() { movement.clear(); pending.clear(); }
+    void remove(long runtimeId) {
+        movement.remove(runtimeId);
+    }
+
+    void clear() {
+        movement.clear();
+        pending.clear();
+    }
 }

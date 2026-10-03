@@ -1,16 +1,15 @@
 package ac.cult.cultac.protocol.data;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
 import ac.cult.cultac.protocol.ProtocolResolutionException;
 import ac.cult.cultac.protocol.ProtocolVersion;
-import org.junit.jupiter.api.Test;
-
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class ProtocolDataTest {
     @Test
@@ -22,8 +21,10 @@ class ProtocolDataTest {
             assertTrue(movement.id("minecraft:move_player_pos_rot") >= 0);
             assertEquals(-1, movement.id("minecraft:does_not_exist"));
             assertEquals(0, data.registry("minecraft:block").id("minecraft:air"));
-            assertThrows(UnsupportedOperationException.class, () -> movement.names().clear());
-            assertThrows(UnsupportedOperationException.class, () -> data.registries().clear());
+            assertThrows(
+                    UnsupportedOperationException.class, () -> movement.names().clear());
+            assertThrows(
+                    UnsupportedOperationException.class, () -> data.registries().clear());
         }
     }
 
@@ -42,9 +43,13 @@ class ProtocolDataTest {
                 original.replaceAll("(?m)^packet\\tlogin[^\\n]*\\n", ""),
                 original.replaceAll("(?m)^registry\\tminecraft:entity_type[^\\n]*\\n", ""),
                 original + "unknown\tdata\n")) {
-            assertThrows(ProtocolResolutionException.class, () -> ProtocolData.readIndex(version, new StringReader(changed)));
+            assertThrows(
+                    ProtocolResolutionException.class,
+                    () -> ProtocolData.readIndex(version, new StringReader(changed)));
         }
-        assertThrows(ProtocolResolutionException.class, () -> new IdTable("duplicate", List.of("minecraft:air", "minecraft:air")));
+        assertThrows(
+                ProtocolResolutionException.class,
+                () -> new IdTable("duplicate", List.of("minecraft:air", "minecraft:air")));
         assertEquals("minecraft:", new IdTable("synced", List.of("minecraft:")).name(0));
     }
 }

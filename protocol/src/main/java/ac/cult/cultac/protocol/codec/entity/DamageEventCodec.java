@@ -20,5 +20,7 @@ public final class DamageEventCodec implements PacketCodec<ClientboundDamageEven
 
     // Only entityId is consumed. Forward the original damage source and position untouched.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

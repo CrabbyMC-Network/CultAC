@@ -7,21 +7,23 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 
 public class ClientBrand extends Check implements CheckListener {
 
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
-    private static final String CHANNEL = SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
+    private static final String CHANNEL =
+            SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
 
     @Getter
     private String brand = "vanilla";
+
     @Getter
     private boolean hasBrand = false;
 
@@ -30,12 +32,14 @@ public class ClientBrand extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onCustomPayload(final PacketReceiveEvent<ServerboundCustomPayload> event, CultPlayer player, ServerboundCustomPayload packet) {
+    public void onCustomPayload(
+            final PacketReceiveEvent<ServerboundCustomPayload> event,
+            CultPlayer player,
+            ServerboundCustomPayload packet) {
         String channelName = packet.channel();
         if (channelName == null) return;
         handle(channelName, event.getPacket().data());
     }
-
 
     public void handle(String channel, byte[] data) {
         if (!channel.equals(ClientBrand.CHANNEL)) return;
@@ -49,7 +53,10 @@ public class ClientBrand extends Check implements CheckListener {
             brand = new String(minusLength).replace(" (Velocity)", ""); // removes velocity's brand suffix
             brand = MessageUtil.stripColor(brand); // strip color codes from client brand
             if (!CultAPI.INSTANCE.getConfigManager().isIgnoredClient(brand)) {
-                String message = CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("client-brand-format", "%prefix% &f%player% joined using %brand%");
+                String message = CultAPI.INSTANCE
+                        .getConfigManager()
+                        .getConfig()
+                        .getStringElse("client-brand-format", "%prefix% &f%player% joined using %brand%");
                 Component component = MessageUtil.replacePlaceholders(player, MessageUtil.miniMessage(message));
 
                 CultAPI.INSTANCE.getAlertManager().sendBrand(component, null);
@@ -71,7 +78,8 @@ public class ClientBrand extends Check implements CheckListener {
                 && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_18_2)
                 && player.getClientVersion().isOlderThan(ClientVersion.V_1_19_4);
         if (hasReachHacks && CultAPI.INSTANCE.getConfigManager().isBlockBlacklistedForgeClients()) {
-            player.disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(player, CultAPI.INSTANCE.getConfigManager().getDisconnectBlacklistedForge())));
+            player.disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(
+                    player, CultAPI.INSTANCE.getConfigManager().getDisconnectBlacklistedForge())));
         }
 
         hasBrand = true;

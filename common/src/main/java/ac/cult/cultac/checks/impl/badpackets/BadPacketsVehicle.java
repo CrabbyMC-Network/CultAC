@@ -10,8 +10,7 @@ import ac.cult.cultac.player.CultPlayer;
         name = "BadPacketsVehicle",
         stableKey = "cult.badpackets.invalid_vehicle_movement",
         description = "Sent a vehicle movement packet without client movement authority",
-        experimental = true
-)
+        experimental = true)
 public final class BadPacketsVehicle extends Check implements CheckListener {
     public BadPacketsVehicle(CultPlayer player) {
         super(player);

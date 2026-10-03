@@ -13,7 +13,8 @@ public final class LegacyTeleportVelocity {
         // modern server ViaRewind's PlayerPacketRewriter1_9 first resolves all
         // relative arguments and sends 1.8 flags=0, clearing every velocity axis.
         Vec3 reset = client.isOlderThan(ClientVersion.V_1_9) && server.isNewerThanOrEquals(ClientVersion.V_1_9)
-                ? Vec3.ZERO : teleport.modifyVector(previous);
+                ? Vec3.ZERO
+                : teleport.modifyVector(previous);
         if (server.isOlderThan(ClientVersion.V_1_21_2)) return reset;
 
         // ViaBackwards EntityPacketRewriter1_21_2#handleRelativeArguments sends

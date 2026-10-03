@@ -1,5 +1,11 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
@@ -18,10 +24,11 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.data.SetbackPosWithVector;
 import ac.cult.cultac.utils.data.TeleportAcceptData;
+import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import com.google.gson.JsonArray;
@@ -38,21 +45,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public final class OfflineBedrockReplayRunnerTest {
     @Test
@@ -60,7 +60,9 @@ public final class OfflineBedrockReplayRunnerTest {
         OfflineCultTestBootstrap.installConfig();
         for (String scenario : List.of("jump", "ladder")) {
             ReplayResult replay = runScenario("small-scenarios/" + scenario);
-            assertTrue(scenario + ": " + replay.bedrockMovementFlags(), replay.bedrockMovementFlags().isEmpty());
+            assertTrue(
+                    scenario + ": " + replay.bedrockMovementFlags(),
+                    replay.bedrockMovementFlags().isEmpty());
         }
     }
 
@@ -69,7 +71,9 @@ public final class OfflineBedrockReplayRunnerTest {
         OfflineCultTestBootstrap.installConfig();
         for (String scenario : List.of("slime", "bed-stepping")) {
             ReplayResult replay = runScenario("small-scenarios/" + scenario);
-            assertTrue(scenario + ": " + replay.bedrockMovementFlags(), replay.bedrockMovementFlags().isEmpty());
+            assertTrue(
+                    scenario + ": " + replay.bedrockMovementFlags(),
+                    replay.bedrockMovementFlags().isEmpty());
         }
     }
 
@@ -78,11 +82,14 @@ public final class OfflineBedrockReplayRunnerTest {
         OfflineCultTestBootstrap.installConfig();
         for (String scenario : List.of("swimhop", "swimming-still-water", "flowing-water-swim")) {
             ReplayResult replay = runScenario("small-scenarios/" + scenario);
-            assertTrue(scenario + ": " + replay.bedrockMovementFlags(), replay.bedrockMovementFlags().isEmpty());
+            assertTrue(
+                    scenario + ": " + replay.bedrockMovementFlags(),
+                    replay.bedrockMovementFlags().isEmpty());
         }
     }
 
-    private static final Path SCENARIOS = Path.of(System.getProperty("bedrockReplayRoot", "bedrock-smoketest-scenarios"));
+    private static final Path SCENARIOS =
+            Path.of(System.getProperty("bedrockReplayRoot", "bedrock-smoketest-scenarios"));
     private static final UUID PLAYER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String SMALL_REPLAY_INJECTION_DOMAIN = "cultac-bedrock-small-replay-injection/v1:1";
     private static final String SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN = SMALL_REPLAY_INJECTION_DOMAIN + ":vertical";
@@ -106,10 +113,18 @@ public final class OfflineBedrockReplayRunnerTest {
         ReplayFrames firstInjected = applyImpossibleMovementInjection(replayName, first);
         ReplayFrames secondInjected = applyImpossibleMovementInjection(replayName, second);
 
-        assertEquals(horizontalIndex, firstInjected.injection().mutation(MutationKind.HORIZONTAL).selectedIndex());
-        assertEquals(verticalIndex, firstInjected.injection().mutation(MutationKind.VERTICAL).selectedIndex());
-        assertEquals(horizontalIndex, secondInjected.injection().mutation(MutationKind.HORIZONTAL).selectedIndex());
-        assertEquals(verticalIndex, secondInjected.injection().mutation(MutationKind.VERTICAL).selectedIndex());
+        assertEquals(
+                horizontalIndex,
+                firstInjected.injection().mutation(MutationKind.HORIZONTAL).selectedIndex());
+        assertEquals(
+                verticalIndex,
+                firstInjected.injection().mutation(MutationKind.VERTICAL).selectedIndex());
+        assertEquals(
+                horizontalIndex,
+                secondInjected.injection().mutation(MutationKind.HORIZONTAL).selectedIndex());
+        assertEquals(
+                verticalIndex,
+                secondInjected.injection().mutation(MutationKind.VERTICAL).selectedIndex());
     }
 
     @Test
@@ -117,12 +132,10 @@ public final class OfflineBedrockReplayRunnerTest {
         OfflineCultTestBootstrap.installConfig();
         CultPlayer player = offlinePlayer();
         Vec3 target = new Vec3(10.0D, 64.0D, 20.0D);
-        long revision = player.getSetbackTeleportUtil()
-                .addImmediateBedrockTransportTeleport(target, false);
+        long revision = player.getSetbackTeleportUtil().addImmediateBedrockTransportTeleport(target, false);
 
         player.lastTransactionReceived.set(10);
-        TeleportAcceptData accepted = player.getSetbackTeleportUtil()
-                .acknowledgeBedrockTeleportFrame(target);
+        TeleportAcceptData accepted = player.getSetbackTeleportUtil().acknowledgeBedrockTeleportFrame(target);
         assertTrue(accepted.isTeleport());
         assertTrue(accepted.isMatchedTeleportPosition());
         assertEquals(target, accepted.getTeleportData().getLocation());
@@ -139,7 +152,8 @@ public final class OfflineBedrockReplayRunnerTest {
         player.z = 20.0D;
         player.getSetbackTeleportUtil().hasFullyLoaded = true;
         player.getSetbackTeleportUtil().hasFullyJoined = true;
-        ServerboundMovePlayer translatedMove = new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
+        ServerboundMovePlayer translatedMove =
+                new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
 
         PacketReceiveEvent outOfOrder = translatedMovementEvent(player, translatedMove);
         new CheckManagerListener().onMovePlayer(outOfOrder, player, translatedMove);
@@ -246,7 +260,8 @@ public final class OfflineBedrockReplayRunnerTest {
         listener.onMovePlayer(permittedRotation, player, rotation);
         assertFalse(permittedRotation.isCancelled());
 
-        ServerboundMovePlayer positionAfterRotation = new ServerboundMovePlayer(10.5D, 64.0D, 20.0D, 0, 0, true, false, true, false);
+        ServerboundMovePlayer positionAfterRotation =
+                new ServerboundMovePlayer(10.5D, 64.0D, 20.0D, 0, 0, true, false, true, false);
         PacketReceiveEvent secondProjection = translatedMovementEvent(player, positionAfterRotation);
         listener.onMovePlayer(secondProjection, player, positionAfterRotation);
         assertTrue(secondProjection.isCancelled());
@@ -264,7 +279,8 @@ public final class OfflineBedrockReplayRunnerTest {
         player.getSetbackTeleportUtil().hasFullyJoined = true;
         player.bedrockState.setSetbacksEnabled(false);
         CheckManagerListener listener = new CheckManagerListener();
-        ServerboundMovePlayer translatedMove = new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
+        ServerboundMovePlayer translatedMove =
+                new ServerboundMovePlayer(10.25D, 64.0D, 20.0D, 0, 0, true, false, true, false);
 
         player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
         var tickEnd = RecordReceiveTestEvents.tickEnd(player);
@@ -282,8 +298,8 @@ public final class OfflineBedrockReplayRunnerTest {
         CultPlayer player = offlinePlayer();
         player.getSetbackTeleportUtil().hasFullyLoaded = true;
         player.getSetbackTeleportUtil().hasFullyJoined = true;
-        for (boolean canonicalGround : new boolean[]{false, true}) {
-            for (boolean noModify : new boolean[]{false, true}) {
+        for (boolean canonicalGround : new boolean[] {false, true}) {
+            for (boolean noModify : new boolean[] {false, true}) {
                 player.noModifyPacketPermission = noModify;
                 var projection = new ServerboundMovePlayer(0, 0, 0, 0, 0, !canonicalGround, false, false, false);
                 player.packetStateData.bedrockTranslatedMovement.allowPlayer(canonicalGround);
@@ -292,7 +308,8 @@ public final class OfflineBedrockReplayRunnerTest {
 
                 assertFalse(event.isCancelled());
                 assertEquals(!noModify, event.getPacket() != projection);
-                assertEquals(noModify ? !canonicalGround : canonicalGround,
+                assertEquals(
+                        noModify ? !canonicalGround : canonicalGround,
                         ((ServerboundMovePlayer) event.getPacket()).onGround());
                 assertFalse(player.packetStateData.bedrockTranslatedMovement.hasPending());
             }
@@ -319,15 +336,7 @@ public final class OfflineBedrockReplayRunnerTest {
     public void impossibleMovementInjectionVectorUsesSelectedInputDirection() {
         String replayName = "vector-shape";
         int frameCount = 7;
-        List<BedrockAuthInputFrame> frames = testFrames(
-                frameCount,
-                1,
-                20L,
-                12.0D,
-                -9.0D,
-                3.0F,
-                4.0F,
-                0.0F);
+        List<BedrockAuthInputFrame> frames = testFrames(frameCount, 1, 20L, 12.0D, -9.0D, 3.0F, 4.0F, 0.0F);
 
         ReplayFrames injected = applyImpossibleMovementInjection(replayName, frames);
         ReplayMutation horizontal = injected.injection().mutation(MutationKind.HORIZONTAL);
@@ -352,8 +361,10 @@ public final class OfflineBedrockReplayRunnerTest {
         ReplayFrames injected = applyImpossibleMovementInjection(replayName, frames);
 
         assertTrue(horizontalIndex != verticalIndex);
-        Vec3 horizontalExtra = injected.injection().mutation(MutationKind.HORIZONTAL).extra();
-        Vec3 verticalExtra = injected.injection().mutation(MutationKind.VERTICAL).extra();
+        Vec3 horizontalExtra =
+                injected.injection().mutation(MutationKind.HORIZONTAL).extra();
+        Vec3 verticalExtra =
+                injected.injection().mutation(MutationKind.VERTICAL).extra();
         for (int i = 0; i < frameCount; i++) {
             BedrockAuthInputFrame original = frames.get(i);
             BedrockAuthInputFrame mutated = injected.frames().get(i);
@@ -377,8 +388,7 @@ public final class OfflineBedrockReplayRunnerTest {
     private static List<String> smallScenarioNames() throws Exception {
         Path smallScenarios = SCENARIOS.resolve("small-scenarios");
         try (Stream<Path> paths = Files.list(smallScenarios)) {
-            return paths
-                    .filter(Files::isDirectory)
+            return paths.filter(Files::isDirectory)
                     .map(path -> path.getFileName().toString())
                     .filter(OfflineBedrockReplayRunnerTest::scenarioSelected)
                     .sorted()
@@ -417,10 +427,10 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static ReplayResult runScenario(String scenarioName, ReplayVariant variant) throws Exception {
-        OfflineBedrockReplayScenario scenario = OfflineBedrockReplayScenario.load(
-                SCENARIOS.resolve(scenarioName));
+        OfflineBedrockReplayScenario scenario = OfflineBedrockReplayScenario.load(SCENARIOS.resolve(scenarioName));
         List<BedrockAuthInputFrame> frames = OfflineBedrockAuthInputCapture.read(scenario.packetsPath(), PLAYER_UUID);
-        OfflineBedrockReplayEvents.Cursor replayEvents = OfflineBedrockReplayEvents.load(scenario).cursor();
+        OfflineBedrockReplayEvents.Cursor replayEvents =
+                OfflineBedrockReplayEvents.load(scenario).cursor();
         assertTrue(frames.size() > 1);
         Vec3 initialVelocity = initialVelocity(scenario.manifest(), scenario.packetsPath(), frames.getFirst());
         boolean seededInitialVelocity = initialVelocity != null;
@@ -453,14 +463,16 @@ public final class OfflineBedrockReplayRunnerTest {
             replayEvents.applyBeforeOrAt(player, frame.getClientTick());
             applySprintingAttributeTransition(player, frame);
             player.bedrockState.offerAuthInputFrame(frame);
-            PredictionResult result = player.checkManager.getSimulationProcessor()
+            PredictionResult result = player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(frame, BedrockPredictionTrigger.OFFLINE_REPLAY);
 
             assertNotNull(result);
             printReplayDebug(frame, result);
             PredictionResult.Flag bedrockMovementFlag = result.getFlag(BedrockMovement.class);
             if (!result.isExempt() && bedrockMovementFlag != null) {
-                bedrockMovementFlags.add(FlagSample.from(frame.getClientTick(), bedrockMovementFlag.getSeverity(), result));
+                bedrockMovementFlags.add(
+                        FlagSample.from(frame.getClientTick(), bedrockMovementFlag.getSeverity(), result));
             }
             processed++;
         }
@@ -471,8 +483,9 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static void printReplayDebug(BedrockAuthInputFrame frame, PredictionResult result) {
-        String filter = System.getProperty("bedrockReplayDebugTicks",
-                System.getenv().getOrDefault("BEDROCK_REPLAY_DEBUG_TICKS", "")).trim();
+        String filter = System.getProperty(
+                        "bedrockReplayDebugTicks", System.getenv().getOrDefault("BEDROCK_REPLAY_DEBUG_TICKS", ""))
+                .trim();
         if (filter.isEmpty() || !debugTickSelected(filter, frame.getClientTick())) {
             return;
         }
@@ -537,17 +550,13 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static boolean nearDebugRange(
-            PlacedBlockCollision block,
-            double minX,
-            double maxX,
-            double minY,
-            double maxY,
-            double minZ,
-            double maxZ
-    ) {
-        if (block.position().x() + 1.0D < minX || block.position().x() > maxX
-                || block.position().y() + 1.0D < minY || block.position().y() > maxY
-                || block.position().z() + 1.0D < minZ || block.position().z() > maxZ) {
+            PlacedBlockCollision block, double minX, double maxX, double minY, double maxY, double minZ, double maxZ) {
+        if (block.position().x() + 1.0D < minX
+                || block.position().x() > maxX
+                || block.position().y() + 1.0D < minY
+                || block.position().y() > maxY
+                || block.position().z() + 1.0D < minZ
+                || block.position().z() > maxZ) {
             return false;
         }
         return true;
@@ -556,14 +565,15 @@ public final class OfflineBedrockReplayRunnerTest {
     private static String formatDebugBlock(PlacedBlockCollision block) {
         return block.javaState() + " -> " + block.bedrockIdentifier()
                 + "@" + block.position()
-                + " boxes=" + block.collisionBoxes().stream()
-                .map(OfflineBedrockReplayRunnerTest::formatDebugBox)
-                .toList();
+                + " boxes="
+                + block.collisionBoxes().stream()
+                        .map(OfflineBedrockReplayRunnerTest::formatDebugBox)
+                        .toList();
     }
 
     private static String formatDebugBox(WorldCollisionBox box) {
-        return "[" + box.minX() + "," + box.minY() + "," + box.minZ()
-                + " -> " + box.maxX() + "," + box.maxY() + "," + box.maxZ() + "]";
+        return "[" + box.minX() + "," + box.minY() + "," + box.minZ() + " -> " + box.maxX() + "," + box.maxY() + ","
+                + box.maxZ() + "]";
     }
 
     private static boolean debugTickSelected(String filter, long tick) {
@@ -589,10 +599,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static List<BedrockAuthInputFrame> withReplayStartGliding(
-            List<BedrockAuthInputFrame> frames,
-            JsonObject manifest,
-            int firstReplayFrame
-    ) {
+            List<BedrockAuthInputFrame> frames, JsonObject manifest, int firstReplayFrame) {
         if (!shouldStartGliding(manifest)) {
             return frames;
         }
@@ -679,9 +686,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static BedrockAuthInputFrame.Builder withInputFlag(
-            BedrockAuthInputFrame.Builder builder,
-            PlayerAuthInputData input
-    ) {
+            BedrockAuthInputFrame.Builder builder, PlayerAuthInputData input) {
         int ordinal = input.ordinal();
         return ordinal < Long.SIZE
                 ? builder.rawInputFlags(1L << ordinal)
@@ -689,13 +694,12 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static PacketReceiveEvent<ServerboundMovePlayer> translatedMovementEvent(
-            CultPlayer player,
-            ServerboundMovePlayer packet
-    ) {
+            CultPlayer player, ServerboundMovePlayer packet) {
         return RecordReceiveTestEvents.movement(player, packet);
     }
 
-    private static ReplayFrames applyImpossibleMovementInjection(String replayName, List<BedrockAuthInputFrame> frames) {
+    private static ReplayFrames applyImpossibleMovementInjection(
+            String replayName, List<BedrockAuthInputFrame> frames) {
         int horizontalIndex = selectHorizontalMovementInjectionFrameIndex(replayName, frames);
         int verticalIndex = selectVerticalMovementInjectionFrameIndex(replayName, frames.size(), horizontalIndex);
         BedrockAuthInputFrame horizontalSelected = frames.get(horizontalIndex);
@@ -733,7 +737,8 @@ public final class OfflineBedrockReplayRunnerTest {
                                 verticalExtra))));
     }
 
-    private static int selectHorizontalMovementInjectionFrameIndex(String replayName, List<BedrockAuthInputFrame> frames) {
+    private static int selectHorizontalMovementInjectionFrameIndex(
+            String replayName, List<BedrockAuthInputFrame> frames) {
         int frameCount = frames.size();
         if (frameCount < 3) {
             throw new IllegalArgumentException("Replay " + replayName + " must contain at least 3 auth-input frames");
@@ -745,66 +750,43 @@ public final class OfflineBedrockReplayRunnerTest {
             }
         }
         if (candidates.isEmpty()) {
-            throw new IllegalArgumentException("Replay " + replayName
-                    + " must contain at least one auth-input frame with horizontal input");
+            throw new IllegalArgumentException(
+                    "Replay " + replayName + " must contain at least one auth-input frame with horizontal input");
         }
         return candidates.get(selectMovementInjectionOrdinal(
-                SMALL_REPLAY_INJECTION_DOMAIN,
-                replayName,
-                frameCount,
-                candidates.size()));
+                SMALL_REPLAY_INJECTION_DOMAIN, replayName, frameCount, candidates.size()));
     }
 
-    private static int selectVerticalMovementInjectionFrameIndex(String replayName, int frameCount, int horizontalIndex) {
+    private static int selectVerticalMovementInjectionFrameIndex(
+            String replayName, int frameCount, int horizontalIndex) {
         if (frameCount < 6) {
             throw new IllegalArgumentException("Replay " + replayName + " must contain at least 6 auth-input frames");
         }
         int splitIndex = Math.max(3, frameCount / 2);
         if (horizontalIndex < splitIndex) {
             return selectMovementInjectionFrameIndex(
-                    SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN,
-                    replayName,
-                    frameCount,
-                    splitIndex,
-                    frameCount - 2);
+                    SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN, replayName, frameCount, splitIndex, frameCount - 2);
         }
         return selectMovementInjectionFrameIndex(
-                SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN,
-                replayName,
-                frameCount,
-                1,
-                splitIndex - 1);
+                SMALL_REPLAY_VERTICAL_INJECTION_DOMAIN, replayName, frameCount, 1, splitIndex - 1);
     }
 
     private static int selectMovementInjectionFrameIndex(
-            String domain,
-            String replayName,
-            int frameCount,
-            int startInclusive,
-            int endInclusive
-    ) {
+            String domain, String replayName, int frameCount, int startInclusive, int endInclusive) {
         if (startInclusive < 1 || endInclusive > frameCount - 2 || startInclusive > endInclusive) {
-            throw new IllegalArgumentException("Invalid injection index range for " + replayName + ": "
-                    + startInclusive + ".." + endInclusive + " of " + frameCount);
+            throw new IllegalArgumentException("Invalid injection index range for " + replayName + ": " + startInclusive
+                    + ".." + endInclusive + " of " + frameCount);
         }
-        return startInclusive + selectMovementInjectionOrdinal(
-                domain,
-                replayName,
-                frameCount,
-                endInclusive - startInclusive + 1);
+        return startInclusive
+                + selectMovementInjectionOrdinal(domain, replayName, frameCount, endInclusive - startInclusive + 1);
     }
 
     private static int selectMovementInjectionOrdinal(
-            String domain,
-            String replayName,
-            int frameCount,
-            int candidateCount
-    ) {
+            String domain, String replayName, int frameCount, int candidateCount) {
         if (candidateCount <= 0) {
             throw new IllegalArgumentException("Replay " + replayName + " has no injection candidates");
         }
-        byte[] input = (domain + "\n" + replayName + "\n" + frameCount + "\n")
-                .getBytes(StandardCharsets.UTF_8);
+        byte[] input = (domain + "\n" + replayName + "\n" + frameCount + "\n").getBytes(StandardCharsets.UTF_8);
         byte[] digest = sha256(input);
         long firstEightBytes = 0L;
         for (int i = 0; i < Long.BYTES; i++) {
@@ -828,8 +810,7 @@ public final class OfflineBedrockReplayRunnerTest {
         double inputMagnitude = Math.sqrt(inputX * inputX + inputZ * inputZ);
         if (!(inputMagnitude > MIN_HORIZONTAL_INPUT)) {
             throw new IllegalArgumentException(
-                    "Selected auth-input frame has no provable horizontal input at tick "
-                            + selected.getClientTick());
+                    "Selected auth-input frame has no provable horizontal input at tick " + selected.getClientTick());
         }
 
         double yawRadians = Math.toRadians(selected.getYaw());
@@ -867,12 +848,11 @@ public final class OfflineBedrockReplayRunnerTest {
             ReplayResult result,
             int expectedCount,
             List<Double> expectedOffsets,
-            double tolerance
-    ) {
+            double tolerance) {
         List<FlagSample> flags = validationFlags(scenarioName, result);
         if (expectedCount != flags.size()) {
-            return scenarioName + " BedrockMovement flags expected " + expectedCount + " but was "
-                    + flags.size() + ": " + flags;
+            return scenarioName + " BedrockMovement flags expected " + expectedCount + " but was " + flags.size() + ": "
+                    + flags;
         }
         for (int i = 0; i < expectedOffsets.size(); i++) {
             double expected = expectedOffsets.get(i);
@@ -887,8 +867,8 @@ public final class OfflineBedrockReplayRunnerTest {
 
     private static String authoredMovementAttack(JsonObject manifest) {
         JsonObject mutation = manifest == null
-                || !manifest.has("mutation")
-                || !manifest.get("mutation").isJsonObject()
+                        || !manifest.has("mutation")
+                        || !manifest.get("mutation").isJsonObject()
                 ? null
                 : manifest.getAsJsonObject("mutation");
         if (mutation == null) {
@@ -901,21 +881,15 @@ public final class OfflineBedrockReplayRunnerTest {
         return switch (kind) {
             case "", "nofall", "nofall-twostage" -> null;
             case "nofall-upwipe", "fly", "timer" -> kind;
-            default -> throw new IllegalArgumentException(
-                    "Unclassified replay mutation kind: " + kind);
+            default -> throw new IllegalArgumentException("Unclassified replay mutation kind: " + kind);
         };
     }
 
-    private static String authoredMovementAttackExpectationFailure(
-            String scenarioName,
-            List<FlagSample> flags
-    ) {
+    private static String authoredMovementAttackExpectationFailure(String scenarioName, List<FlagSample> flags) {
         if (flags.isEmpty()) {
-            return scenarioName
-                    + " authored movement attack produced no BedrockMovement flag";
+            return scenarioName + " authored movement attack produced no BedrockMovement flag";
         }
-        if (flags.stream().noneMatch(flag ->
-                flag.offset() > IMPOSSIBLE_MOVEMENT_FLAG_OFFSET_TOLERANCE)) {
+        if (flags.stream().noneMatch(flag -> flag.offset() > IMPOSSIBLE_MOVEMENT_FLAG_OFFSET_TOLERANCE)) {
             return scenarioName
                     + " authored movement attack never exceeded "
                     + IMPOSSIBLE_MOVEMENT_FLAG_OFFSET_TOLERANCE
@@ -958,7 +932,7 @@ public final class OfflineBedrockReplayRunnerTest {
             }
             if (mutation.kind() == MutationKind.VERTICAL
                     && selectedFlag.offset() + IMPOSSIBLE_MOVEMENT_FLAG_OFFSET_TOLERANCE
-                    < IMPOSSIBLE_MOVEMENT_AXIS_OFFSET) {
+                            < IMPOSSIBLE_MOVEMENT_AXIS_OFFSET) {
                 return scenarioName + " injected " + mutation.kind()
                         + " BedrockMovement offset expected at least " + IMPOSSIBLE_MOVEMENT_AXIS_OFFSET
                         + " - " + IMPOSSIBLE_MOVEMENT_FLAG_OFFSET_TOLERANCE + " but was "
@@ -1095,7 +1069,8 @@ public final class OfflineBedrockReplayRunnerTest {
         player.checkManager.getSimulationProcessor().seedStartingVelocity(velocity);
     }
 
-    private static Vec3 initialVelocity(JsonObject manifest, Path packetsPath, BedrockAuthInputFrame firstFrame) throws Exception {
+    private static Vec3 initialVelocity(JsonObject manifest, Path packetsPath, BedrockAuthInputFrame firstFrame)
+            throws Exception {
         JsonObject replay = manifest.getAsJsonObject("replay");
         JsonObject velocity = replay == null ? null : replay.getAsJsonObject("initialVelocity");
         if (velocity != null) {
@@ -1107,10 +1082,7 @@ public final class OfflineBedrockReplayRunnerTest {
         if (!startsWithHorizontalVelocity(firstFrame)) {
             return firstPacketHorizontalDebugVelocity(packetsPath);
         }
-        return new Vec3(
-                firstFrame.getDelta().x,
-                0.0D,
-                firstFrame.getDelta().z);
+        return new Vec3(firstFrame.getDelta().x, 0.0D, firstFrame.getDelta().z);
     }
 
     private static Vec3 firstPacketHorizontalDebugVelocity(Path packetsPath) throws Exception {
@@ -1133,10 +1105,7 @@ public final class OfflineBedrockReplayRunnerTest {
                 if (delta == null) {
                     return null;
                 }
-                Vec3 debugDelta = new Vec3(
-                        doubleValue(delta, "x", 0.0D),
-                        0.0D,
-                        doubleValue(delta, "z", 0.0D));
+                Vec3 debugDelta = new Vec3(doubleValue(delta, "x", 0.0D), 0.0D, doubleValue(delta, "z", 0.0D));
                 return startsWithHorizontalVelocity(debugDelta) ? debugDelta : null;
             }
         }
@@ -1188,12 +1157,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static List<BedrockAuthInputFrame> testFrames(
-            int frameCount,
-            int selectedIndex,
-            long firstTick,
-            double selectedDx,
-            double selectedDz
-    ) {
+            int frameCount, int selectedIndex, long firstTick, double selectedDx, double selectedDz) {
         return testFrames(frameCount, selectedIndex, firstTick, selectedDx, selectedDz, 0.25F, -0.5F, 45.0F);
     }
 
@@ -1205,8 +1169,7 @@ public final class OfflineBedrockReplayRunnerTest {
             double selectedDz,
             float moveX,
             float moveZ,
-            float yaw
-    ) {
+            float yaw) {
         List<BedrockAuthInputFrame> frames = new ArrayList<>(frameCount);
         for (int i = 0; i < frameCount; i++) {
             double x = i * 0.25D;
@@ -1228,14 +1191,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static BedrockAuthInputFrame testFrame(
-            long clientTick,
-            double x,
-            double y,
-            double z,
-            float moveX,
-            float moveZ,
-            float yaw
-    ) {
+            long clientTick, double x, double y, double z, float moveX, float moveZ, float yaw) {
         long inputFlags = inputFlagMask(PlayerAuthInputData.JUMPING)
                 | inputFlagMask(PlayerAuthInputData.SPRINTING)
                 | inputFlagMask(PlayerAuthInputData.START_GLIDING);
@@ -1274,9 +1230,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private static BedrockAuthInputFrame withMoveVector(BedrockAuthInputFrame frame, float x, float z) {
-        return copyFrameBuilder(frame)
-                .moveVector(x, z)
-                .build();
+        return copyFrameBuilder(frame).moveVector(x, z).build();
     }
 
     private static void assertShifted(Vec3 original, Vec3 mutated, Vec3 shift) {
@@ -1323,8 +1277,7 @@ public final class OfflineBedrockReplayRunnerTest {
         }
     }
 
-    private record ReplayFrames(List<BedrockAuthInputFrame> frames, ReplayInjectionPlan injection) {
-    }
+    private record ReplayFrames(List<BedrockAuthInputFrame> frames, ReplayInjectionPlan injection) {}
 
     private record ReplayInjectionPlan(List<ReplayMutation> mutations) {
         private boolean allowsFlagTick(long tick) {
@@ -1337,11 +1290,12 @@ public final class OfflineBedrockReplayRunnerTest {
         }
 
         private List<Long> allowedFlagTicks() {
-            List<Long> ticks = new ArrayList<>(mutations.size() * ((int) IMPOSSIBLE_MOVEMENT_ALLOWED_FALLOUT_TICKS + 1));
+            List<Long> ticks =
+                    new ArrayList<>(mutations.size() * ((int) IMPOSSIBLE_MOVEMENT_ALLOWED_FALLOUT_TICKS + 1));
             for (ReplayMutation mutation : mutations) {
                 for (long tick = mutation.selectedTick();
-                     tick <= mutation.followingTick() + IMPOSSIBLE_MOVEMENT_ALLOWED_FALLOUT_TICKS;
-                     tick++) {
+                        tick <= mutation.followingTick() + IMPOSSIBLE_MOVEMENT_ALLOWED_FALLOUT_TICKS;
+                        tick++) {
                     addUnique(ticks, tick);
                 }
             }
@@ -1365,12 +1319,7 @@ public final class OfflineBedrockReplayRunnerTest {
     }
 
     private record ReplayMutation(
-            MutationKind kind,
-            int selectedIndex,
-            long selectedTick,
-            long followingTick,
-            Vec3 extra
-    ) {
+            MutationKind kind, int selectedIndex, long selectedTick, long followingTick, Vec3 extra) {
         private boolean allowsFlagTick(long tick) {
             return tick >= selectedTick && tick <= followingTick + IMPOSSIBLE_MOVEMENT_ALLOWED_FALLOUT_TICKS;
         }
@@ -1381,8 +1330,7 @@ public final class OfflineBedrockReplayRunnerTest {
         VERTICAL
     }
 
-    private record ReplayResult(List<FlagSample> bedrockMovementFlags, ReplayInjectionPlan injection) {
-    }
+    private record ReplayResult(List<FlagSample> bedrockMovementFlags, ReplayInjectionPlan injection) {}
 
     private record FlagSample(
             long tick,
@@ -1410,12 +1358,13 @@ public final class OfflineBedrockReplayRunnerTest {
             boolean postBubbleDown,
             boolean steppedUp,
             boolean stepRetryAllowed,
-            String postMoveFluid
-    ) {
+            String postMoveFluid) {
         private static FlagSample from(long tick, double offset, PredictionResult result) {
             BedrockPredictionResult bedrockResult = result.getProfileResult(BedrockPredictionResult.class);
             if (bedrockResult == null || bedrockResult.observation() == null) {
-                return new FlagSample(tick, offset, null, null, null, null, null, null, null, null, 0.0D, 0.0D, null, null, null, "", "", false, "", false, false, false, false, false, false, "");
+                return new FlagSample(
+                        tick, offset, null, null, null, null, null, null, null, null, 0.0D, 0.0D, null, null, null, "",
+                        "", false, "", false, false, false, false, false, false, "");
             }
             BedrockMovementResult movementResult = bedrockResult.movementResult();
             return new FlagSample(
@@ -1431,40 +1380,52 @@ public final class OfflineBedrockReplayRunnerTest {
                     bedrockResult.observation().observedHorizontalInput(),
                     bedrockResult.observation().horizontalInputLimit(),
                     bedrockResult.observation().horizontalInputExcess(),
-                    movementResult == null ? null : movementResult.previousState().physicalFeetPosition(),
-                    movementResult == null ? null : movementResult.previousState().velocity(),
+                    movementResult == null
+                            ? null
+                            : movementResult.previousState().physicalFeetPosition(),
+                    movementResult == null
+                            ? null
+                            : movementResult.previousState().velocity(),
                     movementResult == null ? null : movementResult.collisionInputVelocity(),
-                    movementResult == null ? "" : movementResult.previousState().collisionFlags().toString(),
-                    movementResult == null ? "" : movementResult.predictedState().collisionFlags().toString(),
+                    movementResult == null
+                            ? ""
+                            : movementResult.previousState().collisionFlags().toString(),
+                    movementResult == null
+                            ? ""
+                            : movementResult.predictedState().collisionFlags().toString(),
                     movementResult != null && movementResult.previousState().waterTravelFlag(),
-                    movementResult == null ? "" : movementResult.previousState().movementBranch().toString(),
+                    movementResult == null
+                            ? ""
+                            : movementResult.previousState().movementBranch().toString(),
                     movementResult != null && movementResult.movementContext().inWater(),
                     movementResult != null && movementResult.postMoveContext().inWater(),
                     movementResult != null && movementResult.postMoveContext().inUpwardBubbleColumn(),
                     movementResult != null && movementResult.postMoveContext().inDownwardBubbleColumn(),
                     movementResult != null && movementResult.steppedUp(),
                     movementResult != null && movementResult.stepRetryAllowed(),
-                    movementResult == null ? "" : movementResult.postMoveContext().worldState().fluidState().toString());
+                    movementResult == null
+                            ? ""
+                            : movementResult
+                                    .postMoveContext()
+                                    .worldState()
+                                    .fluidState()
+                                    .toString());
         }
     }
 
     private static void bootstrapSetbackAnchor(CultPlayer player, SetbackPosWithVector safe) {
         int bootstrapTransaction = player.lastTransactionSent.get();
-        player.getSetbackTeleportUtil().addSentTeleport(
-                safe.getPos(), bootstrapTransaction, new RelativeFlag(0), true, -2);
+        player.getSetbackTeleportUtil()
+                .addSentTeleport(safe.getPos(), bootstrapTransaction, new RelativeFlag(0), true, -2);
         player.lastTransactionReceived.set(bootstrapTransaction);
-        assertTrue(player.getSetbackTeleportUtil().checkTeleportQueue(
-                safe.getPos().x, safe.getPos().y, safe.getPos().z).isTeleport());
+        assertTrue(player.getSetbackTeleportUtil()
+                .checkTeleportQueue(safe.getPos().x, safe.getPos().y, safe.getPos().z)
+                .isTeleport());
         player.getSetbackTeleportUtil().lastKnownGoodPosition = safe;
     }
 
     private static void buildFlatGroundWithTwoBlockPillar(
-            CultPlayer player,
-            Vec3 start,
-            int groundY,
-            int pillarX,
-            int pillarZ
-    ) {
+            CultPlayer player, Vec3 start, int groundY, int pillarX, int pillarZ) {
         int startX = (int) Math.floor(start.x);
         int startZ = (int) Math.floor(start.z);
         for (int x = startX - 2; x <= startX + 3; x++) {
@@ -1475,8 +1436,7 @@ public final class OfflineBedrockReplayRunnerTest {
                 }
             }
         }
-        player.compensatedWorld.applyBlockChangeRawDANGER(
-                pillarX, groundY, pillarZ, Blocks.STONE.defaultBlockState());
+        player.compensatedWorld.applyBlockChangeRawDANGER(pillarX, groundY, pillarZ, Blocks.STONE.defaultBlockState());
         player.compensatedWorld.applyBlockChangeRawDANGER(
                 pillarX, groundY + 1, pillarZ, Blocks.STONE.defaultBlockState());
     }
@@ -1506,7 +1466,8 @@ public final class OfflineBedrockReplayRunnerTest {
                         p.bedrockState.offerAuthInputFrame(frame);
                         return captureAscentResult(p, frame, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 2: Two-frame split ascent
             outcomes.add(attemptPillarAscent(
@@ -1516,14 +1477,17 @@ public final class OfflineBedrockReplayRunnerTest {
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
                         Vec3 pillarBottomBlock = new Vec3(pillarX + 0.5D, groundY + 1.00001D, pillarZ + 0.5D);
-                        BedrockAuthInputFrame frame1 = syntheticPillarFrame(baseTick, pillarBottomBlock, false, true, false);
+                        BedrockAuthInputFrame frame1 =
+                                syntheticPillarFrame(baseTick, pillarBottomBlock, false, true, false);
                         p.bedrockState.offerAuthInputFrame(frame1);
                         captureAscentResult(p, frame1, pillarTop, groundY);
-                        BedrockAuthInputFrame frame2 = syntheticPillarFrame(baseTick + 1, pillarTop, false, true, false);
+                        BedrockAuthInputFrame frame2 =
+                                syntheticPillarFrame(baseTick + 1, pillarTop, false, true, false);
                         p.bedrockState.offerAuthInputFrame(frame2);
                         return captureAscentResult(p, frame2, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 3: Gradual micro-step ascent (4 frames)
             outcomes.add(attemptPillarAscent(
@@ -1539,13 +1503,15 @@ public final class OfflineBedrockReplayRunnerTest {
                                     0.5D + fraction * (pillarTop.x - 0.5D),
                                     groundY + fraction * 2.0D,
                                     0.5D + fraction * (pillarTop.z - 0.5D));
-                            BedrockAuthInputFrame frame = syntheticPillarFrame(baseTick + step - 1, mid, false, step == 1, false);
+                            BedrockAuthInputFrame frame =
+                                    syntheticPillarFrame(baseTick + step - 1, mid, false, step == 1, false);
                             p.bedrockState.offerAuthInputFrame(frame);
                             last = captureAscentResult(p, frame, pillarTop, groundY);
                         }
                         return last;
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 4: Sprint approach then jump
             outcomes.add(attemptPillarAscent(
@@ -1554,14 +1520,16 @@ public final class OfflineBedrockReplayRunnerTest {
                         CultPlayer p = offlinePlayer();
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, new Vec3(1.5D, groundY, 0.5D));
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
-                        BedrockAuthInputFrame approach = syntheticPillarFrame(baseTick, new Vec3(2.5D, groundY, 0.5D), false, false, true);
+                        BedrockAuthInputFrame approach =
+                                syntheticPillarFrame(baseTick, new Vec3(2.5D, groundY, 0.5D), false, false, true);
                         p.bedrockState.offerAuthInputFrame(approach);
                         captureAscentResult(p, approach, pillarTop, groundY);
                         BedrockAuthInputFrame launch = syntheticPillarFrame(baseTick + 1, pillarTop, false, true, true);
                         p.bedrockState.offerAuthInputFrame(launch);
                         return captureAscentResult(p, launch, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 5: Diagonal slip into pillar then top
             outcomes.add(attemptPillarAscent(
@@ -1571,14 +1539,16 @@ public final class OfflineBedrockReplayRunnerTest {
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
                         Vec3 insidePillarBottom = new Vec3(pillarX + 0.5D, groundY, pillarZ + 0.5D);
-                        BedrockAuthInputFrame slipIn = syntheticPillarFrame(baseTick, insidePillarBottom, false, false, false);
+                        BedrockAuthInputFrame slipIn =
+                                syntheticPillarFrame(baseTick, insidePillarBottom, false, false, false);
                         p.bedrockState.offerAuthInputFrame(slipIn);
                         captureAscentResult(p, slipIn, pillarTop, groundY);
                         BedrockAuthInputFrame top = syntheticPillarFrame(baseTick + 1, pillarTop, false, true, false);
                         p.bedrockState.offerAuthInputFrame(top);
                         return captureAscentResult(p, top, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 6: Report a jump directly at the pillar top
             outcomes.add(attemptPillarAscent(
@@ -1587,12 +1557,14 @@ public final class OfflineBedrockReplayRunnerTest {
                         CultPlayer p = offlinePlayer();
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
-                        BedrockAuthInputFrame frame = syntheticPillarFrameBuilder(baseTick, pillarTop, false, true, false)
+                        BedrockAuthInputFrame frame = syntheticPillarFrameBuilder(
+                                        baseTick, pillarTop, false, true, false)
                                 .build();
                         p.bedrockState.offerAuthInputFrame(frame);
                         return captureAscentResult(p, frame, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 7: Sneak + step up attempt
             outcomes.add(attemptPillarAscent(
@@ -1602,14 +1574,19 @@ public final class OfflineBedrockReplayRunnerTest {
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
                         Vec3 adjacentToPillar = new Vec3(pillarX - 1.0D + 0.5D, groundY, pillarZ + 0.5D);
-                        BedrockAuthInputFrame sneak = syntheticPillarFrameBuilder(baseTick, adjacentToPillar, true, false, false).build();
+                        BedrockAuthInputFrame sneak = syntheticPillarFrameBuilder(
+                                        baseTick, adjacentToPillar, true, false, false)
+                                .build();
                         p.bedrockState.offerAuthInputFrame(sneak);
                         captureAscentResult(p, sneak, pillarTop, groundY);
-                        BedrockAuthInputFrame stepUp = syntheticPillarFrameBuilder(baseTick + 1, pillarTop, true, true, false).build();
+                        BedrockAuthInputFrame stepUp = syntheticPillarFrameBuilder(
+                                        baseTick + 1, pillarTop, true, true, false)
+                                .build();
                         p.bedrockState.offerAuthInputFrame(stepUp);
                         return captureAscentResult(p, stepUp, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 8: Swim/crawl through pillar
             outcomes.add(attemptPillarAscent(
@@ -1618,14 +1595,16 @@ public final class OfflineBedrockReplayRunnerTest {
                         CultPlayer p = offlinePlayer();
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
-                        BedrockAuthInputFrame swim = syntheticPillarFrameBuilder(baseTick, pillarTop, false, true, false)
+                        BedrockAuthInputFrame swim = syntheticPillarFrameBuilder(
+                                        baseTick, pillarTop, false, true, false)
                                 .startSwimming(true)
                                 .swimming(true)
                                 .build();
                         p.bedrockState.offerAuthInputFrame(swim);
                         return captureAscentResult(p, swim, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 9: High-delta velocity claim
             outcomes.add(attemptPillarAscent(
@@ -1636,19 +1615,28 @@ public final class OfflineBedrockReplayRunnerTest {
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
                         Vec3 deltaToTop = new Vec3(pillarTop.x - groundPosition.x, 2.0D, 0.0D);
                         BedrockAuthInputFrame frame = BedrockAuthInputFrame.builder(PLAYER_UUID)
-                                .protocolVersion(0).clientTick(baseTick)
-                                .inputMode(1).playMode(2).deviceId(3)
+                                .protocolVersion(0)
+                                .clientTick(baseTick)
+                                .inputMode(1)
+                                .playMode(2)
+                                .deviceId(3)
                                 .position(pillarTop)
                                 .packetPosition(new Vec3(pillarTop.x, pillarTop.y + 1.62D, pillarTop.z))
-                                .delta(deltaToTop).rotation(45.0F, 10.0F, 50.0F)
+                                .delta(deltaToTop)
+                                .rotation(45.0F, 10.0F, 50.0F)
                                 .moveVector(0.0F, 0.0F)
-                                .jumping(true).jumpStarted(true).jumpCurrentRaw(true).jumpPressedRaw(true).wantUp(true)
+                                .jumping(true)
+                                .jumpStarted(true)
+                                .jumpCurrentRaw(true)
+                                .jumpPressedRaw(true)
+                                .wantUp(true)
                                 .authorityMode("client-auth-input")
                                 .build();
                         p.bedrockState.offerAuthInputFrame(frame);
                         return captureAscentResult(p, frame, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
             // Technique 10: Glide-in from above
             outcomes.add(attemptPillarAscent(
@@ -1658,13 +1646,15 @@ public final class OfflineBedrockReplayRunnerTest {
                         buildWorldAndSeed(p, pillarX, pillarZ, groundY, groundPosition);
                         bootstrapSetbackAnchor(p, p.getSetbackTeleportUtil().lastKnownGoodPosition);
                         Vec3 abovePillar = new Vec3(pillarX + 0.5D, groundY + 3.0D, pillarZ + 0.5D);
-                        BedrockAuthInputFrame glideDescend = syntheticPillarFrameBuilder(baseTick, abovePillar, false, false, false)
+                        BedrockAuthInputFrame glideDescend = syntheticPillarFrameBuilder(
+                                        baseTick, abovePillar, false, false, false)
                                 .startGliding(true)
                                 .build();
                         p.bedrockState.offerAuthInputFrame(glideDescend);
                         return captureAscentResult(p, glideDescend, pillarTop, groundY);
                     },
-                    pillarTop, groundY));
+                    pillarTop,
+                    groundY));
 
         } finally {
             OfflineCultTestBootstrap.clearDoubleConfigOverride("Simulation.immediate-setback-threshold");
@@ -1686,11 +1676,20 @@ public final class OfflineBedrockReplayRunnerTest {
         }
 
         summary.append("Adversarial pillar-ascent battery results:\n");
-        summary.append("- ").append(correctlyBlocked.size()).append("/").append(outcomes.size())
+        summary.append("- ")
+                .append(correctlyBlocked.size())
+                .append("/")
+                .append(outcomes.size())
                 .append(" techniques detected and setback\n");
-        summary.append("- ").append(bypasses.size()).append("/").append(outcomes.size())
+        summary.append("- ")
+                .append(bypasses.size())
+                .append("/")
+                .append(outcomes.size())
                 .append(" techniques bypassing detection\n");
-        summary.append("- ").append(unexpected.size()).append("/").append(outcomes.size())
+        summary.append("- ")
+                .append(unexpected.size())
+                .append("/")
+                .append(outcomes.size())
                 .append(" techniques with unexpected results\n");
 
         if (!bypasses.isEmpty()) {
@@ -1703,9 +1702,13 @@ public final class OfflineBedrockReplayRunnerTest {
 
         if (!unexpected.isEmpty()) {
             for (PillarAscentOutcome u : unexpected) {
-                summary.append("unexpected: ").append(u.techniqueName())
-                        .append(" pos=").append(u.postPredictionPosition())
-                        .append(" severity=").append(u.severity()).append("\n");
+                summary.append("unexpected: ")
+                        .append(u.techniqueName())
+                        .append(" pos=")
+                        .append(u.postPredictionPosition())
+                        .append(" severity=")
+                        .append(u.severity())
+                        .append("\n");
             }
         }
         System.err.println(summary);
@@ -1720,8 +1723,7 @@ public final class OfflineBedrockReplayRunnerTest {
             boolean flagged,
             boolean setbackPending,
             boolean reachedPillarTop,
-            String detail
-    ) {
+            String detail) {
         boolean isBypass() {
             return reachedPillarTop && !flagged && !setbackPending;
         }
@@ -1729,28 +1731,32 @@ public final class OfflineBedrockReplayRunnerTest {
 
     /** Runs a single adversarial ascent attempt and records the outcome. */
     private static PillarAscentOutcome attemptPillarAscent(
-            String name,
-            AscentSupplier supplier,
-            Vec3 pillarTop,
-            double groundY
-    ) {
+            String name, AscentSupplier supplier, Vec3 pillarTop, double groundY) {
         CultPlayer player = null;
         try {
             PillarAscentOutcome result = supplier.run();
             // Ensure the technique name is set on the result
             if (result.techniqueName() == null) {
                 return new PillarAscentOutcome(
-                        name, result.attemptedPillarTop(),
-                        result.postPredictionPosition(), result.severity(),
-                        result.flagged(), result.setbackPending(),
-                        result.reachedPillarTop(), result.detail());
+                        name,
+                        result.attemptedPillarTop(),
+                        result.postPredictionPosition(),
+                        result.severity(),
+                        result.flagged(),
+                        result.setbackPending(),
+                        result.reachedPillarTop(),
+                        result.detail());
             }
             return result;
         } catch (Exception e) {
             return new PillarAscentOutcome(
-                    name, pillarTop,
+                    name,
+                    pillarTop,
                     player == null ? Vec3.ZERO : new Vec3(player.x, player.y, player.z),
-                    null, false, false, false,
+                    null,
+                    false,
+                    false,
+                    false,
                     "error: " + e.getMessage());
         }
     }
@@ -1762,12 +1768,9 @@ public final class OfflineBedrockReplayRunnerTest {
 
     /** Captures the result of processing a single frame. */
     private static PillarAscentOutcome captureAscentResult(
-            CultPlayer p,
-            BedrockAuthInputFrame frame,
-            Vec3 pillarTop,
-            double groundY
-    ) {
-        PredictionResult result = p.checkManager.getSimulationProcessor()
+            CultPlayer p, BedrockAuthInputFrame frame, Vec3 pillarTop, double groundY) {
+        PredictionResult result = p.checkManager
+                .getSimulationProcessor()
                 .processBedrockAuthInputFrame(frame, BedrockPredictionTrigger.OFFLINE_REPLAY);
 
         Vec3 pos = new Vec3(p.x, p.y, p.z);
@@ -1777,21 +1780,14 @@ public final class OfflineBedrockReplayRunnerTest {
         boolean setbackPending = p.getSetbackTeleportUtil().isPendingSetback();
         double horizDist = Math.sqrt(Math.pow(pos.x - pillarTop.x, 2) + Math.pow(pos.z - pillarTop.z, 2));
         boolean reachedTop = horizDist < 0.3D && pos.y >= groundY + 1.9D;
-        String detail = result == null ? "null" :
-                (movementFlag == null ? "noFlag" : "severity=" + severity);
+        String detail = result == null ? "null" : (movementFlag == null ? "noFlag" : "severity=" + severity);
 
-        return new PillarAscentOutcome(
-                null, pillarTop, pos, severity, flagged, setbackPending, reachedTop, detail);
+        return new PillarAscentOutcome(null, pillarTop, pos, severity, flagged, setbackPending, reachedTop, detail);
     }
 
     /** Builds the flat-ground + pillar world and seeds the player. */
     private static void buildWorldAndSeed(
-            CultPlayer player,
-            int pillarX,
-            int pillarZ,
-            double groundY,
-            Vec3 groundPosition
-    ) {
+            CultPlayer player, int pillarX, int pillarZ, double groundY, Vec3 groundPosition) {
         player.gamemode = GameMode.SURVIVAL;
         player.canFly = false;
         player.isFlying = false;
@@ -1803,22 +1799,13 @@ public final class OfflineBedrockReplayRunnerTest {
 
     /** Creates a synthetic BedrockAuthInputFrame at the given position. */
     private static BedrockAuthInputFrame syntheticPillarFrame(
-            long tick,
-            Vec3 position,
-            boolean sneaking,
-            boolean jumping,
-            boolean sprinting
-    ) {
-        return syntheticPillarFrameBuilder(tick, position, sneaking, jumping, sprinting).build();
+            long tick, Vec3 position, boolean sneaking, boolean jumping, boolean sprinting) {
+        return syntheticPillarFrameBuilder(tick, position, sneaking, jumping, sprinting)
+                .build();
     }
 
     private static BedrockAuthInputFrame.Builder syntheticPillarFrameBuilder(
-            long tick,
-            Vec3 position,
-            boolean sneaking,
-            boolean jumping,
-            boolean sprinting
-    ) {
+            long tick, Vec3 position, boolean sneaking, boolean jumping, boolean sprinting) {
         long flags = 0;
         if (jumping) {
             flags |= 1L << PlayerAuthInputData.JUMPING.ordinal();
@@ -1836,21 +1823,29 @@ public final class OfflineBedrockReplayRunnerTest {
             flags |= 1L << PlayerAuthInputData.SPRINTING.ordinal();
         }
         return BedrockAuthInputFrame.builder(PLAYER_UUID)
-                .protocolVersion(0).clientTick(tick)
-                .inputMode(1).playMode(2).deviceId(3)
+                .protocolVersion(0)
+                .clientTick(tick)
+                .inputMode(1)
+                .playMode(2)
+                .deviceId(3)
                 .position(position)
                 .packetPosition(new Vec3(position.x, position.y + 1.62D, position.z))
                 .delta(Vec3.ZERO)
                 .rotation(45.0F, 10.0F, 50.0F)
                 .moveVector(0.0F, 0.0F)
                 .rawInputFlags(flags)
-                .jumping(jumping).jumpStarted(jumping).jumpPressedRaw(jumping).jumpCurrentRaw(jumping).wantUp(jumping)
-                .sneaking(sneaking).startSneaking(sneaking)
+                .jumping(jumping)
+                .jumpStarted(jumping)
+                .jumpPressedRaw(jumping)
+                .jumpCurrentRaw(jumping)
+                .wantUp(jumping)
+                .sneaking(sneaking)
+                .startSneaking(sneaking)
                 .sprinting(sprinting)
                 .authorityMode("client-auth-input");
     }
 
-        @Test
+    @Test
     public void duplicateTickBypassesBedrockMovementCheck() throws Exception {
         OfflineCultTestBootstrap.installConfig();
         OfflineCultTestBootstrap.setDoubleConfigOverride("Simulation.immediate-setback-threshold", 0.01D);
@@ -1872,8 +1867,12 @@ public final class OfflineBedrockReplayRunnerTest {
             buildFlatGroundWithTwoBlockPillar(player, groundPos, (int) groundY, pillarX, pillarZ);
 
             // Seed player at ground
-            player.x = groundPos.x; player.y = groundPos.y; player.z = groundPos.z;
-            player.lastX = groundPos.x; player.lastY = groundPos.y; player.lastZ = groundPos.z;
+            player.x = groundPos.x;
+            player.y = groundPos.y;
+            player.z = groundPos.z;
+            player.lastX = groundPos.x;
+            player.lastY = groundPos.y;
+            player.lastZ = groundPos.z;
             player.boundingBox = GetBoundingBox.getCollisionBoxForPlayer(player, groundPos.x, groundPos.y, groundPos.z);
             boolean onGround = Collisions.collide(player, 0, -SimpleCollisionBox.COLLISION_EPSILON, 0).y == 0;
             player.onGround = onGround;
@@ -1882,13 +1881,17 @@ public final class OfflineBedrockReplayRunnerTest {
             // Frame 1: Accept legitimate frame at tick=100
             BedrockAuthInputFrame acceptedFrame = syntheticPillarFrame(100, groundPos, false, false, false);
             player.bedrockState.offerAuthInputFrame(acceptedFrame);
-            PredictionResult accepted = player.checkManager.getSimulationProcessor()
+            PredictionResult accepted = player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(acceptedFrame, BedrockPredictionTrigger.OFFLINE_REPLAY);
             assertNotNull(accepted);
             // The first frame may or may not flag, depending on ground state.
             // Accept it even if flagged for the exploit test.
             System.err.println("Frame 1 (legitimate): flagged=" + accepted.hasFlag(BedrockMovement.class)
-                    + " severity=" + (accepted.hasFlag(BedrockMovement.class) ? accepted.getFlag(BedrockMovement.class).getSeverity() : 0)
+                    + " severity="
+                    + (accepted.hasFlag(BedrockMovement.class)
+                            ? accepted.getFlag(BedrockMovement.class).getSeverity()
+                            : 0)
                     + " setback=" + player.getSetbackTeleportUtil().isPendingSetback()
                     + " pos=" + new Vec3(player.x, player.y, player.z));
 
@@ -1904,14 +1907,17 @@ public final class OfflineBedrockReplayRunnerTest {
 
             BedrockAuthInputFrame exploitFrame = syntheticPillarFrame(100, pillarTop, false, true, true);
             player.bedrockState.offerAuthInputFrame(exploitFrame);
-            PredictionResult exploitResult = player.checkManager.getSimulationProcessor()
+            PredictionResult exploitResult = player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(exploitFrame, BedrockPredictionTrigger.OFFLINE_REPLAY);
             assertNotNull(exploitResult);
 
             Vec3 postExploitPos = new Vec3(player.x, player.y, player.z);
             boolean postExploitSetback = player.getSetbackTeleportUtil().isPendingSetback();
             boolean exploitFlagged = exploitResult.hasFlag(BedrockMovement.class);
-            double exploitSeverity = exploitFlagged ? exploitResult.getFlag(BedrockMovement.class).getSeverity() : 0.0;
+            double exploitSeverity = exploitFlagged
+                    ? exploitResult.getFlag(BedrockMovement.class).getSeverity()
+                    : 0.0;
 
             System.err.println("Exploit frame: flagged=" + exploitFlagged + " severity=" + exploitSeverity);
             System.err.println("After exploit: pos=" + postExploitPos + " setback=" + postExploitSetback);
@@ -1920,7 +1926,8 @@ public final class OfflineBedrockReplayRunnerTest {
             // SKIPS because the tick is a duplicate of the first frame.
             // Result: player position IS updated to pillar top, but NO setback is triggered.
 
-            double horizDist = Math.sqrt(Math.pow(postExploitPos.x - pillarTop.x, 2) + Math.pow(postExploitPos.z - pillarTop.z, 2));
+            double horizDist = Math.sqrt(
+                    Math.pow(postExploitPos.x - pillarTop.x, 2) + Math.pow(postExploitPos.z - pillarTop.z, 2));
             boolean atTop = horizDist < 0.3D && Math.abs(postExploitPos.y - pillarTop.y) < 0.3D;
 
             if (atTop && !postExploitSetback) {
@@ -1931,8 +1938,8 @@ public final class OfflineBedrockReplayRunnerTest {
                         + " bypasses BedrockMovement check. Player reached pillar top "
                         + postExploitPos + " without setback.");
             } else {
-                System.err.println("Exploit partially effective: atTop=" + atTop
-                        + " setback=" + postExploitSetback + " pos=" + postExploitPos);
+                System.err.println("Exploit partially effective: atTop=" + atTop + " setback=" + postExploitSetback
+                        + " pos=" + postExploitPos);
             }
         } finally {
             if (player != null) {
@@ -1941,14 +1948,6 @@ public final class OfflineBedrockReplayRunnerTest {
             OfflineCultTestBootstrap.clearDoubleConfigOverride("Simulation.immediate-setback-threshold");
         }
     }
-
-
-
-
-
-
-
-
 
     @Test
     public void initialBedrockPositionBoundaryAnchorsFirstMovementSetback() throws Exception {
@@ -1968,8 +1967,12 @@ public final class OfflineBedrockReplayRunnerTest {
             player.isFlying = false;
             buildFlatGroundWithTwoBlockPillar(player, groundPos, (int) groundY, pillarX, pillarZ);
 
-            player.x = groundPos.x; player.y = groundPos.y; player.z = groundPos.z;
-            player.lastX = groundPos.x; player.lastY = groundPos.y; player.lastZ = groundPos.z;
+            player.x = groundPos.x;
+            player.y = groundPos.y;
+            player.z = groundPos.z;
+            player.lastX = groundPos.x;
+            player.lastY = groundPos.y;
+            player.lastZ = groundPos.z;
             player.boundingBox = GetBoundingBox.getCollisionBoxForPlayer(player, groundPos.x, groundPos.y, groundPos.z);
             boolean onGround = Collisions.collide(player, 0, -SimpleCollisionBox.COLLISION_EPSILON, 0).y == 0;
             player.onGround = onGround;
@@ -1981,21 +1984,23 @@ public final class OfflineBedrockReplayRunnerTest {
             player.getSetbackTeleportUtil().addImmediateBedrockTransportTeleport(groundPos, onGround);
             assertNull(player.getSetbackTeleportUtil().getRequiredSetBack());
 
-            TeleportAcceptData accepted = player.getSetbackTeleportUtil()
-                    .acknowledgeBedrockTeleportFrame(groundPos);
+            TeleportAcceptData accepted = player.getSetbackTeleportUtil().acknowledgeBedrockTeleportFrame(groundPos);
             assertTrue(accepted.isTeleport());
             assertTrue(accepted.isInitialSpawnTeleport());
             player.checkManager.getSimulationProcessor().applyAcceptedBedrockTeleport(accepted);
             assertTrue(player.getSetbackTeleportUtil().hasFullyLoaded);
             assertTrue(player.getSetbackTeleportUtil().hasFullyJoined);
             assertNull(player.getSetbackTeleportUtil().getRequiredSetBack());
-            assertEquals(groundPos, player.getSetbackTeleportUtil().lastKnownGoodPosition.getPos());
+            assertEquals(
+                    groundPos,
+                    player.getSetbackTeleportUtil().lastKnownGoodPosition.getPos());
 
             // The first movement after the acknowledged spawn boundary is an
             // impossible pillar teleport and must be corrected to that boundary.
             BedrockAuthInputFrame exploitFrame = syntheticPillarFrame(100, pillarTop, false, true, true);
             player.bedrockState.offerAuthInputFrame(exploitFrame);
-            PredictionResult exploitResult = player.checkManager.getSimulationProcessor()
+            PredictionResult exploitResult = player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(exploitFrame, BedrockPredictionTrigger.OFFLINE_REPLAY);
             assertNotNull(exploitResult);
 
@@ -2003,8 +2008,12 @@ public final class OfflineBedrockReplayRunnerTest {
             assertTrue(exploitResult.hasFlag(BedrockMovement.class));
             assertTrue(player.getSetbackTeleportUtil().isPendingSetback());
             assertFalse(player.getSetbackTeleportUtil().getRequiredSetBack().isPlugin());
-            assertEquals(groundPos, player.getSetbackTeleportUtil()
-                    .getRequiredSetBack().getTeleportData().getLocation());
+            assertEquals(
+                    groundPos,
+                    player.getSetbackTeleportUtil()
+                            .getRequiredSetBack()
+                            .getTeleportData()
+                            .getLocation());
             assertEquals(groundPos, postExploitPos);
         } finally {
             if (player != null) {
@@ -2013,12 +2022,12 @@ public final class OfflineBedrockReplayRunnerTest {
         }
     }
 
-
     @Test
     public void blankAuthorityModeDoesNotBypassBedrockMovement() throws Exception {
         OfflineCultTestBootstrap.installConfig();
         OfflineCultTestBootstrap.setDoubleConfigOverride("Simulation.immediate-setback-threshold", 0.01D);
-        OfflineCultTestBootstrap.setDoubleConfigOverride("cult.checks.bedrock-movement.position-flag-threshold", 0.001D);
+        OfflineCultTestBootstrap.setDoubleConfigOverride(
+                "cult.checks.bedrock-movement.position-flag-threshold", 0.001D);
 
         CultPlayer player = null;
         try {
@@ -2034,19 +2043,23 @@ public final class OfflineBedrockReplayRunnerTest {
             player.isFlying = false;
             buildFlatGroundWithTwoBlockPillar(player, groundPos, (int) groundY, pillarX, pillarZ);
 
-            player.x = groundPos.x; player.y = groundPos.y; player.z = groundPos.z;
-            player.lastX = groundPos.x; player.lastY = groundPos.y; player.lastZ = groundPos.z;
+            player.x = groundPos.x;
+            player.y = groundPos.y;
+            player.z = groundPos.z;
+            player.lastX = groundPos.x;
+            player.lastY = groundPos.y;
+            player.lastZ = groundPos.z;
             player.boundingBox = GetBoundingBox.getCollisionBoxForPlayer(player, groundPos.x, groundPos.y, groundPos.z);
             boolean onGround = Collisions.collide(player, 0, -SimpleCollisionBox.COLLISION_EPSILON, 0).y == 0;
             player.onGround = onGround;
             player.lastOnGround = onGround;
-            player.getSetbackTeleportUtil().lastKnownGoodPosition =
-                    new SetbackPosWithVector(groundPos, Vec3.ZERO, 0);
+            player.getSetbackTeleportUtil().lastKnownGoodPosition = new SetbackPosWithVector(groundPos, Vec3.ZERO, 0);
 
             // Establish a valid initial carry
             BedrockAuthInputFrame seedFrame = syntheticPillarFrame(0, groundPos, false, false, false);
             player.bedrockState.offerAuthInputFrame(seedFrame);
-            player.checkManager.getSimulationProcessor()
+            player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(seedFrame, BedrockPredictionTrigger.OFFLINE_REPLAY);
 
             // authorityMode is bridge metadata, not simulation input. Even a
@@ -2056,14 +2069,19 @@ public final class OfflineBedrockReplayRunnerTest {
                     .build();
 
             player.bedrockState.offerAuthInputFrame(exploitFrame);
-            PredictionResult exploitResult = player.checkManager.getSimulationProcessor()
+            PredictionResult exploitResult = player.checkManager
+                    .getSimulationProcessor()
                     .processBedrockAuthInputFrame(exploitFrame, BedrockPredictionTrigger.OFFLINE_REPLAY);
             assertNotNull(exploitResult);
             assertTrue(exploitResult.hasFlag(BedrockMovement.class));
             assertTrue(player.getSetbackTeleportUtil().isPendingSetback());
             assertFalse(player.getSetbackTeleportUtil().getRequiredSetBack().isPlugin());
-            assertEquals(groundPos, player.getSetbackTeleportUtil()
-                    .getRequiredSetBack().getTeleportData().getLocation());
+            assertEquals(
+                    groundPos,
+                    player.getSetbackTeleportUtil()
+                            .getRequiredSetBack()
+                            .getTeleportData()
+                            .getLocation());
             assertEquals(groundPos, new Vec3(player.x, player.y, player.z));
         } finally {
             if (player != null) {
@@ -2073,5 +2091,4 @@ public final class OfflineBedrockReplayRunnerTest {
             OfflineCultTestBootstrap.clearDoubleConfigOverride("cult.checks.bedrock-movement.position-flag-threshold");
         }
     }
-
 }

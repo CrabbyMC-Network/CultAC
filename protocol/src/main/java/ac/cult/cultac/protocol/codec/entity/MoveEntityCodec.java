@@ -14,7 +14,6 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundMoveEntity;
 import ac.cult.cultac.protocol.value.EntityDelta;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +36,13 @@ public final class MoveEntityCodec implements VariantCodec<ClientboundMoveEntity
     }
 
     private static final Variant[] VARIANTS = Variant.values();
-    private static final List<String> NAMES = Arrays.stream(VARIANTS).map(variant -> variant.wireName).toList();
+    private static final List<String> NAMES =
+            Arrays.stream(VARIANTS).map(variant -> variant.wireName).toList();
 
     @Override
-    public List<String> variants() { return NAMES; }
+    public List<String> variants() {
+        return NAMES;
+    }
 
     @Override
     public ClientboundMoveEntity read(ByteBuf input, ProtocolContext context) {
@@ -66,7 +68,8 @@ public final class MoveEntityCodec implements VariantCodec<ClientboundMoveEntity
 
     private static EntityDelta readDelta(ByteBuf input, int steps) {
         if (steps == 0) return readLinear(input);
-        if (steps > input.readableBytes() / 7) throw new MalformedPacketException("Entity delta step count exceeds remaining bytes: " + steps);
+        if (steps > input.readableBytes() / 7)
+            throw new MalformedPacketException("Entity delta step count exceeds remaining bytes: " + steps);
         var result = new ArrayList<EntityDelta.Step>(steps);
         for (int i = 0; i < steps; i++) {
             int ticks = Wire.readVarInt(input);

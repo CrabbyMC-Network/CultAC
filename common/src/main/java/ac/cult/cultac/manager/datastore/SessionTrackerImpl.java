@@ -3,12 +3,11 @@ package ac.cult.cultac.manager.datastore;
 import ac.grim.grimac.api.storage.DataStore;
 import ac.grim.grimac.api.storage.category.Categories;
 import ac.grim.grimac.api.storage.model.SessionRecord;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Concrete {@link SessionTracker}. The disabled-datastore path uses
@@ -26,21 +25,18 @@ public final class SessionTrackerImpl implements SessionTracker {
     }
 
     public SessionTrackerImpl(
-            @NotNull DataStore store,
-            @NotNull String serverName,
-            long heartbeatIntervalMs,
-            @Nullable UUID startupId) {
+            @NotNull DataStore store, @NotNull String serverName, long heartbeatIntervalMs, @Nullable UUID startupId) {
         this.store = store;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.startupId = startupId;
     }
 
     @Override
-    public @NotNull UUID observeActivity(
-            @NotNull UUID playerUuid,
-            long now,
-            @NotNull ClientMeta meta) {
-        // Lock-free CAS retry loop. get/putIfAbsent/replace hold a bin lock only for the CAS itself — no user code under the lock. UUID.randomUUID() (~1µs) runs unlocked. The loop keeps a fresh in-memory session_id on race-with-close (unconditional put would have re-inserted the closed session's id and a quick reconnect would inherit it).
+    public @NotNull UUID observeActivity(@NotNull UUID playerUuid, long now, @NotNull ClientMeta meta) {
+        // Lock-free CAS retry loop. get/putIfAbsent/replace hold a bin lock only for the CAS itself — no user code
+        // under the lock. UUID.randomUUID() (~1µs) runs unlocked. The loop keeps a fresh in-memory session_id on
+        // race-with-close (unconditional put would have re-inserted the closed session's id and a quick reconnect would
+        // inherit it).
         UUID candidateSessionId = null;
         while (true) {
             State current = states.get(playerUuid);
@@ -54,8 +50,8 @@ public final class SessionTrackerImpl implements SessionTracker {
                 // Lost the insert race — someone inserted between get and putIfAbsent. Retry as update.
                 continue;
             }
-            State next = new State(current.sessionId, current.startedEpochMs, now, now,
-                    mergeMeta(current.cachedMeta, meta));
+            State next =
+                    new State(current.sessionId, current.startedEpochMs, now, now, mergeMeta(current.cachedMeta, meta));
             if (states.replace(playerUuid, current, next)) {
                 emit(next, playerUuid, now, null);
                 return next.sessionId;
@@ -85,8 +81,8 @@ public final class SessionTrackerImpl implements SessionTracker {
         // Emit last_activity from the prev state (the last actual observation),
         // closed_at = now (the disconnect timestamp). They diverge by design so
         // crash recovery can stamp closed_at = last_activity for orphaned rows.
-        State closed = new State(prev.sessionId, prev.startedEpochMs, prev.lastActivityEpochMs, now,
-                mergeMeta(prev.cachedMeta, meta));
+        State closed = new State(
+                prev.sessionId, prev.startedEpochMs, prev.lastActivityEpochMs, now, mergeMeta(prev.cachedMeta, meta));
         emit(closed, playerUuid, prev.lastActivityEpochMs, now);
     }
 
@@ -100,15 +96,16 @@ public final class SessionTrackerImpl implements SessionTracker {
         final UUID sessionId = s.sessionId;
         final long started = s.startedEpochMs;
         final ClientMeta meta = s.cachedMeta;
-        store.submit(Categories.SESSION, e -> e
-                .sessionId(sessionId)
-                .playerUuid(playerUuid)
-                .startedEpochMs(started)
-                .lastActivityEpochMs(now)
-                .closedAtEpochMs(closedAt == null ? SessionRecord.OPEN : closedAt)
-                .clientBrand(meta.clientBrand())
-                .clientVersion(meta.clientVersion())
-                .startupId(startupId));
+        store.submit(
+                Categories.SESSION,
+                e -> e.sessionId(sessionId)
+                        .playerUuid(playerUuid)
+                        .startedEpochMs(started)
+                        .lastActivityEpochMs(now)
+                        .closedAtEpochMs(closedAt == null ? SessionRecord.OPEN : closedAt)
+                        .clientBrand(meta.clientBrand())
+                        .clientVersion(meta.clientVersion())
+                        .startupId(startupId));
     }
 
     private static ClientMeta mergeMeta(ClientMeta current, ClientMeta incoming) {
@@ -123,9 +120,10 @@ public final class SessionTrackerImpl implements SessionTracker {
         return incoming != null ? incoming : current;
     }
 
-    private record State(UUID sessionId,
-                         long startedEpochMs,
-                         long lastActivityEpochMs,
-                         long lastEmittedEpochMs,
-                         ClientMeta cachedMeta) {}
+    private record State(
+            UUID sessionId,
+            long startedEpochMs,
+            long lastActivityEpochMs,
+            long lastEmittedEpochMs,
+            ClientMeta cachedMeta) {}
 }

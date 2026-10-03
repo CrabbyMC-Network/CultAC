@@ -8,16 +8,22 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
 
 public class EntityPush implements UncertaintyHandler {
     private static final double MAX_HORIZONTAL_IMPULSE_PER_ENTITY = Math.sqrt(2.0D) * 0.05D;
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         return handleEntityPush(start, end, context.getWorldData().getNumColliding());
     }
 
@@ -36,7 +42,8 @@ public class EntityPush implements UncertaintyHandler {
         return collidingEntities * MAX_HORIZONTAL_IMPULSE_PER_ENTITY;
     }
 
-    public static void addVehiclePushCandidates(CultPlayer player, List<PredVector> start, SimulationContext state, PredictionResult lastResult) {
+    public static void addVehiclePushCandidates(
+            CultPlayer player, List<PredVector> start, SimulationContext state, PredictionResult lastResult) {
         if (lastResult == null
                 || lastResult.getSimulationContext() == null
                 || state.getVehicle() != null
@@ -48,7 +55,8 @@ public class EntityPush implements UncertaintyHandler {
         SimpleCollisionBox playerBox = GetBoundingBox.getBoundingBoxFromPosAndSize(
                 state.getStart().x, state.getStart().y, state.getStart().z, 0.6f, 1.8f);
         long localPlayerTickOrder = player.compensatedEntities.getSelf().getClientTickOrder();
-        boolean previousTickPlayerBodyMovement = lastResult.getSimulationContext().getVehicle() == null;
+        boolean previousTickPlayerBodyMovement =
+                lastResult.getSimulationContext().getVehicle() == null;
 
         // ClientLevel#tickEntities iterates client tick-list order. A remote boat that
         // ticks before LocalPlayer can push the player before LocalPlayer#sendPosition
@@ -62,13 +70,14 @@ public class EntityPush implements UncertaintyHandler {
             }
 
             boolean pushesBeforeCurrentPlayerTick = entity.getClientTickOrder() < localPlayerTickOrder;
-            boolean pushedAfterPreviousPlayerTick = previousTickPlayerBodyMovement
-                    && entity.getClientTickOrder() > localPlayerTickOrder;
+            boolean pushedAfterPreviousPlayerTick =
+                    previousTickPlayerBodyMovement && entity.getClientTickOrder() > localPlayerTickOrder;
             if (!pushesBeforeCurrentPlayerTick && !pushedAfterPreviousPlayerTick) {
                 continue;
             }
 
-            addPossibleBoatPushes(pushCandidates, getBoatPushCollisionCandidatesForNextTick(entity), playerBox, state.getStart());
+            addPossibleBoatPushes(
+                    pushCandidates, getBoatPushCollisionCandidatesForNextTick(entity), playerBox, state.getStart());
         }
 
         if (pushCandidates.isEmpty()) {
@@ -91,8 +100,11 @@ public class EntityPush implements UncertaintyHandler {
     }
 
     // TODO: Convert to more pure uncertainty
-    private static void addPossibleBoatPushes(List<Vec3> pushCandidates, List<SimpleCollisionBox> boatBoxes,
-                                              SimpleCollisionBox playerBox, Vec3 pushedPosition) {
+    private static void addPossibleBoatPushes(
+            List<Vec3> pushCandidates,
+            List<SimpleCollisionBox> boatBoxes,
+            SimpleCollisionBox playerBox,
+            Vec3 pushedPosition) {
         for (SimpleCollisionBox boatBox : boatBoxes) {
             SimpleCollisionBox pushBox = boatBox.copy().expand(0.2D, -0.01D, 0.2D);
             if (!vanillaIntersects(pushBox, playerBox) || playerBox.minY > boatBox.minY) {
@@ -116,9 +128,12 @@ public class EntityPush implements UncertaintyHandler {
     }
 
     private static boolean vanillaIntersects(SimpleCollisionBox one, SimpleCollisionBox two) {
-        return one.minX < two.maxX && one.maxX > two.minX
-                && one.minY < two.maxY && one.maxY > two.minY
-                && one.minZ < two.maxZ && one.maxZ > two.minZ;
+        return one.minX < two.maxX
+                && one.maxX > two.minX
+                && one.minY < two.maxY
+                && one.maxY > two.minY
+                && one.minZ < two.maxZ
+                && one.maxZ > two.minZ;
     }
 
     private static Vec3 getBoatPushImpulse(SimpleCollisionBox boatBox, Vec3 pushedPosition) {

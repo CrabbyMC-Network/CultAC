@@ -1,14 +1,18 @@
 package ac.cult.cultac.checks.impl.scaffolding;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.checks.type.RotationListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.RotationUpdate;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "DuplicateRotPlace", stableKey = "cult.scaffolding.duplicate_rot_place", description = "Repeated the same rotation delta while placing blocks", experimental = true)
+@CheckData(
+        name = "DuplicateRotPlace",
+        stableKey = "cult.scaffolding.duplicate_rot_place",
+        description = "Repeated the same rotation delta while placing blocks",
+        experimental = true)
 public class DuplicateRotPlace extends BlockPlaceCheck implements RotationListener {
     private static final Verbose V = Verbose.of("x={f64} xdots={f64} y={f64}");
 

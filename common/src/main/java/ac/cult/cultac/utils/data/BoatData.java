@@ -16,8 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 
 public class BoatData {
-    public record BoatStatusSample(BoatEntityStatus status, double waterLevel, float landFriction) {
-    }
+    public record BoatStatusSample(BoatEntityStatus status, double waterLevel, float landFriction) {}
 
     public boolean nullifyNextY = false;
     public double lastYd = 0.0D;
@@ -49,12 +48,11 @@ public class BoatData {
 
     public boolean mayUseWaterEntryPositionSnap() {
         return usesWaterEntryPositionSnap()
-                || (oldStatusMayBeInAir
-                && status != BoatEntityStatus.IN_AIR
-                && status != BoatEntityStatus.ON_LAND);
+                || (oldStatusMayBeInAir && status != BoatEntityStatus.IN_AIR && status != BoatEntityStatus.ON_LAND);
     }
 
-    public Vec3 adjustStuckSpeedMultiplierForCurrentTick(CultPlayer player, SimulationContext context, Vec3 multiplier) {
+    public Vec3 adjustStuckSpeedMultiplierForCurrentTick(
+            CultPlayer player, SimulationContext context, Vec3 multiplier) {
         if (multiplier == null || !BoatTransform.usesProvenWaterEntryPositionSnap(player, context)) {
             return multiplier;
         }
@@ -181,8 +179,7 @@ public class BoatData {
                 axisalignedbb.maxX,
                 axisalignedbb.minY,
                 axisalignedbb.maxZ,
-                false
-        );
+                false);
         int i = (int) (Math.floor(axisalignedbb1.minX) - 1);
         int j = (int) (Math.ceil(axisalignedbb1.maxX) + 1);
         int k = (int) (Math.floor(axisalignedbb1.minY) - 1);
@@ -202,13 +199,9 @@ public class BoatData {
                             BlockData blockData = player.compensatedWorld.getBlockDataAt(l1, k2, i2);
                             Material blockMaterial = blockData.getMaterial();
 
-                            if (blockMaterial != Material.LILY_PAD && ClientBlockShapes.movement(
-                                    player,
-                                    blockData,
-                                    l1,
-                                    k2,
-                                    i2)
-                                    .isIntersected(axisalignedbb1)) {
+                            if (blockMaterial != Material.LILY_PAD
+                                    && ClientBlockShapes.movement(player, blockData, l1, k2, i2)
+                                            .isIntersected(axisalignedbb1)) {
                                 f += BlockProperties.getMaterialFriction(blockMaterial);
                                 ++k1;
                             }

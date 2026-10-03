@@ -1,10 +1,9 @@
 package ac.cult.cultac.utils.common;
 
 import ac.cult.cultac.utils.anticheat.LogUtil;
-import lombok.experimental.UtilityClass;
-
 import java.io.InputStream;
 import java.util.Properties;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class PropertiesUtil {
@@ -26,5 +25,4 @@ public class PropertiesUtil {
     public static String getPropertyOrElse(Properties properties, String key, String defaultValue) {
         return properties.getProperty(key, defaultValue);
     }
-
 }

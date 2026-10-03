@@ -8,10 +8,18 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 
 public final class PacketReceiveEvent<R extends ServerboundPacket> extends PacketEvent<R> {
     private boolean acceptedTransactionResponse;
+
     public PacketReceiveEvent(User user, ConnectionPhase phase, PacketType<R> type, R packet) {
         super(user, phase, type, packet);
-        if (type.direction() != PacketDirection.SERVERBOUND) throw new IllegalArgumentException("Receive event requires serverbound packet");
+        if (type.direction() != PacketDirection.SERVERBOUND)
+            throw new IllegalArgumentException("Receive event requires serverbound packet");
     }
-    public boolean isAcceptedTransactionResponse() { return acceptedTransactionResponse; }
-    public void setAcceptedTransactionResponse(boolean accepted) { acceptedTransactionResponse = accepted; }
+
+    public boolean isAcceptedTransactionResponse() {
+        return acceptedTransactionResponse;
+    }
+
+    public void setAcceptedTransactionResponse(boolean accepted) {
+        acceptedTransactionResponse = accepted;
+    }
 }

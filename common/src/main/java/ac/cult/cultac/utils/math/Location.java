@@ -1,28 +1,32 @@
 package ac.cult.cultac.utils.math;
 
 import ac.cult.cultac.platform.api.world.PlatformWorld;
+import java.lang.ref.WeakReference;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
-import java.util.Objects;
-
 public class Location implements Cloneable {
     private @Nullable WeakReference<PlatformWorld> world;
+
     @Getter
     @Setter
     private double x;
+
     @Getter
     @Setter
     private double y;
+
     @Getter
     @Setter
     private double z;
+
     @Getter
     @Setter
     private float pitch;
+
     @Getter
     @Setter
     private float yaw;
@@ -119,9 +123,12 @@ public class Location implements Cloneable {
     public double distanceSquared(@NotNull Location o) {
         if (o.getWorld() != null && this.getWorld() != null) {
             if (o.getWorld() != this.getWorld()) {
-                throw new IllegalArgumentException("Cannot measure distance between " + this.getWorld().getName() + " and " + o.getWorld().getName());
+                throw new IllegalArgumentException("Cannot measure distance between "
+                        + this.getWorld().getName() + " and " + o.getWorld().getName());
             } else {
-                return (this.x - o.x) * (this.x - o.x) + (this.y - o.y) * (this.y - o.y) + (this.z - o.z) * (this.z - o.z);
+                return (this.x - o.x) * (this.x - o.x)
+                        + (this.y - o.y) * (this.y - o.y)
+                        + (this.z - o.z) * (this.z - o.z);
             }
         } else {
             throw new IllegalArgumentException("Cannot measure distance to a null world");
@@ -163,7 +170,9 @@ public class Location implements Cloneable {
             return false;
         } else {
             Location other = (Location) obj;
-            return Objects.equals(this.world == null ? null : this.world.get(), other.world == null ? null : other.world.get())
+            return Objects.equals(
+                            this.world == null ? null : this.world.get(),
+                            other.world == null ? null : other.world.get())
                     && Double.doubleToLongBits(this.x) == Double.doubleToLongBits(other.x)
                     && Double.doubleToLongBits(this.y) == Double.doubleToLongBits(other.y)
                     && Double.doubleToLongBits(this.z) == Double.doubleToLongBits(other.z)
@@ -187,7 +196,8 @@ public class Location implements Cloneable {
 
     @Override
     public String toString() {
-        return "Location{world=" + (this.world == null ? null : this.world.get()) + ",x=" + this.x + ",y=" + this.y + ",z=" + this.z + ",pitch=" + this.pitch + ",yaw=" + this.yaw + "}";
+        return "Location{world=" + (this.world == null ? null : this.world.get()) + ",x=" + this.x + ",y=" + this.y
+                + ",z=" + this.z + ",pitch=" + this.pitch + ",yaw=" + this.yaw + "}";
     }
 
     public @NotNull Location clone() {

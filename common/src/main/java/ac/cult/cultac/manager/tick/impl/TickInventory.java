@@ -10,7 +10,8 @@ public class TickInventory implements Tickable {
     public void tick() {
         for (CultPlayer player : CultAPI.INSTANCE.getPlayerDataManager().getEntries()) {
 
-            if (player.getInventory().inventory.getInventoryStorage() instanceof CorrectingPlayerInventoryStorage correcting) {
+            if (player.getInventory().inventory.getInventoryStorage()
+                    instanceof CorrectingPlayerInventoryStorage correcting) {
                 correcting.tickWithBukkit();
             }
         }

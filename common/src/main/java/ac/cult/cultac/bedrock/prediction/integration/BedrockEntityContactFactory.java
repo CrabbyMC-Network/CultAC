@@ -1,11 +1,11 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.world.DolphinBoostState;
 import ac.cult.cultac.bedrock.prediction.world.EntityContactState;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
@@ -17,20 +17,21 @@ import java.util.Optional;
 final class BedrockEntityContactFactory {
     private static final float DOLPHIN_PROXIMITY_RANGE = 10.0F;
 
-    BedrockEntityContactFactory() {
-    }
+    BedrockEntityContactFactory() {}
 
     EntityContactState create(CultPlayer player, SimulationContext context) {
         DolphinBoostState dolphinBoostState = new DolphinBoostState(hasDolphinProximity(player, context));
         var entities = context.getEntities() != null ? context.getEntities() : player.compensatedEntities;
-        return new EntityContactState(dolphinBoostState,
-                context.getVehicle() == null && entities != null && entities.getSelf().inVehicle());
+        return new EntityContactState(
+                dolphinBoostState,
+                context.getVehicle() == null
+                        && entities != null
+                        && entities.getSelf().inVehicle());
     }
 
     private boolean hasDolphinProximity(CultPlayer player, SimulationContext context) {
-        CompensatedEntities entities = context.getEntities() != null
-                ? context.getEntities()
-                : player.compensatedEntities;
+        CompensatedEntities entities =
+                context.getEntities() != null ? context.getEntities() : player.compensatedEntities;
         if (entities == null || entities.entityMap.isEmpty()) {
             return false;
         }
@@ -40,14 +41,19 @@ final class BedrockEntityContactFactory {
         }
         // Scan before the requested pose size is applied.
         BedrockMovementState previous = BedrockProfileState.previousState(context);
-        PlayerDimensionsState dimensions = previous == null
-                ? PlayerDimensionsState.DEFAULT : previous.playerDimensions();
+        PlayerDimensionsState dimensions =
+                previous == null ? PlayerDimensionsState.DEFAULT : previous.playerDimensions();
         for (PacketEntity entity : entities.entityMap.values()) {
             if (entity == null || entity.isDead || entity.getType() != EntityTypesCompat.DOLPHIN) {
                 continue;
             }
-            if (isWithinDolphinProximity(trustedPosition.get(), dimensions, entity.getPossibleMovementCollisionBoxes(),
-                    context.getBedrockInput() == null ? BedrockCoordinateFrame.IDENTITY : context.getBedrockInput().getCoordinateFrame())) {
+            if (isWithinDolphinProximity(
+                    trustedPosition.get(),
+                    dimensions,
+                    entity.getPossibleMovementCollisionBoxes(),
+                    context.getBedrockInput() == null
+                            ? BedrockCoordinateFrame.IDENTITY
+                            : context.getBedrockInput().getCoordinateFrame())) {
                 return true;
             }
         }
@@ -55,13 +61,15 @@ final class BedrockEntityContactFactory {
     }
 
     static boolean isWithinDolphinProximity(
-            Vec3d position, PlayerDimensionsState dimensions, SimpleCollisionBox dolphinBox
-    ) {
+            Vec3d position, PlayerDimensionsState dimensions, SimpleCollisionBox dolphinBox) {
         return isWithinDolphinProximity(position, dimensions, dolphinBox, BedrockCoordinateFrame.IDENTITY);
     }
 
-    static boolean isWithinDolphinProximity(Vec3d position, PlayerDimensionsState dimensions,
-            SimpleCollisionBox dolphinBox, BedrockCoordinateFrame frame) {
+    static boolean isWithinDolphinProximity(
+            Vec3d position,
+            PlayerDimensionsState dimensions,
+            SimpleCollisionBox dolphinBox,
+            BedrockCoordinateFrame frame) {
         if (dolphinBox == null) {
             return false;
         }
@@ -74,8 +82,11 @@ final class BedrockEntityContactFactory {
         double maxY = (float) (position.y() + dimensions.height()) + DOLPHIN_PROXIMITY_RANGE;
         double maxZ = frame.roundZ(position.z() + radius) + DOLPHIN_PROXIMITY_RANGE;
         // Require strict overlap with the expanded box.
-        return dolphinBox.maxX > minX && dolphinBox.minX < maxX
-                && dolphinBox.maxY > minY && dolphinBox.minY < maxY
-                && dolphinBox.maxZ > minZ && dolphinBox.minZ < maxZ;
+        return dolphinBox.maxX > minX
+                && dolphinBox.minX < maxX
+                && dolphinBox.maxY > minY
+                && dolphinBox.minY < maxY
+                && dolphinBox.maxZ > minZ
+                && dolphinBox.minZ < maxZ;
     }
 }

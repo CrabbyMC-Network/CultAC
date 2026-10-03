@@ -5,13 +5,6 @@ import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
-import net.minecraft.network.Connection;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
-import org.bukkit.entity.Player;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -20,6 +13,12 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.network.Connection;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.entity.Player;
 
 /** One directory of attached sessions, with a secondary current-account index. */
 final class PacketConnections {
@@ -30,12 +29,21 @@ final class PacketConnections {
     private final Method profileIdMethod = resolveProfileMethod("id", "getId");
     private final Method profileNameMethod = resolveProfileMethod("name", "getName");
 
-    void hooks(UserLifecycleHooks hooks) { this.hooks = java.util.Objects.requireNonNull(hooks); }
-    CultConnection get(Channel channel) { return channel == null ? null : connections.get(channel); }
-    List<CultConnection> snapshot() { return List.copyOf(connections.values()); }
+    void hooks(UserLifecycleHooks hooks) {
+        this.hooks = java.util.Objects.requireNonNull(hooks);
+    }
+
+    CultConnection get(Channel channel) {
+        return channel == null ? null : connections.get(channel);
+    }
+
+    List<CultConnection> snapshot() {
+        return List.copyOf(connections.values());
+    }
 
     void attach(CultConnection session) {
-        if (connections.putIfAbsent(session.channel(), session) != null) throw new IllegalStateException("Already attached");
+        if (connections.putIfAbsent(session.channel(), session) != null)
+            throw new IllegalStateException("Already attached");
         session.initializer(this::prepare);
         session.channel().closeFuture().addListener(ignored -> disconnect(session));
     }
@@ -99,7 +107,8 @@ final class PacketConnections {
 
     private void completeLogin(User user, Player player, ServerPlayer serverPlayer) {
         var session = user.getCultConnection();
-        if (session.disconnected() || session.loginNotified || !isPlayerConnection(player, user.getConnection())) return;
+        if (session.disconnected() || session.loginNotified || !isPlayerConnection(player, user.getConnection()))
+            return;
         user.bind(player, serverPlayer);
         if (currentByUuid.get(user.getUUID()) != session) promote(user);
         var cultPlayer = session.player();
@@ -121,8 +130,11 @@ final class PacketConnections {
         try {
             if (user != null) {
                 currentByUuid.remove(user.getUUID(), session);
-                try { CultAPI.INSTANCE.getPlayerDataManager().onDisconnect(user); }
-                finally { CultNetworkManager.clearChannelState(user); }
+                try {
+                    CultAPI.INSTANCE.getPlayerDataManager().onDisconnect(user);
+                } finally {
+                    CultNetworkManager.clearChannelState(user);
+                }
             }
         } finally {
             // Shutdown must still find a session while owner cleanup is in progress.
@@ -131,7 +143,8 @@ final class PacketConnections {
     }
 
     CompletionStage<Void> disconnectRemainingUsers() {
-        return CompletableFuture.allOf(snapshot().stream().map(session -> disconnect(session).toCompletableFuture())
+        return CompletableFuture.allOf(snapshot().stream()
+                .map(session -> disconnect(session).toCompletableFuture())
                 .toArray(CompletableFuture[]::new));
     }
 
@@ -144,8 +157,12 @@ final class PacketConnections {
     private static CompletionStage<Void> afterPackets(EventExecutor owner, Runnable cleanup) {
         var completion = new CompletableFuture<Void>();
         Runnable task = () -> {
-            try { cleanup.run(); completion.complete(null); }
-            catch (Throwable failure) { completion.completeExceptionally(failure); }
+            try {
+                cleanup.run();
+                completion.complete(null);
+            } catch (Throwable failure) {
+                completion.completeExceptionally(failure);
+            }
         };
         try {
             // Even a hook which closes its own channel finishes creation before teardown.
@@ -171,15 +188,11 @@ final class PacketConnections {
     }
 
     private ConnectionProfile connectionProfile(Connection connection) {
-        if (connection.getPacketListener() instanceof ServerGamePacketListenerImpl listener && listener.player != null) {
+        if (connection.getPacketListener() instanceof ServerGamePacketListenerImpl listener
+                && listener.player != null) {
             ServerPlayer serverPlayer = listener.player;
             Player player = serverPlayer.getBukkitEntity();
-            return new ConnectionProfile(
-                    serverPlayer.getUUID(),
-                    player.getName(),
-                    player,
-                    serverPlayer
-            );
+            return new ConnectionProfile(serverPlayer.getUUID(), player.getName(), player, serverPlayer);
         }
 
         if (connection.getPacketListener() instanceof ServerConfigurationPacketListenerImpl configurationListener) {
@@ -221,7 +234,5 @@ final class PacketConnections {
         throw new IllegalStateException("Failed to resolve Authlib game profile accessor");
     }
 
-    private record ConnectionProfile(UUID uuid, String name, Player player, ServerPlayer serverPlayer) {
-    }
-
+    private record ConnectionProfile(UUID uuid, String name, Player player, ServerPlayer serverPlayer) {}
 }

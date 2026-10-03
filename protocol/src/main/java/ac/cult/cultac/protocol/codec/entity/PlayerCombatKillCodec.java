@@ -20,5 +20,7 @@ public final class PlayerCombatKillCodec implements PacketCodec<ClientboundPlaye
 
     // The unconsumed suffix remains in the original forwarded packet.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

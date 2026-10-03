@@ -15,23 +15,22 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package ac.cult.cultac.utils.data;
 
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.packet.EntityPositionPath;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.Collisions;
+import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.RootVehicleInterpolationCollision;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 // You may not copy the check unless you are licensed under GPL
 public class ReachInterpolationData {
@@ -83,29 +82,57 @@ public class ReachInterpolationData {
         return new ReachInterpolationData(this);
     }
 
-    public ReachInterpolationData(CultPlayer player, SimpleCollisionBox startingLocation, double x, double y, double z, boolean isPointNine, PacketEntity entity) {
+    public ReachInterpolationData(
+            CultPlayer player,
+            SimpleCollisionBox startingLocation,
+            double x,
+            double y,
+            double z,
+            boolean isPointNine,
+            PacketEntity entity) {
         this(player, startingLocation, x, y, z, isPointNine, entity, true);
     }
 
-    public ReachInterpolationData(CultPlayer player, SimpleCollisionBox startingLocation, double x, double y, double z, boolean isPointNine, PacketEntity entity, boolean uncertainInitialSteps) {
-        this(player, startingLocation, x, y, z, entity.clientPhysicalYaw, entity.clientPhysicalPitch,
-                entity.clientPhysicalYaw, entity.clientPhysicalPitch, isPointNine, entity, uncertainInitialSteps);
+    public ReachInterpolationData(
+            CultPlayer player,
+            SimpleCollisionBox startingLocation,
+            double x,
+            double y,
+            double z,
+            boolean isPointNine,
+            PacketEntity entity,
+            boolean uncertainInitialSteps) {
+        this(
+                player,
+                startingLocation,
+                x,
+                y,
+                z,
+                entity.clientPhysicalYaw,
+                entity.clientPhysicalPitch,
+                entity.clientPhysicalYaw,
+                entity.clientPhysicalPitch,
+                isPointNine,
+                entity,
+                uncertainInitialSteps);
     }
 
-    public ReachInterpolationData(CultPlayer player,
-                                  SimpleCollisionBox startingLocation,
-                                  double x,
-                                  double y,
-                                  double z,
-                                  float currentYaw,
-                                  float currentPitch,
-                                  float targetYaw,
-                                  float targetPitch,
-                                  boolean isPointNine,
-                                  PacketEntity entity,
-                                  boolean uncertainInitialSteps) {
+    public ReachInterpolationData(
+            CultPlayer player,
+            SimpleCollisionBox startingLocation,
+            double x,
+            double y,
+            double z,
+            float currentYaw,
+            float currentPitch,
+            float targetYaw,
+            float targetPitch,
+            boolean isPointNine,
+            PacketEntity entity,
+            boolean uncertainInitialSteps) {
         this.startingLocation = startingLocation.copy();
-        this.targetLocation = GetBoundingBox.getBoundingBoxFromPosAndSize(x, y, z, BoundingBoxSize.getWidth(player, entity), BoundingBoxSize.getHeight(player, entity));
+        this.targetLocation = GetBoundingBox.getBoundingBoxFromPosAndSize(
+                x, y, z, BoundingBoxSize.getWidth(player, entity), BoundingBoxSize.getHeight(player, entity));
         this.currentYaw = currentYaw;
         this.currentPitch = currentPitch;
         this.targetYaw = targetYaw;
@@ -120,20 +147,25 @@ public class ReachInterpolationData {
                 interpolationQueue = new ArrayDeque<>();
                 steppedCurrent = lastStep = new Transform(feet(startingLocation), currentYaw, currentPitch);
                 steppedTarget = new Transform(Vec3.ZERO, 0.0F, 0.0F);
-                if (!feet(startingLocation).equals(new Vec3(x, y, z)) || currentYaw != targetYaw || currentPitch != targetPitch) {
+                if (!feet(startingLocation).equals(new Vec3(x, y, z))
+                        || currentYaw != targetYaw
+                        || currentPitch != targetPitch) {
                     appendSteppedPath(EntityPositionPath.linear(new Vec3(x, y, z)), targetYaw, targetPitch);
                 }
             } else if (entity.type == EntityTypesCompat.FISHING_BOBBER) {
                 interpolationSteps = 3;
             }
         }
-        if (interpolationQueue == null && isPointNine && uncertainInitialSteps) interpolationStepsHighBound = getInterpolationSteps();
+        if (interpolationQueue == null && isPointNine && uncertainInitialSteps)
+            interpolationStepsHighBound = getInterpolationSteps();
     }
 
-    public boolean usesSteppedInterpolation() { return interpolationQueue != null; }
+    public boolean usesSteppedInterpolation() {
+        return interpolationQueue != null;
+    }
 
-    public void setPhysicalBeforePathAppend(EntityPositionPath path, float targetYaw, float targetPitch,
-                                            Vec3 position, float yaw, float pitch) {
+    public void setPhysicalBeforePathAppend(
+            EntityPositionPath path, float targetYaw, float targetPitch, Vec3 position, float yaw, float pitch) {
         if (interpolationQueue != null && !matchesActiveSteppedTarget(path, targetYaw, targetPitch)) {
             steppedCurrent = new Transform(position, yaw, pitch);
             currentYaw = yaw;
@@ -170,9 +202,16 @@ public class ReachInterpolationData {
             for (EntityPositionPath.Step step : path.steps()) {
                 offset += step.tickOffset();
                 float a = (float) offset / total;
-                addStep(new Transform(step.position(),
-                        yaw == steppedTarget.yaw() && pitch == steppedTarget.pitch() ? yaw : Mth.rotLerp(a, steppedTarget.yaw(), yaw),
-                        yaw == steppedTarget.yaw() && pitch == steppedTarget.pitch() ? pitch : Mth.lerp(a, steppedTarget.pitch(), pitch)), step.tickOffset());
+                addStep(
+                        new Transform(
+                                step.position(),
+                                yaw == steppedTarget.yaw() && pitch == steppedTarget.pitch()
+                                        ? yaw
+                                        : Mth.rotLerp(a, steppedTarget.yaw(), yaw),
+                                yaw == steppedTarget.yaw() && pitch == steppedTarget.pitch()
+                                        ? pitch
+                                        : Mth.lerp(a, steppedTarget.pitch(), pitch)),
+                        step.tickOffset());
             }
         }
         steppedTarget = end;
@@ -210,7 +249,8 @@ public class ReachInterpolationData {
             Step step = interpolationQueue.getFirst();
             if (currentStepTicks < step.ticks()) {
                 float a = currentStepTicks / step.ticks();
-                return new Transform(lastStep.position().lerp(step.transform().position(), a),
+                return new Transform(
+                        lastStep.position().lerp(step.transform().position(), a),
                         Mth.rotLerp(a, lastStep.yaw(), step.transform().yaw()),
                         Mth.lerp(a, lastStep.pitch(), step.transform().pitch()));
             }
@@ -222,8 +262,10 @@ public class ReachInterpolationData {
     }
 
     private boolean matchesActiveSteppedTarget(EntityPositionPath path, float yaw, float pitch) {
-        return hasActiveInterpolationTarget() && steppedTarget.position().equals(path.endPosition())
-                && steppedTarget.yaw() == yaw && steppedTarget.pitch() == pitch;
+        return hasActiveInterpolationTarget()
+                && steppedTarget.position().equals(path.endPosition())
+                && steppedTarget.yaw() == yaw
+                && steppedTarget.pitch() == pitch;
     }
 
     private void cancelSteppedInterpolation() {
@@ -339,7 +381,8 @@ public class ReachInterpolationData {
         double stepMinZ = (targetLocation.minZ - startingLocation.minZ) / interpSteps;
         double stepMaxZ = (targetLocation.maxZ - startingLocation.maxZ) / interpSteps;
 
-        List<SimpleCollisionBox> locations = new ArrayList<>(interpolationStepsHighBound - interpolationStepsLowBound + 1);
+        List<SimpleCollisionBox> locations =
+                new ArrayList<>(interpolationStepsHighBound - interpolationStepsLowBound + 1);
         for (int step = interpolationStepsLowBound; step <= interpolationStepsHighBound; step++) {
             locations.add(new SimpleCollisionBox(
                     startingLocation.minX + (step * stepMinX),
@@ -445,11 +488,11 @@ public class ReachInterpolationData {
                 solveStartCoordinate(exactLocation.minZ, targetLocation.minZ, targetFraction, startFraction),
                 solveStartCoordinate(exactLocation.maxX, targetLocation.maxX, targetFraction, startFraction),
                 solveStartCoordinate(exactLocation.maxY, targetLocation.maxY, targetFraction, startFraction),
-                solveStartCoordinate(exactLocation.maxZ, targetLocation.maxZ, targetFraction, startFraction)
-        );
+                solveStartCoordinate(exactLocation.maxZ, targetLocation.maxZ, targetFraction, startFraction));
     }
 
-    private static double solveStartCoordinate(double exact, double target, double targetFraction, double startFraction) {
+    private static double solveStartCoordinate(
+            double exact, double target, double targetFraction, double startFraction) {
         return (exact - (targetFraction * target)) / startFraction;
     }
 
@@ -460,8 +503,7 @@ public class ReachInterpolationData {
                 lerp(from.minZ, to.minZ, amount),
                 lerp(from.maxX, to.maxX, amount),
                 lerp(from.maxY, to.maxY, amount),
-                lerp(from.maxZ, to.maxZ, amount)
-        );
+                lerp(from.maxZ, to.maxZ, amount));
     }
 
     private static double lerp(double from, double to, double amount) {
@@ -492,9 +534,9 @@ public class ReachInterpolationData {
         Vec3 targetPosition = new Vec3(
                 (targetLocation.minX + targetLocation.maxX) / 2.0D,
                 targetLocation.minY,
-                (targetLocation.minZ + targetLocation.maxZ) / 2.0D
-        );
-        if (RootVehicleInterpolationCollision.shouldShiftRootInterpolationTarget(player, entity, targetPosition, movement)) {
+                (targetLocation.minZ + targetLocation.maxZ) / 2.0D);
+        if (RootVehicleInterpolationCollision.shouldShiftRootInterpolationTarget(
+                player, entity, targetPosition, movement)) {
             targetLocation.offset(movement);
             if (interpolationQueue != null) shiftSteppedPath(movement, 0, 0);
         }
@@ -505,7 +547,8 @@ public class ReachInterpolationData {
             return;
         }
 
-        if (interpolationQueue != null) shiftSteppedPath(Vec3.ZERO, physicalYaw - currentYaw, physicalPitch - currentPitch);
+        if (interpolationQueue != null)
+            shiftSteppedPath(Vec3.ZERO, physicalYaw - currentYaw, physicalPitch - currentPitch);
         targetYaw += physicalYaw - currentYaw;
         targetPitch += physicalPitch - currentPitch;
     }
@@ -545,15 +588,16 @@ public class ReachInterpolationData {
 
     public boolean hasActiveInterpolationTarget() {
         if (interpolationQueue != null) return !interpolationQueue.isEmpty();
-        return reachesUsePacketPositionUncertainty
-                && interpolationStepsLowBound < getInterpolationSteps();
+        return reachesUsePacketPositionUncertainty && interpolationStepsLowBound < getInterpolationSteps();
     }
 
     public void updatePossibleStartingLocation(SimpleCollisionBox possibleLocationCombined) {
         if (interpolationQueue != null) return;
-        //CultACBukkitLoaderPlugin.staticGetLogger().info(ChatColor.BLUE + "Updated new starting location as second trans hasn't arrived " + startingLocation);
+        // CultACBukkitLoaderPlugin.staticGetLogger().info(ChatColor.BLUE + "Updated new starting location as second
+        // trans hasn't arrived " + startingLocation);
         this.startingLocation = combineCollisionBox(startingLocation, possibleLocationCombined);
-        //CultAC.staticGetLogger().info(ChatColor.BLUE + "Finished updating new starting location as second trans hasn't arrived " + startingLocation);
+        // CultAC.staticGetLogger().info(ChatColor.BLUE + "Finished updating new starting location as second trans
+        // hasn't arrived " + startingLocation);
     }
 
     public ReachInterpolationData copyAdvancedForClientTick(boolean incrementLowBound, boolean tickingReliably) {
@@ -564,8 +608,8 @@ public class ReachInterpolationData {
 
     public void tickMovement(boolean incrementLowBound, boolean tickingReliably) {
         if (interpolationQueue != null) {
-            Transform transform = tickSteppedMovement(
-                    Math.max(interpolationPlayer.packetStateData.serverTickRate / 20.0F, 1.0F));
+            Transform transform =
+                    tickSteppedMovement(Math.max(interpolationPlayer.packetStateData.serverTickRate / 20.0F, 1.0F));
             currentYaw = transform.yaw();
             currentPitch = transform.pitch();
             return;
@@ -578,15 +622,14 @@ public class ReachInterpolationData {
 
     @Override
     public String toString() {
-        return "ReachInterpolationData{" +
-                "targetLocation=" + targetLocation +
-                ", startingLocation=" + startingLocation +
-                ", currentYaw=" + currentYaw +
-                ", currentPitch=" + currentPitch +
-                ", targetYaw=" + targetYaw +
-                ", targetPitch=" + targetPitch +
-                ", interpolationStepsLowBound=" + interpolationStepsLowBound +
-                ", interpolationStepsHighBound=" + interpolationStepsHighBound +
-                '}';
+        return "ReachInterpolationData{" + "targetLocation="
+                + targetLocation + ", startingLocation="
+                + startingLocation + ", currentYaw="
+                + currentYaw + ", currentPitch="
+                + currentPitch + ", targetYaw="
+                + targetYaw + ", targetPitch="
+                + targetPitch + ", interpolationStepsLowBound="
+                + interpolationStepsLowBound + ", interpolationStepsHighBound="
+                + interpolationStepsHighBound + '}';
     }
 }

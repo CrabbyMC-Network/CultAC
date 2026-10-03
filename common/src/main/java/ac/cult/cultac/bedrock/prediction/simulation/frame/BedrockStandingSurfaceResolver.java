@@ -6,8 +6,8 @@ import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.simulation.collision.BedrockStandingBlockResolver;
 import ac.cult.cultac.bedrock.prediction.world.BedrockBlockFriction;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
-import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision.BlockContactBehavior;
 import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision;
+import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision.BlockContactBehavior;
 import ac.cult.cultac.bedrock.prediction.world.StandingSurfaceState;
 import ac.cult.cultac.bedrock.prediction.world.Surface;
 import java.util.EnumSet;
@@ -17,46 +17,35 @@ import java.util.Set;
 final class BedrockStandingSurfaceResolver {
     // The vanilla standing-support helper lowers the actor AABB by 0.2
     // before selecting support.
-    private BedrockStandingSurfaceResolver() {
-    }
+    private BedrockStandingSurfaceResolver() {}
 
-    public static StandingSurfaceState fromBlockWorld(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld
-    ) {
+    public static StandingSurfaceState fromBlockWorld(Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld) {
         return fromBlockWorld(physicalFeetPosition, blockWorld, PlayerDimensionsState.DEFAULT);
     }
 
     public static StandingSurfaceState fromBlockWorld(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld, PlayerDimensionsState playerDimensions) {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(blockWorld, "blockWorld");
         Objects.requireNonNull(playerDimensions, "playerDimensions");
-        java.util.Optional<PlacedBlockCollision> standingBlock = standingBlock(physicalFeetPosition, blockWorld, playerDimensions);
+        java.util.Optional<PlacedBlockCollision> standingBlock =
+                standingBlock(physicalFeetPosition, blockWorld, playerDimensions);
         return standingBlock
-            .map(BedrockStandingSurfaceResolver::fromStandingBlock)
-            .orElseGet(() -> new StandingSurfaceState(Set.of()));
+                .map(BedrockStandingSurfaceResolver::fromStandingBlock)
+                .orElseGet(() -> new StandingSurfaceState(Set.of()));
     }
 
     static boolean hasCollisionSupport(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld, PlayerDimensionsState playerDimensions) {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(blockWorld, "blockWorld");
         Objects.requireNonNull(playerDimensions, "playerDimensions");
-        return currentlyStandingOn(physicalFeetPosition, blockWorld, playerDimensions).isPresent();
+        return currentlyStandingOn(physicalFeetPosition, blockWorld, playerDimensions)
+                .isPresent();
     }
 
     public static StandingSurfaceState resolve(
-        boolean onGround,
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld
-    ) {
+            boolean onGround, Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld) {
         if (!onGround) {
             return new StandingSurfaceState(Set.of());
         }
@@ -64,63 +53,45 @@ final class BedrockStandingSurfaceResolver {
     }
 
     static StandingSurfaceState travelSurfaceFromBlockWorld(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld
-    ) {
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld) {
         return travelSurfaceFromBlockWorld(physicalFeetPosition, blockWorld, PlayerDimensionsState.DEFAULT);
     }
 
     static StandingSurfaceState travelSurfaceFromBlockWorld(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld, PlayerDimensionsState playerDimensions) {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(blockWorld, "blockWorld");
         Objects.requireNonNull(playerDimensions, "playerDimensions");
         BlockPosition travelBlock = new BlockPosition(
-            floorBlockCoordinate(physicalFeetPosition.x()),
-            floorBlockCoordinate(physicalFeetPosition.y() - 0.1D),
-            floorBlockCoordinate(physicalFeetPosition.z())
-        );
-        return blockWorld.blockAt(travelBlock)
-            .map(BedrockStandingSurfaceResolver::fromStandingBlock)
-            .orElseGet(() -> new StandingSurfaceState(Set.of()));
+                floorBlockCoordinate(physicalFeetPosition.x()),
+                floorBlockCoordinate(physicalFeetPosition.y() - 0.1D),
+                floorBlockCoordinate(physicalFeetPosition.z()));
+        return blockWorld
+                .blockAt(travelBlock)
+                .map(BedrockStandingSurfaceResolver::fromStandingBlock)
+                .orElseGet(() -> new StandingSurfaceState(Set.of()));
     }
 
     private static java.util.Optional<PlacedBlockCollision> standingBlock(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
-        java.util.Optional<PlacedBlockCollision> supportBlock = currentlyStandingOn(
-            physicalFeetPosition,
-            blockWorld,
-            playerDimensions
-        );
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld, PlayerDimensionsState playerDimensions) {
+        java.util.Optional<PlacedBlockCollision> supportBlock =
+                currentlyStandingOn(physicalFeetPosition, blockWorld, playerDimensions);
         return supportBlock.isPresent() ? supportBlock : floorBlock(physicalFeetPosition, blockWorld);
     }
 
     private static java.util.Optional<PlacedBlockCollision> floorBlock(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld
-    ) {
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld) {
         BlockPosition standingBlock = new BlockPosition(
-            floorBlockCoordinate(physicalFeetPosition.x()),
-            floorBlockCoordinate(physicalFeetPosition.y() - BedrockStandingBlockResolver.QUERY_Y_OFFSET),
-            floorBlockCoordinate(physicalFeetPosition.z())
-        );
+                floorBlockCoordinate(physicalFeetPosition.x()),
+                floorBlockCoordinate(physicalFeetPosition.y() - BedrockStandingBlockResolver.QUERY_Y_OFFSET),
+                floorBlockCoordinate(physicalFeetPosition.z()));
         return blockWorld.blockAt(standingBlock);
     }
 
     private static java.util.Optional<PlacedBlockCollision> currentlyStandingOn(
-        Vec3d physicalFeetPosition,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState playerDimensions
-    ) {
-        return BedrockStandingBlockResolver.resolve(
-            physicalFeetPosition, blockWorld, playerDimensions
-        ).map(BedrockStandingBlockResolver.StandingSupport::block);
+            Vec3d physicalFeetPosition, BlockCollisionWorld blockWorld, PlayerDimensionsState playerDimensions) {
+        return BedrockStandingBlockResolver.resolve(physicalFeetPosition, blockWorld, playerDimensions)
+                .map(BedrockStandingBlockResolver.StandingSupport::block);
     }
 
     private static StandingSurfaceState fromStandingBlock(PlacedBlockCollision block) {
@@ -138,9 +109,7 @@ final class BedrockStandingSurfaceResolver {
             surfaces.add(Surface.SOUL_SOIL);
         }
         return new StandingSurfaceState(
-            surfaces.isEmpty() ? Set.of() : Set.copyOf(surfaces),
-            BedrockBlockFriction.from(block)
-        );
+                surfaces.isEmpty() ? Set.of() : Set.copyOf(surfaces), BedrockBlockFriction.from(block));
     }
 
     private static int floorBlockCoordinate(double value) {
@@ -149,5 +118,4 @@ final class BedrockStandingSurfaceResolver {
         }
         return (int) Math.floor(value);
     }
-
 }

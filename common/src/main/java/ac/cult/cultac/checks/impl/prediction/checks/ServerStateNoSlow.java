@@ -1,16 +1,16 @@
 package ac.cult.cultac.checks.impl.prediction.checks;
 
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.manager.tick.Tickable;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import ac.cult.cultac.utils.nmsutil.IsUsingItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.cult.cultac.utils.nmsutil.IsUsingItem;
 import net.minecraft.world.InteractionHand;
 
 // TODO: Investigate the modern protocol around using items
@@ -27,7 +27,6 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
 
     public int usingItemTicks = 0;
 
-
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
         if (predictionComplete.isTeleport()) return;
@@ -36,7 +35,8 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
             return;
         }
 
-        boolean movementTooFastForUseItem = predictionComplete.getPredictionResult().isExceedsSlowedSpeed();
+        boolean movementTooFastForUseItem =
+                predictionComplete.getPredictionResult().isExceedsSlowedSpeed();
 
         if (movementTooFastForUseItem) {
             ticksSlowed = Math.min(3, ticksSlowed + 1);
@@ -53,7 +53,8 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         if (bufferThreshold != Integer.MAX_VALUE && hand != InteractionHand.OFF_HAND) {
             IsUsingItem.stopUseItem(player);
         }
@@ -90,7 +91,9 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
                 if (buffer >= bufferThreshold && player.bukkitPlayer != null) {
                     // TODO: Transform to be thread safe!
                     IsUsingItem.stopUseItem(player);
-                    if (player.debugNoSlow) { player.sendMessage("stopped using item, buffer=" + this.buffer); }
+                    if (player.debugNoSlow) {
+                        player.sendMessage("stopped using item, buffer=" + this.buffer);
+                    }
                 }
             }
         }

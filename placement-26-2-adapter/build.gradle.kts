@@ -1,6 +1,7 @@
 plugins {
     java
     id("io.papermc.paperweight.userdev")
+    cult.`format-conventions`
 }
 
 // Level removed brewing/fuel APIs in RC1. Keep those descriptors isolated so

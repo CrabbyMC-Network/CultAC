@@ -9,45 +9,79 @@ import ac.cult.cultac.bedrock.prediction.world.HoneySlideState;
 import java.util.Objects;
 
 public record BedrockMovementResult(
-    BedrockMovementState previousState,
-    BedrockMovementContext movementContext,
-    BedrockMovementContext postMoveContext,
-    BedrockMovementState predictedState,
-    Vec3d rawPredictedPhysicalFeetPosition,
-    Vec3d collisionInputVelocity,
-    boolean orderedPostMoveOwnsHorizontalVelocity,
-    boolean orderedPostMoveOwnsVerticalVelocity,
-    boolean standingBounceBounced,
-    boolean standingSurfaceHorizontalSlowdownApplied,
-    BlockMovementSlowdownState currentBlockMovementSlowdownState,
-    HoneySlideState honeySlideState,
-    boolean selectedGlidingTravel,
-    boolean selectedWaterTravel,
-    double horizontalInputLimit,
-    double horizontalFriction,
-    boolean steppedUp,
-    boolean stepRetryAllowed,
-    boolean canStep,
-    double maxUpStep,
-    boolean travelActive,
-    boolean groundJumpApplied,
-    Vec3d nonHopVelocity,
-    WorldCollisionBox collisionFetchBox
-) {
-    public BedrockMovementResult(BedrockMovementState previousState, BedrockMovementContext movementContext,
-            BedrockMovementContext postMoveContext, BedrockMovementState predictedState,
-            Vec3d rawPredictedPhysicalFeetPosition, Vec3d collisionInputVelocity,
-            boolean orderedPostMoveOwnsHorizontalVelocity, boolean orderedPostMoveOwnsVerticalVelocity,
-            boolean standingBounceBounced, boolean standingSurfaceHorizontalSlowdownApplied,
-            BlockMovementSlowdownState currentBlockMovementSlowdownState, HoneySlideState honeySlideState,
-            boolean selectedGlidingTravel, boolean selectedWaterTravel, double horizontalInputLimit,
-            double horizontalFriction, boolean steppedUp, boolean stepRetryAllowed, boolean canStep,
-            double maxUpStep, boolean travelActive, boolean groundJumpApplied, Vec3d nonHopVelocity) {
-        this(previousState, movementContext, postMoveContext, predictedState, rawPredictedPhysicalFeetPosition,
-                collisionInputVelocity, orderedPostMoveOwnsHorizontalVelocity, orderedPostMoveOwnsVerticalVelocity,
-                standingBounceBounced, standingSurfaceHorizontalSlowdownApplied, currentBlockMovementSlowdownState,
-                honeySlideState, selectedGlidingTravel, selectedWaterTravel, horizontalInputLimit, horizontalFriction,
-                steppedUp, stepRetryAllowed, canStep, maxUpStep, travelActive, groundJumpApplied, nonHopVelocity, null);
+        BedrockMovementState previousState,
+        BedrockMovementContext movementContext,
+        BedrockMovementContext postMoveContext,
+        BedrockMovementState predictedState,
+        Vec3d rawPredictedPhysicalFeetPosition,
+        Vec3d collisionInputVelocity,
+        boolean orderedPostMoveOwnsHorizontalVelocity,
+        boolean orderedPostMoveOwnsVerticalVelocity,
+        boolean standingBounceBounced,
+        boolean standingSurfaceHorizontalSlowdownApplied,
+        BlockMovementSlowdownState currentBlockMovementSlowdownState,
+        HoneySlideState honeySlideState,
+        boolean selectedGlidingTravel,
+        boolean selectedWaterTravel,
+        double horizontalInputLimit,
+        double horizontalFriction,
+        boolean steppedUp,
+        boolean stepRetryAllowed,
+        boolean canStep,
+        double maxUpStep,
+        boolean travelActive,
+        boolean groundJumpApplied,
+        Vec3d nonHopVelocity,
+        WorldCollisionBox collisionFetchBox) {
+    public BedrockMovementResult(
+            BedrockMovementState previousState,
+            BedrockMovementContext movementContext,
+            BedrockMovementContext postMoveContext,
+            BedrockMovementState predictedState,
+            Vec3d rawPredictedPhysicalFeetPosition,
+            Vec3d collisionInputVelocity,
+            boolean orderedPostMoveOwnsHorizontalVelocity,
+            boolean orderedPostMoveOwnsVerticalVelocity,
+            boolean standingBounceBounced,
+            boolean standingSurfaceHorizontalSlowdownApplied,
+            BlockMovementSlowdownState currentBlockMovementSlowdownState,
+            HoneySlideState honeySlideState,
+            boolean selectedGlidingTravel,
+            boolean selectedWaterTravel,
+            double horizontalInputLimit,
+            double horizontalFriction,
+            boolean steppedUp,
+            boolean stepRetryAllowed,
+            boolean canStep,
+            double maxUpStep,
+            boolean travelActive,
+            boolean groundJumpApplied,
+            Vec3d nonHopVelocity) {
+        this(
+                previousState,
+                movementContext,
+                postMoveContext,
+                predictedState,
+                rawPredictedPhysicalFeetPosition,
+                collisionInputVelocity,
+                orderedPostMoveOwnsHorizontalVelocity,
+                orderedPostMoveOwnsVerticalVelocity,
+                standingBounceBounced,
+                standingSurfaceHorizontalSlowdownApplied,
+                currentBlockMovementSlowdownState,
+                honeySlideState,
+                selectedGlidingTravel,
+                selectedWaterTravel,
+                horizontalInputLimit,
+                horizontalFriction,
+                steppedUp,
+                stepRetryAllowed,
+                canStep,
+                maxUpStep,
+                travelActive,
+                groundJumpApplied,
+                nonHopVelocity,
+                null);
     }
 
     public BedrockMovementResult {
@@ -55,9 +89,11 @@ public record BedrockMovementResult(
         movementContext = Objects.requireNonNull(movementContext, "movementContext");
         postMoveContext = Objects.requireNonNull(postMoveContext, "postMoveContext");
         predictedState = Objects.requireNonNull(predictedState, "predictedState");
-        rawPredictedPhysicalFeetPosition = Objects.requireNonNull(rawPredictedPhysicalFeetPosition, "rawPredictedPhysicalFeetPosition");
+        rawPredictedPhysicalFeetPosition =
+                Objects.requireNonNull(rawPredictedPhysicalFeetPosition, "rawPredictedPhysicalFeetPosition");
         collisionInputVelocity = Objects.requireNonNull(collisionInputVelocity, "collisionInputVelocity");
-        currentBlockMovementSlowdownState = Objects.requireNonNull(currentBlockMovementSlowdownState, "currentBlockMovementSlowdownState");
+        currentBlockMovementSlowdownState =
+                Objects.requireNonNull(currentBlockMovementSlowdownState, "currentBlockMovementSlowdownState");
         honeySlideState = Objects.requireNonNull(honeySlideState, "honeySlideState");
         horizontalInputLimit = Math.max(0.0D, horizontalInputLimit);
         if (!Double.isFinite(horizontalFriction) || horizontalFriction < 0.0D) {

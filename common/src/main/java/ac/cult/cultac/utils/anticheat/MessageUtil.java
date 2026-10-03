@@ -1,30 +1,29 @@
 package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.GrimUser;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundDisconnect;
 import ac.cult.cultac.utils.data.webhook.discord.CompiledDiscordTemplate;
+import ac.grim.grimac.api.GrimUser;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundDisconnect;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-
-import java.util.Map;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @UtilityClass
 public class MessageUtil {
@@ -37,7 +36,8 @@ public class MessageUtil {
         if (reason instanceof TranslatableComponent translated) {
             return ClientboundDisconnect.translatable(translated.key());
         }
-        return ClientboundDisconnect.literal(stripColor(LegacyComponentSerializer.legacySection().serialize(reason)));
+        return ClientboundDisconnect.literal(
+                stripColor(LegacyComponentSerializer.legacySection().serialize(reason)));
     }
 
     public @NotNull String toUnlabledString(@Nullable Vec3 vec) {
@@ -53,7 +53,8 @@ public class MessageUtil {
     }
 
     @Contract("_, null, _ -> null; _, !null, _ -> !null")
-    public @Nullable String replacePlaceholders(@Nullable CultPlayer player, @Nullable String string, boolean removeFormatting) {
+    public @Nullable String replacePlaceholders(
+            @Nullable CultPlayer player, @Nullable String string, boolean removeFormatting) {
         return replacePlaceholders(player, player == null ? null : player.platformPlayer, string, removeFormatting);
     }
 
@@ -69,13 +70,21 @@ public class MessageUtil {
 
     @Contract("_, null -> null; _, !null -> !null")
     public @Nullable String replacePlaceholders(@Nullable PlatformPlayer player, @Nullable String string) {
-        return replacePlaceholders(player == null ? null : CultAPI.INSTANCE.getPlayerDataManager().getPlayer(player.getUniqueId()), player, string, false);
+        return replacePlaceholders(
+                player == null ? null : CultAPI.INSTANCE.getPlayerDataManager().getPlayer(player.getUniqueId()),
+                player,
+                string,
+                false);
     }
 
     private static final Pattern UNIFIED_PLACEHOLDER_PATTERN = Pattern.compile("%([a-zA-Z0-9_]+)%");
 
     @Contract("_, _, null, _ -> null; _, _, !null, _ -> !null")
-    private @Nullable String replacePlaceholders(@Nullable CultPlayer cultPlayer, @Nullable PlatformPlayer platformPlayer, @Nullable String string, boolean removeFormatting) {
+    private @Nullable String replacePlaceholders(
+            @Nullable CultPlayer cultPlayer,
+            @Nullable PlatformPlayer platformPlayer,
+            @Nullable String string,
+            boolean removeFormatting) {
         if (string == null) return null;
 
         // --- PHASE 1: FAST PATH ---
@@ -95,9 +104,12 @@ public class MessageUtil {
         }
 
         // Get references to the maps once, outside the loop.
-        final Map<String, String> staticReplacements = CultAPI.INSTANCE.getExternalAPI().getStaticReplacements();
-        final Map<String, Function<GrimUser, String>> variableReplacements = CultAPI.INSTANCE.getExternalAPI().getVariableReplacements();
-        // 32 is a heuristic buffer. It roughly covers the expansion cost of one UUID (36 chars) vs one placeholder (6 chars).
+        final Map<String, String> staticReplacements =
+                CultAPI.INSTANCE.getExternalAPI().getStaticReplacements();
+        final Map<String, Function<GrimUser, String>> variableReplacements =
+                CultAPI.INSTANCE.getExternalAPI().getVariableReplacements();
+        // 32 is a heuristic buffer. It roughly covers the expansion cost of one UUID (36 chars) vs one placeholder (6
+        // chars).
         final StringBuilder sb = new StringBuilder(string.length() + 32);
 
         // --- PHASE 2: THE REPLACEMENT LOOP ---
@@ -127,9 +139,9 @@ public class MessageUtil {
             // In that case, we treat the placeholder as literal text by appending the original key.
             if (value == null) {
                 value = keyWithPercent;
-            // yes the check for `removeFormatting` is inside the loop, but it's a simple boolean
-            // check and the cost is negligible compared to the string operations.
-            // Do NOT escape - this is probably a PAPI key that must remain intact
+                // yes the check for `removeFormatting` is inside the loop, but it's a simple boolean
+                // check and the cost is negligible compared to the string operations.
+                // Do NOT escape - this is probably a PAPI key that must remain intact
             } else if (removeFormatting) {
                 // Note: This assumes `escapeMarkdown` is reasonably fast.
                 // If it's slow, there are further micro-optimizations, but this is the right place for it.
@@ -148,7 +160,10 @@ public class MessageUtil {
         // Create the final string from our builder.
         String cultReplaced = sb.toString();
 
-        return CultAPI.INSTANCE.getMessagePlaceHolderManager().replacePlaceholders(platformPlayer, cultReplaced).replace(PLACEHOLDER_ESCAPE_CHAR, '%');
+        return CultAPI.INSTANCE
+                .getMessagePlaceHolderManager()
+                .replacePlaceholders(platformPlayer, cultReplaced)
+                .replace(PLACEHOLDER_ESCAPE_CHAR, '%');
     }
 
     public @NotNull Component replacePlaceholders(@NotNull CultPlayer player, @NotNull Component component) {
@@ -165,7 +180,8 @@ public class MessageUtil {
     }
 
     public @NotNull Component miniMessage(@NotNull String string, TagResolver... resolvers) {
-        string = string.replace("%prefix%", CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("prefix", "&bCult &8»"));
+        string = string.replace(
+                "%prefix%", CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("prefix", "&bCult &8»"));
 
         // hex codes
         Matcher matcher = HEX_PATTERN.matcher(string);

@@ -7,6 +7,10 @@ import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -18,11 +22,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import org.bukkit.GameMode;
 import org.bukkit.block.data.BlockData;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * MCP-Reborn 26.2 PotentSulfurBlockEntity#LAUNCH_ENTITY_TICKER: while a potent
@@ -42,8 +41,7 @@ public final class GeyserVelocity {
     private static final int FORCE_HEIGHT_PER_WATER_BLOCK = 6;
     private static final int MAX_COLUMN_HEIGHT = FORCE_HEIGHT_PER_WATER_BLOCK * (MAX_WATER_SCAN - 1);
 
-    private GeyserVelocity() {
-    }
+    private GeyserVelocity() {}
 
     public static Set<Vec3> applyToResult(CultPlayer player, PredictionResult result, Set<Vec3> velocities) {
         if (player == null
@@ -60,9 +58,8 @@ public final class GeyserVelocity {
 
         // Entity#getRootVehicle is launched, unless that root is itself riding
         // something. That exactly matches the client ticker's isPassenger test.
-        PacketEntity launchedEntity = context.getVehicle() == null
-                ? context.getEntities().getSelf()
-                : context.getVehicle();
+        PacketEntity launchedEntity =
+                context.getVehicle() == null ? context.getEntities().getSelf() : context.getVehicle();
         if (!canLaunch(launchedEntity, context.getVehicle() == null, player.isFlying, player.gamemode)) {
             return velocities;
         }
@@ -78,18 +75,24 @@ public final class GeyserVelocity {
 
     /** The client caps fall distance before testing whether this ticker can launch the actor. */
     public static ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaInsideBlockEffects.State applyToState(
-            CultPlayer player, PredictionResult result, Vec3 end,
+            CultPlayer player,
+            PredictionResult result,
+            Vec3 end,
             ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaInsideBlockEffects.State state) {
-        if (SERVER_VERSION.isOlderThan(ClientVersion.V_26_2) || player.getClientVersion().isOlderThan(ClientVersion.V_26_2)) return state;
+        if (SERVER_VERSION.isOlderThan(ClientVersion.V_26_2)
+                || player.getClientVersion().isOlderThan(ClientVersion.V_26_2)) return state;
         SimulationContext context = result.getSimulationContext();
-        PacketEntity actor = context.getVehicle() == null ? context.getEntities().getSelf() : context.getVehicle();
+        PacketEntity actor =
+                context.getVehicle() == null ? context.getEntities().getSelf() : context.getVehicle();
         if (actor.isDead || player.gamemode == GameMode.SPECTATOR) return state;
         SimpleCollisionBox box = context.getToActualPose().copy().offset(end.subtract(context.getEnd()));
         boolean launch = canLaunch(actor, context.getVehicle() == null, player.isFlying, player.gamemode);
         for (float cap : findIntersectingColumnCaps(player, box)) {
             double distance = capFallDistance(state.fallDistance(), state.velocity().y);
-            Vec3 velocity = launch && state.velocity().y < cap ? state.velocity().add(0, LAUNCH_FORCE, 0) : state.velocity();
-            state = new ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaInsideBlockEffects.State(distance, velocity, state.stuckSpeed());
+            Vec3 velocity =
+                    launch && state.velocity().y < cap ? state.velocity().add(0, LAUNCH_FORCE, 0) : state.velocity();
+            state = new ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaInsideBlockEffects.State(
+                    distance, velocity, state.stuckSpeed());
         }
         return state;
     }
@@ -108,8 +111,8 @@ public final class GeyserVelocity {
         int maxY = (int) Math.floor(box.maxY);
 
         int lowestY = Math.max(minY - MAX_COLUMN_HEIGHT - 1, player.compensatedWorld.getMinHeight());
-        for (BlockPos ticker : player.compensatedWorld.getGeysers()
-                .getTickersInOrder(minX, lowestY, minZ, maxX, maxY, maxZ)) {
+        for (BlockPos ticker :
+                player.compensatedWorld.getGeysers().getTickersInOrder(minX, lowestY, minZ, maxX, maxY, maxZ)) {
             int x = ticker.getX();
             int y = ticker.getY();
             int z = ticker.getZ();
@@ -158,7 +161,9 @@ public final class GeyserVelocity {
     }
 
     static boolean canLaunch(PacketEntity entity, boolean rootIsPlayer, boolean playerFlying, GameMode gameMode) {
-        return entity != null && !entity.isDead && entity.riding == null
+        return entity != null
+                && !entity.isDead
+                && entity.riding == null
                 && !BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(entity.type).is(EntityTypeTags.NOT_AFFECTED_BY_GEYSERS)
                 && gameMode != GameMode.SPECTATOR
                 && (!rootIsPlayer || !playerFlying);
@@ -172,7 +177,8 @@ public final class GeyserVelocity {
         // The PotentSulfurBlock class only exists on 26.2 servers, so read the
         // BlockStateProperties#POTENT_SULFUR_STATE property from the serialized form.
         String serialized = data.getAsString(false);
-        return serialized.contains("potent_sulfur_state=erupting") || serialized.contains("potent_sulfur_state=continuous");
+        return serialized.contains("potent_sulfur_state=erupting")
+                || serialized.contains("potent_sulfur_state=continuous");
     }
 
     // MCP-Reborn 26.2 PotentSulfurBlockEntity#findNoxiousGasSourceBlock
@@ -180,7 +186,8 @@ public final class GeyserVelocity {
         int maxY = y + MAX_WATER_SCAN;
         for (int cy = y + 1; cy <= maxY; cy++) {
             BlockState state = player.compensatedWorld.getBlockStateAt(x, cy, z);
-            boolean waterSource = player.compensatedWorld.getFluidStateAt(x, cy, z).isSourceOfType(Fluids.WATER);
+            boolean waterSource =
+                    player.compensatedWorld.getFluidStateAt(x, cy, z).isSourceOfType(Fluids.WATER);
             if (!waterSource || (state.getBlock() != Blocks.WATER && !isPassable(player, state, x, cy, z))) {
                 if (state.isAir() || isPassable(player, state, x, cy, z)) {
                     return cy - y - 1;
@@ -207,7 +214,8 @@ public final class GeyserVelocity {
         if (state.isAir() || state.getBlock() == Blocks.WATER) {
             return true;
         }
-        return state.getCollisionShape(player.compensatedWorld, new BlockPos(x, y, z),
-                CollisionContext.positionContext(y - 1)).isEmpty();
+        return state.getCollisionShape(
+                        player.compensatedWorld, new BlockPos(x, y, z), CollisionContext.positionContext(y - 1))
+                .isEmpty();
     }
 }

@@ -1,15 +1,13 @@
 package ac.cult.cultac.manager.config;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.common.BasicReloadable;
-import ac.grim.grimac.api.config.ConfigManager;
 import ac.cult.cultac.manager.config.update.ConfigUpdater;
 import ac.cult.cultac.manager.config.update.CultConfigSpecs;
 import ac.cult.cultac.utils.anticheat.LogUtil;
+import ac.grim.grimac.api.common.BasicReloadable;
+import ac.grim.grimac.api.config.ConfigManager;
 import github.scarsz.configuralize.DynamicConfig;
 import github.scarsz.configuralize.Language;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.jetbrains.annotations.Nullable;
 
 public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
 
@@ -61,8 +60,7 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
         try {
             updater.updateAll(batch, langCode);
             Map<File, ConfigUpdater.Spec> cultBatch = new LinkedHashMap<>();
-            batch.forEach((file, spec) -> cultBatch.put(file,
-                    CultConfigSpecs.cultConfig(spec.resourceDirectory)));
+            batch.forEach((file, spec) -> cultBatch.put(file, CultConfigSpecs.cultConfig(spec.resourceDirectory)));
             cultBatch.put(getConfigFile("punishments.yml"), CultConfigSpecs.cultConfig("/punishments/"));
             updater.updateAll(cultBatch, langCode);
         } catch (Exception e) {
@@ -139,12 +137,17 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
 
                 if (configVersion != -1) {
                     String configStringVersion = configString.substring(configVersion + "config-version: ".length());
-                    configStringVersion = configStringVersion.substring(0, !configStringVersion.contains("\n") ? configStringVersion.length() : configStringVersion.indexOf("\n"));
+                    configStringVersion = configStringVersion.substring(
+                            0,
+                            !configStringVersion.contains("\n")
+                                    ? configStringVersion.length()
+                                    : configStringVersion.indexOf("\n"));
                     configStringVersion = configStringVersion.replaceAll("\\D", "");
 
                     configVersion = Integer.parseInt(configStringVersion);
                     // TODO: Do we have to hardcode this?
-                    configString = configString.replaceAll("config-version: " + configStringVersion, "config-version: 9");
+                    configString =
+                            configString.replaceAll("config-version: " + configStringVersion, "config-version: 9");
                     Files.write(config.toPath(), configString.getBytes());
 
                     upgradeModernConfig(config, configString, configVersion);
@@ -190,13 +193,15 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
 
     private void removeLegacyTwoPointOne(File config) throws IOException {
         // If config doesn't have config-version, it's a legacy config
-        Files.move(config.toPath(), new File(CultAPI.INSTANCE.getGrimPlugin().getDataFolder(), "config-2.1.old.yml").toPath());
+        Files.move(
+                config.toPath(),
+                new File(CultAPI.INSTANCE.getGrimPlugin().getDataFolder(), "config-2.1.old.yml").toPath());
     }
 
     private void addMaxPing(File config, String configString) throws IOException {
-        configString += "\n\n\n" +
-                "# How long should players have until we keep them for timing out? Default = 2 minutes\n" +
-                "max-ping: 120";
+        configString +=
+                "\n\n\n" + "# How long should players have until we keep them for timing out? Default = 2 minutes\n"
+                        + "max-ping: 120";
 
         Files.write(config.toPath(), configString.getBytes());
     }
@@ -210,24 +215,24 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
                 configString = new String(Files.readAllBytes(config.toPath()));
 
                 // If it works, it isn't stupid.  Only replace it if it exactly matches the default config.
-                int commentIndex = configString.indexOf("  # As of 2.2.2 these are just placeholders, there are no Killaura/Aim/Autoclicker checks other than those that");
+                int commentIndex = configString.indexOf(
+                        "  # As of 2.2.2 these are just placeholders, there are no Killaura/Aim/Autoclicker checks other than those that");
                 if (commentIndex != -1) {
 
                     configString = configString.substring(0, commentIndex);
-                    configString += "  Combat:\n" +
-                            "    remove-violations-after: 300\n" +
-                            "    checks:\n" +
-                            "      - \"Killaura\"\n" +
-                            "      - \"Aim\"\n" +
-                            "    commands:\n" +
-                            "      - \"20:40 [alert]\"\n" +
-                            "  # As of 2.2.10, there are no AutoClicker checks and this is a placeholder. 2.3 will include AutoClicker checks.\n" +
-                            "  Autoclicker:\n" +
-                            "    remove-violations-after: 300\n" +
-                            "    checks:\n" +
-                            "      - \"Autoclicker\"\n" +
-                            "    commands:\n" +
-                            "      - \"20:40 [alert]\"\n";
+                    configString += "  Combat:\n" + "    remove-violations-after: 300\n"
+                            + "    checks:\n"
+                            + "      - \"Killaura\"\n"
+                            + "      - \"Aim\"\n"
+                            + "    commands:\n"
+                            + "      - \"20:40 [alert]\"\n"
+                            + "  # As of 2.2.10, there are no AutoClicker checks and this is a placeholder. 2.3 will include AutoClicker checks.\n"
+                            + "  Autoclicker:\n"
+                            + "    remove-violations-after: 300\n"
+                            + "    checks:\n"
+                            + "      - \"Autoclicker\"\n"
+                            + "    commands:\n"
+                            + "      - \"20:40 [alert]\"\n";
                 }
 
                 Files.write(config.toPath(), configString.getBytes());
@@ -261,7 +266,9 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
         if (config.exists()) {
             try {
                 configString = new String(Files.readAllBytes(config.toPath()));
-                configString = configString.replace("      - \"EntityControl\"\n", "      - \"EntityControl\"\n      - \"Baritone\"\n      - \"FastBreak\"\n");
+                configString = configString.replace(
+                        "      - \"EntityControl\"\n",
+                        "      - \"EntityControl\"\n      - \"Baritone\"\n      - \"FastBreak\"\n");
                 Files.write(config.toPath(), configString.getBytes());
             } catch (IOException ignored) {
             }
@@ -278,15 +285,14 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
         if (discordFile.exists()) {
             try {
                 String discordString = new String(Files.readAllBytes(discordFile.toPath()));
-                discordString += "\nembed-color: \"#00FFFF\"\n" +
-                        "violation-content:\n" +
-                        "  - \"**Player**: %player%\"\n" +
-                        "  - \"**Check**: %check%\"\n" +
-                        "  - \"**Violations**: %violations%\"\n" +
-                        "  - \"**Client Version**: %version%\"\n" +
-                        "  - \"**Brand**: %brand%\"\n" +
-                        "  - \"**Ping**: %ping%\"\n" +
-                        "  - \"**TPS**: %tps%\"\n";
+                discordString += "\nembed-color: \"#00FFFF\"\n" + "violation-content:\n"
+                        + "  - \"**Player**: %player%\"\n"
+                        + "  - \"**Check**: %check%\"\n"
+                        + "  - \"**Violations**: %violations%\"\n"
+                        + "  - \"**Client Version**: %version%\"\n"
+                        + "  - \"**Brand**: %brand%\"\n"
+                        + "  - \"**Ping**: %ping%\"\n"
+                        + "  - \"**TPS**: %tps%\"\n";
                 Files.write(discordFile.toPath(), discordString.getBytes());
             } catch (IOException ignored) {
             }
@@ -297,21 +303,19 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
         // The default config didn't have this change
         configString = configString.replace("threshold: 0.0001", "threshold: 0.001"); // 1e-5 -> 1e-4 default flag level
         if (!configString.contains("experimental-checks")) {
-            configString += "\n\n# Enables experimental checks\n" +
-                    "experimental-checks: false\n\n";
+            configString += "\n\n# Enables experimental checks\n" + "experimental-checks: false\n\n";
         }
-        configString += "\nverbose:\n" +
-                "  print-to-console: false\n";
+        configString += "\nverbose:\n" + "  print-to-console: false\n";
         Files.write(config.toPath(), configString.getBytes());
 
         File messageFile = new File(CultAPI.INSTANCE.getGrimPlugin().getDataFolder(), "messages.yml");
         if (messageFile.exists()) {
             try {
                 String messagesString = new String(Files.readAllBytes(messageFile.toPath()));
-                messagesString += "\n\nupload-log: \"%prefix% &fUploaded debug to: %url%\"\n" +
-                        "upload-log-start: \"%prefix% &fUploading log... please wait\"\n" +
-                        "upload-log-not-found: \"%prefix% &cUnable to find that log\"\n" +
-                        "upload-log-upload-failure: \"%prefix% &cSomething went wrong while uploading this log, see console for more info\"\n";
+                messagesString += "\n\nupload-log: \"%prefix% &fUploaded debug to: %url%\"\n"
+                        + "upload-log-start: \"%prefix% &fUploading log... please wait\"\n"
+                        + "upload-log-not-found: \"%prefix% &cUnable to find that log\"\n"
+                        + "upload-log-upload-failure: \"%prefix% &cSomething went wrong while uploading this log, see console for more info\"\n";
                 Files.write(messageFile.toPath(), messagesString.getBytes());
             } catch (IOException ignored) {
             }
@@ -319,34 +323,38 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
     }
 
     private void removeAlertsOnJoin(File config, String configString) throws IOException {
-        configString = configString.replaceAll("  # Should players with cult\\.alerts permission automatically enable alerts on join\\?\r?\n  enable-on-join: (?:true|false)\r?\n", ""); // en
-        configString = configString.replaceAll("  # 管理员进入时是否自动开启警告？\r?\n  enable-on-join: (?:true|false)\r?\n", ""); // zh
+        configString = configString.replaceAll(
+                "  # Should players with cult\\.alerts permission automatically enable alerts on join\\?\r?\n  enable-on-join: (?:true|false)\r?\n",
+                ""); // en
+        configString =
+                configString.replaceAll("  # 管理员进入时是否自动开启警告？\r?\n  enable-on-join: (?:true|false)\r?\n", ""); // zh
         Files.write(config.toPath(), configString.getBytes());
     }
 
     private void addPacketSpamThreshold(File config, String configString) throws IOException {
-        configString += "\n# Cult sometimes cancels illegal packets such as with timer, after X packets in a second cancelled, when should\n" +
-                "# we simply kick the player? This is required as some packet limiters don't count packets cancelled by cult.\n" +
-                "packet-spam-threshold: 150\n";
+        configString +=
+                "\n# Cult sometimes cancels illegal packets such as with timer, after X packets in a second cancelled, when should\n"
+                        + "# we simply kick the player? This is required as some packet limiters don't count packets cancelled by cult.\n"
+                        + "packet-spam-threshold: 150\n";
         Files.write(config.toPath(), configString.getBytes());
     }
 
     private void newOffsetHandlingAntiKB(File config, String configString) throws IOException {
-        configString = configString.replaceAll("  # How much of an offset is \"cheating\"\r?\n  # By default this is 1e-5, which is safe and sane\r?\n  # Measured in blocks from the correct movement\r?\n  threshold: 0.001\r?\n  setbackvl: 3",
-                "  # How much should we multiply total advantage by when the player is legit\n" +
-                        "  setback-decay-multiplier: 0.999\n" +
-                        "  # How large of an offset from the player's velocity should we create a violation for?\n" +
-                        "  # Measured in blocks from the possible velocity\n" +
-                        "  threshold: 0.001\n" +
-                        "  # How large of a violation in a tick before the player gets immediately setback?\n" +
-                        "  # -1 to disable\n" +
-                        "  immediate-setback-threshold: 0.1\n" +
-                        "  # How large of an advantage over all ticks before we start to setback?\n" +
-                        "  # -1 to disable\n" +
-                        "  max-advantage: 1\n" +
-                        "  # This is to stop the player from gathering too many violations and never being able to clear them all\n" +
-                        "  max-ceiling: 4"
-        );
+        configString = configString.replaceAll(
+                "  # How much of an offset is \"cheating\"\r?\n  # By default this is 1e-5, which is safe and sane\r?\n  # Measured in blocks from the correct movement\r?\n  threshold: 0.001\r?\n  setbackvl: 3",
+                "  # How much should we multiply total advantage by when the player is legit\n"
+                        + "  setback-decay-multiplier: 0.999\n"
+                        + "  # How large of an offset from the player's velocity should we create a violation for?\n"
+                        + "  # Measured in blocks from the possible velocity\n"
+                        + "  threshold: 0.001\n"
+                        + "  # How large of a violation in a tick before the player gets immediately setback?\n"
+                        + "  # -1 to disable\n"
+                        + "  immediate-setback-threshold: 0.1\n"
+                        + "  # How large of an advantage over all ticks before we start to setback?\n"
+                        + "  # -1 to disable\n"
+                        + "  max-advantage: 1\n"
+                        + "  # This is to stop the player from gathering too many violations and never being able to clear them all\n"
+                        + "  max-ceiling: 4");
         Files.write(config.toPath(), configString.getBytes());
     }
 
@@ -424,5 +432,4 @@ public class ConfigManagerFileImpl implements ConfigManager, BasicReloadable {
     public boolean hasLoaded() {
         return initialized;
     }
-
 }

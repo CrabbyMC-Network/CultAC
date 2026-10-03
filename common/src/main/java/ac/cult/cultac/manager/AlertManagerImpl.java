@@ -1,26 +1,25 @@
 package ac.cult.cultac.manager;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.GrimUser;
-import ac.grim.grimac.api.alerts.AlertManager;
-import ac.grim.grimac.api.config.ConfigManager;
-import ac.grim.grimac.api.config.ConfigReloadable;
 import ac.cult.cultac.manager.init.start.StartableInitable;
 import ac.cult.cultac.platform.api.PlatformServer;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
+import ac.grim.grimac.api.GrimUser;
+import ac.grim.grimac.api.alerts.AlertManager;
+import ac.grim.grimac.api.config.ConfigManager;
+import ac.grim.grimac.api.config.ConfigReloadable;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Efficient implementation of AlertManager, handling state changes and notifications.
@@ -59,7 +58,8 @@ public final class AlertManagerImpl implements AlertManager, ConfigReloadable, S
          * @param excluding the listeners to exclude, null means console
          * @return listeners this message was sent to, null means console
          */
-        public Set<@Nullable PlatformPlayer> send(Component component, @Nullable Set<@Nullable PlatformPlayer> excluding) {
+        public Set<@Nullable PlatformPlayer> send(
+                Component component, @Nullable Set<@Nullable PlatformPlayer> excluding) {
             HashSet<PlatformPlayer> listeners = new HashSet<>(players);
             if (excluding != null) {
                 listeners.removeAll(excluding);
@@ -103,17 +103,22 @@ public final class AlertManagerImpl implements AlertManager, ConfigReloadable, S
      * @throws NullPointerException if the CultPlayer's platformPlayer is null.
      */
     private @NotNull PlatformPlayer requirePlatformPlayerFromUser(@NotNull GrimUser user) {
-        Objects.requireNonNull(user, "user cannot be null"); // Should be guaranteed by interface contract, but good practice
+        Objects.requireNonNull(
+                user, "user cannot be null"); // Should be guaranteed by interface contract, but good practice
 
         if (!(user instanceof CultPlayer cultPlayer)) {
             // Throw a specific exception if the type is wrong
-            throw new IllegalArgumentException("AlertManager action called with non-CultPlayer user: " + user.getName());
+            throw new IllegalArgumentException(
+                    "AlertManager action called with non-CultPlayer user: " + user.getName());
         }
 
         PlatformPlayer platformPlayer = cultPlayer.platformPlayer;
 
         // Throw NullPointerException with the specific message if platformPlayer is null
-        Objects.requireNonNull(platformPlayer, "AlertManager action for user " + user.getName() + " with null platformPlayer (potentially during early join)");
+        Objects.requireNonNull(
+                platformPlayer,
+                "AlertManager action for user " + user.getName()
+                        + " with null platformPlayer (potentially during early join)");
 
         return platformPlayer;
     }
@@ -289,7 +294,10 @@ public final class AlertManagerImpl implements AlertManager, ConfigReloadable, S
         if (type.console != enabled && !silent) {
             String rawMessage = type.getToggleMessage(enabled);
             if (!rawMessage.isEmpty()) {
-                platformServer.getConsoleSender().sendMessage(MessageUtil.miniMessage(MessageUtil.replacePlaceholders((PlatformPlayer) null, rawMessage)));
+                platformServer
+                        .getConsoleSender()
+                        .sendMessage(MessageUtil.miniMessage(
+                                MessageUtil.replacePlaceholders((PlatformPlayer) null, rawMessage)));
             }
         }
 
@@ -298,7 +306,8 @@ public final class AlertManagerImpl implements AlertManager, ConfigReloadable, S
     }
 
     // All internal code, will replace later
-    private void setPlayerStateAndNotify(@NotNull PlatformPlayer platformPlayer, boolean enabled, boolean silent, @NotNull AlertType type) {
+    private void setPlayerStateAndNotify(
+            @NotNull PlatformPlayer platformPlayer, boolean enabled, boolean silent, @NotNull AlertType type) {
         Objects.requireNonNull(platformPlayer, "platformPlayer cannot be null");
         boolean changed = enabled ? type.players.add(platformPlayer) : type.players.remove(platformPlayer);
 

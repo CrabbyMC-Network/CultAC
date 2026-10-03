@@ -1,6 +1,7 @@
 package ac.cult.cultac.checks;
 
 import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.player.CultPlayer;
 import ac.grim.grimac.api.AbstractCheck;
 import ac.grim.grimac.api.config.ConfigManager;
 import ac.grim.grimac.api.event.events.FlagEvent;
@@ -8,20 +9,19 @@ import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.grim.grimac.api.storage.verbose.VerboseBuf;
 import ac.grim.grimac.api.storage.verbose.VerboseRenderContext;
 import ac.grim.grimac.internal.storage.verbose.VerboseRegistry;
-import ac.cult.cultac.player.CultPlayer;
+import java.util.Objects;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-import java.util.function.Supplier;
-
 // Class from https://github.com/Tecnio/AntiCheatBase/blob/master/src/main/java/me/tecnio/anticheat/check/Check.java
 @Getter
 public class Check extends CultProcessor implements AbstractCheck {
-    private static final FlagEvent.Channel FLAG_CHANNEL = CultAPI.INSTANCE.getEventBus().get(FlagEvent.class);
+    private static final FlagEvent.Channel FLAG_CHANNEL =
+            CultAPI.INSTANCE.getEventBus().get(FlagEvent.class);
 
     // violations
     public double violations;
@@ -44,7 +44,9 @@ public class Check extends CultProcessor implements AbstractCheck {
     private @MonotonicNonNull String description;
     private double decay;
     private double setbackVL;
-    @Setter private boolean isEnabled;
+
+    @Setter
+    private boolean isEnabled;
 
     // permissions
     private boolean exemptPermission;
@@ -57,9 +59,7 @@ public class Check extends CultProcessor implements AbstractCheck {
         final CheckData checkData = this.getClass().getAnnotation(CheckData.class);
         if (checkData != null) {
             this.checkName = checkData.name();
-            this.configName = checkData.configName().equals("DEFAULT")
-                    ? this.checkName
-                    : checkData.configName();
+            this.configName = checkData.configName().equals("DEFAULT") ? this.checkName : checkData.configName();
             this.defaultDecay = checkData.decay();
             this.defaultSetbackVL = checkData.setback();
             this.alternativeName = checkData.alternativeName();
@@ -88,9 +88,7 @@ public class Check extends CultProcessor implements AbstractCheck {
 
         this.checkName = checkInfo.getName();
         final String infoConfigName = checkInfo.getConfigName();
-        this.configName = infoConfigName == null || infoConfigName.equals("DEFAULT")
-                ? this.checkName
-                : infoConfigName;
+        this.configName = infoConfigName == null || infoConfigName.equals("DEFAULT") ? this.checkName : infoConfigName;
         this.defaultDecay = checkInfo.getDecay();
         this.defaultSetbackVL = checkInfo.getSetback();
         this.alternativeName = checkInfo.getAltName();
@@ -134,7 +132,6 @@ public class Check extends CultProcessor implements AbstractCheck {
     public final boolean flag() {
         return flag("");
     }
-
 
     public boolean flag(String verbose) {
         Supplier<String> alertText = constant(verbose);
@@ -189,7 +186,9 @@ public class Check extends CultProcessor implements AbstractCheck {
         player.punishmentManager.handleViolation(this);
         lastViolationTime = System.currentTimeMillis();
         violations++;
-        CultAPI.INSTANCE.getDataStoreLifecycle().liveWriteHooks()
+        CultAPI.INSTANCE
+                .getDataStoreLifecycle()
+                .liveWriteHooks()
                 .recordFlagDataFromCheck(player, this, violations, verboseData);
         return true;
     }
@@ -198,9 +197,11 @@ public class Check extends CultProcessor implements AbstractCheck {
         Objects.requireNonNull(writer, "writer");
         byte[] verboseData = writer.end().toByteArray();
         Verbose template = writer.verbose();
-        Supplier<String> rendered = memoize(() -> template.render(verboseData, new VerboseRenderContext(
-                player.getClientVersion().getProtocolVersion(),
-                CultAPI.INSTANCE.getPlatformServer().getPlatformImplementationString())));
+        Supplier<String> rendered = memoize(() -> template.render(
+                verboseData,
+                new VerboseRenderContext(
+                        player.getClientVersion().getProtocolVersion(),
+                        CultAPI.INSTANCE.getPlatformServer().getPlatformImplementationString())));
         return new BinaryVerbose(verboseData, rendered);
     }
 
@@ -279,7 +280,6 @@ public class Check extends CultProcessor implements AbstractCheck {
         return false;
     }
 
-
     public boolean setbackIfAboveSetbackVLNonSimulating() {
         if (shouldSetback()) {
             player.getSetbackTeleportUtil().executeNonSimulatingSetback();
@@ -326,5 +326,6 @@ public class Check extends CultProcessor implements AbstractCheck {
         };
     }
 
-    private record BinaryVerbose(byte @NotNull [] data, @NotNull Supplier<String> rendered) {}
+    private record BinaryVerbose(
+            byte @NotNull [] data, @NotNull Supplier<String> rendered) {}
 }

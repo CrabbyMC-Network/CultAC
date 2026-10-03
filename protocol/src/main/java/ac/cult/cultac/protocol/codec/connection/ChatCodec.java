@@ -20,5 +20,7 @@ public final class ChatCodec implements PacketCodec<ServerboundChat> {
 
     // Forward the original body; signing fields are validated by the server decoder.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

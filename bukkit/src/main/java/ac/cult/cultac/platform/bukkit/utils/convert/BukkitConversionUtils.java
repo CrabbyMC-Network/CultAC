@@ -11,7 +11,13 @@ public class BukkitConversionUtils {
     @Contract("null -> null; !null -> new")
     public static org.bukkit.Location toBukkitLocation(Location location) {
         if (location == null) return null;
-        return new org.bukkit.Location(((BukkitPlatformWorld) location.getWorld()).bukkitWorld(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        return new org.bukkit.Location(
+                ((BukkitPlatformWorld) location.getWorld()).bukkitWorld(),
+                location.getX(),
+                location.getY(),
+                location.getZ(),
+                location.getYaw(),
+                location.getPitch());
     }
 
     /**
@@ -20,7 +26,8 @@ public class BukkitConversionUtils {
      * @return The corresponding Bukkit PermissionDefault.
      */
     @Contract(value = "null -> null; !null -> !null", pure = true)
-    public static @Nullable PermissionDefault toBukkitPermissionDefault(@Nullable PermissionDefaultValue permissionDefaultValue) {
+    public static @Nullable PermissionDefault toBukkitPermissionDefault(
+            @Nullable PermissionDefaultValue permissionDefaultValue) {
         if (permissionDefaultValue == null) return null;
         return switch (permissionDefaultValue) {
             case TRUE -> PermissionDefault.TRUE;

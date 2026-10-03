@@ -1,10 +1,10 @@
 package ac.cult.cultac.utils.data;
 
 import ac.cult.cultac.checks.impl.prediction.PredictionSetbackState;
-import net.minecraft.world.phys.Vec3;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import net.minecraft.world.phys.Vec3;
 
 @Getter
 @Setter
@@ -21,16 +21,31 @@ public class SetBackData {
     boolean isPlugin = false;
     int ticksComplete = 0;
 
-    public SetBackData(TeleportData teleportData, float xRot, float yRot, Vec3 velocity, boolean vehicle, boolean isPlugin) {
+    public SetBackData(
+            TeleportData teleportData, float xRot, float yRot, Vec3 velocity, boolean vehicle, boolean isPlugin) {
         this(teleportData, xRot, yRot, velocity, vehicle, isPlugin, false);
     }
 
-    public SetBackData(TeleportData teleportData, float xRot, float yRot, Vec3 velocity, boolean vehicle, boolean isPlugin, boolean expectedOnGround) {
+    public SetBackData(
+            TeleportData teleportData,
+            float xRot,
+            float yRot,
+            Vec3 velocity,
+            boolean vehicle,
+            boolean isPlugin,
+            boolean expectedOnGround) {
         this(teleportData, xRot, yRot, velocity, vehicle, isPlugin, expectedOnGround, null);
     }
 
-    public SetBackData(TeleportData teleportData, float xRot, float yRot, Vec3 velocity, boolean vehicle,
-                       boolean isPlugin, boolean expectedOnGround, PredictionSetbackState profileState) {
+    public SetBackData(
+            TeleportData teleportData,
+            float xRot,
+            float yRot,
+            Vec3 velocity,
+            boolean vehicle,
+            boolean isPlugin,
+            boolean expectedOnGround,
+            PredictionSetbackState profileState) {
         this.teleportData = teleportData;
         this.xRot = xRot;
         this.yRot = yRot;

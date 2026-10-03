@@ -1,15 +1,15 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.prediction.BedrockPredictionTrigger;
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.checks.impl.prediction.runner.SimulationProcessor;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public final class BedrockSleepingAuthInputGateTest {
     @Test
@@ -31,9 +31,7 @@ public final class BedrockSleepingAuthInputGateTest {
                 .moveVector(1.0F, 1.0F)
                 .build();
 
-        assertNull(simulation.processBedrockAuthInputFrame(
-                frame,
-                BedrockPredictionTrigger.OFFLINE_REPLAY));
+        assertNull(simulation.processBedrockAuthInputFrame(frame, BedrockPredictionTrigger.OFFLINE_REPLAY));
         assertEquals(3.0D, player.x, 0.0D);
         assertEquals(64.0D, player.y, 0.0D);
         assertEquals(-2.0D, player.z, 0.0D);

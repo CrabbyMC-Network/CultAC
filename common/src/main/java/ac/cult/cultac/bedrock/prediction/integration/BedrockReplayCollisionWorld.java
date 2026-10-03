@@ -10,13 +10,15 @@ import java.util.HashSet;
  * Client uses collision snapshots for replay logic, outside the snapshot reads live world
  */
 final class BedrockReplayCollisionWorld {
-    private BedrockReplayCollisionWorld() { }
+    private BedrockReplayCollisionWorld() {}
 
-    static BlockCollisionWorld reuse(BlockCollisionWorld recorded, BlockCollisionWorld live, WorldCollisionBox fetched) {
+    static BlockCollisionWorld reuse(
+            BlockCollisionWorld recorded, BlockCollisionWorld live, WorldCollisionBox fetched) {
         var blocks = new ArrayList<PlacedBlockCollision>(recorded.blocks().size());
         var retained = new HashSet<PlacedBlockCollision>();
         for (PlacedBlockCollision block : recorded.blocks()) {
-            if (block.collisionBoxes().isEmpty() || block.isEntityCollision()
+            if (block.collisionBoxes().isEmpty()
+                    || block.isEntityCollision()
                     || block.collisionBoxes().stream().anyMatch(fetched::intersects)) {
                 blocks.add(block);
                 retained.add(block);
@@ -30,8 +32,11 @@ final class BedrockReplayCollisionWorld {
     }
 
     private static boolean contains(WorldCollisionBox outer, WorldCollisionBox inner) {
-        return inner.minX() >= outer.minX() && inner.maxX() <= outer.maxX()
-                && inner.minY() >= outer.minY() && inner.maxY() <= outer.maxY()
-                && inner.minZ() >= outer.minZ() && inner.maxZ() <= outer.maxZ();
+        return inner.minX() >= outer.minX()
+                && inner.maxX() <= outer.maxX()
+                && inner.minY() >= outer.minY()
+                && inner.maxY() <= outer.maxY()
+                && inner.minZ() >= outer.minZ()
+                && inner.maxZ() <= outer.maxZ();
     }
 }

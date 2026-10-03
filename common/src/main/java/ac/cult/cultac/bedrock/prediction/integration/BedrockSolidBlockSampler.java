@@ -2,13 +2,13 @@ package ac.cult.cultac.bedrock.prediction.integration;
 
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionOverrideCatalog;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionWorldBuilder;
-import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
+import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.collisions.ClientBlockShapes;
+import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,10 +23,7 @@ final class BedrockSolidBlockSampler {
     }
 
     BedrockSolidBlockSample sample(
-            CultPlayer player,
-            SimpleCollisionBox query,
-            BedrockCollisionOverrideCatalog geometry
-    ) {
+            CultPlayer player, SimpleCollisionBox query, BedrockCollisionOverrideCatalog geometry) {
         SampleBounds bounds = SampleBounds.from(player, query);
         SampleAccumulator sampled = new SampleAccumulator(player, geometry);
         for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
@@ -44,8 +41,7 @@ final class BedrockSolidBlockSampler {
             BlockState blockState,
             BlockPosition position,
             String javaState,
-            BedrockCollisionWorldBuilder worldBuilder
-    ) {
+            BedrockCollisionWorldBuilder worldBuilder) {
         List<SimpleCollisionBox> collisionBoxes = new ArrayList<>();
         ClientBlockShapes.movement(player, blockState, position.x(), position.y(), position.z())
                 .downCast(collisionBoxes);
@@ -62,18 +58,16 @@ final class BedrockSolidBlockSampler {
                 javaState,
                 worldBuilder.bedrockState(blockState),
                 boxes,
-                BedrockCollisionWorldBuilder.contactBehaviors(
-                        blockState));
+                BedrockCollisionWorldBuilder.contactBehaviors(blockState));
     }
 
     record BedrockSolidBlockSample(
-        List<BlockPosition> powderSnowBlocks,
-        BlockCollisionWorld staticGeneratedWorld,
-        BlockCollisionWorld actorIndependentWorld,
-        Map<BlockPosition, BlockState> dynamicGeneratedBlockStates,
-        List<PlacedBlockCollision> javaCollisionBlocks,
-        List<PlacedBlockCollision> fluidCollisionBlocks
-    ) {
+            List<BlockPosition> powderSnowBlocks,
+            BlockCollisionWorld staticGeneratedWorld,
+            BlockCollisionWorld actorIndependentWorld,
+            Map<BlockPosition, BlockState> dynamicGeneratedBlockStates,
+            List<PlacedBlockCollision> javaCollisionBlocks,
+            List<PlacedBlockCollision> fluidCollisionBlocks) {
         BedrockSolidBlockSample {
             powderSnowBlocks = powderSnowBlocks == null ? List.of() : List.copyOf(powderSnowBlocks);
             staticGeneratedWorld = staticGeneratedWorld == null ? BlockCollisionWorld.EMPTY : staticGeneratedWorld;
@@ -161,10 +155,10 @@ final class BedrockSolidBlockSampler {
             return new SampleBounds(
                     (int) Math.floor(query.minX - SimpleCollisionBox.COLLISION_EPSILON),
                     (int) Math.floor(query.maxX + SimpleCollisionBox.COLLISION_EPSILON),
-                    Math.max(player.compensatedWorld.getMinHeight(),
-                            (int) Math.floor(query.minY - SimpleCollisionBox.COLLISION_EPSILON)),
-                    Math.min(player.compensatedWorld.getMaxHeight() - 1,
-                            (int) Math.floor(query.maxY + SimpleCollisionBox.COLLISION_EPSILON)),
+                    Math.max(player.compensatedWorld.getMinHeight(), (int)
+                            Math.floor(query.minY - SimpleCollisionBox.COLLISION_EPSILON)),
+                    Math.min(player.compensatedWorld.getMaxHeight() - 1, (int)
+                            Math.floor(query.maxY + SimpleCollisionBox.COLLISION_EPSILON)),
                     (int) Math.floor(query.minZ - SimpleCollisionBox.COLLISION_EPSILON),
                     (int) Math.floor(query.maxZ + SimpleCollisionBox.COLLISION_EPSILON));
         }

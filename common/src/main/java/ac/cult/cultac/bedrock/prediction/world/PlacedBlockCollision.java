@@ -13,95 +13,86 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 public record PlacedBlockCollision(
-    BlockPosition position,
-    String javaState,
-    JavaStateProperties javaStateProperties,
-    String bedrockIdentifier,
-    Map<String, Object> bedrockState,
-    List<WorldCollisionBox> collisionBoxes,
-    List<WorldCollisionBox> contactBoxes,
-    List<WorldCollisionBox> insideBlockContactBoxes,
-    Set<BlockContactBehavior> contactBehaviors
-) {
-    public PlacedBlockCollision(
         BlockPosition position,
         String javaState,
+        JavaStateProperties javaStateProperties,
         String bedrockIdentifier,
         Map<String, Object> bedrockState,
         List<WorldCollisionBox> collisionBoxes,
         List<WorldCollisionBox> contactBoxes,
         List<WorldCollisionBox> insideBlockContactBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+        Set<BlockContactBehavior> contactBehaviors) {
+    public PlacedBlockCollision(
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         this(
-            position,
-            javaState,
-            JavaStateProperties.from(javaState),
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            contactBehaviors
-        );
+                position,
+                javaState,
+                JavaStateProperties.from(javaState),
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                contactBehaviors);
     }
 
     public PlacedBlockCollision(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes) {
         this(
-            position,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            fullBlockContactBoxes(position),
-            fullBlockContactBoxes(position)
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                fullBlockContactBoxes(position),
+                fullBlockContactBoxes(position));
     }
 
     public PlacedBlockCollision(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes) {
         this(
-            position,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            fullBlockContactBoxes(position)
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                fullBlockContactBoxes(position));
     }
 
     public PlacedBlockCollision(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes) {
         this(
-            position,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, bedrockState)
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, bedrockState));
     }
 
     public PlacedBlockCollision {
@@ -117,144 +108,131 @@ public record PlacedBlockCollision(
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes) {
         return new PlacedBlockCollision(position, javaState, bedrockIdentifier, Map.of(), collisionBoxes);
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         return manual(
-            position,
-            javaState,
-            bedrockIdentifier,
-            collisionBoxes,
-            fullBlockContactBoxes(position),
-            fullBlockContactBoxes(position),
-            contactBehaviors
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                collisionBoxes,
+                fullBlockContactBoxes(position),
+                fullBlockContactBoxes(position),
+                contactBehaviors);
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes) {
         return new PlacedBlockCollision(position, javaState, bedrockIdentifier, Map.of(), collisionBoxes, contactBoxes);
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes) {
         return manual(
-            position,
-            javaState,
-            bedrockIdentifier,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, Map.of())
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, Map.of()));
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         return new PlacedBlockCollision(
-            position,
-            javaState,
-            bedrockIdentifier,
-            Map.of(),
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            contactBehaviors
-        );
+                position,
+                javaState,
+                bedrockIdentifier,
+                Map.of(),
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                contactBehaviors);
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes) {
         return new PlacedBlockCollision(position, javaState, bedrockIdentifier, bedrockState, collisionBoxes);
     }
 
     public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes
-    ) {
-        return new PlacedBlockCollision(position, javaState, bedrockIdentifier, bedrockState, collisionBoxes, contactBoxes);
-    }
-
-    public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes
-    ) {
-        return manual(
-            position,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, bedrockState)
-        );
-    }
-
-    public static PlacedBlockCollision manual(
-        BlockPosition position,
-        String javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes) {
         return new PlacedBlockCollision(
-            position,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            contactBehaviors
-        );
+                position, javaState, bedrockIdentifier, bedrockState, collisionBoxes, contactBoxes);
+    }
+
+    public static PlacedBlockCollision manual(
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes) {
+        return manual(
+                position,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                PlacedBlockContactBehaviorResolver.derive(javaState, bedrockIdentifier, bedrockState));
+    }
+
+    public static PlacedBlockCollision manual(
+            BlockPosition position,
+            String javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
+        return new PlacedBlockCollision(
+                position,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                contactBehaviors);
     }
 
     public boolean hasContactBehavior(BlockContactBehavior behavior) {
@@ -263,98 +241,91 @@ public record PlacedBlockCollision(
 
     public boolean isEntityCollision() {
         return switch (bedrockIdentifier) {
-            case "minecraft:boat_entity_collision", "minecraft:minecart_entity_collision",
-                 "minecraft:hard_entity_collision" -> true;
+            case "minecraft:boat_entity_collision",
+                    "minecraft:minecart_entity_collision",
+                    "minecraft:hard_entity_collision" -> true;
             default -> false;
         };
     }
 
     public static PlacedBlockCollision sampled(
-        BlockPosition position,
-        String javaIdentifier,
-        BlockState javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes
-    ) {
+            BlockPosition position,
+            String javaIdentifier,
+            BlockState javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes) {
         return sampled(
-            position,
-            javaIdentifier,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            fullBlockContactBoxes(position),
-            fullBlockContactBoxes(position),
-            PlacedBlockContactBehaviorResolver.derive(javaIdentifier, bedrockIdentifier, bedrockState)
-        );
+                position,
+                javaIdentifier,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                fullBlockContactBoxes(position),
+                fullBlockContactBoxes(position),
+                PlacedBlockContactBehaviorResolver.derive(javaIdentifier, bedrockIdentifier, bedrockState));
     }
 
     public static PlacedBlockCollision sampled(
-        BlockPosition position,
-        String javaIdentifier,
-        BlockState javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaIdentifier,
+            BlockState javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         return sampled(
-            position,
-            javaIdentifier,
-            javaState,
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            fullBlockContactBoxes(position),
-            fullBlockContactBoxes(position),
-            contactBehaviors
-        );
+                position,
+                javaIdentifier,
+                javaState,
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                fullBlockContactBoxes(position),
+                fullBlockContactBoxes(position),
+                contactBehaviors);
     }
 
     public static PlacedBlockCollision sampled(
-        BlockPosition position,
-        String javaIdentifier,
-        BlockState javaState,
-        String bedrockIdentifier,
-        List<WorldCollisionBox> collisionBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaIdentifier,
+            BlockState javaState,
+            String bedrockIdentifier,
+            List<WorldCollisionBox> collisionBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         return sampled(
-            position,
-            javaIdentifier,
-            javaState,
-            bedrockIdentifier,
-            Map.of(),
-            collisionBoxes,
-            fullBlockContactBoxes(position),
-            fullBlockContactBoxes(position),
-            contactBehaviors
-        );
+                position,
+                javaIdentifier,
+                javaState,
+                bedrockIdentifier,
+                Map.of(),
+                collisionBoxes,
+                fullBlockContactBoxes(position),
+                fullBlockContactBoxes(position),
+                contactBehaviors);
     }
 
     public static PlacedBlockCollision sampled(
-        BlockPosition position,
-        String javaIdentifier,
-        BlockState javaState,
-        String bedrockIdentifier,
-        Map<String, Object> bedrockState,
-        List<WorldCollisionBox> collisionBoxes,
-        List<WorldCollisionBox> contactBoxes,
-        List<WorldCollisionBox> insideBlockContactBoxes,
-        Set<BlockContactBehavior> contactBehaviors
-    ) {
+            BlockPosition position,
+            String javaIdentifier,
+            BlockState javaState,
+            String bedrockIdentifier,
+            Map<String, Object> bedrockState,
+            List<WorldCollisionBox> collisionBoxes,
+            List<WorldCollisionBox> contactBoxes,
+            List<WorldCollisionBox> insideBlockContactBoxes,
+            Set<BlockContactBehavior> contactBehaviors) {
         return new PlacedBlockCollision(
-            position,
-            javaIdentifier,
-            JavaStateProperties.from(javaState),
-            bedrockIdentifier,
-            bedrockState,
-            collisionBoxes,
-            contactBoxes,
-            insideBlockContactBoxes,
-            contactBehaviors
-        );
+                position,
+                javaIdentifier,
+                JavaStateProperties.from(javaState),
+                bedrockIdentifier,
+                bedrockState,
+                collisionBoxes,
+                contactBoxes,
+                insideBlockContactBoxes,
+                contactBehaviors);
     }
 
     public record JavaStateProperties(boolean waterlogged, String level, boolean drag) {
@@ -373,11 +344,9 @@ public record PlacedBlockCollision(
         private static JavaStateProperties from(BlockState javaState) {
             boolean waterlogged = javaState.hasProperty(BlockStateProperties.WATERLOGGED)
                     && javaState.getValue(BlockStateProperties.WATERLOGGED);
-            boolean drag = javaState.getBlock() == Blocks.BUBBLE_COLUMN
-                    && javaState.getValue(BubbleColumnBlock.DRAG_DOWN);
-            return waterlogged || drag
-                    ? new JavaStateProperties(waterlogged, null, drag)
-                    : EMPTY;
+            boolean drag =
+                    javaState.getBlock() == Blocks.BUBBLE_COLUMN && javaState.getValue(BubbleColumnBlock.DRAG_DOWN);
+            return waterlogged || drag ? new JavaStateProperties(waterlogged, null, drag) : EMPTY;
         }
 
         private static String property(String javaState, String name) {
@@ -401,13 +370,12 @@ public record PlacedBlockCollision(
     private static List<WorldCollisionBox> fullBlockContactBoxes(BlockPosition position) {
         Objects.requireNonNull(position, "position");
         return List.of(new WorldCollisionBox(
-            position.x(),
-            position.y(),
-            position.z(),
-            position.x() + 1.0D,
-            position.y() + 1.0D,
-            position.z() + 1.0D
-        ));
+                position.x(),
+                position.y(),
+                position.z(),
+                position.x() + 1.0D,
+                position.y() + 1.0D,
+                position.z() + 1.0D));
     }
 
     public enum BlockContactBehavior {

@@ -9,7 +9,14 @@ import net.minecraft.world.phys.Vec3;
 
 public class StepTransform implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         // The player isn't allowed to step here
         if (!valid.isCanStep()) return start;
 
@@ -27,17 +34,13 @@ public class StepTransform implements UncertaintyHandler {
             return start;
         }
 
-        return boundedCandidate(start, end, maxUpStep, result.getSimulationContext().getTargetScalarVert(), "step")
+        return boundedCandidate(
+                        start, end, maxUpStep, result.getSimulationContext().getTargetScalarVert(), "step")
                 .markBoundedStep();
     }
 
     public static PredVector boundedCandidate(
-            PredVector start,
-            Vec3 end,
-            double maxUpStep,
-            double verticalScale,
-            String reason
-    ) {
+            PredVector start, Vec3 end, double maxUpStep, double verticalScale, String reason) {
         double clampedStep = CultMath.clamp(end.y, Math.min(0, start.y), maxUpStep * verticalScale);
         return start.withY(clampedStep, reason);
     }

@@ -26,7 +26,7 @@ public final class CultConnection {
     private volatile User user;
     private volatile CultPlayer player;
     private boolean ownerResolved, prepared, compressionRelocated;
-    private Consumer<CultConnection> initializer = ignored -> { };
+    private Consumer<CultConnection> initializer = ignored -> {};
     private BiConsumer<Object, ChannelPromise> reentrantWriter;
     private final AtomicInteger work = new AtomicInteger();
     private Runnable removal;
@@ -35,40 +35,85 @@ public final class CultConnection {
     public CultConnection(Channel channel, PacketDispatcher dispatcher, Function<Channel, EventExecutor> resolver) {
         this(null, channel, dispatcher, resolver);
     }
-    public CultConnection(net.minecraft.network.Connection nativeConnection, Channel channel, PacketDispatcher dispatcher, Function<Channel, EventExecutor> resolver) {
+
+    public CultConnection(
+            net.minecraft.network.Connection nativeConnection,
+            Channel channel,
+            PacketDispatcher dispatcher,
+            Function<Channel, EventExecutor> resolver) {
         this.nativeConnection = nativeConnection;
-        this.channel = Objects.requireNonNull(channel); this.dispatcher = Objects.requireNonNull(dispatcher);
-        ownerResolver = Objects.requireNonNull(resolver); owner = channel.eventLoop();
+        this.channel = Objects.requireNonNull(channel);
+        this.dispatcher = Objects.requireNonNull(dispatcher);
+        ownerResolver = Objects.requireNonNull(resolver);
+        owner = channel.eventLoop();
     }
-    public Channel channel() { return channel; }
-    public net.minecraft.network.Connection nativeConnection() { return nativeConnection; }
-    public boolean disconnected() { return disconnected; }
+
+    public Channel channel() {
+        return channel;
+    }
+
+    public net.minecraft.network.Connection nativeConnection() {
+        return nativeConnection;
+    }
+
+    public boolean disconnected() {
+        return disconnected;
+    }
+
     synchronized boolean markDisconnected() {
         if (disconnected) return false;
         disconnected = true;
         return true;
     }
-    public PacketDispatcher dispatcher() { return dispatcher; }
-    public ProtocolRuntime runtime() { return dispatcher.runtime(); }
-    public EventExecutor owner() { return owner; }
-    public User user() { return user; }
-    public CultPlayer player() { return player; }
-    public ConnectionPhase phase(PacketDirection direction) { return direction == PacketDirection.SERVERBOUND ? serverbound : clientbound; }
+
+    public PacketDispatcher dispatcher() {
+        return dispatcher;
+    }
+
+    public ProtocolRuntime runtime() {
+        return dispatcher.runtime();
+    }
+
+    public EventExecutor owner() {
+        return owner;
+    }
+
+    public User user() {
+        return user;
+    }
+
+    public CultPlayer player() {
+        return player;
+    }
+
+    public ConnectionPhase phase(PacketDirection direction) {
+        return direction == PacketDirection.SERVERBOUND ? serverbound : clientbound;
+    }
+
     public void phase(PacketDirection direction, ConnectionPhase phase) {
-        if (direction == PacketDirection.SERVERBOUND) serverbound = Objects.requireNonNull(phase); else clientbound = Objects.requireNonNull(phase);
+        if (direction == PacketDirection.SERVERBOUND) serverbound = Objects.requireNonNull(phase);
+        else clientbound = Objects.requireNonNull(phase);
     }
     /** Called on I/O at configuration, or when reload attaches to an already-playing connection. */
     public void resolveOwner() {
         if (!ownerResolved && (serverbound == ConnectionPhase.CONFIGURATION || serverbound == ConnectionPhase.PLAY)) {
-            ownerResolved = true; EventExecutor resolved = ownerResolver.apply(channel); if (resolved != null) owner = resolved;
+            ownerResolved = true;
+            EventExecutor resolved = ownerResolver.apply(channel);
+            if (resolved != null) owner = resolved;
         }
     }
-    public void initializer(Consumer<CultConnection> initializer) { this.initializer = Objects.requireNonNull(initializer); }
+
+    public void initializer(Consumer<CultConnection> initializer) {
+        this.initializer = Objects.requireNonNull(initializer);
+    }
+
     public void prepare() {
         if (!prepared && (serverbound == ConnectionPhase.CONFIGURATION || serverbound == ConnectionPhase.PLAY)) {
-            prepared = true; initializer.accept(this);
+            prepared = true;
+            initializer.accept(this);
         }
     }
+
     public synchronized void bind(User user) {
         if (user.getCultConnection() != this) throw new IllegalArgumentException("User belongs to another session");
         if (this.user != null && this.user != user) throw new IllegalStateException("Session already has an identity");
@@ -78,14 +123,32 @@ public final class CultConnection {
     /** PlayerDataManager owns attachment mutations under this session's monitor. */
     public void player(CultPlayer player) {
         if (!Thread.holdsLock(this)) throw new IllegalStateException("Player attachment requires the session lock");
-        if (player != null && (disconnected || player.user != user)) throw new IllegalStateException("Invalid player attachment");
+        if (player != null && (disconnected || player.user != user))
+            throw new IllegalStateException("Invalid player attachment");
         this.player = player;
     }
-    public void execute(Runnable task) { if (owner.inEventLoop()) task.run(); else owner.execute(task); }
-    public void executeLater(Runnable task) { owner.execute(task); }
-    public void reentrantWriter(BiConsumer<Object, ChannelPromise> writer) { reentrantWriter = writer; }
-    public ChannelFuture write(CultWrite message) { return writeMessage(message); }
-    public ChannelFuture write(List<CultWrite> writes, boolean bundle) { return writeMessage(new WriteGroup(List.copyOf(writes), bundle)); }
+
+    public void execute(Runnable task) {
+        if (owner.inEventLoop()) task.run();
+        else owner.execute(task);
+    }
+
+    public void executeLater(Runnable task) {
+        owner.execute(task);
+    }
+
+    public void reentrantWriter(BiConsumer<Object, ChannelPromise> writer) {
+        reentrantWriter = writer;
+    }
+
+    public ChannelFuture write(CultWrite message) {
+        return writeMessage(message);
+    }
+
+    public ChannelFuture write(List<CultWrite> writes, boolean bundle) {
+        return writeMessage(new WriteGroup(List.copyOf(writes), bundle));
+    }
+
     private ChannelFuture writeMessage(Object message) {
         var promise = channel.newPromise();
         if (owner.inEventLoop() && reentrantWriter != null) reentrantWriter.accept(message, promise);
@@ -99,15 +162,22 @@ public final class CultConnection {
         }
         return promise;
     }
+
     public void forwarded(PacketType<?> type, Object packet) {
         serverbound = ConnectionLifecycle.nextPhase(PacketDirection.SERVERBOUND, serverbound, type, packet);
         clientbound = ConnectionLifecycle.nextPhase(PacketDirection.CLIENTBOUND, clientbound, type, packet);
     }
+
     public boolean relocateCompressionOnce() {
-        if (compressionRelocated) return false; compressionRelocated = true; return true;
+        if (compressionRelocated) return false;
+        compressionRelocated = true;
+        return true;
     }
     /** Work is accepted on I/O. A rejected return handoff may finish it on the owner. */
-    public void beginWork() { work.incrementAndGet(); }
+    public void beginWork() {
+        work.incrementAndGet();
+    }
+
     public void endWork() {
         if (work.decrementAndGet() != 0 || removed == null) return;
         Runnable finish = () -> {
@@ -115,21 +185,33 @@ public final class CultConnection {
         };
         if (channel.eventLoop().inEventLoop()) finish.run();
         else {
-            try { channel.eventLoop().execute(finish); }
-            catch (RuntimeException rejected) {
+            try {
+                channel.eventLoop().execute(finish);
+            } catch (RuntimeException rejected) {
                 var completion = removed;
                 if (completion != null) completion.completeExceptionally(rejected);
             }
         }
     }
+
     public java.util.concurrent.CompletionStage<Void> removeHandlers(Runnable remove) {
         if (removed != null) return removed;
-        removed = new CompletableFuture<>(); removal = remove;
-        if (work.get() == 0) finishRemoval(); return removed;
+        removed = new CompletableFuture<>();
+        removal = remove;
+        if (work.get() == 0) finishRemoval();
+        return removed;
     }
+
     private void finishRemoval() {
-        var action = removal; removal = null;
-        try { action.run(); removed.complete(null); } catch (Throwable failure) { removed.completeExceptionally(failure); }
+        var action = removal;
+        removal = null;
+        try {
+            action.run();
+            removed.complete(null);
+        } catch (Throwable failure) {
+            removed.completeExceptionally(failure);
+        }
     }
-    public record WriteGroup(List<CultWrite> writes, boolean bundle) { }
+
+    public record WriteGroup(List<CultWrite> writes, boolean bundle) {}
 }

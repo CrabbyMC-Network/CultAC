@@ -80,8 +80,7 @@ public final class CheckInfo {
         private double setback = 25;
         private boolean experimental;
 
-        private Builder() {
-        }
+        private Builder() {}
 
         public Builder name(String name) {
             this.name = name;

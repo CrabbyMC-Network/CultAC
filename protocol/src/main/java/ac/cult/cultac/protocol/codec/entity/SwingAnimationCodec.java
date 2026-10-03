@@ -20,5 +20,7 @@ public final class SwingAnimationCodec implements PacketCodec<ClientboundSwingAn
 
     // The unconsumed suffix remains in the original forwarded packet.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

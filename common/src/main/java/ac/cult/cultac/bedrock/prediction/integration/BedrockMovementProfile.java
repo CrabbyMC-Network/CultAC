@@ -19,7 +19,8 @@ import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 
 public final class BedrockMovementProfile implements MovementProfile {
     @Override
-    public SimulationContext createContext(CultPlayer player, SimulationContext context, AuthoredMovementFrame authoredMovementFrame) {
+    public SimulationContext createContext(
+            CultPlayer player, SimulationContext context, AuthoredMovementFrame authoredMovementFrame) {
         context.attachAuthoredInput(authoredMovementFrame);
         if (player.bedrockState != null && authoredMovementFrame instanceof BedrockAuthInputFrame) {
             context.setBedrockAuthoritativeInputTick(player.bedrockState.authoritativeInputTick());
@@ -28,7 +29,11 @@ public final class BedrockMovementProfile implements MovementProfile {
     }
 
     @Override
-    public Vec3 authoredPredictionStart(CultPlayer player, AuthoredMovementFrame authoredMovementFrame, Vec3 defaultStart, PredictionCarry profileStateContext) {
+    public Vec3 authoredPredictionStart(
+            CultPlayer player,
+            AuthoredMovementFrame authoredMovementFrame,
+            Vec3 defaultStart,
+            PredictionCarry profileStateContext) {
         BedrockMovementState profileState = BedrockProfileState.previousState(profileStateContext);
         return profileState == null ? defaultStart : toJava(profileState.physicalFeetPosition());
     }
@@ -57,16 +62,11 @@ public final class BedrockMovementProfile implements MovementProfile {
                 && context.getWorldData() != null
                 && context.getWorldData().getInWater().determinePessimistically();
         return startsFlyingExemptionThisFrame(
-                hasTrustedMayFlyAbility(player),
-                swimmingInWater,
-                context.getBedrockInput());
+                hasTrustedMayFlyAbility(player), swimmingInWater, context.getBedrockInput());
     }
 
     static boolean startsFlyingExemptionThisFrame(
-            boolean mayFly,
-            boolean swimmingInWater,
-            BedrockAuthInputFrame frame
-    ) {
+            boolean mayFly, boolean swimmingInWater, BedrockAuthInputFrame frame) {
         return mayFly
                 && !swimmingInWater
                 && frame != null
@@ -104,8 +104,7 @@ public final class BedrockMovementProfile implements MovementProfile {
     }
 
     @Override
-    public void evaluatePredictionResult(CultPlayer player, PredictionResult result) {
-    }
+    public void evaluatePredictionResult(CultPlayer player, PredictionResult result) {}
 
     @Override
     public boolean shouldCreateVerboseLog(CultPlayer player, PredictionResult result) {
@@ -147,9 +146,7 @@ public final class BedrockMovementProfile implements MovementProfile {
     }
 
     private static boolean isCurrentMovementFlag(
-            BedrockMovementObservation observation,
-            ac.cult.cultac.manager.config.BaseConfigManager configManager
-    ) {
+            BedrockMovementObservation observation, ac.cult.cultac.manager.config.BaseConfigManager configManager) {
         return observation != null
                 && observation.validationOffset() >= configManager.getBedrockMovementPositionFlagThreshold();
     }
@@ -168,7 +165,6 @@ public final class BedrockMovementProfile implements MovementProfile {
     private static boolean consumeVerboseLogCooldown(CultPlayer player) {
         return player.bedrockState != null
                 && player.bedrockState.consumeVerboseMovementLogCooldown(
-                CultAPI.INSTANCE.getConfigManager().getVerboseBedrockMovementCooldownSeconds());
+                        CultAPI.INSTANCE.getConfigManager().getVerboseBedrockMovementCooldownSeconds());
     }
-
 }

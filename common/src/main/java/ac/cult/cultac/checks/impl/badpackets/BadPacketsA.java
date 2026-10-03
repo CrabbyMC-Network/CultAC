@@ -1,13 +1,13 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
 @CheckData(name = "BadPacketsA", stableKey = "cult.badpackets.duplicate_slot", description = "Sent duplicate slot id")
 public class BadPacketsA extends Check implements CheckListener {
@@ -20,7 +20,8 @@ public class BadPacketsA extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         final int slot = packet.slot();
 
         if (slot == lastSlot && flag(V.write(verbose()).sint(slot)) && shouldModifyPackets()) {

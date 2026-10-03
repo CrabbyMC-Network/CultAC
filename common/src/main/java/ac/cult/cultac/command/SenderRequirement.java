@@ -6,5 +6,6 @@ import org.incendo.cloud.processors.requirements.Requirement;
 import org.jetbrains.annotations.NotNull;
 
 public interface SenderRequirement extends Requirement<Sender, SenderRequirement> {
-    @NotNull Component errorMessage(Sender sender);
+    @NotNull
+    Component errorMessage(Sender sender);
 }

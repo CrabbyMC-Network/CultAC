@@ -25,12 +25,12 @@ import net.minecraft.world.level.ChunkPos;
 final class OfflineBedrockReplayFixtureExporter {
     private static final String AIR = "minecraft:air";
 
-    private OfflineBedrockReplayFixtureExporter() {
-    }
+    private OfflineBedrockReplayFixtureExporter() {}
 
     public static void main(String[] args) throws Exception {
         if (args.length != 8) {
-            throw new IllegalArgumentException("usage: <world-region-dir> <scenario-dir> <minX> <minY> <minZ> <maxX> <maxY> <maxZ>");
+            throw new IllegalArgumentException(
+                    "usage: <world-region-dir> <scenario-dir> <minX> <minY> <minZ> <maxX> <maxY> <maxZ>");
         }
         bootstrapMinecraft();
         Path regionDir = Path.of(args[0]);
@@ -44,16 +44,8 @@ final class OfflineBedrockReplayFixtureExporter {
         export(regionDir, scenarioDir, minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    static void export(
-            Path regionDir,
-            Path scenarioDir,
-            int minX,
-            int minY,
-            int minZ,
-            int maxX,
-            int maxY,
-            int maxZ
-    ) throws IOException {
+    static void export(Path regionDir, Path scenarioDir, int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
+            throws IOException {
         bootstrapMinecraft();
         int width = maxX - minX + 1;
         int height = maxY - minY + 1;
@@ -87,7 +79,7 @@ final class OfflineBedrockReplayFixtureExporter {
         schematic.putShort("Width", (short) width);
         schematic.putShort("Height", (short) height);
         schematic.putShort("Length", (short) length);
-        schematic.putIntArray("Offset", new int[]{minX, minY, minZ});
+        schematic.putIntArray("Offset", new int[] {minX, minY, minZ});
         schematic.put("Blocks", blocks);
         NbtIo.writeCompressed(schematic, scenarioDir.resolve("region.schem"));
 

@@ -7,21 +7,20 @@ import ac.cult.cultac.platform.bukkit.utils.convert.BukkitConversionUtils;
 import ac.cult.cultac.platform.bukkit.utils.reflection.PaperUtils;
 import ac.cult.cultac.platform.bukkit.world.BukkitPlatformWorld;
 import ac.cult.cultac.utils.math.Location;
-import net.minecraft.SharedConstants;
-import org.bukkit.entity.Entity;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.SharedConstants;
+import org.bukkit.entity.Entity;
+import org.jetbrains.annotations.NotNull;
 
 public class BukkitCultEntity implements CultEntity {
 
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
-
-    protected static final boolean CAN_USE_DIRECT_GETTERS = SERVER_VERSION.isNewerThan(ClientVersion.V_1_20) && PaperUtils.PAPER;
+    protected static final boolean CAN_USE_DIRECT_GETTERS =
+            SERVER_VERSION.isNewerThan(ClientVersion.V_1_20) && PaperUtils.PAPER;
 
     private final Entity entity;
     private BukkitPlatformWorld bukkitPlatformWorld;
@@ -80,8 +79,7 @@ public class BukkitCultEntity implements CultEntity {
                 location.getY(),
                 location.getZ(),
                 location.getYaw(),
-                location.getPitch()
-        );
+                location.getPitch());
     }
 
     @Override

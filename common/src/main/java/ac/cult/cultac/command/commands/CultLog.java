@@ -8,6 +8,15 @@ import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -19,21 +28,22 @@ import org.incendo.cloud.description.Description;
 import org.incendo.cloud.parser.standard.IntegerParser;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.function.Consumer;
-
 public class CultLog implements BuildableCommand {
     public static void sendLogAsync(Sender sender, String log, Consumer<String> consumer, String type) {
-        String success = CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("upload-log", "%prefix% &fUploaded debug to: %url%");
-        String failure = CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("upload-log-upload-failure", "%prefix% &cSomething went wrong while uploading this log, see console for more information.");
-        String uploading = CultAPI.INSTANCE.getConfigManager().getConfig().getStringElse("upload-log-start", "%prefix% &fUploading log... please wait");
+        String success = CultAPI.INSTANCE
+                .getConfigManager()
+                .getConfig()
+                .getStringElse("upload-log", "%prefix% &fUploaded debug to: %url%");
+        String failure = CultAPI.INSTANCE
+                .getConfigManager()
+                .getConfig()
+                .getStringElse(
+                        "upload-log-upload-failure",
+                        "%prefix% &cSomething went wrong while uploading this log, see console for more information.");
+        String uploading = CultAPI.INSTANCE
+                .getConfigManager()
+                .getConfig()
+                .getStringElse("upload-log-start", "%prefix% &fUploading log... please wait");
         uploading = MessageUtil.replacePlaceholders(sender, uploading);
         sender.sendMessage(MessageUtil.miniMessage(uploading));
         CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> {
@@ -47,7 +57,9 @@ public class CultLog implements BuildableCommand {
         });
     }
 
-    private static void sendLog(Sender sender, String log, String success, String failure, Consumer<String> consumer, String type) throws IOException {
+    private static void sendLog(
+            Sender sender, String log, String success, String failure, Consumer<String> consumer, String type)
+            throws IOException {
         URL mUrl = new URL(CommonCultArguments.PASTE_URL.value() + "data/post");
         HttpURLConnection urlConn = (HttpURLConnection) mUrl.openConnection();
         try {
@@ -55,7 +67,8 @@ public class CultLog implements BuildableCommand {
             urlConn.setRequestMethod("POST");
             urlConn.setConnectTimeout(CommonCultArguments.URL_TIMEOUT.value());
             urlConn.setReadTimeout(CommonCultArguments.URL_TIMEOUT.value());
-            urlConn.addRequestProperty("User-Agent", "CultAC/" + CultAPI.INSTANCE.getExternalAPI().getGrimVersion());
+            urlConn.addRequestProperty(
+                    "User-Agent", "CultAC/" + CultAPI.INSTANCE.getExternalAPI().getGrimVersion());
             urlConn.addRequestProperty("Content-Type", type); // Not really yaml, but looks nicer than plaintext
             urlConn.setRequestProperty("Content-Length", Integer.toString(log.length()));
             try (OutputStream stream = urlConn.getOutputStream()) {
@@ -80,13 +93,16 @@ public class CultLog implements BuildableCommand {
 
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        Command<Sender> command = commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
+        Command<Sender> command = commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
                 .literal("log", "logs")
                 .permission("cult.log")
                 .required("flagId", IntegerParser.integerParser())
-                .flag(commandManager.flagBuilder("save-to-file")
+                .flag(commandManager
+                        .flagBuilder("save-to-file")
                         .withAliases("l")
-                        .withDescription(Description.of("Write the debug log to the local debug-logs directory instead of uploading it")))
+                        .withDescription(Description.of(
+                                "Write the debug log to the local debug-logs directory instead of uploading it")))
                 .handler(this::handleLog)
                 .manager(commandManager)
                 .build();
@@ -101,7 +117,8 @@ public class CultLog implements BuildableCommand {
 
         String log = SuperDebug.getFlag(flagId);
         if (log == null) {
-            sender.sendMessage(MessageUtil.getParsedComponent(sender, "upload-log-not-found", "%prefix% &cUnable to find that log"));
+            sender.sendMessage(MessageUtil.getParsedComponent(
+                    sender, "upload-log-not-found", "%prefix% &cUnable to find that log"));
             return;
         }
 
@@ -116,10 +133,15 @@ public class CultLog implements BuildableCommand {
         sender.sendMessage(Component.text("Writing debug log locally...", NamedTextColor.GRAY));
         CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> {
             try {
-                Path directory = CultAPI.INSTANCE.getGrimPlugin().getDataFolder().toPath().resolve("debug-logs");
+                Path directory = CultAPI.INSTANCE
+                        .getGrimPlugin()
+                        .getDataFolder()
+                        .toPath()
+                        .resolve("debug-logs");
                 Files.createDirectories(directory);
 
-                String fileName = "flag-" + flagId + "-" + Instant.now().toString().replace(':', '-') + ".txt";
+                String fileName =
+                        "flag-" + flagId + "-" + Instant.now().toString().replace(':', '-') + ".txt";
                 Path path = directory.resolve(fileName).toAbsolutePath().normalize();
                 Files.writeString(path, log, StandardCharsets.UTF_8);
 
@@ -131,7 +153,8 @@ public class CultLog implements BuildableCommand {
                                 .hoverEvent(HoverEvent.showText(Component.text("Click to copy", NamedTextColor.GRAY))))
                         .asComponent());
             } catch (IOException e) {
-                sender.sendMessage(Component.text("Failed to write debug log locally; see console for more information.", NamedTextColor.RED));
+                sender.sendMessage(Component.text(
+                        "Failed to write debug log locally; see console for more information.", NamedTextColor.RED));
                 LogUtil.error("Failed to write debug log " + flagId + " locally", e);
             }
         });

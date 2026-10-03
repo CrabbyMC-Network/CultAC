@@ -8,13 +8,15 @@ import io.netty.buffer.ByteBuf;
 
 /** PositionAndRotation replaced native fields in 26.3; the three doubles/two floats stayed identical. */
 public final class ClientboundMoveVehicleCodec implements WritablePacketCodec<ClientboundMoveVehicle> {
-    @Override public ClientboundMoveVehicle read(ByteBuf input, ProtocolContext context) {
+    @Override
+    public ClientboundMoveVehicle read(ByteBuf input, ProtocolContext context) {
         var position = Wire.readVec3(input);
         Wire.requireBytes(input, 8);
         return new ClientboundMoveVehicle(position, input.readFloat(), input.readFloat());
     }
 
-    @Override public void write(ByteBuf output, ProtocolContext context, ClientboundMoveVehicle packet) {
+    @Override
+    public void write(ByteBuf output, ProtocolContext context, ClientboundMoveVehicle packet) {
         Wire.writeVec3(output, packet.position());
         output.writeFloat(packet.yaw()).writeFloat(packet.pitch());
     }

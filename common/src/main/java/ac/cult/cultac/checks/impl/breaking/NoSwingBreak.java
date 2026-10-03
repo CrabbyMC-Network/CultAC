@@ -1,21 +1,23 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
-
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.BlockBreak;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 
-@CheckData(name = "NoSwingBreak", stableKey = "cult.breaking.no_swing_break", description = "Did not swing while breaking block", experimental = true)
+@CheckData(
+        name = "NoSwingBreak",
+        stableKey = "cult.breaking.no_swing_break",
+        description = "Did not swing while breaking block",
+        experimental = true)
 public class NoSwingBreak extends Check implements BlockBreakListener {
     private boolean sentAnimation;
     private boolean sentBreak;
@@ -30,7 +32,6 @@ public class NoSwingBreak extends Check implements BlockBreakListener {
         }
     }
 
-
     @CultPacketHandler
     public void onSwing(PacketReceiveEvent<ServerboundSwing> event, CultPlayer player, ServerboundSwing packet) {
         sentAnimation = true;
@@ -38,8 +39,8 @@ public class NoSwingBreak extends Check implements BlockBreakListener {
 
     // isTickPacket: movement packets count unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.packetStateData.lastPacketWasTeleport) {
             onTickPacket();
         }

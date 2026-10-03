@@ -2,7 +2,6 @@ package ac.cult.cultac.bedrock.logging;
 
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
-import net.minecraft.world.phys.Vec3;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
@@ -13,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import net.minecraft.world.phys.Vec3;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 
 public final class BedrockPacketLogger implements AutoCloseable {
@@ -46,11 +46,18 @@ public final class BedrockPacketLogger implements AutoCloseable {
 
     public synchronized void onInitialize(Object connection, String username, int protocol) {
         if (!closed && pending.consume(username)) {
-            start(connection, username, protocol, null, "SessionInitializeEvent; initial login/negotiation excluded", report);
+            start(
+                    connection,
+                    username,
+                    protocol,
+                    null,
+                    "SessionInitializeEvent; initial login/negotiation excluded",
+                    report);
         }
     }
 
-    public synchronized void toggle(Object connection, String username, int protocol, UUID uuid, Consumer<String> feedback) {
+    public synchronized void toggle(
+            Object connection, String username, int protocol, UUID uuid, Consumer<String> feedback) {
         if (closed) {
             feedback.accept("Geyser packet logger is unavailable.");
             return;
@@ -58,14 +65,17 @@ public final class BedrockPacketLogger implements AutoCloseable {
         PacketLogCapture existing = captures.get(connection);
         if (existing != null) {
             existing.stop("manual stop");
-            existing.finished.whenComplete((path, failure) -> feedback.accept(failure == null
-                    ? "Saved Geyser packet log: " + path : "Geyser packet log failed: " + existing.path + ": " + failure.getMessage()));
+            existing.finished.whenComplete((path, failure) -> feedback.accept(
+                    failure == null
+                            ? "Saved Geyser packet log: " + path
+                            : "Geyser packet log failed: " + existing.path + ": " + failure.getMessage()));
             return;
         }
         start(connection, username, protocol, uuid, "online command", feedback);
     }
 
-    private void start(Object connection, String username, int protocol, UUID uuid, String boundary, Consumer<String> feedback) {
+    private void start(
+            Object connection, String username, int protocol, UUID uuid, String boundary, Consumer<String> feedback) {
         UUID id = UUID.randomUUID();
         Path path = directory.resolve(System.currentTimeMillis() + "-" + id + ".txt");
         String header = "log_version=1\ncapture_id=" + id + "\ntime=" + Instant.now()
@@ -74,11 +84,14 @@ public final class BedrockPacketLogger implements AutoCloseable {
                 + "\noutbound=observed writes, not client acknowledgement\n\n";
         PacketLogCapture capture = new PacketLogCapture(path, header, queuedBytes, 16L << 20, 64L << 20);
         captures.put(connection, capture);
-        capture.opened.whenComplete((file, failure) -> feedback.accept(failure == null
-                ? "Started Geyser packet capture for " + username + ": " + file
-                : "Unable to open Geyser packet log: " + path + ": " + failure.getMessage()));
-        capture.finished.whenComplete((file, failure) -> report.accept(failure == null
-                ? "Saved Geyser packet log: " + file : "Geyser packet log incomplete: " + path + ": " + failure.getMessage()));
+        capture.opened.whenComplete((file, failure) -> feedback.accept(
+                failure == null
+                        ? "Started Geyser packet capture for " + username + ": " + file
+                        : "Unable to open Geyser packet log: " + path + ": " + failure.getMessage()));
+        capture.finished.whenComplete((file, failure) -> report.accept(
+                failure == null
+                        ? "Saved Geyser packet log: " + file
+                        : "Geyser packet log incomplete: " + path + ": " + failure.getMessage()));
     }
 
     public void record(Object connection, String direction, BedrockPacket packet) {
@@ -93,13 +106,21 @@ public final class BedrockPacketLogger implements AutoCloseable {
         if (capture != null) capture.record(() -> "IDENTITY java_uuid=" + uuid);
     }
 
-    public void origin(Object connection, long transport, BedrockCoordinateFrame frame, Vec3 localTarget,
-                       BedrockTeleportProvenance provenance, Integer setbackTransaction, int proofTransaction) {
+    public void origin(
+            Object connection,
+            long transport,
+            BedrockCoordinateFrame frame,
+            Vec3 localTarget,
+            BedrockTeleportProvenance provenance,
+            Integer setbackTransaction,
+            int proofTransaction) {
         PacketLogCapture capture = captures.get(connection);
-        if (capture != null) capture.record(() -> "ORIGIN transport=" + transport
-                + " revision=" + frame.revision() + " origin_x=" + frame.originX() + " origin_z=" + frame.originZ()
-                + " local_target=" + localTarget + " source=" + provenance + " setback_transaction=" + setbackTransaction
-                + " proof_transaction=" + proofTransaction);
+        if (capture != null)
+            capture.record(() -> "ORIGIN transport=" + transport
+                    + " revision=" + frame.revision() + " origin_x=" + frame.originX() + " origin_z=" + frame.originZ()
+                    + " local_target=" + localTarget + " source=" + provenance + " setback_transaction="
+                    + setbackTransaction
+                    + " proof_transaction=" + proofTransaction);
     }
 
     public void originReceipt(Object connection, long transport) {

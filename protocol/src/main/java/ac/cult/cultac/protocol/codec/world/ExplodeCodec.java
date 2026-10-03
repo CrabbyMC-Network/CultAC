@@ -8,10 +8,10 @@ package ac.cult.cultac.protocol.codec.world;
 
 import ac.cult.cultac.protocol.PacketCodec;
 import ac.cult.cultac.protocol.ProtocolContext;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundExplode;
-import ac.cult.cultac.protocol.wire.Wire;
 import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundExplode;
 import ac.cult.cultac.protocol.value.Vec3d;
+import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
 
 public final class ExplodeCodec implements PacketCodec<ClientboundExplode> {
@@ -28,5 +28,7 @@ public final class ExplodeCodec implements PacketCodec<ClientboundExplode> {
 
     // The unconsumed suffix remains in the original forwarded packet.
     @Override
-    public boolean readsEntirePayload() { return false; }
+    public boolean readsEntirePayload() {
+        return false;
+    }
 }

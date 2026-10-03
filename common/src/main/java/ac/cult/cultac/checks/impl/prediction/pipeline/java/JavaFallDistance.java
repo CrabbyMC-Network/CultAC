@@ -31,16 +31,24 @@ public final class JavaFallDistance {
     public static JavaCollisionState beforeMove(CultPlayer player, SimulationContext context, PredVector velocity) {
         PacketEntity actor = actor(player, context);
         double distance = context.getProfileCarry() instanceof JavaPredictionCarry carry && carry.actor() == actor
-                ? carry.fallDistance() : 0.0;
+                ? carry.fallDistance()
+                : 0.0;
         var world = context.getWorldData();
         boolean water = world.getInWater().determinePessimistically();
         boolean lava = world.getInLava().determinePessimistically();
         // handleOnClimbable runs in air travel, not water/lava travel. Use the START block.
         Vec3 start = context.getStart();
-        boolean climb = actor.isLivingEntity() && !water && !lava && !context.usesFallFlyingMovement() && Collisions.onClimbable(player, start.x, start.y, start.z);
-        boolean reset = water || climb || context.getVehicle() == null && player.isFlying
-                || actor.isLivingEntity() && (player.compensatedEntities.getSlowFallingAmplifier() != null
-                || player.compensatedEntities.getLevitationAmplifier() != null);
+        boolean climb = actor.isLivingEntity()
+                && !water
+                && !lava
+                && !context.usesFallFlyingMovement()
+                && Collisions.onClimbable(player, start.x, start.y, start.z);
+        boolean reset = water
+                || climb
+                || context.getVehicle() == null && player.isFlying
+                || actor.isLivingEntity()
+                        && (player.compensatedEntities.getSlowFallingAmplifier() != null
+                                || player.compensatedEntities.getLevitationAmplifier() != null);
         distance = beforeMove(distance, lava, reset, context.isGliding(), velocity.y);
         return JavaCollisionState.of(player, actor, distance);
     }
@@ -57,9 +65,11 @@ public final class JavaFallDistance {
     public static Moved afterCollision(CultPlayer player, PredictionResult result, Vec3 acceptedDiff) {
         SimulationContext context = result.getSimulationContext();
         PacketEntity actor = actor(player, context);
-        double distance = beforeMove(player, context, result.getInitialStartingVel()).fallDistance();
+        double distance =
+                beforeMove(player, context, result.getInitialStartingVel()).fallDistance();
         Vec3 movement = result.hasEffectiveFlags()
-                ? result.getLegacyLikePredictionVector().multiply(context.getLastStuckSpeed()) : acceptedDiff;
+                ? result.getLegacyLikePredictionVector().multiply(context.getLastStuckSpeed())
+                : acceptedDiff;
         var down = result.getCollideAxisData().getYNeg();
         boolean landed = landsOnClip(down, movement.y, context.getLastStuckSpeed().y);
         if (distance != 0 && movement.lengthSqr() >= 1 && crossesResetBlock(player, context, movement)) distance = 0;
@@ -70,24 +80,43 @@ public final class JavaFallDistance {
             water = true;
             distance = 0;
         }
-        boolean waterBelow = player.compensatedWorld.getFluidStateAt(BlockPos.containing(end).below()).is(net.minecraft.tags.FluidTags.WATER);
-        distance = afterMoveForActor(distance, movement.y, water, landed, actor.isBoat(), actor.riding != null,
-                waterBelow, actor.isStrider() && context.getWorldData().getInLava().determinePessimistically());
+        boolean waterBelow = player.compensatedWorld
+                .getFluidStateAt(BlockPos.containing(end).below())
+                .is(net.minecraft.tags.FluidTags.WATER);
+        distance = afterMoveForActor(
+                distance,
+                movement.y,
+                water,
+                landed,
+                actor.isBoat(),
+                actor.riding != null,
+                waterBelow,
+                actor.isStrider() && context.getWorldData().getInLava().determinePessimistically());
         return new Moved(distance, movement, landed);
     }
 
-    static double afterMoveForActor(double distance, double dy, boolean water, boolean landed,
-                                    boolean boat, boolean passenger, boolean waterBelow, boolean striderInLava) {
+    static double afterMoveForActor(
+            double distance,
+            double dy,
+            boolean water,
+            boolean landed,
+            boolean boat,
+            boolean passenger,
+            boolean waterBelow,
+            boolean striderInLava) {
         if (striderInLava) return 0;
         if (boat) return passenger ? distance : afterMove(distance, dy, waterBelow, landed);
         return afterMove(distance, dy, water, landed);
     }
 
     private static boolean touchesWater(CultPlayer player, SimulationContext context, Vec3 end) {
-        var box = context.getToActualPose().copy().offset(end.subtract(context.getEnd())).expand(-0.001);
-        for (int x = (int)Math.floor(box.minX); x < Math.ceil(box.maxX); x++)
-            for (int y = (int)Math.floor(box.minY); y < Math.ceil(box.maxY); y++)
-                for (int z = (int)Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
+        var box = context.getToActualPose()
+                .copy()
+                .offset(end.subtract(context.getEnd()))
+                .expand(-0.001);
+        for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++)
+            for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++)
+                for (int z = (int) Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     var fluid = player.compensatedWorld.getFluidStateAt(pos);
                     if (fluid.is(net.minecraft.tags.FluidTags.WATER)
@@ -98,16 +127,19 @@ public final class JavaFallDistance {
 
     public static JavaPredictionCarry commit(CultPlayer player, PredictionResult result, Vec3 acceptedDiff) {
         SimulationContext context = result.getSimulationContext();
-        double distance = beforeMove(player, context, result.getInitialStartingVel()).fallDistance();
+        double distance =
+                beforeMove(player, context, result.getInitialStartingVel()).fallDistance();
         // Rejected packet endpoints must not manufacture a fall-distance reset.
         Vec3 movement = result.hasEffectiveFlags()
-                ? result.getLegacyLikePredictionVector().multiply(context.getLastStuckSpeed()) : acceptedDiff;
+                ? result.getLegacyLikePredictionVector().multiply(context.getLastStuckSpeed())
+                : acceptedDiff;
         var world = context.getWorldData();
         boolean water = world.getInWater().determinePessimistically();
         var down = result.getCollideAxisData().getYNeg();
         boolean landed = landsOnClip(down, movement.y, context.getLastStuckSpeed().y);
         // Entity#move's fall-damage-reset ray is after collision, before checkFallDamage.
-        if (distance != 0.0 && movement.lengthSqr() >= 1.0 && crossesResetBlock(player, context, movement)) distance = 0.0;
+        if (distance != 0.0 && movement.lengthSqr() >= 1.0 && crossesResetBlock(player, context, movement))
+            distance = 0.0;
         distance = afterMove(distance, movement.y, water, landed);
         // entityInside -> makeStuckInBlock and the bubble/honey callbacks occur after landing.
         if (world.getStuckSpeed().getStuckSpeedMultiplier() != null
@@ -128,23 +160,32 @@ public final class JavaFallDistance {
      * Entity#stuckSpeedMultiplier) must be scaled back first - see CollideAxisData.CollideResult.
      */
     static boolean landsOnClip(CollideAxisData.CollideResult down, double movementY, double stuckSpeedY) {
-        return down != null && down.isLikelyCollide()
+        return down != null
+                && down.isLikelyCollide()
                 && Math.abs(movementY - down.inMovementSpace(stuckSpeedY)) <= 1.0E-7D;
     }
 
     private static boolean crossesResetBlock(CultPlayer player, SimulationContext context, Vec3 movement) {
         Vec3 from = context.getStart();
         Vec3 to = from.add(movement.normalize().scale(Math.min(movement.length(), 8.0)));
-        ClipContext clip = new ClipContext(from, to, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER,
-                NativeBlockCollisionHelper.collisionContext(player, from.y)) {
-            @Override
-            public VoxelShape getBlockShape(BlockState state, BlockGetter world, BlockPos pos) {
-                // ClipContext's player-specific portal branch also requires EntityCollisionContext.
-                return state.is(BlockTags.FALL_DAMAGE_RESETTING)
-                        || context.getVehicle() == null && (state.getBlock() == Blocks.END_PORTAL || state.getBlock() == Blocks.END_GATEWAY)
-                        ? Shapes.block() : Shapes.empty();
-            }
-        };
+        ClipContext clip =
+                new ClipContext(
+                        from,
+                        to,
+                        ClipContext.Block.FALLDAMAGE_RESETTING,
+                        ClipContext.Fluid.WATER,
+                        NativeBlockCollisionHelper.collisionContext(player, from.y)) {
+                    @Override
+                    public VoxelShape getBlockShape(BlockState state, BlockGetter world, BlockPos pos) {
+                        // ClipContext's player-specific portal branch also requires EntityCollisionContext.
+                        return state.is(BlockTags.FALL_DAMAGE_RESETTING)
+                                        || context.getVehicle() == null
+                                                && (state.getBlock() == Blocks.END_PORTAL
+                                                        || state.getBlock() == Blocks.END_GATEWAY)
+                                ? Shapes.block()
+                                : Shapes.empty();
+                    }
+                };
         return player.compensatedWorld.clip(clip).getType() != HitResult.Type.MISS;
     }
 }

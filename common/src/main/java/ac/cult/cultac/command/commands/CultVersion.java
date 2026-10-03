@@ -9,6 +9,14 @@ import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.AllArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -18,15 +26,6 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class CultVersion implements BuildableCommand {
 
@@ -50,7 +49,10 @@ public class CultVersion implements BuildableCommand {
             return;
         }
         lastCheck = now;
-        CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> checkForUpdates(sender));
+        CultAPI.INSTANCE
+                .getScheduler()
+                .getAsyncScheduler()
+                .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> checkForUpdates(sender));
     }
 
     // Using UserAgent format recommended by https://docs.modrinth.com/api/
@@ -64,7 +66,9 @@ public class CultVersion implements BuildableCommand {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(CommonCultArguments.API_URL.value() + "updates"))
                     .GET()
-                    .header("User-Agent", "CultAC/" + CultAPI.INSTANCE.getExternalAPI().getGrimVersion())
+                    .header(
+                            "User-Agent",
+                            "CultAC/" + CultAPI.INSTANCE.getExternalAPI().getGrimVersion())
                     .header("Content-Type", "application/json")
                     .timeout(Duration.of(CommonCultArguments.URL_TIMEOUT.value(), ChronoUnit.MILLIS))
                     .build();
@@ -73,14 +77,17 @@ public class CultVersion implements BuildableCommand {
             final int statusCode = response.statusCode();
             if (statusCode < 200 || statusCode >= 300) {
                 Component msg = updateMessage.get();
-                sender.sendMessage(Objects.requireNonNullElseGet(msg, () -> Component.text()
-                        .append(MessageUtil.miniMessage("%prefix%"))
-                        .append(Component.text(" Failed to check latest CultAC version. Update server responded with status code: ")
-                                .color(NamedTextColor.YELLOW))
-                        .append(Component.text(statusCode)
-                                .color(getColorForStatusCode(statusCode))
-                                .decorate(TextDecoration.BOLD))
-                        .asComponent()));
+                sender.sendMessage(Objects.requireNonNullElseGet(
+                        msg,
+                        () -> Component.text()
+                                .append(MessageUtil.miniMessage("%prefix%"))
+                                .append(Component.text(
+                                                " Failed to check latest CultAC version. Update server responded with status code: ")
+                                        .color(NamedTextColor.YELLOW))
+                                .append(Component.text(statusCode)
+                                        .color(getColorForStatusCode(statusCode))
+                                        .decorate(TextDecoration.BOLD))
+                                .asComponent()));
                 return;
             }
             // Using old JsonParser method, as old versions of Gson don't include the static one
@@ -93,28 +100,38 @@ public class CultVersion implements BuildableCommand {
             if (object.has("status")) {
                 status = Status.getStatus(object.get("status").getAsString());
             } else {
-                status = Status.SemVer.getVersionStatus(CultAPI.INSTANCE.getExternalAPI().getGrimVersion(), latest);
+                status = Status.SemVer.getVersionStatus(
+                        CultAPI.INSTANCE.getExternalAPI().getGrimVersion(), latest);
             }
             //
             Component msg = switch (status) {
                 case AHEAD ->
-                        Component.text("You are using a development version of CultAC").color(NamedTextColor.LIGHT_PURPLE);
+                    Component.text("You are using a development version of CultAC")
+                            .color(NamedTextColor.LIGHT_PURPLE);
                 case UPDATED ->
-                        Component.text("You are using the latest version of CultAC").color(NamedTextColor.GREEN);
-                case OUTDATED -> Component.text()
-                        .append(Component.text("New CultAC version found!").color(NamedTextColor.AQUA))
-                        .append(Component.text(" Version ").color(NamedTextColor.GRAY))
-                        .append(Component.text(latest).color(NamedTextColor.GRAY).decorate(TextDecoration.ITALIC))
-                        .append(Component.text(" is available to be downloaded here: ").color(NamedTextColor.GRAY))
-                        .append(Component.text(downloadPage).color(NamedTextColor.GRAY).decorate(TextDecoration.UNDERLINED)
-                                .clickEvent(ClickEvent.openUrl(downloadPage)))
-                        .asComponent();
+                    Component.text("You are using the latest version of CultAC").color(NamedTextColor.GREEN);
+                case OUTDATED ->
+                    Component.text()
+                            .append(Component.text("New CultAC version found!").color(NamedTextColor.AQUA))
+                            .append(Component.text(" Version ").color(NamedTextColor.GRAY))
+                            .append(Component.text(latest)
+                                    .color(NamedTextColor.GRAY)
+                                    .decorate(TextDecoration.ITALIC))
+                            .append(Component.text(" is available to be downloaded here: ")
+                                    .color(NamedTextColor.GRAY))
+                            .append(Component.text(downloadPage)
+                                    .color(NamedTextColor.GRAY)
+                                    .decorate(TextDecoration.UNDERLINED)
+                                    .clickEvent(ClickEvent.openUrl(downloadPage)))
+                            .asComponent();
                 case UNKNOWN ->
-                        Component.text("You are using an unknown CultAC version.").color(NamedTextColor.RED);
+                    Component.text("You are using an unknown CultAC version.").color(NamedTextColor.RED);
             };
             // in case of a critical exploit that requires attention, allow us to provide a warning
             if (warning != null && !warning.isBlank()) {
-                msg = msg.append(Component.text().append(Component.text(warning).color(NamedTextColor.RED)).asComponent());
+                msg = msg.append(Component.text()
+                        .append(Component.text(warning).color(NamedTextColor.RED))
+                        .asComponent());
             }
             updateMessage.set(msg);
             sender.sendMessage(msg);
@@ -143,19 +160,17 @@ public class CultVersion implements BuildableCommand {
 
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("version")
-                        .permission("cult.version")
-                        .handler(this::handleVersion)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("version")
+                .permission("cult.version")
+                .handler(this::handleVersion));
     }
 
     private void handleVersion(@NotNull CommandContext<Sender> context) {
         Sender sender = context.sender();
         checkForUpdatesAsync(sender);
     }
-
 
     @AllArgsConstructor
     private enum Status {
@@ -185,7 +200,8 @@ public class CultVersion implements BuildableCommand {
                         return Status.OUTDATED;
                     }
                     return Status.AHEAD;
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 return Status.UNKNOWN;
             }
 
@@ -210,7 +226,7 @@ public class CultVersion implements BuildableCommand {
                     return null;
                 }
 
-                return new int[] { major, minor, patch };
+                return new int[] {major, minor, patch};
             }
 
             private static int parseInt(String str) {

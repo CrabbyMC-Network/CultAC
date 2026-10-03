@@ -12,7 +12,8 @@ public class PacketEntityRideable extends PacketEntity {
     public double movementSpeedAttribute = 0.1D;
     public float flyingSpeedAttribute = 0.1f;
 
-    public PacketEntityRideable(CultPlayer player, int entityId, EntityType type, double x, double y, double z) { super(player, entityId, type, x, y, z);
+    public PacketEntityRideable(CultPlayer player, int entityId, EntityType type, double x, double y, double z) {
+        super(player, entityId, type, x, y, z);
         if (type == EntityTypesCompat.PIG) {
             // MCP-Reborn Pig#createAttributes defines MOVEMENT_SPEED as 0.25.
             movementSpeedAttribute = 0.25f;

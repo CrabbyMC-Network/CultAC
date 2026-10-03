@@ -16,7 +16,6 @@ import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.Vec3d;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +26,9 @@ public final class InteractCodec implements VariantCodec<ServerboundInteract> {
     private static final InteractAction[] ACTIONS = InteractAction.values();
 
     @Override
-    public List<String> variants() { return VARIANTS; }
+    public List<String> variants() {
+        return VARIANTS;
+    }
 
     @Override
     public ServerboundInteract read(ByteBuf input, ProtocolContext context) {
@@ -38,14 +39,20 @@ public final class InteractCodec implements VariantCodec<ServerboundInteract> {
         if (context.version().atLeast(ProtocolVersion.V26_1)) {
             // The native hand idMapper uses ZERO for an out-of-range value.
             Hand hand = Wire.readVarInt(input) == 1 ? Hand.OFF_HAND : Hand.MAIN_HAND;
-            return new ServerboundInteract(entityId, InteractAction.INTERACT_AT, hand,
-                    Optional.of(Wire.readLpVec3(input)), input.readBoolean());
+            return new ServerboundInteract(
+                    entityId,
+                    InteractAction.INTERACT_AT,
+                    hand,
+                    Optional.of(Wire.readLpVec3(input)),
+                    input.readBoolean());
         }
         int actionId = Wire.readVarInt(input);
-        if (actionId < 0 || actionId >= ACTIONS.length) throw new MalformedPacketException("Invalid interaction action " + actionId);
+        if (actionId < 0 || actionId >= ACTIONS.length)
+            throw new MalformedPacketException("Invalid interaction action " + actionId);
         InteractAction action = ACTIONS[actionId];
         Optional<Vec3d> target = action == InteractAction.INTERACT_AT
-                ? Optional.of(new Vec3d(input.readFloat(), input.readFloat(), input.readFloat())) : Optional.empty();
+                ? Optional.of(new Vec3d(input.readFloat(), input.readFloat(), input.readFloat()))
+                : Optional.empty();
         Hand hand = Hand.MAIN_HAND;
         if (action != InteractAction.ATTACK) {
             int handId = Wire.readVarInt(input);

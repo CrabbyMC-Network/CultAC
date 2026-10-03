@@ -1,9 +1,5 @@
 package ac.cult.cultac.checks.impl.elytra;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
@@ -11,11 +7,14 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import net.minecraft.SharedConstants;
 
 @CheckData(name = "ElytraB", stableKey = "cult.elytra.no_jump", description = "Started gliding without jumping")
 public class ElytraB extends Check implements PostPredictionListener {
@@ -36,7 +35,8 @@ public class ElytraB extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+    public void onPlayerCommand(
+            PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (!isApplicable()) return;
         if (packet.action() != PlayerCommandAction.START_FLYING_WITH_ELYTRA) return;
 
@@ -54,11 +54,10 @@ public class ElytraB extends Check implements PostPredictionListener {
         }
     }
 
-
     // isUpdate: any flying packet
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         onUpdate();
     }
 
@@ -76,7 +75,9 @@ public class ElytraB extends Check implements PostPredictionListener {
 
     private void onUpdate() {
         if (!isApplicable()) return;
-        if (glide && !player.packetStateData.knownInput.jump() && flag(V.write(verbose()).bool(false))) {
+        if (glide
+                && !player.packetStateData.knownInput.jump()
+                && flag(V.write(verbose()).bool(false))) {
             setback = true;
         }
 

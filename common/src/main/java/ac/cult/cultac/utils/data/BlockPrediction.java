@@ -1,12 +1,11 @@
 package ac.cult.cultac.utils.data;
 
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.BlockPos;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 @AllArgsConstructor
 @Getter

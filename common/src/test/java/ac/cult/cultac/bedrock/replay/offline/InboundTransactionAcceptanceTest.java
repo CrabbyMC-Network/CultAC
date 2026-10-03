@@ -1,5 +1,12 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
+import ac.cult.cultac.checks.impl.prediction.runner.PacketModHandler;
 import ac.cult.cultac.events.packets.listeners.PacketPingListener;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
@@ -9,15 +16,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import net.minecraft.world.phys.Vec3;
-import ac.cult.cultac.checks.impl.prediction.runner.PacketModHandler;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public final class InboundTransactionAcceptanceTest {
     @Test
@@ -31,7 +31,8 @@ public final class InboundTransactionAcceptanceTest {
             player.latencyUtils.addRealTimeTask(first.transaction(), () -> completed.add(first.transaction()));
             player.latencyUtils.addRealTimeTask(second.transaction(), () -> completed.add(second.transaction()));
             // A decoded or re-encoded ping has the same wire ID and a different Java identity.
-            var decoded = new ac.cult.cultac.network.CultWrite(new ac.cult.cultac.protocol.packet.clientbound.ClientboundPing(first.id()), false);
+            var decoded = new ac.cult.cultac.network.CultWrite(
+                    new ac.cult.cultac.protocol.packet.clientbound.ClientboundPing(first.id()), false);
             assertTrue(player.markTransactionPacketSent(decoded));
             assertFalse(player.markTransactionPacketSent(first.packet()));
             assertFalse(player.markTransactionPacketSent(first.id(), 0));
@@ -48,7 +49,7 @@ public final class InboundTransactionAcceptanceTest {
     public void legacyTransactionsSurviveInventoryAcknowledgementsWithoutPrematureConfirmation() throws Exception {
         OfflineCultTestBootstrap.installConfig();
         // Protocol 754 is the final pre-ping release; protocol 47 covers the 1.8 path.
-        for (int protocol : new int[]{47, 754}) {
+        for (int protocol : new int[] {47, 754}) {
             CultPlayer player = offlineJavaPlayer(ClientVersion.fromProtocolVersion(protocol));
             try {
                 var transactions = new java.util.ArrayList<CultPlayer.TrackedTransaction>();
@@ -60,8 +61,8 @@ public final class InboundTransactionAcceptanceTest {
                     // ViaBackwards requires this exact equality to send CONTAINER_ACK.
                     assertEquals(transaction.id(), (int) (short) transaction.id());
                     assertTrue("Pending and sent transactions must have distinct ids", ids.add(transaction.id()));
-                    player.latencyUtils.addRealTimeTask(transaction.transaction(),
-                            () -> completed.add(transaction.transaction()));
+                    player.latencyUtils.addRealTimeTask(
+                            transaction.transaction(), () -> completed.add(transaction.transaction()));
                     // Leave alternating packets pending to cover deferred/bundled allocation too.
                     if ((i & 1) == 0) {
                         player.markTrackedTransactionPacketSent(transaction);
@@ -78,7 +79,11 @@ public final class InboundTransactionAcceptanceTest {
                 var last = transactions.getLast();
                 assertTrue(player.addTransactionResponse((short) last.id()));
                 assertEquals(last.transaction(), player.lastTransactionReceived.get());
-                assertEquals(transactions.stream().map(CultPlayer.TrackedTransaction::transaction).toList(), completed);
+                assertEquals(
+                        transactions.stream()
+                                .map(CultPlayer.TrackedTransaction::transaction)
+                                .toList(),
+                        completed);
                 assertFalse(player.addTransactionResponse((short) last.id()));
                 assertEquals(transactions.size(), completed.size());
             } finally {
@@ -178,10 +183,12 @@ public final class InboundTransactionAcceptanceTest {
             player.latencyUtils.addRealTimeTask(future.transaction(), () -> completed.add("future"));
 
             var a = player.createBedrockTransactionAfterClientbound();
-            replies.insert(() -> player.addTransactionResponse(a.id()),
+            replies.insert(
+                    () -> player.addTransactionResponse(a.id()),
                     () -> player.markBedrockTransactionClientbound(a.id()));
             var b = player.createBedrockTransactionAfterClientbound();
-            replies.insert(() -> player.addTransactionResponse(b.id()),
+            replies.insert(
+                    () -> player.addTransactionResponse(b.id()),
                     () -> player.markBedrockTransactionClientbound(b.id()));
             player.addBedrockTransactionTask(b, () -> completed.add("B"));
             player.addBedrockTransactionTask(a, () -> completed.add("A"));
@@ -232,12 +239,13 @@ public final class InboundTransactionAcceptanceTest {
     }
 
     private static void reply(ac.cult.cultac.utils.latency.GeyserQueue replies, long timestamp) {
-        var session = org.mockito.Mockito.mock(org.geysermc.geyser.session.GeyserSession.class,
-                org.mockito.Mockito.RETURNS_DEEP_STUBS);
+        var session = org.mockito.Mockito.mock(
+                org.geysermc.geyser.session.GeyserSession.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         org.mockito.Mockito.when(session.getLatencyPingCache()).thenReturn(replies);
         var packet = new org.cloudburstmc.protocol.bedrock.packet.NetworkStackLatencyPacket();
         packet.setTimestamp(timestamp);
-        new org.geysermc.geyser.translator.protocol.bedrock.BedrockNetworkStackLatencyTranslator().translate(session, packet);
+        new org.geysermc.geyser.translator.protocol.bedrock.BedrockNetworkStackLatencyTranslator()
+                .translate(session, packet);
     }
 
     @Test
@@ -254,8 +262,8 @@ public final class InboundTransactionAcceptanceTest {
             player.markTrackedTransactionPacketSent(later);
             player.markBedrockTransactionClientbound(later.id());
             var completed = new java.util.ArrayList<String>();
-            player.latencyUtils.addRealTimeTaskWithNextTransaction(first.transaction(),
-                    () -> completed.add("first"), () -> completed.add("confirmed"));
+            player.latencyUtils.addRealTimeTaskWithNextTransaction(
+                    first.transaction(), () -> completed.add("first"), () -> completed.add("confirmed"));
             player.latencyUtils.addRealTimeTask(later.transaction(), () -> completed.add("later"));
             player.addBedrockTransactionTask(inserted, () -> completed.add("inserted"));
             assertTrue(player.addTransactionResponse(later.id()));
@@ -278,8 +286,8 @@ public final class InboundTransactionAcceptanceTest {
                 player.markTrackedTransactionPacketSent(ping);
                 player.markBedrockTransactionClientbound(ping.id());
                 int index = i;
-                player.latencyUtils.addRealTimeTaskWithNextTransaction(ping.transaction(),
-                        () -> actual.add("java-" + index), () -> actual.add("next-" + index));
+                player.latencyUtils.addRealTimeTaskWithNextTransaction(
+                        ping.transaction(), () -> actual.add("java-" + index), () -> actual.add("next-" + index));
                 var marker = player.createBedrockTransactionAfterClientbound();
                 player.markBedrockTransactionClientbound(marker.id());
                 markers.add(marker);
@@ -342,7 +350,8 @@ public final class InboundTransactionAcceptanceTest {
 
     private static CultPlayer offlineJavaPlayer(ClientVersion version) {
         UUID playerId = UUID.fromString("9c5e440b-265d-435f-98f1-1f539659c003");
-        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Transaction_Test"), new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(
+                new User.Profile(playerId, ".Transaction_Test"), new EmbeddedChannel());
         return new CultPlayer(user) {
             @Override
             public ClientVersion getClientVersion() {

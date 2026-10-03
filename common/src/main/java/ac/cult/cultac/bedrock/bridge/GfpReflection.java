@@ -36,10 +36,13 @@ final class GfpReflection {
         return user;
     }
 
-    boolean isAdapter(SessionListener listener) { return adapterType.isInstance(listener); }
+    boolean isAdapter(SessionListener listener) {
+        return adapterType.isInstance(listener);
+    }
 
     SessionListener adapter(Object user, List<SessionListener> delegates) throws ReflectiveOperationException {
-        return (SessionListener) adapterType.getConstructor(upstreamUser.getType(), List.class).newInstance(user, delegates);
+        return (SessionListener)
+                adapterType.getConstructor(upstreamUser.getType(), List.class).newInstance(user, delegates);
     }
 
     @SuppressWarnings("unchecked")

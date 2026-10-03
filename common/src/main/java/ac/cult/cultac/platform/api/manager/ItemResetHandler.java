@@ -14,7 +14,9 @@ public interface ItemResetHandler {
      * Returns the hand in which the player is using an item, or null if the player isn't using an item
      */
     @Contract("null -> null")
-    @Nullable InteractionHand getItemUsageHand(@Nullable PlatformPlayer player);
+    @Nullable
+    InteractionHand getItemUsageHand(@Nullable PlatformPlayer player);
+
     @Contract("null -> false")
     boolean isUsingItem(@Nullable PlatformPlayer player);
 }

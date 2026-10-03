@@ -1,22 +1,20 @@
 package ac.cult.cultac.bedrock.prediction.model;
 
 public record MovementModifierState(
-    boolean elytraGlideAvailable,
-    boolean movementAbilityMayFly,
-    boolean movementAbilityFlying,
-    boolean movementAbilityInstabuild,
-    double movementAbilityFlySpeed,
-    boolean navigationCanWalkInLava,
-    boolean riptideAvailable,
-    boolean rainContact,
-    boolean itemUseSlowdownActive,
-    double itemUseMovementModifier,
-    long itemUseSlowdownDurationTicks
-) {
+        boolean elytraGlideAvailable,
+        boolean movementAbilityMayFly,
+        boolean movementAbilityFlying,
+        boolean movementAbilityInstabuild,
+        double movementAbilityFlySpeed,
+        boolean navigationCanWalkInLava,
+        boolean riptideAvailable,
+        boolean rainContact,
+        boolean itemUseSlowdownActive,
+        double itemUseMovementModifier,
+        long itemUseSlowdownDurationTicks) {
     private static final double DEFAULT_ITEM_USE_MOVEMENT_MODIFIER = 0.35D;
     private static final double DEFAULT_MOVEMENT_ABILITY_FLY_SPEED = 0.05D;
-    public static final MovementModifierState NONE =
-        new MovementModifierState(
+    public static final MovementModifierState NONE = new MovementModifierState(
             false,
             false,
             false,
@@ -27,8 +25,7 @@ public record MovementModifierState(
             false,
             false,
             DEFAULT_ITEM_USE_MOVEMENT_MODIFIER,
-            0L
-        );
+            0L);
 
     public MovementModifierState {
         if (movementAbilityFlying && !movementAbilityMayFly) {

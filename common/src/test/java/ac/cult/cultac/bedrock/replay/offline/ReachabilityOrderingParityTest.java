@@ -1,5 +1,9 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.checks.impl.badpackets.BadPacketsW;
@@ -17,30 +21,25 @@ import ac.cult.cultac.network.PacketReceiveRoute;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.protocol.value.Vec3d;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
-import ac.cult.cultac.protocol.value.Vec3d;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
-import org.junit.Test;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemStack;
+import org.junit.Test;
 
 public final class ReachabilityOrderingParityTest {
     @Test
@@ -53,10 +52,7 @@ public final class ReachabilityOrderingParityTest {
             PacketReceiveEvent event = RecordReceiveTestEvents.attack(player, 1_000_000);
             int[] ordinaryCalls = {0};
 
-            dispatchThroughReceivePipeline(
-                    player,
-                    event,
-                    (receiveEvent, routedPlayer, packet) -> ordinaryCalls[0]++);
+            dispatchThroughReceivePipeline(player, event, (receiveEvent, routedPlayer, packet) -> ordinaryCalls[0]++);
 
             assertTrue(event.isCancelled());
             assertEquals(1.0D, badPacketsW.violations, 0.0D);
@@ -100,13 +96,13 @@ public final class ReachabilityOrderingParityTest {
             player.onGround = true;
             player.lastOnGround = false;
             player.isGliding = true;
-            player.getInventory().inventory.getInventoryStorage().setItem(
-                    Inventory.SLOT_CHESTPLATE,
-                    new MaterialItemStack(Material.ELYTRA));
+            player.getInventory()
+                    .inventory
+                    .getInventoryStorage()
+                    .setItem(Inventory.SLOT_CHESTPLATE, new MaterialItemStack(Material.ELYTRA));
 
             PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
-            new PacketEntityAction().onPlayerCommand(
-                    event, player, (ServerboundPlayerCommand) event.getPacket());
+            new PacketEntityAction().onPlayerCommand(event, player, (ServerboundPlayerCommand) event.getPacket());
 
             assertTrue(event.isCancelled());
             assertEquals(0, elytraA.calls);
@@ -124,8 +120,7 @@ public final class ReachabilityOrderingParityTest {
             player.lastOnGround = false;
 
             PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
-            new PacketEntityAction().onPlayerCommand(
-                    event, player, (ServerboundPlayerCommand) event.getPacket());
+            new PacketEntityAction().onPlayerCommand(event, player, (ServerboundPlayerCommand) event.getPacket());
 
             assertEquals(1, elytraA.calls);
             assertFalse(elytraA.cancelledAtCall);
@@ -145,11 +140,10 @@ public final class ReachabilityOrderingParityTest {
 
             // The preserved G0 handler ignores translated Bedrock commands:
             // their actions belong to the preceding Bedrock movement phase.
-            for (boolean gliding : new boolean[]{false, true}) {
+            for (boolean gliding : new boolean[] {false, true}) {
                 player.isGliding = gliding;
                 PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
-                new PacketEntityAction().onPlayerCommand(
-                        event, player, (ServerboundPlayerCommand) event.getPacket());
+                new PacketEntityAction().onPlayerCommand(event, player, (ServerboundPlayerCommand) event.getPacket());
 
                 assertEquals(0, elytraA.calls);
                 assertFalse(event.isCancelled());
@@ -166,9 +160,10 @@ public final class ReachabilityOrderingParityTest {
         try {
             player.onGround = true;
             player.lastOnGround = false;
-            player.getInventory().inventory.getInventoryStorage().setItem(
-                    Inventory.SLOT_CHESTPLATE,
-                    new MaterialItemStack(Material.ELYTRA));
+            player.getInventory()
+                    .inventory
+                    .getInventoryStorage()
+                    .setItem(Inventory.SLOT_CHESTPLATE, new MaterialItemStack(Material.ELYTRA));
 
             PacketReceiveEvent event = dispatchGlideStartThroughManagers(player);
 
@@ -274,19 +269,22 @@ public final class ReachabilityOrderingParityTest {
             evaluate.invoke(runner, pig);
             assertEquals(1, vehicleC.flags);
 
-            player.getInventory().inventory.getInventoryStorage().setItem(
-                    Inventory.HOTBAR_OFFSET, new MaterialItemStack(Material.CARROT_ON_A_STICK));
+            player.getInventory()
+                    .inventory
+                    .getInventoryStorage()
+                    .setItem(Inventory.HOTBAR_OFFSET, new MaterialItemStack(Material.CARROT_ON_A_STICK));
             evaluate.invoke(runner, pig);
             assertEquals(1, vehicleC.flags);
 
-            player.getInventory().inventory.getInventoryStorage().setItem(
-                    Inventory.HOTBAR_OFFSET, ItemStack.empty());
+            player.getInventory().inventory.getInventoryStorage().setItem(Inventory.HOTBAR_OFFSET, ItemStack.empty());
             PacketEntity strider = new PacketEntity(EntityTypesCompat.STRIDER, 11);
             evaluate.invoke(runner, strider);
             assertEquals(2, vehicleC.flags);
 
-            player.getInventory().inventory.getInventoryStorage().setItem(
-                    Inventory.SLOT_OFFHAND, new MaterialItemStack(Material.WARPED_FUNGUS_ON_A_STICK));
+            player.getInventory()
+                    .inventory
+                    .getInventoryStorage()
+                    .setItem(Inventory.SLOT_OFFHAND, new MaterialItemStack(Material.WARPED_FUNGUS_ON_A_STICK));
             evaluate.invoke(runner, strider);
             assertEquals(2, vehicleC.flags);
         } finally {
@@ -325,8 +323,7 @@ public final class ReachabilityOrderingParityTest {
             setLongField(timer, "lastMovementPlayerClock", now - 2_000_000_000L);
             long initial = longField(timer, "timerBalanceRealTime");
 
-            ServerboundMoveVehicle packet =
-                    new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
+            ServerboundMoveVehicle packet = new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
             PacketReceiveEvent event = receiveEvent(player, packet);
             new CheckManagerListener().onMoveVehicle(event, player, packet);
 
@@ -343,8 +340,7 @@ public final class ReachabilityOrderingParityTest {
         try {
             TrackingVehicleTimer timer = new TrackingVehicleTimer(player);
             player.checkManager.allChecks.put(VehicleTimer.class, timer);
-            ServerboundMoveVehicle packet =
-                    new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
+            ServerboundMoveVehicle packet = new ServerboundMoveVehicle(new Vec3d(0, 0, 0), 0.0F, 0.0F, false, true);
             PacketReceiveEvent event = receiveEvent(player, packet);
 
             new CheckManagerListener().onMoveVehicle(event, player, packet);
@@ -360,7 +356,8 @@ public final class ReachabilityOrderingParityTest {
     public void vehicleTimerKeepsCurrentConfigIdentity() {
         CultPlayer player = offlineJavaPlayer();
         try {
-            assertEquals("TimerVehicle",
+            assertEquals(
+                    "TimerVehicle",
                     player.checkManager.getListener(VehicleTimer.class).getConfigName());
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
@@ -374,33 +371,31 @@ public final class ReachabilityOrderingParityTest {
     }
 
     private static ServerboundPlayerCommand glideStartPacket() {
-        return new ServerboundPlayerCommand(0,
-                PlayerCommandAction.START_FLYING_WITH_ELYTRA,
-                0);
+        return new ServerboundPlayerCommand(0, PlayerCommandAction.START_FLYING_WITH_ELYTRA, 0);
     }
 
-    private static PacketReceiveEvent<ServerboundMoveVehicle> receiveEvent(CultPlayer player, ServerboundMoveVehicle packet) {
+    private static PacketReceiveEvent<ServerboundMoveVehicle> receiveEvent(
+            CultPlayer player, ServerboundMoveVehicle packet) {
         return RecordReceiveTestEvents.vehicle(player, packet);
     }
 
-    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(CultPlayer player, ServerboundPlayerCommand packet) {
+    private static PacketReceiveEvent<ServerboundPlayerCommand> receiveEvent(
+            CultPlayer player, ServerboundPlayerCommand packet) {
         return RecordReceiveTestEvents.playerCommand(player, packet);
     }
-
 
     @SafeVarargs
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void dispatchThroughReceivePipeline(
-            CultPlayer player,
-            PacketReceiveEvent event,
-            PacketReceiveHandler<Object>... ordinaryHandlers
-    ) throws ReflectiveOperationException {
+            CultPlayer player, PacketReceiveEvent event, PacketReceiveHandler<Object>... ordinaryHandlers)
+            throws ReflectiveOperationException {
         PacketReceiveHandler<Object> earlyManager =
                 (receiveEvent, routedPlayer, packet) -> routedPlayer.checkManager.dispatchEarlyReceive(receiveEvent);
         new ac.cult.cultac.network.PacketDispatcher.ReceiveRoute(
-                PacketReceiveRoute.of(new PacketReceiveHandler[]{earlyManager}),
-                PacketReceiveRoute.of(ordinaryHandlers),
-                PacketReceiveRoute.EMPTY).dispatch(event, player);
+                        PacketReceiveRoute.of(new PacketReceiveHandler[] {earlyManager}),
+                        PacketReceiveRoute.of(ordinaryHandlers),
+                        PacketReceiveRoute.EMPTY)
+                .dispatch(event, player);
     }
 
     private static PacketReceiveEvent dispatchGlideStartThroughManagers(CultPlayer player) {
@@ -426,9 +421,11 @@ public final class ReachabilityOrderingParityTest {
                 ? sentTransaction.getDeclaredConstructor(int.class, int.class)
                 : sentTransaction.getDeclaredConstructor(int.class, int.class, long.class);
         constructor.setAccessible(true);
-        sentTransactions(player).add(player.isBedrockMovement()
-                ? constructor.newInstance(transaction, id)
-                : constructor.newInstance(transaction, id, System.nanoTime()));
+        sentTransactions(player)
+                .add(
+                        player.isBedrockMovement()
+                                ? constructor.newInstance(transaction, id)
+                                : constructor.newInstance(transaction, id, System.nanoTime()));
     }
 
     private static long longField(Object target, String name) throws ReflectiveOperationException {
@@ -463,14 +460,16 @@ public final class ReachabilityOrderingParityTest {
     private static CultPlayer offlineJavaPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Reachability_Order_Test"), new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(
+                new User.Profile(playerId, ".Reachability_Order_Test"), new EmbeddedChannel());
         return new CultPlayer(user);
     }
 
     private static CultPlayer offlineBedrockPlayer() {
         OfflineCultTestBootstrap.installConfig();
         UUID playerId = UUID.randomUUID();
-        User user = ac.cult.cultac.network.TestUsers.create(new User.Profile(playerId, ".Reachability_Bedrock_Test"), new EmbeddedChannel());
+        User user = ac.cult.cultac.network.TestUsers.create(
+                new User.Profile(playerId, ".Reachability_Bedrock_Test"), new EmbeddedChannel());
         return new CultPlayer(user, MovementPlatform.BEDROCK, new BedrockPlayerState(playerId));
     }
 
@@ -518,11 +517,7 @@ public final class ReachabilityOrderingParityTest {
         }
 
         @Override
-        public void onMoveVehicle(
-                PacketReceiveEvent event,
-                CultPlayer player,
-                ServerboundMoveVehicle packet
-        ) {
+        public void onMoveVehicle(PacketReceiveEvent event, CultPlayer player, ServerboundMoveVehicle packet) {
             calls++;
         }
     }

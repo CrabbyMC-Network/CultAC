@@ -1,14 +1,14 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockClientPoseState;
 import java.util.Set;
 import java.util.UUID;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 public final class BedrockProtocolInputFrameFactoryTest {
     @Test
@@ -18,8 +18,8 @@ public final class BedrockProtocolInputFrameFactoryTest {
                 .rawInputFlagsHigh(highFlags)
                 .build();
 
-        var inputFrame = new BedrockProtocolInputFrameFactory().create(
-                authFrame, 1L, BedrockClientPoseState.STANDING, false, false, Set.of());
+        var inputFrame = new BedrockProtocolInputFrameFactory()
+                .create(authFrame, 1L, BedrockClientPoseState.STANDING, false, false, Set.of());
 
         assertTrue(inputFrame.inputData().contains("SNEAK_CURRENT_RAW"));
     }
@@ -40,8 +40,8 @@ public final class BedrockProtocolInputFrameFactoryTest {
                 .stopCrawling(true)
                 .build();
 
-        var inputFrame = new BedrockProtocolInputFrameFactory().create(
-                authFrame, 1L, BedrockClientPoseState.STANDING, false, false, Set.of());
+        var inputFrame = new BedrockProtocolInputFrameFactory()
+                .create(authFrame, 1L, BedrockClientPoseState.STANDING, false, false, Set.of());
 
         assertTrue(inputFrame.intent().fly().start());
         assertTrue(inputFrame.intent().fly().stop());
@@ -57,15 +57,14 @@ public final class BedrockProtocolInputFrameFactoryTest {
     public void swimmingPoseDoesNotCreateARequestAndRequestDoesNotCreateAnActionEdge() {
         var auth = BedrockAuthInputFrame.builder(UUID.randomUUID()).build();
         var factory = new BedrockProtocolInputFrameFactory();
-        var poseOnly = factory.create(auth, 1L, BedrockClientPoseState.STANDING.withSwimming(true),
-                false, false, Set.of());
+        var poseOnly =
+                factory.create(auth, 1L, BedrockClientPoseState.STANDING.withSwimming(true), false, false, Set.of());
         assertTrue(poseOnly.intent().pose().swimming());
         assertFalse(poseOnly.swimmingRequested());
         assertFalse(poseOnly.intent().swimmingRequested());
         assertFalse(poseOnly.intent().pose().startSwimming());
 
-        var requestOnly = factory.create(auth, 2L, BedrockClientPoseState.STANDING,
-                false, true, Set.of());
+        var requestOnly = factory.create(auth, 2L, BedrockClientPoseState.STANDING, false, true, Set.of());
         assertTrue(requestOnly.swimmingRequested());
         assertTrue(requestOnly.intent().swimmingRequested());
         assertFalse(requestOnly.intent().pose().swimming());
@@ -82,6 +81,6 @@ public final class BedrockProtocolInputFrameFactoryTest {
                 high |= 1L << (input.ordinal() - Long.SIZE);
             }
         }
-        return new long[]{low, high};
+        return new long[] {low, high};
     }
 }

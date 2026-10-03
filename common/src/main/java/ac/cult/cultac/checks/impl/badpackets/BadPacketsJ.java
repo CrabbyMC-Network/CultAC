@@ -1,7 +1,5 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.DecodedPacketReceiveListener;
@@ -9,11 +7,15 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.SharedConstants;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import net.minecraft.SharedConstants;
 
-@CheckData(name = "BadPacketsJ", stableKey = "cult.badpackets.use_item_rotation_mismatch", description = "Rotation in use item packet did not match tick rotation")
+@CheckData(
+        name = "BadPacketsJ",
+        stableKey = "cult.badpackets.use_item_rotation_mismatch",
+        description = "Rotation in use item packet did not match tick rotation")
 public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
@@ -57,15 +59,15 @@ public class BadPacketsJ extends Check implements DecodedPacketReceiveListener {
             this.rotations = 0;
         }
 
-        if (this.rotations != Integer.MAX_VALUE)
-            this.rotations++;
+        if (this.rotations != Integer.MAX_VALUE) this.rotations++;
         this.yaw = yaw;
         this.pitch = pitch;
     }
 
     // isTickPacket: movement packets count unless they answered a teleport
     @CultPacketHandler
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
         if (!player.cameraEntity.isSelf()) {
             this.rotations = 0;

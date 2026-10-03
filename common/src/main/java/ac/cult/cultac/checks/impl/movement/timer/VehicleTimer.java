@@ -1,42 +1,52 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
 
-//@CheckData(name = "Timer - Vehicle", configName = "TimerVehicle", setback = 10)
+// @CheckData(name = "Timer - Vehicle", configName = "TimerVehicle", setback = 10)
 public class VehicleTimer extends AbstractTimerCheck {
     boolean isDummy = false;
     private boolean countedVehicleMovementThisClientTick = false;
 
-    public VehicleTimer(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder().name("TimerVehicle").configName("TimerVehicle").setback(5).build()); }
+    public VehicleTimer(CultPlayer cultPlayer) {
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("TimerVehicle")
+                        .configName("TimerVehicle")
+                        .setback(5)
+                        .build());
+    }
 
     @CultPacketHandler
-    public void onMoveVehicle(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
+    public void onMoveVehicle(
+            PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         recordTimerEvent(event, false, shouldCountMoveVehicleForTimer());
     }
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
+    public void onPlayerInput(
+            PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         recordTimerEvent(event, false, shouldCountVehicleInputForTimer());
     }
 
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
+    public void onPaddleBoat(
+            PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         recordTimerEvent(event, false, shouldCountVehicleInputForTimer());
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!usesClientTickEndBoundary()) {
             // LocalPlayer#tick sends passenger input, then Rot, then the
             // locally-authoritative vehicle movement. Rot is the backend-

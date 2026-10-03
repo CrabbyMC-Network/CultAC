@@ -10,18 +10,16 @@ final class BedrockRequiredInputMath {
     private static final float TRIG_HALF_PI_INDEX = 16384.0F;
     private static final List<Float> SIN_TABLE = buildSinTable();
 
-    private BedrockRequiredInputMath() {
-    }
+    private BedrockRequiredInputMath() {}
 
     static Vec3d horizontalInputForDelta(Vec3d wantedMovement, float yawDegrees) {
         float yawRadians = yawDegrees * DEGREES_TO_RADIANS;
         float sinYaw = sin(yawRadians);
         float cosYaw = cos(yawRadians);
         return new Vec3d(
-            wantedMovement.x() * cosYaw + wantedMovement.z() * sinYaw,
-            0.0D,
-            wantedMovement.z() * cosYaw - wantedMovement.x() * sinYaw
-        );
+                wantedMovement.x() * cosYaw + wantedMovement.z() * sinYaw,
+                0.0D,
+                wantedMovement.z() * cosYaw - wantedMovement.x() * sinYaw);
     }
 
     static float sin(float radians) {

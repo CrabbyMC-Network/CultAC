@@ -10,9 +10,8 @@ import ac.cult.cultac.manager.init.stop.TerminateGeyserBedrockBridge;
 import ac.cult.cultac.manager.init.stop.TerminateNetworkManager;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import com.google.common.collect.ImmutableList;
-import lombok.Getter;
-
 import java.util.ArrayList;
+import lombok.Getter;
 
 public class InitManager {
 
@@ -22,8 +21,10 @@ public class InitManager {
 
     @Getter
     private boolean loaded = false;
+
     @Getter
     private boolean started = false;
+
     @Getter
     private boolean stopped = false;
 

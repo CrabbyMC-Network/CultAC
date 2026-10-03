@@ -6,6 +6,9 @@ import ac.cult.cultac.platform.api.command.CommandService;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.sender.Sender;
 import io.leangen.geantyref.TypeToken;
+import java.util.Locale;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -17,24 +20,21 @@ import org.incendo.cloud.processors.requirements.RequirementApplicable.Requireme
 import org.incendo.cloud.processors.requirements.RequirementPostprocessor;
 import org.incendo.cloud.processors.requirements.Requirements;
 
-import java.util.Locale;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 public class CloudCommandService implements CommandService {
 
-    public static final CloudKey<Requirements<Sender, SenderRequirement>> REQUIREMENT_KEY
-            = CloudKey.of("requirements", new TypeToken<>() {});
+    public static final CloudKey<Requirements<Sender, SenderRequirement>> REQUIREMENT_KEY =
+            CloudKey.of("requirements", new TypeToken<>() {});
 
-    public static final RequirementApplicableFactory<Sender, SenderRequirement> REQUIREMENT_FACTORY
-            = RequirementApplicable.factory(REQUIREMENT_KEY);
+    public static final RequirementApplicableFactory<Sender, SenderRequirement> REQUIREMENT_FACTORY =
+            RequirementApplicable.factory(REQUIREMENT_KEY);
 
     private boolean commandsRegistered = false;
 
     private final Supplier<CommandManager<Sender>> commandManagerSupplier;
     private final CloudPlatformCommandArguments commandArguments;
 
-    public CloudCommandService(Supplier<CommandManager<Sender>> commandManagerSupplier, CloudPlatformCommandArguments commandArguments) {
+    public CloudCommandService(
+            Supplier<CommandManager<Sender>> commandManagerSupplier, CloudPlatformCommandArguments commandArguments) {
         this.commandManagerSupplier = commandManagerSupplier;
         this.commandArguments = commandArguments;
     }
@@ -63,11 +63,8 @@ public class CloudCommandService implements CommandService {
         new CultList().register(commandManager, commandArguments);
         new CultTestWebhook().register(commandManager, commandArguments);
 
-        final RequirementPostprocessor<Sender, SenderRequirement>
-                senderRequirementPostprocessor = RequirementPostprocessor.of(
-                REQUIREMENT_KEY,
-                new CultCommandFailureHandler()
-        );
+        final RequirementPostprocessor<Sender, SenderRequirement> senderRequirementPostprocessor =
+                RequirementPostprocessor.of(REQUIREMENT_KEY, new CultCommandFailureHandler());
         commandManager.registerCommandPostProcessor(senderRequirementPostprocessor);
         registerInvalidSyntaxHandler(commandManager);
         commandsRegistered = true;
@@ -79,9 +76,13 @@ public class CloudCommandService implements CommandService {
             if (isHistoryInput(context.context().rawInput().input())) {
                 sender.sendMessage(Component.text("Invalid history syntax.", NamedTextColor.RED));
                 sender.sendMessage(Component.text("Use: /cult history <player> [page <N>]", NamedTextColor.GRAY));
-                sender.sendMessage(Component.text("Use: /cult history <player> session <N|latest> [page <N>] [-d] [-v]", NamedTextColor.GRAY));
-                sender.sendMessage(Component.text("Tip: /cult history <player> session shows filter and detail options.", NamedTextColor.GRAY));
-                sender.sendMessage(Component.text("Use /cult history player <player> ... for names that collide with history subcommands.", NamedTextColor.GRAY));
+                sender.sendMessage(Component.text(
+                        "Use: /cult history <player> session <N|latest> [page <N>] [-d] [-v]", NamedTextColor.GRAY));
+                sender.sendMessage(Component.text(
+                        "Tip: /cult history <player> session shows filter and detail options.", NamedTextColor.GRAY));
+                sender.sendMessage(Component.text(
+                        "Use /cult history player <player> ... for names that collide with history subcommands.",
+                        NamedTextColor.GRAY));
                 return;
             }
             sender.sendMessage(Component.text(context.exception().correctSyntax(), NamedTextColor.RED));
@@ -93,14 +94,24 @@ public class CloudCommandService implements CommandService {
         if (input.startsWith("/")) input = input.substring(1).strip();
         String[] tokens = input.toLowerCase(Locale.ROOT).split("\\s+");
         return tokens.length >= 2
-                && (tokens[0].equals("cult") || tokens[0].equals("cultac")
-                || tokens[0].equals("grim") || tokens[0].equals("grimac"))
+                && (tokens[0].equals("cult")
+                        || tokens[0].equals("cultac")
+                        || tokens[0].equals("grim")
+                        || tokens[0].equals("grimac"))
                 && (tokens[1].equals("history") || tokens[1].equals("hist"));
     }
 
-    protected <E extends Exception> void registerExceptionHandler(CommandManager<Sender> commandManager, Class<E> ex, Function<E, ComponentLike> toComponent) {
-        commandManager.exceptionController().registerHandler(ex,
-                (c) -> c.context().sender().sendMessage(toComponent.apply(c.exception()).asComponent().colorIfAbsent(NamedTextColor.RED))
-        );
+    protected <E extends Exception> void registerExceptionHandler(
+            CommandManager<Sender> commandManager, Class<E> ex, Function<E, ComponentLike> toComponent) {
+        commandManager
+                .exceptionController()
+                .registerHandler(
+                        ex,
+                        (c) -> c.context()
+                                .sender()
+                                .sendMessage(toComponent
+                                        .apply(c.exception())
+                                        .asComponent()
+                                        .colorIfAbsent(NamedTextColor.RED)));
     }
 }

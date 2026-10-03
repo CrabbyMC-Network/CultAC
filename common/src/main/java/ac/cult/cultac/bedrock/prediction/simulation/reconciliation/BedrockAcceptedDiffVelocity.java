@@ -10,134 +10,127 @@ import ac.cult.cultac.bedrock.prediction.simulation.collision.BedrockCollisionSw
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockAerialMovement;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockBlockSurfaceMovement;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
-import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
+import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 final class BedrockAcceptedDiffVelocity {
-    private BedrockAcceptedDiffVelocity() {
-    }
+    private BedrockAcceptedDiffVelocity() {}
 
     static List<AcceptedState> apply(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        Vec3d acceptedDiff,
-        boolean selectedXCollision,
-        boolean selectedZCollision,
-        boolean canStep
-    ) {
-        BedrockAcceptedEndpointEvidence evidence = BedrockAcceptedEndpointEvidence.from(
-            movementResult, state, acceptedDiff, canStep
-        );
-        List<BedrockMovementState> contactStates = withAcceptedEndpointClimbableContacts(
-            movementResult, state, evidence);
+            BedrockMovementResult movementResult,
+            BedrockMovementState state,
+            Vec3d acceptedDiff,
+            boolean selectedXCollision,
+            boolean selectedZCollision,
+            boolean canStep) {
+        BedrockAcceptedEndpointEvidence evidence =
+                BedrockAcceptedEndpointEvidence.from(movementResult, state, acceptedDiff, canStep);
+        List<BedrockMovementState> contactStates =
+                withAcceptedEndpointClimbableContacts(movementResult, state, evidence);
         if (contactStates.size() == 1) {
             return applyWithContact(
-                movementResult, contactStates.getFirst(), evidence,
-                acceptedDiff, selectedXCollision, selectedZCollision);
+                    movementResult,
+                    contactStates.getFirst(),
+                    evidence,
+                    acceptedDiff,
+                    selectedXCollision,
+                    selectedZCollision);
         }
         Set<AcceptedState> acceptedStates = new LinkedHashSet<>();
         for (BedrockMovementState contactState : contactStates) {
             acceptedStates.addAll(applyWithContact(
-                movementResult, contactState, evidence,
-                acceptedDiff, selectedXCollision, selectedZCollision));
+                    movementResult, contactState, evidence, acceptedDiff, selectedXCollision, selectedZCollision));
         }
         return List.copyOf(acceptedStates);
     }
 
     private static List<AcceptedState> applyWithContact(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        BedrockAcceptedEndpointEvidence evidence,
-        Vec3d acceptedDiff,
-        boolean selectedXCollision,
-        boolean selectedZCollision
-    ) {
+            BedrockMovementResult movementResult,
+            BedrockMovementState state,
+            BedrockAcceptedEndpointEvidence evidence,
+            Vec3d acceptedDiff,
+            boolean selectedXCollision,
+            boolean selectedZCollision) {
         if (movementResult.selectedGlidingTravel() && state.gliding()) {
             Vec3d glidingVelocity = acceptedCollisionVelocity(state, acceptedDiff);
             glidingVelocity = BedrockBlockSurfaceMovement.applyInsideBlockAfterPostMoveEffects(
-                glidingVelocity,
-                movementResult.honeySlideState(),
-                state.physicalFeetPosition(),
-                evidence.committedDimensions());
+                    glidingVelocity,
+                    movementResult.honeySlideState(),
+                    state.physicalFeetPosition(),
+                    evidence.committedDimensions());
             if (glidingVelocity.equals(state.velocity())) {
                 return List.of(new AcceptedState(state, evidence));
             }
             return List.of(new AcceptedState(
-                state.withVelocityAndCollisionFlags(glidingVelocity, state.collisionFlags()), evidence));
+                    state.withVelocityAndCollisionFlags(glidingVelocity, state.collisionFlags()), evidence));
         }
         if (movementResult.blockMovementSlowdownClearsVelocity()) {
             return List.of(new AcceptedState(state, evidence));
         }
         List<BedrockAcceptedDiffHorizontalVelocity.AxisVelocity> horizontalVelocities =
-            BedrockAcceptedDiffHorizontalVelocity.resolve(
-                evidence, selectedXCollision, selectedZCollision);
+                BedrockAcceptedDiffHorizontalVelocity.resolve(evidence, selectedXCollision, selectedZCollision);
         double velocityY = BedrockAcceptedDiffVerticalVelocity.resolve(evidence);
         BedrockCollisionFlags flags = acceptedEndpointLiquidClearsGround(evidence)
-            ? state.collisionFlags().withOnGround(false)
-            : acceptedDiffPostMoveBounceGrounds(evidence)
-            ? state.collisionFlags().withOnGround(true).withVerticalCollision(true)
-            : evidence.projectedStep()
-            ? projectedStepVerticalCollisionFlags(movementResult, state.collisionFlags())
-            : acceptedDiffDownwardSupportGrounds(movementResult, state, acceptedDiff)
-            ? groundedVerticalCollision(state.collisionFlags())
-            : acceptedDiffHasNonDownwardVerticalMove(movementResult, acceptedDiff)
-            ? acceptedDiffVerticalCollisionFlags(movementResult, state.collisionFlags(), acceptedDiff)
-            : state.collisionFlags();
+                ? state.collisionFlags().withOnGround(false)
+                : acceptedDiffPostMoveBounceGrounds(evidence)
+                        ? state.collisionFlags().withOnGround(true).withVerticalCollision(true)
+                        : evidence.projectedStep()
+                                ? projectedStepVerticalCollisionFlags(movementResult, state.collisionFlags())
+                                : acceptedDiffDownwardSupportGrounds(movementResult, state, acceptedDiff)
+                                        ? groundedVerticalCollision(state.collisionFlags())
+                                        : acceptedDiffHasNonDownwardVerticalMove(movementResult, acceptedDiff)
+                                                ? acceptedDiffVerticalCollisionFlags(
+                                                        movementResult, state.collisionFlags(), acceptedDiff)
+                                                : state.collisionFlags();
         boolean waterTravelActive = evidence.waterTravelActive();
         Medium movementBranch = evidence.movementBranch(flags, waterTravelActive);
         if (state.isHorse() && flags.onGround() != state.collisionFlags().onGround()) {
             // Landing belongs to the selected collision result, including a step.
             var horse = movementResult.previousState().horse().requestJump();
             if (movementResult.groundJumpApplied()) horse = horse.launched();
-            state = state.withHorse(horse.withForwardJump(state.horse().forwardJump()).afterTravel(
-                    movementResult.previousState().collisionFlags().onGround(), flags.onGround()));
+            state = state.withHorse(horse.withForwardJump(state.horse().forwardJump())
+                    .afterTravel(movementResult.previousState().collisionFlags().onGround(), flags.onGround()));
         }
         Set<BedrockMovementState> states = new LinkedHashSet<>();
         for (BedrockAcceptedDiffHorizontalVelocity.AxisVelocity horizontalVelocity : horizontalVelocities) {
             Vec3d velocity = applyAcceptedEndpointStandingSurfaceHorizontalSlowdown(
-                movementResult,
-                state,
-                flags,
-                horizontalVelocity.withY(velocityY));
+                    movementResult, state, flags, horizontalVelocity.withY(velocityY));
             velocity = applyAcceptedEndpointEntityInside(evidence, velocity);
             if (velocity.equals(state.velocity())
-                && flags.equals(state.collisionFlags())
-                && state.waterTravelFlag() == waterTravelActive
-                && state.movementBranch() == movementBranch) {
+                    && flags.equals(state.collisionFlags())
+                    && state.waterTravelFlag() == waterTravelActive
+                    && state.movementBranch() == movementBranch) {
                 states.add(state);
                 continue;
             }
             states.add(state.withVelocityAndCollisionFlags(velocity, flags)
-                .withWaterTravelFlag(waterTravelActive)
-                .withMovementBranch(movementBranch));
+                    .withWaterTravelFlag(waterTravelActive)
+                    .withMovementBranch(movementBranch));
         }
         return states.stream().map(next -> new AcceptedState(next, evidence)).toList();
     }
 
     static List<BedrockMovementState> withAcceptedEndpointClimbableContacts(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        BedrockAcceptedEndpointEvidence evidence
-    ) {
+            BedrockMovementResult movementResult,
+            BedrockMovementState state,
+            BedrockAcceptedEndpointEvidence evidence) {
         BedrockClimbableContact contact = BedrockClimbableContact.fromBlockWorld(
-            movementResult.movementContext().worldState().blockCollisionWorld(),
-            state.physicalFeetPosition(),
-            evidence.committedDimensions().width(),
-            evidence.committedDimensions().height(),
-            movementResult.movementContext().equipmentState().leatherBoots()
-        );
+                movementResult.movementContext().worldState().blockCollisionWorld(),
+                state.physicalFeetPosition(),
+                evidence.committedDimensions().width(),
+                evidence.committedDimensions().height(),
+                movementResult.movementContext().equipmentState().leatherBoots());
         BedrockMovementState endpoint = state.withClimbableContact(contact);
         BedrockClimbableContact carried = movementResult.previousState().climbableContact();
         BedrockClimbableContact currentPositionContact = BedrockClimbableContact.fromBlockWorld(
-            movementResult.movementContext().worldState().blockCollisionWorld(),
-            movementResult.previousState().physicalFeetPosition(),
-            movementResult.previousState().playerDimensions().width(),
-            movementResult.previousState().playerDimensions().height(),
-            movementResult.movementContext().equipmentState().leatherBoots()
-        );
+                movementResult.movementContext().worldState().blockCollisionWorld(),
+                movementResult.previousState().physicalFeetPosition(),
+                movementResult.previousState().playerDimensions().width(),
+                movementResult.previousState().playerDimensions().height(),
+                movementResult.movementContext().equipmentState().leatherBoots());
         if (!carried.equals(currentPositionContact)) {
 
             return List.of(endpoint);
@@ -154,43 +147,41 @@ final class BedrockAcceptedDiffVelocity {
     }
 
     private static Vec3d applyAcceptedEndpointStandingSurfaceHorizontalSlowdown(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        BedrockCollisionFlags flags,
-        Vec3d velocity
-    ) {
+            BedrockMovementResult movementResult,
+            BedrockMovementState state,
+            BedrockCollisionFlags flags,
+            Vec3d velocity) {
 
         return BedrockBlockSurfaceMovement.applyStandingAfterMove(
-            velocity,
-            state.physicalFeetPosition(),
-            state.inputFrame().sneaking(),
-            flags.onGround(),
-            movementResult.movementContext().worldState().blockCollisionWorld(),
-            movementResult.movementContext().playerDimensionsState());
+                velocity,
+                state.physicalFeetPosition(),
+                state.inputFrame().sneaking(),
+                flags.onGround(),
+                movementResult.movementContext().worldState().blockCollisionWorld(),
+                movementResult.movementContext().playerDimensionsState());
     }
 
     private static boolean acceptedEndpointLiquidClearsGround(BedrockAcceptedEndpointEvidence evidence) {
         BedrockMovementResult movementResult = evidence.movementResult();
-        if (evidence.state().isHorse() || movementResult.movementContext().inWater() || movementResult.movementContext().inLava()) {
+        if (evidence.state().isHorse()
+                || movementResult.movementContext().inWater()
+                || movementResult.movementContext().inLava()) {
             return false;
         }
         BedrockMovementContext endpointContext = evidence.fluidContext();
         return endpointContext.inWater()
-            || endpointContext.inLava()
-            || endpointContext.liquidMovementMedium() == Medium.LAVA;
+                || endpointContext.inLava()
+                || endpointContext.liquidMovementMedium() == Medium.LAVA;
     }
 
-    private static Vec3d applyAcceptedEndpointEntityInside(
-        BedrockAcceptedEndpointEvidence evidence,
-        Vec3d velocity
-    ) {
+    private static Vec3d applyAcceptedEndpointEntityInside(BedrockAcceptedEndpointEvidence evidence, Vec3d velocity) {
         BedrockMovementResult movementResult = evidence.movementResult();
         BedrockMovementState state = evidence.state();
         return BedrockBlockSurfaceMovement.applyInsideBlockAfterPostMoveEffects(
-            velocity,
-            movementResult.honeySlideState(),
-            state.physicalFeetPosition(),
-            evidence.committedDimensions());
+                velocity,
+                movementResult.honeySlideState(),
+                state.physicalFeetPosition(),
+                evidence.committedDimensions());
     }
 
     private static boolean acceptedDiffPostMoveBounceGrounds(BedrockAcceptedEndpointEvidence evidence) {
@@ -200,14 +191,12 @@ final class BedrockAcceptedDiffVelocity {
             return false;
         }
 
-        return BedrockAcceptedDiffVerticalVelocity.acceptedPostMoveBounceVelocity(evidence).isPresent();
+        return BedrockAcceptedDiffVerticalVelocity.acceptedPostMoveBounceVelocity(evidence)
+                .isPresent();
     }
 
     private static boolean acceptedDiffDownwardSupportGrounds(
-        BedrockMovementResult movementResult,
-        BedrockMovementState state,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult movementResult, BedrockMovementState state, Vec3d acceptedDiff) {
         if (state.autoClimbTravel() || movementResult.predictedState().autoClimbTravel()) {
 
             return false;
@@ -219,81 +208,72 @@ final class BedrockAcceptedDiffVelocity {
         }
         Vec3d packetSpaceRequestedDelta = new Vec3d(acceptedDiff.x(), rawMove.y(), acceptedDiff.z());
         return BedrockCollisionProjectionResolver.supportPosition(movementResult, packetSpaceRequestedDelta)
-
-            .map(position -> Math.abs(position.y() - state.physicalFeetPosition().y()) <= BedrockCollisionSweep.EPSILON)
-            .orElse(false);
+                .map(position ->
+                        Math.abs(position.y() - state.physicalFeetPosition().y()) <= BedrockCollisionSweep.EPSILON)
+                .orElse(false);
     }
 
     private static boolean acceptedDiffHasNonDownwardVerticalMove(
-        BedrockMovementResult movementResult,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult movementResult, Vec3d acceptedDiff) {
         double rawMoveY = packetVisibleRawMove(movementResult).y();
         return rawMoveY >= 0.0D
-            && (Math.abs(rawMoveY) > BedrockCollisionSweep.EPSILON
-            || Math.abs(acceptedDiff.y()) > BedrockCollisionSweep.EPSILON);
+                && (Math.abs(rawMoveY) > BedrockCollisionSweep.EPSILON
+                        || Math.abs(acceptedDiff.y()) > BedrockCollisionSweep.EPSILON);
     }
 
     private static BedrockCollisionFlags acceptedDiffVerticalCollisionFlags(
-        BedrockMovementResult movementResult,
-        BedrockCollisionFlags flags,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult movementResult, BedrockCollisionFlags flags, Vec3d acceptedDiff) {
         double rawMoveY = packetVisibleRawMove(movementResult).y();
         boolean verticalCollision = Math.abs(rawMoveY - acceptedDiff.y()) > BedrockCollisionSweep.EPSILON;
         boolean verticalCollisionBelow = verticalCollision && rawMoveY < 0.0D;
 
         return new BedrockCollisionFlags(
-            verticalCollisionBelow,
-            flags.horizontalCollision(),
-            verticalCollision,
-            flags.horizontalBlockContact(),
-            flags.liquidClimbOut(),
-            verticalCollisionBelow,
-            flags.xCollision(),
-            flags.zCollision()
-        );
+                verticalCollisionBelow,
+                flags.horizontalCollision(),
+                verticalCollision,
+                flags.horizontalBlockContact(),
+                flags.liquidClimbOut(),
+                verticalCollisionBelow,
+                flags.xCollision(),
+                flags.zCollision());
     }
 
     private static Vec3d packetVisibleRawMove(BedrockMovementResult movementResult) {
         Vec3d previous = movementResult.previousState().physicalFeetPosition();
         Vec3d rawPacketEndpoint = BedrockPositionTranslator.normalizePhysicalFeetPosition(
-            movementResult.rawPredictedPhysicalFeetPosition(), movementResult.previousState().coordinateFrame(),
-            movementResult.previousState().packetYOffset());
+                movementResult.rawPredictedPhysicalFeetPosition(),
+                movementResult.previousState().coordinateFrame(),
+                movementResult.previousState().packetYOffset());
         return rawPacketEndpoint.subtract(previous);
     }
 
     private static BedrockCollisionFlags groundedVerticalCollision(BedrockCollisionFlags flags) {
         return new BedrockCollisionFlags(
-            true,
-            flags.horizontalCollision(),
-            true,
-            flags.horizontalBlockContact(),
-            flags.liquidClimbOut(),
-            true,
-            flags.xCollision(),
-            flags.zCollision()
-        );
+                true,
+                flags.horizontalCollision(),
+                true,
+                flags.horizontalBlockContact(),
+                flags.liquidClimbOut(),
+                true,
+                flags.xCollision(),
+                flags.zCollision());
     }
 
     private static BedrockCollisionFlags projectedStepVerticalCollisionFlags(
-        BedrockMovementResult movementResult,
-        BedrockCollisionFlags flags
-    ) {
+            BedrockMovementResult movementResult, BedrockCollisionFlags flags) {
         double rawMoveY = movementResult.rawPredictedPhysicalFeetPosition().y()
-            - movementResult.previousState().physicalFeetPosition().y();
+                - movementResult.previousState().physicalFeetPosition().y();
 
         boolean onGround = rawMoveY < 0.0D;
         return new BedrockCollisionFlags(
-            onGround,
-            flags.horizontalCollision(),
-            true,
-            flags.horizontalBlockContact(),
-            flags.liquidClimbOut(),
-            onGround,
-            flags.xCollision(),
-            flags.zCollision()
-        );
+                onGround,
+                flags.horizontalCollision(),
+                true,
+                flags.horizontalBlockContact(),
+                flags.liquidClimbOut(),
+                onGround,
+                flags.xCollision(),
+                flags.zCollision());
     }
 
     private static Vec3d acceptedCollisionVelocity(BedrockMovementState state, Vec3d acceptedDiff) {

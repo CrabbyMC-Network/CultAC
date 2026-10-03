@@ -1,6 +1,7 @@
 plugins {
     java
     id("io.papermc.paperweight.userdev")
+    cult.`format-conventions`
 }
 
 // Keep the pre-clock Level ABI isolated while retaining native block-use prediction.

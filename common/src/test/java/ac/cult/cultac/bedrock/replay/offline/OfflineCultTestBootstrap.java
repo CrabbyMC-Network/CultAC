@@ -1,11 +1,11 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.plugin.GrimPlugin;
+import ac.cult.cultac.manager.config.BaseConfigManager;
 import ac.cult.cultac.platform.api.PlatformLoader;
 import ac.cult.cultac.platform.api.manager.PermissionRegistrationManager;
 import ac.grim.grimac.api.config.ConfigManager;
-import ac.cult.cultac.manager.config.BaseConfigManager;
+import ac.grim.grimac.api.plugin.GrimPlugin;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -47,8 +47,7 @@ public final class OfflineCultTestBootstrap {
     private static net.minecraft.core.RegistryAccess.Frozen worldRegistries;
     private static final Map<String, Double> DOUBLE_CONFIG_OVERRIDES = new ConcurrentHashMap<>();
 
-    private OfflineCultTestBootstrap() {
-    }
+    private OfflineCultTestBootstrap() {}
 
     public static void installConfig() {
         if (installed) {
@@ -70,8 +69,8 @@ public final class OfflineCultTestBootstrap {
 
         Mockito.when(config.getBooleanElse("experimental-checks", false)).thenReturn(true);
         Mockito.when(config.getDoubleElse(Mockito.anyString(), Mockito.anyDouble()))
-                .thenAnswer(invocation -> DOUBLE_CONFIG_OVERRIDES.getOrDefault(
-                        invocation.getArgument(0), invocation.getArgument(1)));
+                .thenAnswer(invocation ->
+                        DOUBLE_CONFIG_OVERRIDES.getOrDefault(invocation.getArgument(0), invocation.getArgument(1)));
         Mockito.when(config.getStringElse(Mockito.anyString(), Mockito.anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(1));
 
@@ -91,15 +90,20 @@ public final class OfflineCultTestBootstrap {
         var manager = CultAPI.INSTANCE.getNetworkManager();
         if (!networkConfigured) {
             networkConfigured = true;
-            manager.configureTransport(ac.cult.cultac.network.TestProtocolRuntime.create(
-                    ac.cult.cultac.protocol.data.ProtocolData.load(ac.cult.cultac.protocol.ProtocolVersion.of(
-                            net.minecraft.SharedConstants.getProtocolVersion()))), () -> { }, () -> java.util.concurrent.CompletableFuture.completedFuture(null));
+            manager.configureTransport(
+                    ac.cult.cultac.network.TestProtocolRuntime.create(
+                            ac.cult.cultac.protocol.data.ProtocolData.load(ac.cult.cultac.protocol.ProtocolVersion.of(
+                                    net.minecraft.SharedConstants.getProtocolVersion()))),
+                    () -> {},
+                    () -> java.util.concurrent.CompletableFuture.completedFuture(null));
         }
     }
 
     /** Offline state tests still encode authored records through the real transport. */
-    static ac.cult.cultac.network.protocol.player.User wireUser(ac.cult.cultac.network.protocol.player.User.Profile profile) {
-        var runtime = CultAPI.INSTANCE.getNetworkManager().dispatcher().scanner().runtime();
+    static ac.cult.cultac.network.protocol.player.User wireUser(
+            ac.cult.cultac.network.protocol.player.User.Profile profile) {
+        var runtime =
+                CultAPI.INSTANCE.getNetworkManager().dispatcher().scanner().runtime();
         var channel = new io.netty.channel.embedded.EmbeddedChannel();
         channel.pipeline().addLast("splitter", new io.netty.channel.ChannelInboundHandlerAdapter());
         channel.pipeline().addLast("decoder", new io.netty.channel.ChannelInboundHandlerAdapter());
@@ -111,7 +115,8 @@ public final class OfflineCultTestBootstrap {
         var transport = new ac.cult.cultac.network.CultConnection(channel, routes, ignored -> null);
         ac.cult.cultac.protocol.paper.CultDecoder.install(transport);
         ac.cult.cultac.protocol.paper.CultEncoder.install(transport);
-        for (var direction : ac.cult.cultac.protocol.PacketDirection.values()) transport.phase(direction, ac.cult.cultac.protocol.ConnectionPhase.PLAY);
+        for (var direction : ac.cult.cultac.protocol.PacketDirection.values())
+            transport.phase(direction, ac.cult.cultac.protocol.ConnectionPhase.PLAY);
         var user = new ac.cult.cultac.network.protocol.player.User(profile, transport);
         return user;
     }
@@ -126,18 +131,22 @@ public final class OfflineCultTestBootstrap {
 
     private static void loadVanillaData() {
         VanillaPackResources vanilla = ServerPacksSource.createVanillaPackSource();
-        try (MultiPackResourceManager resources = new MultiPackResourceManager(PackType.SERVER_DATA, List.of(vanilla.fullResources()))) {
-            List<Registry.PendingTags<?>> pendingTags = TagLoader.loadTagsForExistingRegistries(
-                    resources,
-                    RegistryLayer.STATIC_ACCESS);
+        try (MultiPackResourceManager resources =
+                new MultiPackResourceManager(PackType.SERVER_DATA, List.of(vanilla.fullResources()))) {
+            List<Registry.PendingTags<?>> pendingTags =
+                    TagLoader.loadTagsForExistingRegistries(resources, RegistryLayer.STATIC_ACCESS);
             pendingTags.forEach(Registry.PendingTags::apply);
             // 26.3 binds item components after their provider/transformer registries.
             var base = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
-            var world = net.minecraft.resources.RegistryDataLoader.load(resources, base.listRegistries().toList(),
-                    net.minecraft.resources.RegistryDataLoader.WORLD_REGISTRIES, Runnable::run).join();
+            var world = net.minecraft.resources.RegistryDataLoader.load(
+                            resources,
+                            base.listRegistries().toList(),
+                            net.minecraft.resources.RegistryDataLoader.WORLD_REGISTRIES,
+                            Runnable::run)
+                    .join();
             worldRegistries = world;
-            var context = net.minecraft.core.HolderLookup.Provider.create(java.util.stream.Stream.concat(
-                    base.listRegistries(), world.listRegistries()));
+            var context = net.minecraft.core.HolderLookup.Provider.create(
+                    java.util.stream.Stream.concat(base.listRegistries(), world.listRegistries()));
             BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(context).forEach(pending -> pending.apply());
         }
     }
@@ -169,7 +178,8 @@ public final class OfflineCultTestBootstrap {
         return worldRegistries;
     }
 
-    public static AutoCloseable withServerRegistries(net.minecraft.core.RegistryAccess.Frozen registries) throws ReflectiveOperationException {
+    public static AutoCloseable withServerRegistries(net.minecraft.core.RegistryAccess.Frozen registries)
+            throws ReflectiveOperationException {
         var current = net.minecraft.server.MinecraftServer.class.getDeclaredField("SERVER");
         current.setAccessible(true);
         Object previous = current.get(null);
@@ -189,13 +199,11 @@ public final class OfflineCultTestBootstrap {
         }
     }
 
-
     private static void installPlatformLoader() {
-        PermissionRegistrationManager noOpPermissions = (name, defaultValue) -> {
-        };
+        PermissionRegistrationManager noOpPermissions = (name, defaultValue) -> {};
         GrimPlugin grimPlugin = (GrimPlugin) Proxy.newProxyInstance(
                 GrimPlugin.class.getClassLoader(),
-                new Class<?>[]{GrimPlugin.class},
+                new Class<?>[] {GrimPlugin.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "getLogger" -> Logger.getLogger("OfflineBedrockReplay");
                     case "getDataFolder" -> new File("build/offline-bedrock-replay-plugin");
@@ -203,7 +211,7 @@ public final class OfflineCultTestBootstrap {
                 });
         PlatformLoader loader = (PlatformLoader) Proxy.newProxyInstance(
                 PlatformLoader.class.getClassLoader(),
-                new Class<?>[]{PlatformLoader.class},
+                new Class<?>[] {PlatformLoader.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "getPermissionManager" -> noOpPermissions;
                     case "getPlugin" -> grimPlugin;
@@ -223,18 +231,23 @@ public final class OfflineCultTestBootstrap {
             Class<?> globalConfigurationClass = Class.forName("io.papermc.paper.configuration.GlobalConfiguration");
             java.lang.reflect.Method getMethod = globalConfigurationClass.getDeclaredMethod("get");
             Object current = getMethod.invoke(null);
-            Object globalConfiguration = current == null ? globalConfigurationClass.getConstructor().newInstance() : current;
+            Object globalConfiguration =
+                    current == null ? globalConfigurationClass.getConstructor().newInstance() : current;
             // Paper's Connection static initializer reads Misc.maxJoinsPerTick; its
             // constructor reads PacketLimiter. Supply the same defaults as Paper.
-            for (String field : new String[]{"unsupportedSettings", "misc", "packetLimiter"}) {
+            for (String field : new String[] {"unsupportedSettings", "misc", "packetLimiter"}) {
                 java.lang.reflect.Field configField = globalConfigurationClass.getField(field);
                 if (configField.get(globalConfiguration) == null) {
-                    Object defaults = configField.getType().getConstructor(globalConfigurationClass).newInstance(globalConfiguration);
+                    Object defaults = configField
+                            .getType()
+                            .getConstructor(globalConfigurationClass)
+                            .newInstance(globalConfiguration);
                     configField.set(globalConfiguration, defaults);
                 }
             }
 
-            java.lang.reflect.Method setMethod = globalConfigurationClass.getDeclaredMethod("set", globalConfigurationClass);
+            java.lang.reflect.Method setMethod =
+                    globalConfigurationClass.getDeclaredMethod("set", globalConfigurationClass);
             setMethod.setAccessible(true);
             setMethod.invoke(null, globalConfiguration);
         } catch (ReflectiveOperationException exception) {
@@ -248,23 +261,44 @@ public final class OfflineCultTestBootstrap {
         }
         Bukkit.setServer((Server) Proxy.newProxyInstance(
                 Server.class.getClassLoader(),
-                new Class[]{Server.class},
+                new Class[] {Server.class},
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "getViewDistance", "getSimulationDistance", "getSpawnRadius", "getMaxWorldSize", "getCurrentTick" -> 10;
-                    case "getPort", "getMaxPlayers", "getIdleTimeout", "getPauseWhenEmptyTime", "getMaxChainedNeighborUpdates" -> 0;
+                    case "getViewDistance",
+                            "getSimulationDistance",
+                            "getSpawnRadius",
+                            "getMaxWorldSize",
+                            "getCurrentTick" -> 10;
+                    case "getPort",
+                            "getMaxPlayers",
+                            "getIdleTimeout",
+                            "getPauseWhenEmptyTime",
+                            "getMaxChainedNeighborUpdates" -> 0;
                     case "getLogger" -> Logger.getLogger("OfflineBedrockReplay");
                     case "getUnsafe" -> unsafeValues();
                     case "getPluginManager" -> pluginManager();
                     case "createBlockData" -> createBlockData(args);
-                    case "getName", "getVersion", "getBukkitVersion", "getMinecraftVersion", "getIp",
-                         "getWorldType", "getUpdateFolder", "getResourcePack", "getResourcePackHash",
-                         "getResourcePackPrompt", "getShutdownMessage", "getMotd", "getPermissionMessage" -> "";
-                    case "getWorlds", "getOnlinePlayers", "matchPlayer", "getInitialEnabledPacks", "getInitialDisabledPacks" -> List.of();
+                    case "getName",
+                            "getVersion",
+                            "getBukkitVersion",
+                            "getMinecraftVersion",
+                            "getIp",
+                            "getWorldType",
+                            "getUpdateFolder",
+                            "getResourcePack",
+                            "getResourcePackHash",
+                            "getResourcePackPrompt",
+                            "getShutdownMessage",
+                            "getMotd",
+                            "getPermissionMessage" -> "";
+                    case "getWorlds",
+                            "getOnlinePlayers",
+                            "matchPlayer",
+                            "getInitialEnabledPacks",
+                            "getInitialDisabledPacks" -> List.of();
                     case "getWhitelistedPlayers", "getBannedPlayers", "getOperators", "getIPBans" -> Set.of();
                     case "isPrimaryThread" -> true;
                     default -> defaultValue(method.getReturnType());
-                }
-        ));
+                }));
     }
 
     private static UnsafeValues unsafeValues() {
@@ -350,17 +384,15 @@ public final class OfflineCultTestBootstrap {
         }
         OfflineCultTestBootstrap.pluginManager = (PluginManager) Proxy.newProxyInstance(
                 PluginManager.class.getClassLoader(),
-                new Class<?>[]{PluginManager.class},
+                new Class<?>[] {PluginManager.class},
                 (proxy, method, args) -> defaultValue(method.getReturnType()));
         return OfflineCultTestBootstrap.pluginManager;
     }
 
     @SuppressWarnings("removal")
     private static JavaPlugin plugin() {
-        PluginDescriptionFile description = new PluginDescriptionFile(
-                "CultACOfflineReplay",
-                "offline-bedrock-replay",
-                "ac.cult.cultac.CultAC");
+        PluginDescriptionFile description =
+                new PluginDescriptionFile("CultACOfflineReplay", "offline-bedrock-replay", "ac.cult.cultac.CultAC");
         File dataFolder = new File("build/offline-bedrock-replay-plugin");
         dataFolder.mkdirs();
         return new OfflineJavaPlugin(
@@ -372,19 +404,17 @@ public final class OfflineCultTestBootstrap {
 
     @SuppressWarnings("removal")
     public static final class OfflineJavaPlugin extends JavaPlugin {
-        private OfflineJavaPlugin(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
+        private OfflineJavaPlugin(
+                JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
             super(loader, description, dataFolder, file);
         }
     }
 
     @SuppressWarnings("unchecked")
     private static BlockData createBlockData(Object[] args) {
-        Material material = args != null && args.length > 0 && args[0] instanceof Material value
-                ? value
-                : Material.AIR;
+        Material material = args != null && args.length > 0 && args[0] instanceof Material value ? value : Material.AIR;
         Identifier id = Identifier.fromNamespaceAndPath(
-                material.getKey().getNamespace(),
-                material.getKey().getKey());
+                material.getKey().getNamespace(), material.getKey().getKey());
         var block = BuiltInRegistries.BLOCK.getValue(id);
         var state = block == null ? Blocks.AIR.defaultBlockState() : block.defaultBlockState();
         BlockData data = CraftBlockData.createData(state);

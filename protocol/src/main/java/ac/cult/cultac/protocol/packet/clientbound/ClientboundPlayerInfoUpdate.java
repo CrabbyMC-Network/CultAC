@@ -2,7 +2,6 @@ package ac.cult.cultac.protocol.packet.clientbound;
 
 import ac.cult.cultac.protocol.value.ByteArray;
 import ac.cult.cultac.protocol.value.GameMode;
-
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -20,8 +19,14 @@ public record ClientboundPlayerInfoUpdate(Set<Action> actions, List<Entry> entri
     }
 
     public enum Action {
-        ADD_PLAYER, INITIALIZE_CHAT, UPDATE_GAME_MODE, UPDATE_LISTED, UPDATE_LATENCY,
-        UPDATE_DISPLAY_NAME, UPDATE_LIST_ORDER, UPDATE_HAT
+        ADD_PLAYER,
+        INITIALIZE_CHAT,
+        UPDATE_GAME_MODE,
+        UPDATE_LISTED,
+        UPDATE_LATENCY,
+        UPDATE_DISPLAY_NAME,
+        UPDATE_LIST_ORDER,
+        UPDATE_HAT
     }
 
     /**
@@ -34,7 +39,8 @@ public record ClientboundPlayerInfoUpdate(Set<Action> actions, List<Entry> entri
             Objects.requireNonNull(gameMode);
             var copy = new EnumMap<Action, ByteArray>(Action.class);
             encodedActions.forEach((action, bytes) -> copy.put(action, Objects.requireNonNull(bytes)));
-            if (copy.containsKey(Action.UPDATE_GAME_MODE)) throw new IllegalArgumentException("Game mode is not opaque");
+            if (copy.containsKey(Action.UPDATE_GAME_MODE))
+                throw new IllegalArgumentException("Game mode is not opaque");
             encodedActions = Collections.unmodifiableMap(copy);
         }
     }

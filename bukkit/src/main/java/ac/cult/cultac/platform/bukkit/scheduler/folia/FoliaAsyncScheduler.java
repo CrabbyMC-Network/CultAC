@@ -1,13 +1,12 @@
 package ac.cult.cultac.platform.bukkit.scheduler.folia;
 
-import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.cult.cultac.platform.api.scheduler.AsyncScheduler;
 import ac.cult.cultac.platform.api.scheduler.TaskHandle;
 import ac.cult.cultac.platform.bukkit.CultACBukkitLoaderPlugin;
+import ac.grim.grimac.api.plugin.GrimPlugin;
+import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.TimeUnit;
 
 public class FoliaAsyncScheduler implements AsyncScheduler {
 
@@ -19,35 +18,28 @@ public class FoliaAsyncScheduler implements AsyncScheduler {
     }
 
     @Override
-    public TaskHandle runDelayed(@NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, @NotNull TimeUnit timeUnit) {
-        return new FoliaTaskHandle(scheduler.runDelayed(
-                CultACBukkitLoaderPlugin.LOADER,
-                ignored -> task.run(),
-                delay,
-                timeUnit
-        ));
+    public TaskHandle runDelayed(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, @NotNull TimeUnit timeUnit) {
+        return new FoliaTaskHandle(
+                scheduler.runDelayed(CultACBukkitLoaderPlugin.LOADER, ignored -> task.run(), delay, timeUnit));
     }
 
     @Override
-    public TaskHandle runAtFixedRate(@NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, long period, @NotNull TimeUnit timeUnit) {
+    public TaskHandle runAtFixedRate(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, long period, @NotNull TimeUnit timeUnit) {
         return new FoliaTaskHandle(scheduler.runAtFixedRate(
-                CultACBukkitLoaderPlugin.LOADER,
-                ignored -> task.run(),
-                delay,
-                period,
-                timeUnit
-        ));
+                CultACBukkitLoaderPlugin.LOADER, ignored -> task.run(), delay, period, timeUnit));
     }
 
     @Override
-    public TaskHandle runAtFixedRate(@NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks) {
+    public TaskHandle runAtFixedRate(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks) {
         return new FoliaTaskHandle(scheduler.runAtFixedRate(
                 CultACBukkitLoaderPlugin.LOADER,
                 ignored -> task.run(),
                 initialDelayTicks * 50,
                 periodTicks * 50,
-                TimeUnit.MILLISECONDS
-        ));
+                TimeUnit.MILLISECONDS));
     }
 
     @Override

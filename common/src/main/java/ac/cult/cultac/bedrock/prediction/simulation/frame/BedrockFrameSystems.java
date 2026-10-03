@@ -3,17 +3,14 @@ package ac.cult.cultac.bedrock.prediction.simulation.frame;
 import ac.cult.cultac.bedrock.prediction.api.BedrockFluidMovementSource;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputIntent;
-import ac.cult.cultac.bedrock.prediction.world.JumpPreventionState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockDolphinBoost;
+import ac.cult.cultac.bedrock.prediction.world.JumpPreventionState;
 
 public final class BedrockFrameSystems {
-    private BedrockFrameSystems() {
-    }
+    private BedrockFrameSystems() {}
 
     public static BedrockFrameState prepare(
-        BedrockTravelInput input,
-        BedrockMobJumpComponentState initialMobJumpComponent
-    ) {
+            BedrockTravelInput input, BedrockMobJumpComponentState initialMobJumpComponent) {
         if (input.previousState().isBoat()) return BedrockBoatMovement.prepare(input, initialMobJumpComponent);
         var state = input.previousState();
         var context = input.worldSnapshot().movementContext();
@@ -24,87 +21,86 @@ public final class BedrockFrameSystems {
                 // Cancellation uses the same attribute transition as STOP, never just the flag.
                 float side = (float) input.control().x();
                 float forward = (float) input.control().z();
-                if (forward <= 0 || Math.abs(side) > 0.70710677F
+                if (forward <= 0
+                        || Math.abs(side) > 0.70710677F
                         || (float) Math.sqrt(side * side + forward * forward) < 0.70710677F) {
                     state = state.applySprintAction(false);
                 }
             }
         }
         var attributes = state.attributes().apply(context.attributeState());
-        if (!state.isVehicle()) attributes = attributes.withMovementSpeed(state.movementAttribute().current());
+        if (!state.isVehicle())
+            attributes = attributes.withMovementSpeed(state.movementAttribute().current());
         context = new ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext(
-            context.effectState(), attributes, context.worldState(), context.equipmentState(),
-            context.entityContactState(), context.modifierState(), context.playerDimensionsState());
-        input = new BedrockTravelInput(state, input.inputFrame(), input.inputIntent(),
-            input.worldSnapshot().withMovementContext(context), input.scaffoldingVerticalBranch(),
-            input.startingVelocity(), input.options(), input.control(), input.glideBoost());
+                context.effectState(),
+                attributes,
+                context.worldState(),
+                context.equipmentState(),
+                context.entityContactState(),
+                context.modifierState(),
+                context.playerDimensionsState());
+        input = new BedrockTravelInput(
+                state,
+                input.inputFrame(),
+                input.inputIntent(),
+                input.worldSnapshot().withMovementContext(context),
+                input.scaffoldingVerticalBranch(),
+                input.startingVelocity(),
+                input.options(),
+                input.control(),
+                input.glideBoost());
         BedrockInputIntent intent = input.inputIntent();
         Vec3d velocity = input.startingVelocity();
 
         BedrockRiptideMovement.ActorNormalTick spinAttack = BedrockRiptideMovement.tickActorNormal(
-            input.previousState(),
-            input.inputFrame(),
-            intent,
-            input.worldSnapshot().movementContext(),
-            velocity
-        );
+                input.previousState(),
+                input.inputFrame(),
+                intent,
+                input.worldSnapshot().movementContext(),
+                velocity);
         BedrockRiptideMovement.Step riptide = spinAttack.step();
         velocity = spinAttack.velocity();
 
         // Launch velocity uses carried water state; sensing precedes the requested resize.
         BedrockFrameFacts facts = BedrockFrameFacts.from(input, riptide.spinActive(), spinAttack.spinAttackStarted());
-        var cameraWater = BedrockUnderwaterSensing.update(input.previousState(), input.previousState().cameraWater(),
-            facts.context(), input.previousState().physicalFeetPosition(), input.previousState().playerDimensions());
+        var cameraWater = BedrockUnderwaterSensing.update(
+                input.previousState(),
+                input.previousState().cameraWater(),
+                facts.context(),
+                input.previousState().physicalFeetPosition(),
+                input.previousState().playerDimensions());
         BedrockLiquidJumpContact liquidContact = BedrockLiquidJumpContact.from(
-            facts, input.previousState().physicalFeetPosition(), cameraWater.headInWater());
-
+                facts, input.previousState().physicalFeetPosition(), cameraWater.headInWater());
 
         boolean actorSprinting = input.previousState().sprinting();
         BedrockTravelInputControl.InputControlState control = BedrockTravelInputControl.resolve(
-            input.previousState(),
-            input.inputFrame(),
-            actorSprinting,
-            input.options().sprintTravelSpeedMode(),
-            input.options().sprintJumpImpulseMode(),
-            intent,
-            facts.context(),
-            facts.effectState()
-        );
+                input.previousState(),
+                input.inputFrame(),
+                actorSprinting,
+                input.options().sprintTravelSpeedMode(),
+                input.options().sprintJumpImpulseMode(),
+                intent,
+                facts.context(),
+                facts.effectState());
 
         BedrockFluidMovementSource movementSource = BedrockFluidMovementSourceResolver.fromContext(
-            facts.context(),
-            input.previousState().physicalFeetPosition().y()
-        );
+                facts.context(), input.previousState().physicalFeetPosition().y());
         velocity = velocity.add(movementSource.appliedDelta());
-        BedrockSwimmingMovement.SwimmingState swimming = facts.swimming().afterActions(
-            intent, facts.context().inWater());
+        BedrockSwimmingMovement.SwimmingState swimming =
+                facts.swimming().afterActions(intent, facts.context().inWater());
         facts = facts.withSwimming(swimming);
 
-        BedrockGlideState gliding = BedrockGlidingTravelMovement.resolve(
-            input.previousState(),
-            intent,
-            facts.context()
-        );
+        BedrockGlideState gliding =
+                BedrockGlidingTravelMovement.resolve(input.previousState(), intent, facts.context());
         facts = facts.withClimb(BedrockClimbMovement.resolveActions(
-            input.previousState(),
-            input.inputFrame(),
-            intent,
-            facts.climb(),
-            input.scaffoldingVerticalBranch()
-        ));
+                input.previousState(), input.inputFrame(), intent, facts.climb(), input.scaffoldingVerticalBranch()));
 
         if (facts.inWater()
-            && BedrockLiquidVerticalMovement.descendInput(intent)
-            && !facts.context().movementAbilityFlying()) {
+                && BedrockLiquidVerticalMovement.descendInput(intent)
+                && !facts.context().movementAbilityFlying()) {
             velocity = BedrockLiquidVerticalMovement.waterDescendVelocity(velocity);
         }
-        velocity = BedrockGlideInputMovement.apply(
-            velocity,
-            input.previousState(),
-            intent,
-            facts.context(),
-            gliding
-        );
+        velocity = BedrockGlideInputMovement.apply(velocity, input.previousState(), intent, facts.context(), gliding);
         BedrockScaffoldingAction scaffoldingAction = BedrockScaffoldingAction.resolve(facts.climb());
         if (scaffoldingAction.active()) {
             velocity = new Vec3d(velocity.x(), scaffoldingAction.moveY(), velocity.z());
@@ -120,30 +116,17 @@ public final class BedrockFrameSystems {
         boolean groundJumpApplied = input.options().travelActive() && mobJump.groundJumpRequest();
         if (groundJumpApplied) {
             JumpPreventionState jumpPreventionState = BedrockJumpPreventionResolver.resolve(
-                facts.context(),
-                input.previousState().physicalFeetPosition(),
-                input.previousState().collisionFlags().onGround()
-            );
+                    facts.context(),
+                    input.previousState().physicalFeetPosition(),
+                    input.previousState().collisionFlags().onGround());
             double jumpVelocity = BedrockJumpMovement.jumpVelocity(
-                facts.effectState(),
-                facts.context().attributeState().jumpStrength(),
-                jumpPreventionState
-            );
+                    facts.effectState(), facts.context().attributeState().jumpStrength(), jumpPreventionState);
             velocity = BedrockJumpMovement.groundLaunchVelocity(
-                velocity,
-                input.inputFrame(),
-                jumpVelocity,
-                control.sprintJumpImpulseActive()
-            );
+                    velocity, input.inputFrame(), jumpVelocity, control.sprintJumpImpulseActive());
         }
         if (BedrockWaterSwimControl.applies(facts, input.inputFrame())) {
             velocity = BedrockWaterSwimControl.lookAdjustedVelocity(
-                velocity,
-                input.inputFrame(),
-                intent,
-                facts.context(),
-                liquidContact.waterHeadInWater()
-            );
+                    velocity, input.inputFrame(), intent, facts.context(), liquidContact.waterHeadInWater());
         }
 
         var horse = input.previousState().horse();
@@ -153,44 +136,48 @@ public final class BedrockFrameSystems {
             velocity = jump.velocity();
             groundJumpApplied = jump.launched();
         } else {
-            cameraWater = BedrockCameraMovement.afterActions(input, cameraWater,
-                swimming.actorStateAfterActions(), gliding.activeAfterActions(), riptide.spinActive());
+            cameraWater = BedrockCameraMovement.afterActions(
+                    input,
+                    cameraWater,
+                    swimming.actorStateAfterActions(),
+                    gliding.activeAfterActions(),
+                    riptide.spinActive());
         }
 
-        BedrockDolphinBoost dolphinBoost = input.previousState().dolphinBoost().tick(
-            swimming.actorStateAfterActions(), facts.context().dolphinBoostAvailable());
-        facts = facts.withContext(BedrockFluidStateResolver.withSwimSpeedMultiplier(
-            facts.context(), dolphinBoost.multiplier()));
+        BedrockDolphinBoost dolphinBoost = input.previousState()
+                .dolphinBoost()
+                .tick(swimming.actorStateAfterActions(), facts.context().dolphinBoostAvailable());
+        facts = facts.withContext(
+                BedrockFluidStateResolver.withSwimSpeedMultiplier(facts.context(), dolphinBoost.multiplier()));
 
         // Teleport ticks skip travel selection.
         BedrockTravelSelection selection = !input.options().travelActive()
-            ? new BedrockTravelSelection(BedrockTravelType.NONE, input.previousState().movementBranch())
-            : BedrockTravelTypeResolver.resolve(
-            facts.context(),
-
-            facts.inWater(),
-            facts.lavaTravelFlag(),
-            travelSensingOnGround(input, facts),
-            gliding.activeAtTravelSensing(),
-            facts.climb().climbing()
-        );
+                ? new BedrockTravelSelection(
+                        BedrockTravelType.NONE, input.previousState().movementBranch())
+                : BedrockTravelTypeResolver.resolve(
+                        facts.context(),
+                        facts.inWater(),
+                        facts.lavaTravelFlag(),
+                        travelSensingOnGround(input, facts),
+                        gliding.activeAtTravelSensing(),
+                        facts.climb().climbing());
         return new BedrockFrameState(
-            input,
-            intent,
-            facts,
-            gliding,
-            new BedrockTravelBranch(selection),
-            actorSprinting,
-            control,
-            riptide,
-            mobJumpComponent,
-            velocity,
-            mobJump,
-            dolphinBoost,
-            groundJumpApplied,
-            cameraWater,
-            horse, null
-        );
+                input,
+                intent,
+                facts,
+                gliding,
+                new BedrockTravelBranch(selection),
+                actorSprinting,
+                control,
+                riptide,
+                mobJumpComponent,
+                velocity,
+                mobJump,
+                dolphinBoost,
+                groundJumpApplied,
+                cameraWater,
+                horse,
+                null);
     }
 
     private static boolean travelSensingOnGround(BedrockTravelInput input, BedrockFrameFacts facts) {

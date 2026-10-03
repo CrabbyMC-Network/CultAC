@@ -15,27 +15,25 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package ac.cult.cultac.utils.data.packetentity;
 
-import ac.cult.cultac.network.protocol.ClientVersion;
-
+import ac.cult.cultac.network.packet.EntityPositionPath;
 import ac.cult.cultac.network.packet.PacketCodecUtil;
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.BoatData;
 import ac.cult.cultac.utils.data.ReachInterpolationData;
-import ac.cult.cultac.network.packet.EntityPositionPath;
 import ac.cult.cultac.utils.enums.BoatEntityStatus;
+import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
-import net.minecraft.world.phys.Vec3;
-import lombok.Getter;
-import net.minecraft.world.entity.EntityType;
-import org.bukkit.potion.PotionEffectType;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import lombok.Getter;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.Nullable;
 
 // You may not copy this check unless your anticheat is licensed under GPL
 public class PacketEntity {
@@ -78,9 +76,11 @@ public class PacketEntity {
     public HashMap<PotionEffectType, Integer> potionsMap = null;
     public BoatEntityStatus boatStatus = null;
 
-    @Getter private final int entityId;
+    @Getter
+    private final int entityId;
 
-    public PacketEntity(EntityType type, int entityId) { this.entityId = entityId;
+    public PacketEntity(EntityType type, int entityId) {
+        this.entityId = entityId;
         this.type = type;
     }
 
@@ -91,7 +91,8 @@ public class PacketEntity {
         this.clientPhysicalPosition = spawnPosition;
         SimpleCollisionBox spawnBox = GetBoundingBox.getPacketEntityBoundingBox(cultPlayer, x, y, z, this);
         boolean ridingInVehicle = cultPlayer.compensatedEntities.getSelf().inVehicle();
-        this.newPacketLocation = new ReachInterpolationData(cultPlayer, spawnBox, x, y, z, !ridingInVehicle, this, false);
+        this.newPacketLocation =
+                new ReachInterpolationData(cultPlayer, spawnBox, x, y, z, !ridingInVehicle, this, false);
     }
 
     public EntityType getType() {
@@ -123,28 +124,48 @@ public class PacketEntity {
     }
 
     public boolean isSize() {
-        return type == EntityTypesCompat.PHANTOM || type == EntityTypesCompat.SLIME || type == EntityTypesCompat.MAGMA_CUBE;
+        return type == EntityTypesCompat.PHANTOM
+                || type == EntityTypesCompat.SLIME
+                || type == EntityTypesCompat.MAGMA_CUBE;
     }
 
-    public boolean isStrider() { return type == EntityTypesCompat.STRIDER; }
+    public boolean isStrider() {
+        return type == EntityTypesCompat.STRIDER;
+    }
 
     // Set the old packet location to the new one
     // Set the new packet location to the updated packet location
-    public void onFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onFirstTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         onFirstTransaction(relative, hasPos, relX, relY, relZ, null, null, player, true);
     }
 
-    public void onFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                   @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onFirstTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         onFirstTransaction(relative, hasPos, relX, relY, relZ, yaw, pitch, player, true);
     }
 
-    public void onBundleFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onBundleFirstTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         onBundleFirstTransaction(relative, hasPos, relX, relY, relZ, null, null, player);
     }
 
-    public void onBundleFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                         @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onBundleFirstTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         // MCP-Reborn ClientPacketListener#handleBundlePacket handles bundled
         // sub-packets in order. The first bundled ClientboundPingPacket proves
         // that any later client movement was produced after the packet handler
@@ -154,9 +175,16 @@ public class PacketEntity {
         onFirstTransaction(relative, hasPos, relX, relY, relZ, yaw, pitch, player, false);
     }
 
-    private void onFirstTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                    @Nullable Float yaw, @Nullable Float pitch,
-                                    CultPlayer player, boolean uncertainInitialSteps) {
+    private void onFirstTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player,
+            boolean uncertainInitialSteps) {
         applyEntityPositionUpdate(relative, hasPos, relX, relY, relZ);
         if (desyncClientPos == null) {
             return;
@@ -164,55 +192,106 @@ public class PacketEntity {
 
         float targetYaw = interpolationTargetYaw(yaw);
         float targetPitch = interpolationTargetPitch(pitch);
-        if (matchesActiveInterpolationTarget(desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, targetYaw, targetPitch)) {
+        if (matchesActiveInterpolationTarget(
+                desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, targetYaw, targetPitch)) {
             return;
         }
 
         SimpleCollisionBox startingLocation = interpolationStartingLocation(player);
         boolean ridingInVehicle = player.compensatedEntities.getSelf().inVehicle();
         this.oldPacketLocation = newPacketLocation;
-        this.newPacketLocation = new ReachInterpolationData(player, startingLocation,
-                desyncClientPos.x, desyncClientPos.y, desyncClientPos.z,
-                clientPhysicalYaw, clientPhysicalPitch, targetYaw, targetPitch,
-                !ridingInVehicle, this, uncertainInitialSteps);
+        this.newPacketLocation = new ReachInterpolationData(
+                player,
+                startingLocation,
+                desyncClientPos.x,
+                desyncClientPos.y,
+                desyncClientPos.z,
+                clientPhysicalYaw,
+                clientPhysicalPitch,
+                targetYaw,
+                targetPitch,
+                !ridingInVehicle,
+                this,
+                uncertainInitialSteps);
     }
 
     /** Packet processing appends to the client's queue; its codec base remains separate. */
-    public void onPositionPath(EntityPositionPath path, boolean hasPosition, @Nullable Float yaw,
-                               @Nullable Float pitch, CultPlayer player, boolean bundled) {
+    public void onPositionPath(
+            EntityPositionPath path,
+            boolean hasPosition,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player,
+            boolean bundled) {
         if (hasPosition) desyncClientPos = path.endPosition();
-        if (type == EntityTypesCompat.SHULKER || (!EntityTypeUtil.isLiving(type)
-                && !EntityTypeUtil.isBoat(type) && !EntityTypeUtil.isMinecart(type)
-                && type != EntityTypesCompat.FISHING_BOBBER)) {
-            setPositionRaw(GetBoundingBox.getPacketEntityBoundingBox(player, desyncClientPos.x,
-                    desyncClientPos.y, desyncClientPos.z, this), interpolationTargetYaw(yaw), interpolationTargetPitch(pitch));
+        if (type == EntityTypesCompat.SHULKER
+                || (!EntityTypeUtil.isLiving(type)
+                        && !EntityTypeUtil.isBoat(type)
+                        && !EntityTypeUtil.isMinecart(type)
+                        && type != EntityTypesCompat.FISHING_BOBBER)) {
+            setPositionRaw(
+                    GetBoundingBox.getPacketEntityBoundingBox(
+                            player, desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, this),
+                    interpolationTargetYaw(yaw),
+                    interpolationTargetPitch(pitch));
             return;
         }
-        if (EntityTypeUtil.isLiving(type) && (newPacketLocation == null || !newPacketLocation.usesSteppedInterpolation())) {
+        if (EntityTypeUtil.isLiving(type)
+                && (newPacketLocation == null || !newPacketLocation.usesSteppedInterpolation())) {
             SimpleCollisionBox start = interpolationStartingLocation(player);
             Vec3 current = positionFromCollisionBox(start);
-            newPacketLocation = new ReachInterpolationData(player, start, current.x, current.y, current.z,
-                    clientPhysicalYaw, clientPhysicalPitch, clientPhysicalYaw, clientPhysicalPitch, false, this, false);
+            newPacketLocation = new ReachInterpolationData(
+                    player,
+                    start,
+                    current.x,
+                    current.y,
+                    current.z,
+                    clientPhysicalYaw,
+                    clientPhysicalPitch,
+                    clientPhysicalYaw,
+                    clientPhysicalPitch,
+                    false,
+                    this,
+                    false);
         }
         if (newPacketLocation != null && newPacketLocation.usesSteppedInterpolation()) {
             float targetYaw = interpolationTargetYaw(yaw);
             float targetPitch = interpolationTargetPitch(pitch);
-            EntityPositionPath actualPath = hasPosition ? path : EntityPositionPath.linear(
-                    newPacketLocation.hasActiveInterpolationTarget()
-                            ? positionFromCollisionBox(newPacketLocation.getTargetLocation()) : clientPhysicalPosition);
+            EntityPositionPath actualPath = hasPosition
+                    ? path
+                    : EntityPositionPath.linear(
+                            newPacketLocation.hasActiveInterpolationTarget()
+                                    ? positionFromCollisionBox(newPacketLocation.getTargetLocation())
+                                    : clientPhysicalPosition);
             oldPacketLocation = bundled ? null : newPacketLocation;
             newPacketLocation = newPacketLocation.copy();
             // Starting/appending an interpolation records the entity's physical transform,
             // including its current passenger attachment, as the next delta reference.
-            newPacketLocation.setPhysicalBeforePathAppend(actualPath, targetYaw, targetPitch,
-                    clientPhysicalPosition, clientPhysicalYaw, clientPhysicalPitch);
+            newPacketLocation.setPhysicalBeforePathAppend(
+                    actualPath, targetYaw, targetPitch, clientPhysicalPosition, clientPhysicalYaw, clientPhysicalPitch);
             newPacketLocation.appendPath(actualPath, targetYaw, targetPitch);
             return;
         }
-        if (bundled) onBundleTransaction(false, hasPosition, path.endPosition().x, path.endPosition().y,
-                path.endPosition().z, yaw, pitch, player);
-        else onFirstTransaction(false, hasPosition, path.endPosition().x, path.endPosition().y,
-                path.endPosition().z, yaw, pitch, player);
+        if (bundled)
+            onBundleTransaction(
+                    false,
+                    hasPosition,
+                    path.endPosition().x,
+                    path.endPosition().y,
+                    path.endPosition().z,
+                    yaw,
+                    pitch,
+                    player);
+        else
+            onFirstTransaction(
+                    false,
+                    hasPosition,
+                    path.endPosition().x,
+                    path.endPosition().y,
+                    path.endPosition().z,
+                    yaw,
+                    pitch,
+                    player);
     }
 
     private void applyEntityPositionUpdate(boolean relative, boolean hasPos, double relX, double relY, double relZ) {
@@ -224,12 +303,20 @@ public class PacketEntity {
                 : new Vec3(relX, relY, relZ);
     }
 
-    public void onBundleTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
+    public void onBundleTransaction(
+            boolean relative, boolean hasPos, double relX, double relY, double relZ, CultPlayer player) {
         onBundleTransaction(relative, hasPos, relX, relY, relZ, null, null, player);
     }
 
-    public void onBundleTransaction(boolean relative, boolean hasPos, double relX, double relY, double relZ,
-                                    @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
+    public void onBundleTransaction(
+            boolean relative,
+            boolean hasPos,
+            double relX,
+            double relY,
+            double relZ,
+            @Nullable Float yaw,
+            @Nullable Float pitch,
+            CultPlayer player) {
         if (hasPos) {
             if (relative) {
                 desyncClientPos = PacketCodecUtil.decodeRelativeEntityPosition(desyncClientPos, relX, relY, relZ);
@@ -245,14 +332,24 @@ public class PacketEntity {
         SimpleCollisionBox startingLocation = interpolationStartingLocation(player);
         float targetYaw = interpolationTargetYaw(yaw);
         float targetPitch = interpolationTargetPitch(pitch);
-        if (matchesActiveInterpolationTarget(desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, targetYaw, targetPitch)) {
+        if (matchesActiveInterpolationTarget(
+                desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, targetYaw, targetPitch)) {
             return;
         }
         this.oldPacketLocation = null;
-        this.newPacketLocation = new ReachInterpolationData(player, startingLocation,
-                desyncClientPos.x, desyncClientPos.y, desyncClientPos.z,
-                clientPhysicalYaw, clientPhysicalPitch, targetYaw, targetPitch,
-                !player.compensatedEntities.getSelf().inVehicle(), this, false);
+        this.newPacketLocation = new ReachInterpolationData(
+                player,
+                startingLocation,
+                desyncClientPos.x,
+                desyncClientPos.y,
+                desyncClientPos.z,
+                clientPhysicalYaw,
+                clientPhysicalPitch,
+                targetYaw,
+                targetPitch,
+                !player.compensatedEntities.getSelf().inVehicle(),
+                this,
+                false);
     }
 
     private float interpolationTargetYaw(@Nullable Float yaw) {
@@ -273,8 +370,8 @@ public class PacketEntity {
                 : clientPhysicalPitch;
     }
 
-    public boolean matchesActiveInterpolationTarget(double x, double y, double z,
-                                                    @Nullable Float yaw, @Nullable Float pitch) {
+    public boolean matchesActiveInterpolationTarget(
+            double x, double y, double z, @Nullable Float yaw, @Nullable Float pitch) {
         return matchesActiveInterpolationTarget(x, y, z, interpolationTargetYaw(yaw), interpolationTargetPitch(pitch));
     }
 
@@ -290,9 +387,7 @@ public class PacketEntity {
     }
 
     private boolean matchesPosition(Vec3 position, double x, double y, double z) {
-        return matchesCoordinate(position.x, x)
-                && matchesCoordinate(position.y, y)
-                && matchesCoordinate(position.z, z);
+        return matchesCoordinate(position.x, x) && matchesCoordinate(position.y, y) && matchesCoordinate(position.z, z);
     }
 
     private boolean matchesCoordinate(double expected, double actual) {
@@ -308,11 +403,13 @@ public class PacketEntity {
 
     private SimpleCollisionBox interpolationStartingLocation(CultPlayer player) {
         if (hasUsableMountedPhysicalPosition(player)) {
-            return GetBoundingBox.getPacketEntityBoundingBox(player, clientPhysicalPosition.x, clientPhysicalPosition.y, clientPhysicalPosition.z, this);
+            return GetBoundingBox.getPacketEntityBoundingBox(
+                    player, clientPhysicalPosition.x, clientPhysicalPosition.y, clientPhysicalPosition.z, this);
         }
 
         return newPacketLocation == null
-                ? GetBoundingBox.getPacketEntityBoundingBox(player, desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, this)
+                ? GetBoundingBox.getPacketEntityBoundingBox(
+                        player, desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, this)
                 : newPacketLocation.getPossibleMovementLocationCombined();
     }
 
@@ -320,9 +417,8 @@ public class PacketEntity {
         onBundledPositionSyncTransaction(x, y, z, null, null, player);
     }
 
-    public void onBundledPositionSyncTransaction(double x, double y, double z,
-                                                 @Nullable Float yaw, @Nullable Float pitch,
-                                                 CultPlayer player) {
+    public void onBundledPositionSyncTransaction(
+            double x, double y, double z, @Nullable Float yaw, @Nullable Float pitch, CultPlayer player) {
         // MCP-Reborn ClientPacketListener#handleEntityPositionSync calls
         // moveOrInterpolateTo for normal active entities. ClientLevel#isTickingEntity
         // is membership in EntityTickList, not "currently inside this entity's
@@ -376,22 +472,19 @@ public class PacketEntity {
             oldPacketLocation.tickMovement(true, tickingReliably);
             newPacketLocation.updatePossibleStartingLocation(oldPacketLocation.getPossibleMovementLocationCombined());
         }
-
     }
 
     public void tickPacketInterpolationPreservingPhysical(CultPlayer player, Vec3 physicalPosition) {
         tickPacketInterpolationPreservingPhysical(player, physicalPosition, clientPhysicalYaw, clientPhysicalPitch);
     }
 
-    public void tickPacketInterpolationPreservingPhysical(CultPlayer player, Vec3 physicalPosition, float physicalYaw, float physicalPitch) {
+    public void tickPacketInterpolationPreservingPhysical(
+            CultPlayer player, Vec3 physicalPosition, float physicalYaw, float physicalPitch) {
         tickPacketInterpolationPreservingPhysical(player, physicalPosition, physicalYaw, physicalPitch, true);
     }
 
-    private void tickPacketInterpolationPreservingPhysical(CultPlayer player,
-                                                           Vec3 physicalPosition,
-                                                           float physicalYaw,
-                                                           float physicalPitch,
-                                                           boolean carryTarget) {
+    private void tickPacketInterpolationPreservingPhysical(
+            CultPlayer player, Vec3 physicalPosition, float physicalYaw, float physicalPitch, boolean carryTarget) {
         if (carryTarget) {
             carryInterpolationTargetByLocalPhysics(player);
         }
@@ -418,15 +511,18 @@ public class PacketEntity {
         this.clientPhysicalPitch = physicalPitch;
     }
 
-    public void tickPacketInterpolationPreservingPhysical(CultPlayer player, Vec3 physicalPosition, ReachInterpolationData interpolationData) {
-        tickPacketInterpolationPreservingPhysical(player, physicalPosition, interpolationData, clientPhysicalYaw, clientPhysicalPitch);
+    public void tickPacketInterpolationPreservingPhysical(
+            CultPlayer player, Vec3 physicalPosition, ReachInterpolationData interpolationData) {
+        tickPacketInterpolationPreservingPhysical(
+                player, physicalPosition, interpolationData, clientPhysicalYaw, clientPhysicalPitch);
     }
 
-    public void tickPacketInterpolationPreservingPhysical(CultPlayer player,
-                                                          Vec3 physicalPosition,
-                                                          ReachInterpolationData interpolationData,
-                                                          float physicalYaw,
-                                                          float physicalPitch) {
+    public void tickPacketInterpolationPreservingPhysical(
+            CultPlayer player,
+            Vec3 physicalPosition,
+            ReachInterpolationData interpolationData,
+            float physicalYaw,
+            float physicalPitch) {
         this.oldPacketLocation = null;
         this.newPacketLocation = interpolationData.copy();
         tickPacketInterpolationPreservingPhysical(player, physicalPosition, physicalYaw, physicalPitch);
@@ -457,26 +553,22 @@ public class PacketEntity {
     }
 
     private void syncDesyncClientPosToInterpolationTarget(ReachInterpolationData interpolationData) {
-        if (!interpolationData.usesSteppedInterpolation() && interpolationData == newPacketLocation && interpolationData.hasActiveInterpolationTarget()) {
+        if (!interpolationData.usesSteppedInterpolation()
+                && interpolationData == newPacketLocation
+                && interpolationData.hasActiveInterpolationTarget()) {
             this.desyncClientPos = positionFromCollisionBox(interpolationData.getTargetLocation());
         }
     }
 
     private SimpleCollisionBox exactInterpolatedLocationAfterClientTick(CultPlayer player) {
-        if (newPacketLocation == null
-                || !hasUsableMountedPhysicalPosition(player)
-                || oldPacketLocation != null) {
+        if (newPacketLocation == null || !hasUsableMountedPhysicalPosition(player) || oldPacketLocation != null) {
             return newPacketLocation == null ? null : newPacketLocation.getExactMovementLocationAfterClientTick();
         }
 
         SimpleCollisionBox physicalLocation = GetBoundingBox.getPacketEntityBoundingBox(
-                player,
-                clientPhysicalPosition.x,
-                clientPhysicalPosition.y,
-                clientPhysicalPosition.z,
-                this
-        );
-        SimpleCollisionBox exactFromPhysical = newPacketLocation.getExactMovementLocationAfterClientTickFromPhysical(physicalLocation);
+                player, clientPhysicalPosition.x, clientPhysicalPosition.y, clientPhysicalPosition.z, this);
+        SimpleCollisionBox exactFromPhysical =
+                newPacketLocation.getExactMovementLocationAfterClientTickFromPhysical(physicalLocation);
         return exactFromPhysical == null
                 ? newPacketLocation.getExactMovementLocationAfterClientTick()
                 : exactFromPhysical;
@@ -491,7 +583,8 @@ public class PacketEntity {
 
     private boolean hasUsableMountedPhysicalPosition(CultPlayer player) {
         return clientPhysicalPosition != null
-                && (clientPhysicalPositionExact || this == player.compensatedEntities.vehicles.getVelocityMovementVehicle());
+                && (clientPhysicalPositionExact
+                        || this == player.compensatedEntities.vehicles.getVelocityMovementVehicle());
     }
 
     private float exactYawAfterClientTick() {
@@ -516,7 +609,8 @@ public class PacketEntity {
         if (isBoat() && newPacketLocation != null) {
             // MCP-Reborn AbstractBoat#tick updates status even for client-side
             // non-controlled boats before deciding whether local physics runs.
-            boatStatus = BoatData.sampleStatus(player, getPossibleMovementCollisionBoxes()).status();
+            boatStatus = BoatData.sampleStatus(player, getPossibleMovementCollisionBoxes())
+                    .status();
         }
     }
 
@@ -575,18 +669,15 @@ public class PacketEntity {
     }
 
     private Vec3 positionFromCollisionBox(SimpleCollisionBox box) {
-        return new Vec3(
-                (box.maxX - box.minX) / 2 + box.minX,
-                box.minY,
-                (box.maxZ - box.minZ) / 2 + box.minZ
-        );
+        return new Vec3((box.maxX - box.minX) / 2 + box.minX, box.minY, (box.maxZ - box.minZ) / 2 + box.minZ);
     }
 
     public void refreshDimensions(CultPlayer player) {
         if (desyncClientPos == null) {
             return;
         }
-        setPositionRaw(GetBoundingBox.getPacketEntityBoundingBox(player, desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, this));
+        setPositionRaw(GetBoundingBox.getPacketEntityBoundingBox(
+                player, desyncClientPos.x, desyncClientPos.y, desyncClientPos.z, this));
     }
 
     public SimpleCollisionBox getPossibleCollisionBoxes() {
@@ -595,7 +686,8 @@ public class PacketEntity {
             return newPacketLocation.getPossibleLocationCombined();
         }
 
-        return ReachInterpolationData.combineCollisionBox(oldPacketLocation.getPossibleLocationCombined(), newPacketLocation.getPossibleLocationCombined());
+        return ReachInterpolationData.combineCollisionBox(
+                oldPacketLocation.getPossibleLocationCombined(), newPacketLocation.getPossibleLocationCombined());
     }
 
     public SimpleCollisionBox getPossibleMovementCollisionBoxes() {
@@ -604,7 +696,9 @@ public class PacketEntity {
             return newPacketLocation.getPossibleMovementLocationCombined();
         }
 
-        return ReachInterpolationData.combineCollisionBox(oldPacketLocation.getPossibleMovementLocationCombined(), newPacketLocation.getPossibleMovementLocationCombined());
+        return ReachInterpolationData.combineCollisionBox(
+                oldPacketLocation.getPossibleMovementLocationCombined(),
+                newPacketLocation.getPossibleMovementLocationCombined());
     }
 
     public List<SimpleCollisionBox> getPossibleMovementCollisionBoxCandidates() {

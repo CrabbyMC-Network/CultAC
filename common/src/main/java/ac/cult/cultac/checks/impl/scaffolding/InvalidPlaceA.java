@@ -6,7 +6,10 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import net.minecraft.world.phys.Vec3;
 
-@CheckData(name = "InvalidPlaceA", stableKey = "cult.scaffolding.invalid_place_a", description = "Sent invalid cursor position")
+@CheckData(
+        name = "InvalidPlaceA",
+        stableKey = "cult.scaffolding.invalid_place_a",
+        description = "Sent invalid cursor position")
 public class InvalidPlaceA extends BlockPlaceCheck {
     public InvalidPlaceA(CultPlayer player) {
         super(player);
@@ -22,5 +25,4 @@ public class InvalidPlaceA extends BlockPlaceCheck {
             }
         }
     }
-
 }

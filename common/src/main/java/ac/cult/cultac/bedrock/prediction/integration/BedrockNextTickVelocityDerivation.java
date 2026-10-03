@@ -11,8 +11,7 @@ import java.util.Set;
 import net.minecraft.world.phys.Vec3;
 
 final class BedrockNextTickVelocityDerivation {
-    private BedrockNextTickVelocityDerivation() {
-    }
+    private BedrockNextTickVelocityDerivation() {}
 
     static Set<Vec3> profileStateVelocities(List<BedrockProfileState.Entry> profileStates) {
         LinkedHashSet<Vec3> startingVelocities = new LinkedHashSet<>();
@@ -23,19 +22,17 @@ final class BedrockNextTickVelocityDerivation {
     }
 
     static Derived fromAcceptedDiff(
-        BedrockMovementResult movementResult,
-        List<BedrockProfileState.Entry> baseEntries,
-        Vec3 acceptedDiff,
-        boolean selectedXCollision,
-        boolean selectedZCollision,
-        boolean canStep
-    ) {
+            BedrockMovementResult movementResult,
+            List<BedrockProfileState.Entry> baseEntries,
+            Vec3 acceptedDiff,
+            boolean selectedXCollision,
+            boolean selectedZCollision,
+            boolean canStep) {
         LinkedHashSet<Vec3> startingVelocities = new LinkedHashSet<>();
         LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> derivedEntries = new LinkedHashMap<>();
         LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> sourceEntries = sourceEntries(baseEntries);
         Vec3d bedrockAcceptedDiff = BedrockVectorAdapter.toBedrock(acceptedDiff);
-        List<BedrockSimulation.NextState> derivedStates =
-            BedrockSimulation.deriveNextStates(
+        List<BedrockSimulation.NextState> derivedStates = BedrockSimulation.deriveNextStates(
                 movementResult,
                 baseEntries.stream().map(BedrockProfileState.Entry::state).toList(),
                 bedrockAcceptedDiff,
@@ -51,8 +48,7 @@ final class BedrockNextTickVelocityDerivation {
     }
 
     private static LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> sourceEntries(
-        List<BedrockProfileState.Entry> baseEntries
-    ) {
+            List<BedrockProfileState.Entry> baseEntries) {
         LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> sourceEntries = new LinkedHashMap<>();
         for (BedrockProfileState.Entry entry : baseEntries) {
             sourceEntries.putIfAbsent(entry.state(), entry);
@@ -61,15 +57,12 @@ final class BedrockNextTickVelocityDerivation {
     }
 
     private static BedrockProfileState.Entry entryFor(
-        LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> sourceEntries,
-        BedrockSimulation.NextState derivedState
-    ) {
+            LinkedHashMap<BedrockMovementState, BedrockProfileState.Entry> sourceEntries,
+            BedrockSimulation.NextState derivedState) {
         BedrockProfileState.Entry sourceEntry = sourceEntries.get(derivedState.lineageState());
         return new BedrockProfileState.Entry(
-            derivedState.state(),
-            sourceEntry == null ? null : sourceEntry.mobJumpComponent());
+                derivedState.state(), sourceEntry == null ? null : sourceEntry.mobJumpComponent());
     }
 
-    record Derived(List<BedrockProfileState.Entry> entries, Set<Vec3> startingVelocities) {
-    }
+    record Derived(List<BedrockProfileState.Entry> entries, Set<Vec3> startingVelocities) {}
 }

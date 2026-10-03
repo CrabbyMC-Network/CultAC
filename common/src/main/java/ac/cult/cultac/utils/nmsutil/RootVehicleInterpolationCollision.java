@@ -9,29 +9,23 @@ import org.bukkit.GameMode;
 public final class RootVehicleInterpolationCollision {
     private static final double SAME_POSITION_DISTANCE_SQ = 1.0E-10D;
 
-    private RootVehicleInterpolationCollision() {
-    }
+    private RootVehicleInterpolationCollision() {}
 
-    public static boolean shouldShiftRootInterpolationTarget(CultPlayer player, PacketEntity vehicle,
-                                                             Vec3 target, Vec3 delta) {
+    public static boolean shouldShiftRootInterpolationTarget(
+            CultPlayer player, PacketEntity vehicle, Vec3 target, Vec3 delta) {
         if (delta.lengthSqr() <= SAME_POSITION_DISTANCE_SQ) {
             return false;
         }
 
         Vec3 shiftedTarget = target.add(delta);
         SimpleCollisionBox shiftedBox = GetBoundingBox.getPacketEntityBoundingBox(
-                player,
-                shiftedTarget.x,
-                shiftedTarget.y,
-                shiftedTarget.z,
-                vehicle
-        );
+                player, shiftedTarget.x, shiftedTarget.y, shiftedTarget.z, vehicle);
         return Collisions.isEmpty(player, shiftedBox, shiftedTarget.y)
                 && hasNoRootVehicleEntityCollision(player, vehicle, shiftedBox);
     }
 
-    private static boolean hasNoRootVehicleEntityCollision(CultPlayer player, PacketEntity vehicle,
-                                                           SimpleCollisionBox box) {
+    private static boolean hasNoRootVehicleEntityCollision(
+            CultPlayer player, PacketEntity vehicle, SimpleCollisionBox box) {
         SimpleCollisionBox inflatedBox = box.copy().expand(SimpleCollisionBox.COLLISION_EPSILON);
         if (!hasNoLocalPlayerCollision(player, vehicle, inflatedBox)) {
             return false;
@@ -49,8 +43,8 @@ public final class RootVehicleInterpolationCollision {
         return true;
     }
 
-    private static boolean hasNoLocalPlayerCollision(CultPlayer player, PacketEntity vehicle,
-                                                     SimpleCollisionBox inflatedBox) {
+    private static boolean hasNoLocalPlayerCollision(
+            CultPlayer player, PacketEntity vehicle, SimpleCollisionBox inflatedBox) {
         PacketEntity self = player.compensatedEntities.getSelf();
         if (!canCollideWithRootVehicle(vehicle, self)) {
             return true;
@@ -62,11 +56,7 @@ public final class RootVehicleInterpolationCollision {
         }
 
         SimpleCollisionBox playerBox = GetBoundingBox.getPlayerBoundingBox(
-                player,
-                localPlayerPosition.x,
-                localPlayerPosition.y,
-                localPlayerPosition.z
-        );
+                player, localPlayerPosition.x, localPlayerPosition.y, localPlayerPosition.z);
         return !inflatedBox.isIntersected(playerBox);
     }
 

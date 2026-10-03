@@ -1,4 +1,3 @@
-
 package ac.cult.cultac.checks.impl.prediction;
 
 import ac.cult.cultac.bedrock.prediction.BedrockPredictionDebug;
@@ -7,8 +6,8 @@ import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.CollisionModifier;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.ExternalMovementUncertainty;
 import ac.cult.cultac.checks.type.PostPredictionListener;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.platform.api.sender.Sender;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
@@ -27,7 +26,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-//@CheckData(name = "Prediction (Debug)")
+// @CheckData(name = "Prediction (Debug)")
 public class DebugHandler extends CultProcessor implements PostPredictionListener {
     private final Map<UUID, Sender> rewindListeners = new ConcurrentHashMap<>();
 
@@ -50,22 +49,26 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
     }
 
     private void removeInvalidRewindListeners() {
-        rewindListeners.values().removeIf(sender -> !sender.isValid()
-                || sender.getPlatformPlayer() != null && !sender.getPlatformPlayer().isOnline()
-                || !sender.hasPermission("cult.debug"));
+        rewindListeners
+                .values()
+                .removeIf(sender -> !sender.isValid()
+                        || sender.getPlatformPlayer() != null
+                                && !sender.getPlatformPlayer().isOnline()
+                        || !sender.hasPermission("cult.debug"));
     }
 
-    final static Set<UUID> DEVELOPERS = ImmutableSet.of(
+    static final Set<UUID> DEVELOPERS = ImmutableSet.of(
             UUID.fromString("aadd63d0-e545-4cc2-8449-734a6dba0b85"),
-            UUID.fromString("12f4db7a-8b9c-48d9-8571-533ca27170f0")
-    );
+            UUID.fromString("12f4db7a-8b9c-48d9-8571-533ca27170f0"));
 
     public static boolean isDeveloper(CommandSender commandSender) {
         if (!(commandSender instanceof Player bukkitPlayer)) return false;
         return DEVELOPERS.contains(bukkitPlayer.getUniqueId());
     }
 
-    public static boolean isDeveloper(UUID uuid) { return DEVELOPERS.contains(uuid); }
+    public static boolean isDeveloper(UUID uuid) {
+        return DEVELOPERS.contains(uuid);
+    }
 
     Set<Player> listeners = new CopyOnWriteArraySet<>(new HashSet<>());
     boolean outputToConsole = false;
@@ -82,11 +85,10 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
         if (predictionComplete.isTeleport()) return;
 
         PredictionResult result = predictionComplete.getPredictionResult();
-        PredictionResult lastResult = player.checkManager.getSimulationProcessor().getLastPrediction();
-        BedrockPredictionDebug.MovementDebugView debugView = BedrockPredictionDebug.movementDebugView(
-                player,
-                result,
-                getDebugPredictionVector(result));
+        PredictionResult lastResult =
+                player.checkManager.getSimulationProcessor().getLastPrediction();
+        BedrockPredictionDebug.MovementDebugView debugView =
+                BedrockPredictionDebug.movementDebugView(player, result, getDebugPredictionVector(result));
         double offset = debugView.offset();
         Vec3 predictedWithInputs = debugView.predictedWithInputs();
         Vec3 target = debugView.target();
@@ -96,19 +98,22 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
         boolean inVehicle = isVehiclePrediction(result);
         boolean positionsTooUncertain = positionsTooUncertainToCheck(inVehicle);
         boolean fullyExempt = predictionComplete.isExempt() && !positionsTooUncertain;
-        ChatColor color = debugView.missingObservation() ? ChatColor.GRAY : pickColor(offset, positionsTooUncertain, fullyExempt);
+        ChatColor color =
+                debugView.missingObservation() ? ChatColor.GRAY : pickColor(offset, positionsTooUncertain, fullyExempt);
         ChatColor labelColor = positionsTooUncertain ? ChatColor.GRAY : fullyExempt ? ChatColor.BLUE : ChatColor.WHITE;
-        String external = formatExternalMovementDebug(result, lastResult, externalUncertaintyColor(positionsTooUncertain, fullyExempt));
+        String external = formatExternalMovementDebug(
+                result, lastResult, externalUncertaintyColor(positionsTooUncertain, fullyExempt));
 
         // This is pointless debug unless an external movement uncertainty is active.
         if (!debugView.missingObservation() && target.lengthSqr() == 0 && offset == 0 && external == null) return;
 
         String p = labelColor + "P: " + color + NumFormatter.formatVectorDebug(predictedWithInputs);
         String a = labelColor + "A: " + color + NumFormatter.formatVector(target);
-        String o = labelColor + "O: " + color + (debugView.missingObservation()
-                ? "engine-missing"
-                : formatOffsetDebug(offset));
-        String b = outputToConsole ? BedrockPredictionDebug.formatConsoleDebug(player, predictionComplete, labelColor, color) : null;
+        String o = labelColor + "O: " + color
+                + (debugView.missingObservation() ? "engine-missing" : formatOffsetDebug(offset));
+        String b = outputToConsole
+                ? BedrockPredictionDebug.formatConsoleDebug(player, predictionComplete, labelColor, color)
+                : null;
 
         String prefix = player.bukkitPlayer == null ? "null" : player.bukkitPlayer.getName() + " ";
 
@@ -130,8 +135,11 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
 
             // Java valid-movement envelopes are not authoritative for Bedrock authored-input prediction.
             if (player == getPlayer().bukkitPlayer && getPlayer().bedrockState == null) {
-                ChatColor uncertaintyColor = positionsTooUncertain ? ChatColor.GRAY : fullyExempt ? ChatColor.BLUE : ChatColor.LIGHT_PURPLE;
-                SimpleCollisionBox validStarting = result.getValidMovements().getCollisionIgnoredMaxStartingVelExtents().copy();
+                ChatColor uncertaintyColor =
+                        positionsTooUncertain ? ChatColor.GRAY : fullyExempt ? ChatColor.BLUE : ChatColor.LIGHT_PURPLE;
+                SimpleCollisionBox validStarting = result.getValidMovements()
+                        .getCollisionIgnoredMaxStartingVelExtents()
+                        .copy();
 
                 for (PredictionResult reality : result.getRealities()) {
                     validStarting.union(reality.getValidMovements().getCollisionIgnoredMaxStartingVelExtents());
@@ -140,8 +148,10 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
                 Vec3 max = validStarting.max();
                 Vec3 min = validStarting.min();
 
-                max = CollisionModifier.transformWithCollisions(result.getSimulationContext(), result.getCollideAxisData(), new PredVector(max), target);
-                min = CollisionModifier.transformWithCollisions(result.getSimulationContext(), result.getCollideAxisData(), new PredVector(min), target);
+                max = CollisionModifier.transformWithCollisions(
+                        result.getSimulationContext(), result.getCollideAxisData(), new PredVector(max), target);
+                min = CollisionModifier.transformWithCollisions(
+                        result.getSimulationContext(), result.getCollideAxisData(), new PredVector(min), target);
 
                 if (!max.equals(min)) {
                     player.sendMessage(uncertaintyColor + NumFormatter.formatVector(min));
@@ -186,7 +196,8 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
         boolean appended = false;
         if (snapshot.hasExternalMove()) {
             appended = appendPart(builder, appended, "t  " + formatBracketedVector(snapshot.maxAbsTargetDelta()));
-            appended = appendPart(builder, appended, "r " + formatBracketedVector(snapshot.maxAbsClientPositionOnlyDelta()));
+            appended = appendPart(
+                    builder, appended, "r " + formatBracketedVector(snapshot.maxAbsClientPositionOnlyDelta()));
         }
         if (positionOnlyDelta.lengthSqr() > 1.0E-14) {
             appended = appendPart(builder, appended, "c " + formatBracketedVector(positionOnlyDelta));
@@ -217,11 +228,12 @@ public class DebugHandler extends CultProcessor implements PostPredictionListene
         return inVehicle
                 ? player.getSetbackTeleportUtil().shouldBlockVehicleMovement()
                 : player.getSetbackTeleportUtil().shouldBlockMovement()
-                || player.getSetbackTeleportUtil().insideUnloadedChunk();
+                        || player.getSetbackTeleportUtil().insideUnloadedChunk();
     }
 
     private boolean isVehiclePrediction(PredictionResult result) {
-        return result.getSimulationContext() != null && result.getSimulationContext().getVehicle() != null;
+        return result.getSimulationContext() != null
+                && result.getSimulationContext().getVehicle() != null;
     }
 
     private ChatColor externalUncertaintyColor(boolean positionsTooUncertain, boolean fullyExempt) {

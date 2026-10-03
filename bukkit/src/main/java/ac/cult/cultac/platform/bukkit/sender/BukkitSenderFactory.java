@@ -3,6 +3,7 @@ package ac.cult.cultac.platform.bukkit.sender;
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.platform.api.sender.SenderFactory;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -13,8 +14,6 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.incendo.cloud.SenderMapper;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.UUID;
 
 public class BukkitSenderFactory extends SenderFactory<CommandSender> implements SenderMapper<CommandSender, Sender> {
     @Override
@@ -35,13 +34,15 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> implements
     @Override
     protected void sendMessage(CommandSender sender, Component message) {
         // we can safely send async for players and the console - otherwise, send it sync
-        if (sender instanceof Player || sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
+        if (sender instanceof Player
+                || sender instanceof ConsoleCommandSender
+                || sender instanceof RemoteConsoleCommandSender) {
             BukkitComponentSender.sendMessage(sender, message);
         } else {
-            CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().run(
-                    CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> BukkitComponentSender.sendMessage(sender, message)
-            );
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getGlobalRegionScheduler()
+                    .run(CultAPI.INSTANCE.getGrimPlugin(), () -> BukkitComponentSender.sendMessage(sender, message));
         }
     }
 
@@ -52,7 +53,8 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> implements
 
     @Override
     protected boolean hasPermission(CommandSender sender, String node, boolean defaultIfUnset) {
-        return sender.hasPermission(new Permission(node, defaultIfUnset ? PermissionDefault.TRUE : PermissionDefault.FALSE));
+        return sender.hasPermission(
+                new Permission(node, defaultIfUnset ? PermissionDefault.TRUE : PermissionDefault.FALSE));
     }
 
     @Override

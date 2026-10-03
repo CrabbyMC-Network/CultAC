@@ -1,16 +1,19 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "BadPacketsF", stableKey = "cult.badpackets.duplicate_sprint", description = "Sent duplicate sprinting status")
+@CheckData(
+        name = "BadPacketsF",
+        stableKey = "cult.badpackets.duplicate_sprint",
+        description = "Sent duplicate sprinting status")
 public class BadPacketsF extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("state={bool}");
 
@@ -22,7 +25,8 @@ public class BadPacketsF extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+    public void onPlayerCommand(
+            PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (packet.action() == PlayerCommandAction.START_SPRINTING) {
             if (lastSprinting) {
                 if (exemptNext) {

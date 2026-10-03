@@ -6,17 +6,16 @@ import ac.cult.cultac.manager.init.start.StartableInitable;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.math.Location;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.GameMode;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
+import org.jetbrains.annotations.NotNull;
 
 public class SpectateManager implements StartableInitable, ReloadableInitable {
 
@@ -34,8 +33,12 @@ public class SpectateManager implements StartableInitable, ReloadableInitable {
     @Override
     public void reload() {
         allowedWorlds.clear();
-        allowedWorlds.addAll(CultAPI.INSTANCE.getConfigManager().getConfig().getStringListElse("spectators.allowed-worlds", new ArrayList<>()));
-        checkWorld = !(allowedWorlds.isEmpty() || new ArrayList<>(allowedWorlds).get(0).isEmpty());
+        allowedWorlds.addAll(CultAPI.INSTANCE
+                .getConfigManager()
+                .getConfig()
+                .getStringListElse("spectators.allowed-worlds", new ArrayList<>()));
+        checkWorld = !(allowedWorlds.isEmpty()
+                || new ArrayList<>(allowedWorlds).get(0).isEmpty());
     }
 
     public boolean isSpectating(UUID uuid) {
@@ -44,14 +47,22 @@ public class SpectateManager implements StartableInitable, ReloadableInitable {
 
     public boolean shouldHidePlayer(CultPlayer receiver, UUID uuid) {
         return !Objects.equals(uuid, receiver.playerUUID) // don't hide to yourself
-                && (spectatingPlayers.containsKey(uuid) || hiddenPlayers.contains(uuid)) //hide if you are a spectator
-                && !(receiver.playerUUID != null && (spectatingPlayers.containsKey(receiver.playerUUID) || hiddenPlayers.contains(receiver.playerUUID))) // don't hide to other spectators
-                && (!checkWorld || (receiver.platformPlayer != null && allowedWorlds.contains(receiver.platformPlayer.getWorld().getName()))); // hide if you are in a specific world
+                && (spectatingPlayers.containsKey(uuid) || hiddenPlayers.contains(uuid)) // hide if you are a spectator
+                && !(receiver.playerUUID != null
+                        && (spectatingPlayers.containsKey(receiver.playerUUID)
+                                || hiddenPlayers.contains(receiver.playerUUID))) // don't hide to other spectators
+                && (!checkWorld
+                        || (receiver.platformPlayer != null
+                                && allowedWorlds.contains(receiver.platformPlayer
+                                        .getWorld()
+                                        .getName()))); // hide if you are in a specific world
     }
 
     public boolean enable(PlatformPlayer platformPlayer) {
         if (spectatingPlayers.containsKey(platformPlayer.getUniqueId())) return false;
-        spectatingPlayers.put(platformPlayer.getUniqueId(), new PreviousState(platformPlayer.getGameMode(), platformPlayer.getLocation()));
+        spectatingPlayers.put(
+                platformPlayer.getUniqueId(),
+                new PreviousState(platformPlayer.getGameMode(), platformPlayer.getLocation()));
         return true;
     }
 
@@ -73,7 +84,8 @@ public class SpectateManager implements StartableInitable, ReloadableInitable {
                     if (bool) {
                         onDisable(previousState, platformPlayer);
                     } else {
-                        platformPlayer.sendMessage(Component.text("Teleport failed, please try again.", NamedTextColor.RED));
+                        platformPlayer.sendMessage(
+                                Component.text("Teleport failed, please try again.", NamedTextColor.RED));
                     }
                 });
             } else {

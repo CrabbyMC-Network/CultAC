@@ -5,5 +5,7 @@ import java.util.Objects;
 
 public record ServerboundMoveVehicle(Vec3d position, float yaw, float pitch, boolean onGround, boolean hasOnGround)
         implements ServerboundPacket {
-    public ServerboundMoveVehicle { Objects.requireNonNull(position); }
+    public ServerboundMoveVehicle {
+        Objects.requireNonNull(position);
+    }
 }

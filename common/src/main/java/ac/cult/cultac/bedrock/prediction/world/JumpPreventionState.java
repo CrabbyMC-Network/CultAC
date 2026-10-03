@@ -4,9 +4,7 @@ import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import java.util.Objects;
 import java.util.Optional;
 
-public record JumpPreventionState(
-    Optional<BlockPosition> blockingBlockPosition
-) {
+public record JumpPreventionState(Optional<BlockPosition> blockingBlockPosition) {
     public static final JumpPreventionState NONE = new JumpPreventionState(Optional.empty());
 
     public JumpPreventionState {
@@ -20,5 +18,4 @@ public record JumpPreventionState(
     public boolean active() {
         return blockingBlockPosition.isPresent();
     }
-
 }

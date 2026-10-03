@@ -15,7 +15,12 @@ public final class ClientboundPlayerAbilitiesCodec implements PacketCodec<Client
     @Override
     public ClientboundPlayerAbilities read(ByteBuf input, ProtocolContext context) {
         int flags = input.readByte();
-        return new ClientboundPlayerAbilities((flags & 0x01) != 0, (flags & 0x02) != 0,
-                (flags & 0x04) != 0, (flags & 0x08) != 0, input.readFloat(), input.readFloat());
+        return new ClientboundPlayerAbilities(
+                (flags & 0x01) != 0,
+                (flags & 0x02) != 0,
+                (flags & 0x04) != 0,
+                (flags & 0x08) != 0,
+                input.readFloat(),
+                input.readFloat());
     }
 }

@@ -1,15 +1,14 @@
 package ac.cult.cultac.manager.datastore;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.AbstractCheck;
 import ac.cult.cultac.checks.impl.misc.ClientBrand;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
+import ac.grim.grimac.api.AbstractCheck;
+import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Plugin-side facade that fans out player-lifecycle and flag events into the
@@ -70,17 +69,11 @@ public interface LiveWriteHooks {
      * are warned once and swallowed (the legacy violation write already ran).
      */
     void recordFlagFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            @Nullable String verbose);
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, @Nullable String verbose);
 
     /** Binary-verbose counterpart to {@link #recordFlagFromCheck(CultPlayer, AbstractCheck, double, String)}. */
     void recordFlagDataFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            byte @Nullable [] verboseData);
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, byte @Nullable [] verboseData);
 
     /**
      * Build the {@link SessionTracker.ClientMeta} stamped on session upserts
@@ -88,8 +81,7 @@ public interface LiveWriteHooks {
      * non-null) for the captured client brand. Public so tests and other
      * callers can mint a meta with the same shape the impl uses.
      */
-    static @NotNull SessionTracker.ClientMeta clientMetaFor(
-            @NotNull User user, @Nullable CultPlayer gp) {
+    static @NotNull SessionTracker.ClientMeta clientMetaFor(@NotNull User user, @Nullable CultPlayer gp) {
         String grimVersion = CultAPI.INSTANCE.getExternalAPI().getGrimVersion();
         int clientVersionPvn = gp != null
                 ? gp.getClientVersion().getProtocolVersion()
@@ -109,15 +101,48 @@ public interface LiveWriteHooks {
      * empty — the convenience overloads' arg-building is skipped too.
      */
     LiveWriteHooks NOOP = new LiveWriteHooks() {
-        @Override public void onJoin(@NotNull UUID u, @Nullable String n, long t, @NotNull SessionTracker.ClientMeta m) {}
-        @Override public void onQuit(@NotNull UUID u, long t, @NotNull SessionTracker.ClientMeta m) {}
-        @Override public void observeBrand(@NotNull UUID u, long t, @NotNull SessionTracker.ClientMeta m) {}
-        @Override public void recordFlag(@NotNull UUID u, @NotNull AbstractCheck c, double v, @Nullable String vb, long t, @NotNull SessionTracker.ClientMeta m) {}
-        @Override public void recordFlagData(@NotNull UUID u, @NotNull AbstractCheck c, double v, byte @Nullable [] d, long t, @NotNull SessionTracker.ClientMeta m) {}
-        @Override public void onJoinFromUserLogin(@NotNull PlatformPlayer p, @NotNull User u, long t) {}
-        @Override public void onQuitFromUserDisconnect(@NotNull User u, @Nullable CultPlayer g, long t) {}
-        @Override public void observeBrandFromCheck(@NotNull CultPlayer g) {}
-        @Override public void recordFlagFromCheck(@NotNull CultPlayer p, @NotNull AbstractCheck c, double v, @Nullable String vb) {}
-        @Override public void recordFlagDataFromCheck(@NotNull CultPlayer p, @NotNull AbstractCheck c, double v, byte @Nullable [] d) {}
+        @Override
+        public void onJoin(@NotNull UUID u, @Nullable String n, long t, @NotNull SessionTracker.ClientMeta m) {}
+
+        @Override
+        public void onQuit(@NotNull UUID u, long t, @NotNull SessionTracker.ClientMeta m) {}
+
+        @Override
+        public void observeBrand(@NotNull UUID u, long t, @NotNull SessionTracker.ClientMeta m) {}
+
+        @Override
+        public void recordFlag(
+                @NotNull UUID u,
+                @NotNull AbstractCheck c,
+                double v,
+                @Nullable String vb,
+                long t,
+                @NotNull SessionTracker.ClientMeta m) {}
+
+        @Override
+        public void recordFlagData(
+                @NotNull UUID u,
+                @NotNull AbstractCheck c,
+                double v,
+                byte @Nullable [] d,
+                long t,
+                @NotNull SessionTracker.ClientMeta m) {}
+
+        @Override
+        public void onJoinFromUserLogin(@NotNull PlatformPlayer p, @NotNull User u, long t) {}
+
+        @Override
+        public void onQuitFromUserDisconnect(@NotNull User u, @Nullable CultPlayer g, long t) {}
+
+        @Override
+        public void observeBrandFromCheck(@NotNull CultPlayer g) {}
+
+        @Override
+        public void recordFlagFromCheck(
+                @NotNull CultPlayer p, @NotNull AbstractCheck c, double v, @Nullable String vb) {}
+
+        @Override
+        public void recordFlagDataFromCheck(
+                @NotNull CultPlayer p, @NotNull AbstractCheck c, double v, byte @Nullable [] d) {}
     };
 }

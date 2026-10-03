@@ -8,7 +8,12 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-@CheckData(name = "SprintB", stableKey = "cult.sprint.sneaking", description = "Sprinting while sneaking or crawling", setback = 5, experimental = true)
+@CheckData(
+        name = "SprintB",
+        stableKey = "cult.sprint.sneaking",
+        description = "Sprinting while sneaking or crawling",
+        setback = 5,
+        experimental = true)
 public final class SprintB extends Check implements PostPredictionListener {
     public SprintB(CultPlayer player) {
         super(player);

@@ -1,9 +1,8 @@
 package ac.cult.cultac.utils.data;
 
-import net.minecraft.world.phys.Vec3;
 import lombok.Data;
 import lombok.ToString;
-
+import net.minecraft.world.phys.Vec3;
 
 @Data
 @ToString
@@ -42,9 +41,20 @@ public class TransactionVel implements TransactionOrder {
             this.teleportRevision = teleportRevision;
         }
 
-        @Override public long getBedrockTeleportRevision() { return teleportRevision; }
-        @Override public boolean equals(Object other) { return this == other; }
-        @Override public int hashCode() { return System.identityHashCode(this); }
+        @Override
+        public long getBedrockTeleportRevision() {
+            return teleportRevision;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return this == other;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(this);
+        }
     }
 
     public void addOffset(double offset) {

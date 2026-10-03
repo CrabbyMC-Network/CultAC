@@ -1,8 +1,7 @@
 package ac.cult.cultac.platform.api.scheduler;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A cross-platform scheduler for scheduling tasks across different Minecraft server platforms.
@@ -133,7 +132,8 @@ public interface PlatformScheduler {
      *
      * @return The async task scheduler.
      */
-    @NotNull AsyncScheduler getAsyncScheduler();
+    @NotNull
+    AsyncScheduler getAsyncScheduler();
 
     /**
      * Returns the global region task scheduler.
@@ -163,7 +163,8 @@ public interface PlatformScheduler {
      *
      * @return The global region scheduler.
      */
-    @NotNull GlobalRegionScheduler getGlobalRegionScheduler();
+    @NotNull
+    GlobalRegionScheduler getGlobalRegionScheduler();
 
     /**
      * Returns the entity task scheduler.
@@ -200,7 +201,8 @@ public interface PlatformScheduler {
      *
      * @return The entity task scheduler.
      */
-    @NotNull EntityScheduler getEntityScheduler();
+    @NotNull
+    EntityScheduler getEntityScheduler();
 
     /**
      * Returns the region task scheduler.
@@ -238,5 +240,6 @@ public interface PlatformScheduler {
      *
      * @return The region task scheduler.
      */
-    @NotNull RegionScheduler getRegionScheduler();
+    @NotNull
+    RegionScheduler getRegionScheduler();
 }

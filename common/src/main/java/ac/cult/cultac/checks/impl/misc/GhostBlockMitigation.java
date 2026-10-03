@@ -1,10 +1,10 @@
 package ac.cult.cultac.checks.impl.misc;
 
-import ac.grim.grimac.api.config.ConfigManager;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.platform.api.world.PlatformWorld;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
+import ac.grim.grimac.api.config.ConfigManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -51,7 +51,8 @@ public class GhostBlockMitigation extends BlockPlaceCheck {
             }
 
             place.resync();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

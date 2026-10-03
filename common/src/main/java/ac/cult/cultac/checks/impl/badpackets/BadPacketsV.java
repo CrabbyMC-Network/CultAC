@@ -1,20 +1,23 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.data.LastInstance;
 import ac.cult.cultac.utils.math.CultMath;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "BadPacketsV", stableKey = "cult.badpackets.slow_move", description = "Did not move far enough", experimental = true)
+@CheckData(
+        name = "BadPacketsV",
+        stableKey = "cult.badpackets.slow_move",
+        description = "Did not move far enough",
+        experimental = true)
 public class BadPacketsV extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("delta={f64}");
 
@@ -28,8 +31,8 @@ public class BadPacketsV extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.canSkipTicks()) return;
 
         // isTickPacket: movement packets count unless they answered a teleport
@@ -39,7 +42,8 @@ public class BadPacketsV extends Check implements CheckListener {
         }
 
         if (packet.hasPosition()) {
-            int positionAtLeastEveryNTicks = player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8) ? 20 : 19;
+            int positionAtLeastEveryNTicks =
+                    player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_8) ? 20 : 19;
 
             if (noReminderTicks < positionAtLeastEveryNTicks && !lastTeleportTicks.hasOccurredSince(1)) {
                 final double x = packet.xOr(player.x);

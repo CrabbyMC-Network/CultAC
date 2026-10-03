@@ -15,12 +15,24 @@ final class GeyserImmediatePacketQueue extends AbstractList<BedrockPacket> {
         this.enqueue = enqueue;
     }
 
-    @Override public boolean add(BedrockPacket packet) {
+    @Override
+    public boolean add(BedrockPacket packet) {
         enqueue.accept(packet, () -> delegate.add(packet));
         return true;
     }
 
-    @Override public BedrockPacket get(int index) { return delegate.get(index); }
-    @Override public int size() { return delegate.size(); }
-    @Override public void clear() { delegate.clear(); }
+    @Override
+    public BedrockPacket get(int index) {
+        return delegate.get(index);
+    }
+
+    @Override
+    public int size() {
+        return delegate.size();
+    }
+
+    @Override
+    public void clear() {
+        delegate.clear();
+    }
 }

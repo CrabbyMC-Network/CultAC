@@ -9,14 +9,13 @@ import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import java.util.Objects;
 
 public record BedrockMovementContext(
-    BedrockEffectState effectState,
-    AttributeState attributeState,
-    WorldContactState worldState,
-    EquipmentState equipmentState,
-    EntityContactState entityContactState,
-    MovementModifierState modifierState,
-    PlayerDimensionsState playerDimensionsState
-) {
+        BedrockEffectState effectState,
+        AttributeState attributeState,
+        WorldContactState worldState,
+        EquipmentState equipmentState,
+        EntityContactState entityContactState,
+        MovementModifierState modifierState,
+        PlayerDimensionsState playerDimensionsState) {
     public BedrockMovementContext {
         effectState = Objects.requireNonNull(effectState, "effectState");
         attributeState = Objects.requireNonNull(attributeState, "attributeState");
@@ -121,26 +120,17 @@ public record BedrockMovementContext(
 
     public BedrockMovementContext withPlayerDimensions(PlayerDimensionsState dimensions) {
         return new BedrockMovementContext(
-            effectState,
-            attributeState,
-            worldState,
-            equipmentState,
-            entityContactState,
-            modifierState,
-            dimensions
-        );
+                effectState, attributeState, worldState, equipmentState, entityContactState, modifierState, dimensions);
     }
 
     public BedrockMovementContext withBlockCollisionWorld(BlockCollisionWorld world) {
         return new BedrockMovementContext(
-            effectState,
-            attributeState,
-            worldState.withBlockCollisionWorld(world),
-            equipmentState,
-            entityContactState,
-            modifierState,
-            playerDimensionsState
-        );
+                effectState,
+                attributeState,
+                worldState.withBlockCollisionWorld(world),
+                equipmentState,
+                entityContactState,
+                modifierState,
+                playerDimensionsState);
     }
-
 }

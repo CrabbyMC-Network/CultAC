@@ -1,13 +1,13 @@
 package ac.cult.cultac.events.packets.listeners;
 
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
 import ac.cult.cultac.utils.data.ShulkerData;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import ac.cult.cultac.network.event.PacketSendEvent;
-import org.bukkit.block.data.BlockData;
 import net.minecraft.core.BlockPos;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
+import org.bukkit.block.data.BlockData;
 
 // If a player doesn't get this packet, then they don't know the shulker box is currently opened
 // Meaning if a player enters a chunk with an opened shulker box, they see the shulker box as closed.
@@ -16,14 +16,17 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
 // on shulker boxes to get high lenience.
 //
 public class PacketBlockAction {
-    //HIGH
+    // HIGH
 
     @CultPacketHandler
-    public void onBlockEvent(PacketSendEvent<ClientboundBlockEvent> event, CultPlayer player, ClientboundBlockEvent packet) {
-        BlockPos blockPos = new BlockPos(packet.position().x(), packet.position().y(), packet.position().z());
+    public void onBlockEvent(
+            PacketSendEvent<ClientboundBlockEvent> event, CultPlayer player, ClientboundBlockEvent packet) {
+        BlockPos blockPos = new BlockPos(
+                packet.position().x(), packet.position().y(), packet.position().z());
 
         // The client ignores the state sent to the client.
-        player.latencyUtils.addRealTimeTaskNow(() -> { BlockData existing = player.compensatedWorld.getBlockDataAt(blockPos);
+        player.latencyUtils.addRealTimeTaskNow(() -> {
+            BlockData existing = player.compensatedWorld.getBlockDataAt(blockPos);
             if (NmsBlockTags.isShulkerBox(existing.getMaterial())) {
                 // Param is the number of viewers of the shulker box.
                 // Hashset with .equals() set to be position

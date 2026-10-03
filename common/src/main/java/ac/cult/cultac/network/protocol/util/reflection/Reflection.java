@@ -6,8 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Reflection {
-    private Reflection() {
-    }
+    private Reflection() {}
 
     public static Field getField(Class<?> owner, Class<?> fieldType, int index) {
         List<Field> matches = new ArrayList<>();
@@ -19,7 +18,8 @@ public final class Reflection {
             }
         }
         if (index < 0 || index >= matches.size()) {
-            throw new IllegalArgumentException("Unable to find field " + index + " of type " + fieldType.getName() + " in " + owner.getName());
+            throw new IllegalArgumentException(
+                    "Unable to find field " + index + " of type " + fieldType.getName() + " in " + owner.getName());
         }
         Field field = matches.get(index);
         field.setAccessible(true);
@@ -35,6 +35,7 @@ public final class Reflection {
                 }
             }
         }
-        throw new IllegalArgumentException("Unable to find method " + name + " with " + parameterCount + " parameters on " + owner.getName());
+        throw new IllegalArgumentException(
+                "Unable to find method " + name + " with " + parameterCount + " parameters on " + owner.getName());
     }
 }

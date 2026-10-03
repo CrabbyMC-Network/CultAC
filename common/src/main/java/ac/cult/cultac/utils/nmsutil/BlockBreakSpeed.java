@@ -1,24 +1,26 @@
 package ac.cult.cultac.utils.nmsutil;
 
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import org.bukkit.inventory.ItemStack;
-import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
+import ac.cult.cultac.utils.inventory.ItemUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.GameMode;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.potion.PotionEffectType;
 import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.level.block.state.BlockState;
-import ac.cult.cultac.utils.inventory.ItemUtil;
+import org.bukkit.GameMode;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.craftbukkit.block.data.CraftBlockData;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 
 public class BlockBreakSpeed {
 
-    public static double getBlockDamage(CultPlayer player, BlockPos position) { return getBlockDamage(player, position, false); }
+    public static double getBlockDamage(CultPlayer player, BlockPos position) {
+        return getBlockDamage(player, position, false);
+    }
 
     public static double getBlockDamage(CultPlayer player, BlockPos position, boolean debug) {
         return getBlockDamage(player, position, player.compensatedWorld.getBlockDataAt(position), debug);
@@ -34,7 +36,9 @@ public class BlockBreakSpeed {
 
     public static boolean couldInstantlyBreakBlock(CultPlayer player, BlockState block) {
         for (int slot = 0; slot < 9; slot++) {
-            ItemStack stack = player.getInventory().inventory.getInventoryStorage()
+            ItemStack stack = player.getInventory()
+                    .inventory
+                    .getInventoryStorage()
                     .getItem(ac.cult.cultac.utils.inventory.Inventory.HOTBAR_OFFSET + slot);
             if (getBlockDamage(player, stack, block) >= 1.0D) return true;
         }
@@ -46,12 +50,7 @@ public class BlockBreakSpeed {
     }
 
     private static double getBlockDamage(
-            CultPlayer player,
-            ItemStack tool,
-            BlockState nmsBlock,
-            float blockHardness,
-            boolean debug
-    ) {
+            CultPlayer player, ItemStack tool, BlockState nmsBlock, float blockHardness, boolean debug) {
         net.minecraft.world.item.ItemStack nmsTool = SpigotConversionUtil.toNmsItemStack(tool);
 
         if (player.gamemode == GameMode.CREATIVE) {
@@ -84,7 +83,8 @@ public class BlockBreakSpeed {
 
         Integer miningFatigue = player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.MINING_FATIGUE);
 
-        if (miningFatigue != null && !player.isBedrockMovement()
+        if (miningFatigue != null
+                && !player.isBedrockMovement()
                 && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)) {
             // RC1 Player#getDestroySpeed: cast the factor before multiplying.
             speedMultiplier *= miningFatigueMultiplier(miningFatigue);
@@ -115,10 +115,10 @@ public class BlockBreakSpeed {
             ItemStack leggings = player.getInventory().getLeggings();
             ItemStack boots = player.getInventory().getBoots();
 
-            if ((helmet == null || helmet.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0) &&
-                    (chestplate == null || chestplate.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0) &&
-                    (leggings == null || leggings.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0) &&
-                    (boots == null || boots.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)) {
+            if ((helmet == null || helmet.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
+                    && (chestplate == null || chestplate.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
+                    && (leggings == null || leggings.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
+                    && (boots == null || boots.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)) {
                 speedMultiplier /= 5;
             }
         }
@@ -136,7 +136,7 @@ public class BlockBreakSpeed {
             damage /= 100;
         }
 
-        //if (debug) player.sendMessage("correctTool=" + isCorrectToolForDrop + " canHarvest=" + canHarvest);
+        // if (debug) player.sendMessage("correctTool=" + isCorrectToolForDrop + " canHarvest=" + canHarvest);
 
         return damage;
     }

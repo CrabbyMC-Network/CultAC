@@ -12,8 +12,8 @@ public class QuitEvent implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        CultAPI.INSTANCE.getPlayerDataManager().clearExemptions(
-                CultAPI.INSTANCE.getPlayerDataManager().getUser(player));
+        CultAPI.INSTANCE
+                .getPlayerDataManager()
+                .clearExemptions(CultAPI.INSTANCE.getPlayerDataManager().getUser(player));
     }
-
 }

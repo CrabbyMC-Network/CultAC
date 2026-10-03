@@ -12,8 +12,16 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 
 /** Captures boat metadata for publication at an acknowledged packet boundary. */
-record GeyserBoatMetadata(Float width, Float height, Boolean buoyant, Boolean outOfControl, Boolean leashed,
-        Boolean gravity, Float baseBuoyancy, Set<String> liquids, Vec3d seat) {
+record GeyserBoatMetadata(
+        Float width,
+        Float height,
+        Boolean buoyant,
+        Boolean outOfControl,
+        Boolean leashed,
+        Boolean gravity,
+        Float baseBuoyancy,
+        Set<String> liquids,
+        Vec3d seat) {
     static GeyserBoatMetadata capture(EntityDataMap data) {
         String json = data.get(EntityDataTypes.BUOYANCY_DATA);
         Boolean gravity = null;
@@ -25,7 +33,8 @@ record GeyserBoatMetadata(Float width, Float height, Boolean buoyant, Boolean ou
             object.addProperty("movement_type", "none");
             object.addProperty("simulate_waves", false);
             data.put(EntityDataTypes.BUOYANCY_DATA, object.toString());
-            gravity = !object.has("apply_gravity") || object.get("apply_gravity").getAsBoolean();
+            gravity =
+                    !object.has("apply_gravity") || object.get("apply_gravity").getAsBoolean();
             base = object.has("base_buoyancy") ? object.get("base_buoyancy").getAsFloat() : 1.0F;
             liquids = new HashSet<>();
             if (object.has("liquid_blocks")) {
@@ -34,10 +43,15 @@ record GeyserBoatMetadata(Float width, Float height, Boolean buoyant, Boolean ou
             liquids = Set.copyOf(liquids);
         }
         var offset = data.get(EntityDataTypes.SEAT_OFFSET);
-        return new GeyserBoatMetadata(data.get(EntityDataTypes.WIDTH), data.get(EntityDataTypes.HEIGHT),
-                data.get(EntityDataTypes.IS_BUOYANT), data.get(EntityDataTypes.FLAGS) == null ? null
-                        : data.getFlag(EntityFlag.OUT_OF_CONTROL), data.get(EntityDataTypes.FLAGS) == null ? null
-                        : data.getFlag(EntityFlag.LEASHED), gravity, base, liquids,
+        return new GeyserBoatMetadata(
+                data.get(EntityDataTypes.WIDTH),
+                data.get(EntityDataTypes.HEIGHT),
+                data.get(EntityDataTypes.IS_BUOYANT),
+                data.get(EntityDataTypes.FLAGS) == null ? null : data.getFlag(EntityFlag.OUT_OF_CONTROL),
+                data.get(EntityDataTypes.FLAGS) == null ? null : data.getFlag(EntityFlag.LEASHED),
+                gravity,
+                base,
+                liquids,
                 offset == null ? null : new Vec3d(offset.getX(), offset.getY(), offset.getZ()));
     }
 
@@ -52,19 +66,30 @@ record GeyserBoatMetadata(Float width, Float height, Boolean buoyant, Boolean ou
     }
 
     boolean isEmpty() {
-        return width == null && height == null && buoyant == null && outOfControl == null && leashed == null
-                && gravity == null && baseBuoyancy == null && liquids == null && seat == null;
+        return width == null
+                && height == null
+                && buoyant == null
+                && outOfControl == null
+                && leashed == null
+                && gravity == null
+                && baseBuoyancy == null
+                && liquids == null
+                && seat == null;
     }
 
     BedrockBoatProperties apply(BedrockBoatProperties previous, long runtimeId) {
         var old = previous == null ? BedrockBoatProperties.initial(runtimeId) : previous;
-        return new BedrockBoatProperties(runtimeId, new PlayerDimensionsState(
-                width == null ? old.dimensions().width() : width,
-                height == null ? old.dimensions().height() : height),
-                buoyant == null ? old.buoyant() : buoyant, gravity == null ? old.gravity() : gravity,
+        return new BedrockBoatProperties(
+                runtimeId,
+                new PlayerDimensionsState(
+                        width == null ? old.dimensions().width() : width,
+                        height == null ? old.dimensions().height() : height),
+                buoyant == null ? old.buoyant() : buoyant,
+                gravity == null ? old.gravity() : gravity,
                 baseBuoyancy == null ? old.baseBuoyancy() : baseBuoyancy,
                 liquids == null ? old.liquids() : liquids,
                 outOfControl == null ? old.outOfControl() : outOfControl,
-                leashed == null ? old.leashed() : leashed, seat == null ? old.seat() : seat);
+                leashed == null ? old.leashed() : leashed,
+                seat == null ? old.seat() : seat);
     }
 }

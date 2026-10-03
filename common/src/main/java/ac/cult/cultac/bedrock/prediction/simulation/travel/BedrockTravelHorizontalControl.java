@@ -16,8 +16,8 @@ public final class BedrockTravelHorizontalControl {
     private static final double GROUND_CONTROL_NUMERATOR = 0.21600002D;
     private static final double DRY_AIR_TRAVEL_SPEED = 0.019999999552965164D;
     private static final double INPUT_FRICTION = 0.98D;
-    private static final double GROUND_CONTROL = GROUND_CONTROL_NUMERATOR
-        / (DEFAULT_BLOCK_FRICTION * DEFAULT_BLOCK_FRICTION * DEFAULT_BLOCK_FRICTION);
+    private static final double GROUND_CONTROL =
+            GROUND_CONTROL_NUMERATOR / (DEFAULT_BLOCK_FRICTION * DEFAULT_BLOCK_FRICTION * DEFAULT_BLOCK_FRICTION);
     private static final double AIR_CONTROL = DRY_AIR_TRAVEL_SPEED * INPUT_FRICTION;
     public static final double AIR_FRICTION = 0.91D;
     private static final double GROUND_FRICTION = DEFAULT_BLOCK_FRICTION * AIR_FRICTION;
@@ -25,171 +25,136 @@ public final class BedrockTravelHorizontalControl {
     private static final double SPRINTING_SPEED_ATTRIBUTE_MODIFIER = 0.3D;
     private static final double SPRINT_MOVEMENT_SPEED_MULTIPLIER = 1.0D + SPRINTING_SPEED_ATTRIBUTE_MODIFIER;
 
-    private BedrockTravelHorizontalControl() {
-    }
+    private BedrockTravelHorizontalControl() {}
 
     public static Step resolveWaterTravel(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        BedrockMovementContext context,
-        BedrockEffectState effectState,
-        StandingSurfaceState standingSurfaceState,
-        boolean sprintSpeedInput,
-        float moveInputScale
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            BedrockMovementContext context,
+            BedrockEffectState effectState,
+            StandingSurfaceState standingSurfaceState,
+            boolean sprintSpeedInput,
+            float moveInputScale) {
         double swimSpeedMultiplier = context.worldState().fluidState().swimSpeedMultiplier();
         BedrockHorizontalSpeedControl.PreparedSpeed preparedSpeed = BedrockHorizontalSpeedControl.prepare(
-            current,
-            frame,
-            context.attributeState(),
-            context.equipmentState(),
-            standingSurfaceState,
-            false,
-            true,
-            false
-        );
+                current,
+                frame,
+                context.attributeState(),
+                context.equipmentState(),
+                standingSurfaceState,
+                false,
+                true,
+                false);
         double horizontalInputLimit = scaledInputLimit(
-            BedrockWaterTravelMovement.travelScale(
-                preparedSpeed.speed(),
-                context.attributeState().underwaterMovementSpeed(),
+                BedrockWaterTravelMovement.travelScale(
+                        preparedSpeed.speed(),
+                        context.attributeState().underwaterMovementSpeed(),
+                        context.equipmentState().depthStriderLevel(),
+                        context.worldState().fluidState().waterWalkOnGroundComponentPresent(),
+                        swimSpeedMultiplier),
+                moveInputScale,
+                false);
+        double horizontalFriction = BedrockWaterTravelMovement.horizontalDrag(
+                sprintSpeedInput,
                 context.equipmentState().depthStriderLevel(),
                 context.worldState().fluidState().waterWalkOnGroundComponentPresent(),
-                swimSpeedMultiplier
-            ),
-            moveInputScale,
-            false
-        );
-        double horizontalFriction = BedrockWaterTravelMovement.horizontalDrag(
-            sprintSpeedInput,
-            context.equipmentState().depthStriderLevel(),
-            context.worldState().fluidState().waterWalkOnGroundComponentPresent(),
-            swimSpeedMultiplier,
-            GROUND_FRICTION
-        );
+                swimSpeedMultiplier,
+                GROUND_FRICTION);
         return new Step(horizontalInputLimit, horizontalFriction);
     }
 
     public static Step resolveLavaTravel(
-        BedrockMovementContext context,
-        StandingSurfaceState standingSurfaceState,
-        boolean navigationCanWalkInLava,
-        float moveInputScale,
-        boolean onGroundTravel
-    ) {
-        double horizontalInputLimit = scaledInputLimit(
-            lavaTravelScale(context.attributeState().lavaMovementSpeed()),
-            moveInputScale,
+            BedrockMovementContext context,
+            StandingSurfaceState standingSurfaceState,
+            boolean navigationCanWalkInLava,
+            float moveInputScale,
+            boolean onGroundTravel) {
+        double horizontalInputLimit =
+                scaledInputLimit(lavaTravelScale(context.attributeState().lavaMovementSpeed()), moveInputScale, false);
 
-            false
-        );
         double horizontalFriction = navigationCanWalkInLava
-            ? groundOrAirFriction(standingSurfaceState, onGroundTravel)
-            // The vanilla lava-drag system applies 0.5 to the full velocity
-            // for lava-travel entities unless navigation can walk in lava.
-            : BedrockLiquidVerticalMovement.LAVA_FRICTION;
+                ? groundOrAirFriction(standingSurfaceState, onGroundTravel)
+                // The vanilla lava-drag system applies 0.5 to the full velocity
+                // for lava-travel entities unless navigation can walk in lava.
+                : BedrockLiquidVerticalMovement.LAVA_FRICTION;
         return new Step(horizontalInputLimit, horizontalFriction);
     }
 
     public static Step resolveNormalTravel(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        BedrockMovementContext context,
-        BedrockEffectState effectState,
-        StandingSurfaceState standingSurfaceState,
-        BedrockClimbState climb,
-        boolean inPowderSnow,
-        boolean sprintSpeedInput,
-        float moveInputScale,
-        boolean onGroundTravel
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            BedrockMovementContext context,
+            BedrockEffectState effectState,
+            StandingSurfaceState standingSurfaceState,
+            BedrockClimbState climb,
+            boolean inPowderSnow,
+            boolean sprintSpeedInput,
+            float moveInputScale,
+            boolean onGroundTravel) {
         BedrockHorizontalSpeedControl.PreparedSpeed preparedSpeed = BedrockHorizontalSpeedControl.prepare(
-            current,
-            frame,
-            context.attributeState(),
-            context.equipmentState(),
-            standingSurfaceState,
-
-            !onGroundTravel,
-            false,
-            false
-        );
-        float control = current.isHorse() && preparedSpeed.dryAirTravelSpeed()
-            ? 1.0F
-            : normalTravelControl(
+                current,
+                frame,
+                context.attributeState(),
+                context.equipmentState(),
                 standingSurfaceState,
-                climb,
-                onGroundTravel,
-                inPowderSnow,
-                preparedSpeed
-            );
+                !onGroundTravel,
+                false,
+                false);
+        float control = current.isHorse() && preparedSpeed.dryAirTravelSpeed()
+                ? 1.0F
+                : normalTravelControl(standingSurfaceState, climb, onGroundTravel, inPowderSnow, preparedSpeed);
         double horizontalInputLimit = scaledInputLimit(
-            preparedSpeed.inputRadiusSpeed() * control,
-            moveInputScale,
-            sprintSpeedInput && !preparedSpeed.horizontalAttributeSpeed()
-        );
+                preparedSpeed.inputRadiusSpeed() * control,
+                moveInputScale,
+                sprintSpeedInput && !preparedSpeed.horizontalAttributeSpeed());
         double horizontalFriction = groundOrAirFriction(standingSurfaceState, onGroundTravel)
-            * context.attributeState().frictionModifier();
+                * context.attributeState().frictionModifier();
         return new Step(horizontalInputLimit, horizontalFriction);
     }
 
     private static float normalTravelControl(
-        StandingSurfaceState standingSurfaceState,
-        BedrockClimbState climb,
-        boolean onGroundTravel,
-        boolean inPowderSnow,
-        BedrockHorizontalSpeedControl.PreparedSpeed preparedSpeed
-    ) {
+            StandingSurfaceState standingSurfaceState,
+            BedrockClimbState climb,
+            boolean onGroundTravel,
+            boolean inPowderSnow,
+            BedrockHorizontalSpeedControl.PreparedSpeed preparedSpeed) {
         double standingBlockFriction = standingSurfaceState.blockFriction();
         double standingGroundFriction = standingBlockFriction * AIR_FRICTION;
         float standingGroundControl = groundControl(standingBlockFriction);
         boolean onSoulSand = standingSurfaceState.hasSurface(Surface.SOUL_SAND);
-        return (float) (preparedSpeed.dryAirTravelSpeed() ? GROUND_CONTROL
-            : onSoulSand && onGroundTravel
-            ? BedrockHorizontalSpeedControl.soulSandGroundControl(
-                preparedSpeed.soulSpeedEnchantFlagPresent(),
-                standingGroundControl,
-                standingGroundFriction
-            )
-            : inPowderSnow && onGroundTravel ? GROUND_CONTROL
-            : climb.climbable().horizontalControl() ? GROUND_CONTROL
-            : onGroundTravel ? standingGroundControl
-            : AIR_CONTROL);
+        return (float)
+                (preparedSpeed.dryAirTravelSpeed()
+                        ? GROUND_CONTROL
+                        : onSoulSand && onGroundTravel
+                                ? BedrockHorizontalSpeedControl.soulSandGroundControl(
+                                        preparedSpeed.soulSpeedEnchantFlagPresent(),
+                                        standingGroundControl,
+                                        standingGroundFriction)
+                                : inPowderSnow && onGroundTravel
+                                        ? GROUND_CONTROL
+                                        : climb.climbable().horizontalControl()
+                                                ? GROUND_CONTROL
+                                                : onGroundTravel ? standingGroundControl : AIR_CONTROL);
     }
 
-    private static double groundOrAirFriction(
-        StandingSurfaceState standingSurfaceState,
-        boolean onGroundTravel
-    ) {
-        return onGroundTravel
-            ? standingSurfaceState.blockFriction() * AIR_FRICTION
-            : AIR_FRICTION;
+    private static double groundOrAirFriction(StandingSurfaceState standingSurfaceState, boolean onGroundTravel) {
+        return onGroundTravel ? standingSurfaceState.blockFriction() * AIR_FRICTION : AIR_FRICTION;
     }
 
-    public static double waterHorizontalDrag(
-        BedrockMovementContext context,
-        boolean sprintingWaterDrag
-    ) {
+    public static double waterHorizontalDrag(BedrockMovementContext context, boolean sprintingWaterDrag) {
         return BedrockWaterTravelMovement.horizontalDrag(
-            sprintingWaterDrag,
-            context.equipmentState().depthStriderLevel(),
-            context.worldState().fluidState().waterWalkOnGroundComponentPresent(),
-            context.worldState().fluidState().swimSpeedMultiplier(),
-            GROUND_FRICTION
-        );
+                sprintingWaterDrag,
+                context.equipmentState().depthStriderLevel(),
+                context.worldState().fluidState().waterWalkOnGroundComponentPresent(),
+                context.worldState().fluidState().swimSpeedMultiplier(),
+                GROUND_FRICTION);
     }
 
-    public static double dryAirHorizontalInputLimit(
-        boolean sprintSpeedInput,
-        float moveInputScale
-    ) {
+    public static double dryAirHorizontalInputLimit(boolean sprintSpeedInput, float moveInputScale) {
         return scaledInputLimit(DRY_AIR_TRAVEL_SPEED * GROUND_CONTROL, moveInputScale, sprintSpeedInput);
     }
 
-    private static double scaledInputLimit(
-        double baseLimit,
-        float moveInputScale,
-        boolean sprintSpeedInput
-    ) {
+    private static double scaledInputLimit(double baseLimit, float moveInputScale, boolean sprintSpeedInput) {
         double horizontalInputLimit = baseLimit * moveInputScale;
         return sprintSpeedInput ? horizontalInputLimit * SPRINT_MOVEMENT_SPEED_MULTIPLIER : horizontalInputLimit;
     }
@@ -203,9 +168,5 @@ public final class BedrockTravelHorizontalControl {
         return (float) (GROUND_CONTROL_NUMERATOR / (blockFriction * blockFriction * blockFriction));
     }
 
-    public record Step(
-        double horizontalInputLimit,
-        double horizontalFriction
-    ) {
-    }
+    public record Step(double horizontalInputLimit, double horizontalFriction) {}
 }

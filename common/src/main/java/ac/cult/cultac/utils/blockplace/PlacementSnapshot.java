@@ -1,10 +1,10 @@
 package ac.cult.cultac.utils.blockplace;
 
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import lombok.Getter;
-import ac.cult.cultac.network.protocol.ClientVersion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -61,8 +61,7 @@ public final class PlacementSnapshot {
             int minY,
             int maxY,
             boolean replaceClicked,
-            ClientVersion clientVersion
-    ) {
+            ClientVersion clientVersion) {
         this.clientVersion = clientVersion;
         this.hand = hand;
         this.bukkitItemStack = bukkitItemStack;
@@ -108,8 +107,7 @@ public final class PlacementSnapshot {
             int foodLevel,
             int minY,
             int maxY,
-            boolean replaceClicked
-    ) {
+            boolean replaceClicked) {
         return new PlacementSnapshot(
                 hand,
                 bukkitItemStack,
@@ -132,8 +130,7 @@ public final class PlacementSnapshot {
                 minY,
                 maxY,
                 replaceClicked,
-                ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion())
-        );
+                ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion()));
     }
 
     public static PlacementSnapshot of(
@@ -154,8 +151,7 @@ public final class PlacementSnapshot {
             GameMode gameMode,
             int minY,
             int maxY,
-            boolean replaceClicked
-    ) {
+            boolean replaceClicked) {
         return of(
                 hand,
                 bukkitItemStack,
@@ -177,8 +173,7 @@ public final class PlacementSnapshot {
                 20,
                 minY,
                 maxY,
-                replaceClicked
-        );
+                replaceClicked);
     }
 
     public static PlacementSnapshot capture(CultPlayer player, BlockPlace place) {
@@ -188,16 +183,15 @@ public final class PlacementSnapshot {
         Vec3 clickLocation = new Vec3(
                 clickedBlockPos.getX() + relative.getX(),
                 clickedBlockPos.getY() + relative.getY(),
-                clickedBlockPos.getZ() + relative.getZ()
-        );
+                clickedBlockPos.getZ() + relative.getZ());
         Vec3 clientPosition = new Vec3(
                 player.packetStateData.clientSidePosition.x,
                 player.packetStateData.clientSidePosition.y,
-                player.packetStateData.clientSidePosition.z
-        );
+                player.packetStateData.clientSidePosition.z);
         // ServerboundUseItemOnPacket carries the hit vector but not yaw/pitch. Vanilla client placement
         // uses the camera that produced this hit, so reconstruct that context from eye position -> hit.
-        ViewRotation viewRotation = viewRotationFromHit(clientPosition, player.getEyeHeight(), clickLocation, player.xRot, player.yRot);
+        ViewRotation viewRotation =
+                viewRotationFromHit(clientPosition, player.getEyeHeight(), clickLocation, player.xRot, player.yRot);
 
         return new PlacementSnapshot(
                 place.getHand(),
@@ -221,22 +215,17 @@ public final class PlacementSnapshot {
                 player.compensatedWorld.getMinHeight(),
                 player.compensatedWorld.getMaxHeight(),
                 place.isReplaceClicked(),
-                player.getClientVersion()
-        );
+                player.getClientVersion());
     }
 
     public static PlacementSnapshot captureBreak(CultPlayer player, BlockPos blockPosition) {
         BlockPos immutablePos = blockPosition.immutable();
-        Vec3 clickLocation = new Vec3(
-                immutablePos.getX() + 0.5D,
-                immutablePos.getY() + 0.5D,
-                immutablePos.getZ() + 0.5D
-        );
+        Vec3 clickLocation =
+                new Vec3(immutablePos.getX() + 0.5D, immutablePos.getY() + 0.5D, immutablePos.getZ() + 0.5D);
         Vec3 clientPosition = new Vec3(
                 player.packetStateData.clientSidePosition.x,
                 player.packetStateData.clientSidePosition.y,
-                player.packetStateData.clientSidePosition.z
-        );
+                player.packetStateData.clientSidePosition.z);
 
         return new PlacementSnapshot(
                 InteractionHand.MAIN_HAND,
@@ -260,8 +249,7 @@ public final class PlacementSnapshot {
                 player.compensatedWorld.getMinHeight(),
                 player.compensatedWorld.getMaxHeight(),
                 true,
-                player.getClientVersion()
-        );
+                player.getClientVersion());
     }
 
     public boolean isOutsideBuildHeight(BlockPos pos) {
@@ -284,7 +272,8 @@ public final class PlacementSnapshot {
         };
     }
 
-    private static ViewRotation viewRotationFromHit(Vec3 clientPosition, double eyeHeight, Vec3 clickLocation, float fallbackYaw, float fallbackPitch) {
+    private static ViewRotation viewRotationFromHit(
+            Vec3 clientPosition, double eyeHeight, Vec3 clickLocation, float fallbackYaw, float fallbackPitch) {
         double dx = clickLocation.x - clientPosition.x;
         double dy = clickLocation.y - (clientPosition.y + eyeHeight);
         double dz = clickLocation.z - clientPosition.z;
@@ -307,6 +296,5 @@ public final class PlacementSnapshot {
         };
     }
 
-    private record ViewRotation(float xRot, float yRot) {
-    }
+    private record ViewRotation(float xRot, float yRot) {}
 }

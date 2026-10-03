@@ -1,32 +1,39 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.BedrockSupported;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
 
 @BedrockSupported
 public class TimerCheck extends AbstractTimerCheck {
-    public TimerCheck(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder().name("Timer").configName("TimerA").setback(5).build()); }
+    public TimerCheck(CultPlayer cultPlayer) {
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("Timer")
+                        .configName("TimerA")
+                        .setback(5)
+                        .build());
+    }
 
     protected TimerCheck(CultPlayer cultPlayer, CheckInfo checkInfo) {
         super(cultPlayer, checkInfo);
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.isBedrockMovement()) {
             return;
         }
         boolean mountedPassengerRotation = !packet.hasPosition()
                 && (player.compensatedEntities.vehicles.serverPlayerVehicle != null
-                || player.compensatedEntities.getSelf().inVehicle());
+                        || player.compensatedEntities.getSelf().inVehicle());
         recordModernMovePlayerPacket(!player.packetStateData.lastPacketWasTeleport && !mountedPassengerRotation);
         recordTimerEvent(event, false, shouldCountMovePlayerForTimer());
     }

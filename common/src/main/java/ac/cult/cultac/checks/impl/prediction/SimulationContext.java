@@ -7,8 +7,8 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.LastInstance;
-import ac.cult.cultac.utils.data.TeleportData;
 import ac.cult.cultac.utils.data.MainSupportingBlockData;
+import ac.cult.cultac.utils.data.TeleportData;
 import ac.cult.cultac.utils.data.packetentity.*;
 import ac.cult.cultac.utils.enums.Pose;
 import ac.cult.cultac.utils.latency.CompensatedEntities;
@@ -32,16 +32,22 @@ import org.bukkit.Material;
 @ToString
 public class SimulationContext {
     Vec3 start;
+
     @Setter
     Vec3 end;
+
     @Setter
     Vec3 target;
+
     @ToString.Exclude
     ClientVersion version;
+
     @ToString.Exclude
     TrigHandler trig;
+
     @ToString.Exclude
     CompensatedEntities entities;
+
     PacketEntity vehicle;
     float xRot, lastXRot;
     float yRot, lastYRot;
@@ -59,6 +65,7 @@ public class SimulationContext {
     // I don't want to give access to the world to everything - bad for performance and an antipattern
     @Setter
     WorldData worldData;
+
     int riptideLevel;
     LastInstance lastTickSkip;
     boolean isTestingPointThree;
@@ -67,31 +74,71 @@ public class SimulationContext {
     MainSupportingBlockData lastTickMainSupportingBlockData;
     Pose pose;
     float scale;
+
     @Setter
     Vec3 rootClientVelocityAtPrediction;
+
     @Setter
     Vec3 normalizedRootClientVelocityAtPrediction;
+
     @Setter
     boolean rootClientVelocityPendingAtPrediction;
+
     @Setter
     Vec3 requiredCurrentMoveStuckSpeed;
+
     @Setter
     PredictionCarry profileCarry;
+
     AuthoredMovementFrame authoredInput;
     BedrockAuthInputFrame bedrockInput;
     BedrockProtocolVersion bedrockVersion = BedrockProtocolVersion.UNKNOWN;
     long bedrockInputTick = -1L;
     boolean hasTrustedAuthoredInput;
+
     @Setter
     TeleportData bedrockTeleport;
+
     @ToString.Exclude
     List<SimpleCollisionBox> entityCollisionBoxesForMovementTick;
+
     @ToString.Exclude
     List<SimpleCollisionBox> hardCollidingEntityCollisionBoxesForMovementTick;
+
     @ToString.Exclude
     List<HardCollidingEntityCollision> hardCollidingEntityCollisionsForMovementTick;
 
-    public SimulationContext(Vec3 start, Vec3 end, Vec3 target, ClientVersion version, TrigHandler trig, CompensatedEntities entities, PacketEntity vehicle, float xRot, float lastXRot, float yRot, float lastYRot, boolean onGround, boolean sneaking, boolean lastSneaking, boolean gliding, Integer jumpAmplifier, float depthStriderLevel, int swiftSneakLevel, DesyncStatus isSprinting, int minAttackSlow, int maxAttackSlow, int riptideLevel, LastInstance lastTickSkip, boolean isTestingPointThree, Vec3 horseInputs, boolean clientMovementInputKnown, Vec3 clientMovementInput, MainSupportingBlockData lastTickMainSupportingBlockData, Pose pose, float scale) {
+    public SimulationContext(
+            Vec3 start,
+            Vec3 end,
+            Vec3 target,
+            ClientVersion version,
+            TrigHandler trig,
+            CompensatedEntities entities,
+            PacketEntity vehicle,
+            float xRot,
+            float lastXRot,
+            float yRot,
+            float lastYRot,
+            boolean onGround,
+            boolean sneaking,
+            boolean lastSneaking,
+            boolean gliding,
+            Integer jumpAmplifier,
+            float depthStriderLevel,
+            int swiftSneakLevel,
+            DesyncStatus isSprinting,
+            int minAttackSlow,
+            int maxAttackSlow,
+            int riptideLevel,
+            LastInstance lastTickSkip,
+            boolean isTestingPointThree,
+            Vec3 horseInputs,
+            boolean clientMovementInputKnown,
+            Vec3 clientMovementInput,
+            MainSupportingBlockData lastTickMainSupportingBlockData,
+            Pose pose,
+            float scale) {
         this.start = start;
         this.end = end;
         this.target = target;
@@ -151,20 +198,24 @@ public class SimulationContext {
         this.entityCollisionBoxesForMovementTick = entityCollisionBoxesForMovementTick;
     }
 
-    public void cacheHardCollidingEntityCollisionBoxesForMovementTick(List<SimpleCollisionBox> hardCollidingEntityCollisionBoxesForMovementTick) {
+    public void cacheHardCollidingEntityCollisionBoxesForMovementTick(
+            List<SimpleCollisionBox> hardCollidingEntityCollisionBoxesForMovementTick) {
         this.hardCollidingEntityCollisionBoxesForMovementTick = hardCollidingEntityCollisionBoxesForMovementTick;
-        this.hardCollidingEntityCollisionsForMovementTick = hardCollidingEntityCollisionBoxesForMovementTick == null ? null
+        this.hardCollidingEntityCollisionsForMovementTick = hardCollidingEntityCollisionBoxesForMovementTick == null
+                ? null
                 : hardCollidingEntityCollisionBoxesForMovementTick.stream()
-                .map(box -> new HardCollidingEntityCollision(box, false, false))
-                .toList();
+                        .map(box -> new HardCollidingEntityCollision(box, false, false))
+                        .toList();
     }
 
-    public void cacheHardCollidingEntityCollisionsForMovementTick(List<HardCollidingEntityCollision> hardCollidingEntityCollisionsForMovementTick) {
+    public void cacheHardCollidingEntityCollisionsForMovementTick(
+            List<HardCollidingEntityCollision> hardCollidingEntityCollisionsForMovementTick) {
         this.hardCollidingEntityCollisionsForMovementTick = hardCollidingEntityCollisionsForMovementTick;
-        this.hardCollidingEntityCollisionBoxesForMovementTick = hardCollidingEntityCollisionsForMovementTick == null ? null
+        this.hardCollidingEntityCollisionBoxesForMovementTick = hardCollidingEntityCollisionsForMovementTick == null
+                ? null
                 : hardCollidingEntityCollisionsForMovementTick.stream()
-                .map(HardCollidingEntityCollision::box)
-                .toList();
+                        .map(HardCollidingEntityCollision::box)
+                        .toList();
     }
 
     public double getTargetScalarHoriz() {
@@ -180,14 +231,14 @@ public class SimulationContext {
     }
 
     public boolean usesFallFlyingMovement() {
-        return usesFallFlyingMovement(version, gliding, worldData == null ? DesyncStatus.FALSE : worldData.getClimbingAtStart());
+        return usesFallFlyingMovement(
+                version, gliding, worldData == null ? DesyncStatus.FALSE : worldData.getClimbingAtStart());
     }
 
     public static boolean usesFallFlyingMovement(ClientVersion version, boolean gliding, DesyncStatus climbingAtStart) {
         // Added in 25w02a / 1.21.5: travelFallFlying calls travelInAir and then
         // stopFallFlying when already on a climbable, before performing the move.
-        return gliding && (version.isOlderThan(ClientVersion.V_1_21_5)
-                || !climbingAtStart.determinePessimistically());
+        return gliding && (version.isOlderThan(ClientVersion.V_1_21_5) || !climbingAtStart.determinePessimistically());
     }
 
     private double getMovementThreshold(ClientVersion version) {
@@ -205,26 +256,30 @@ public class SimulationContext {
         if (getVehicle() != null) {
             return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, getMaxWidth(), getMaxHeight());
         }
-        return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, 0.6f, 1.8f).expand(getMovementThreshold(version));
+        return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, 0.6f, 1.8f)
+                .expand(getMovementThreshold(version));
     }
 
     public SimpleCollisionBox getToMinimumExtent() {
         if (getVehicle() != null) {
             return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, getMaxWidth(), 0.6f);
         }
-        return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, 0.6f, 0.6f).expand(-getMovementThreshold(version));
+        return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, 0.6f, 0.6f)
+                .expand(-getMovementThreshold(version));
     }
 
     public SimpleCollisionBox getFromMaximumExtent() {
         if (getVehicle() != null) {
-            return GetBoundingBox.getBoundingBoxFromPosAndSize(start.x, start.y, start.z, getMaxWidth(), getMaxHeight());
+            return GetBoundingBox.getBoundingBoxFromPosAndSize(
+                    start.x, start.y, start.z, getMaxWidth(), getMaxHeight());
         }
         return GetBoundingBox.getBoundingBoxFromPosAndSize(start.x, start.y, start.z, 0.6f, 1.8f);
     }
 
     public SimpleCollisionBox getFromMinimumExtent() {
         if (getVehicle() != null) {
-            return GetBoundingBox.getBoundingBoxFromPosAndSize(start.x, start.y, start.z, getMaxWidth(), getMaxHeight());
+            return GetBoundingBox.getBoundingBoxFromPosAndSize(
+                    start.x, start.y, start.z, getMaxWidth(), getMaxHeight());
         }
         return GetBoundingBox.getBoundingBoxFromPosAndSize(start.x, start.y, start.z, getMaxWidth(), 0.6f);
     }
@@ -240,7 +295,8 @@ public class SimulationContext {
         if (getVehicle() != null) {
             return getToMaxPose();
         }
-        return GetBoundingBox.getBoundingBoxFromPosAndSize(end.x, end.y, end.z, pose.width * scale, pose.height * scale);
+        return GetBoundingBox.getBoundingBoxFromPosAndSize(
+                end.x, end.y, end.z, pose.width * scale, pose.height * scale);
     }
 
     public float getMaxSpeed(CultPlayer player) {
@@ -293,7 +349,8 @@ public class SimulationContext {
         return maxSpeed;
     }
 
-    private float getFrictionInfluencedSpeed(float friction, CultPlayer player, boolean isOnGround, boolean water, boolean lava) {
+    private float getFrictionInfluencedSpeed(
+            float friction, CultPlayer player, boolean isOnGround, boolean water, boolean lava) {
         final double normalSpeed = getPlayerMovementSpeed(player);
 
         if (vehicle instanceof PacketEntityNautilus && water) {
@@ -330,9 +387,11 @@ public class SimulationContext {
             // friction_modifier-adjusted block friction and only boosts movement
             // speed on slippery blocks (friction > 0.6).
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_2)) {
-                float modifiedFriction = Friction.computeModifiedFriction(friction, (float) player.compensatedEntities.getEntityInControl().frictionModifier);
+                float modifiedFriction = Friction.computeModifiedFriction(
+                        friction, (float) player.compensatedEntities.getEntityInControl().frictionModifier);
                 if (modifiedFriction > 0.6f) {
-                    return (float) (normalSpeed * (0.21600002f / (modifiedFriction * modifiedFriction * modifiedFriction)));
+                    return (float)
+                            (normalSpeed * (0.21600002f / (modifiedFriction * modifiedFriction * modifiedFriction)));
                 }
                 return (float) normalSpeed;
             }
@@ -360,12 +419,17 @@ public class SimulationContext {
         return 0.02F;
     }
 
-    private double getPlayerMovementSpeed(CultPlayer player) { if (vehicle == null) {
+    private double getPlayerMovementSpeed(CultPlayer player) {
+        if (vehicle == null) {
             return entities.getPlayerMovementSpeed();
         }
         if (vehicle instanceof PacketEntityCamel camel) {
-            final double sprintBonus = player.vehicleData.camelSprintingState != ac.cult.cultac.utils.data.SprintingState.STOPPED
-                    && camel.dashCooldown == 0 && !camel.dashing ? 0.1 : 0;
+            final double sprintBonus =
+                    player.vehicleData.camelSprintingState != ac.cult.cultac.utils.data.SprintingState.STOPPED
+                                    && camel.dashCooldown == 0
+                                    && !camel.dashing
+                            ? 0.1
+                            : 0;
             return camel.movementSpeedAttribute + sprintBonus;
         }
 
@@ -399,8 +463,10 @@ public class SimulationContext {
         // strider's exact start-of-tick position via blockPosition(),
         // getBlockStateOnLegacy(), and getFluidHeight(FluidTags.LAVA) before
         // super.tick() reaches LivingEntity#travelRidden/getRiddenSpeed.
-        BlockPos blockPos = new BlockPos((int) Math.floor(start.x), (int) Math.floor(start.y), (int) Math.floor(start.z));
-        Material currentBlock = player.compensatedWorld.getBlockStateAt(blockPos).getBukkitMaterial();
+        BlockPos blockPos =
+                new BlockPos((int) Math.floor(start.x), (int) Math.floor(start.y), (int) Math.floor(start.z));
+        Material currentBlock =
+                player.compensatedWorld.getBlockStateAt(blockPos).getBukkitMaterial();
         Material legacyBlock = BlockProperties.getOnPos(player, lastTickMainSupportingBlockData, start);
         boolean warm = NmsBlockTags.hasBlockTag(currentBlock, BlockTags.STRIDER_WARM_BLOCKS)
                 || NmsBlockTags.hasBlockTag(legacyBlock, BlockTags.STRIDER_WARM_BLOCKS)
@@ -412,10 +478,5 @@ public class SimulationContext {
         return bedrockTeleport != null;
     }
 
-    public record HardCollidingEntityCollision(
-            SimpleCollisionBox box,
-            boolean boatLike,
-            boolean minecartLike
-    ) {
-    }
+    public record HardCollidingEntityCollision(SimpleCollisionBox box, boolean boatLike, boolean minecartLike) {}
 }

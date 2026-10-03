@@ -1,11 +1,12 @@
 package ac.cult.cultac.checks;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.grim.grimac.api.storage.verbose.VerboseSchema;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,10 +21,8 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Build-time verification of every verbose template and writer chain in the
@@ -102,12 +101,11 @@ class VerboseTemplateAuditTest {
                     continue;
                 }
                 if (verbose.shapes() > 1 && shape >= verbose.shapes()) {
-                    failures.add(fileName + ": shape " + chain.shapeExpr + "=" + shape
-                            + " out of range for " + verbose.shapes() + " shapes");
+                    failures.add(fileName + ": shape " + chain.shapeExpr + "=" + shape + " out of range for "
+                            + verbose.shapes() + " shapes");
                     continue;
                 }
-                List<VerboseSchema.TypeTag> expected = typesOf(
-                        verbose.shapeFields(verbose.shapes() > 1 ? shape : 0));
+                List<VerboseSchema.TypeTag> expected = typesOf(verbose.shapeFields(verbose.shapes() > 1 ? shape : 0));
                 List<VerboseSchema.TypeTag> actual = new ArrayList<>();
                 boolean resolvable = true;
                 for (String method : chain.methods) {
@@ -124,7 +122,8 @@ class VerboseTemplateAuditTest {
                 }
                 auditedChains++;
                 if (!actual.equals(expected)) {
-                    if (actual.size() < expected.size() && expected.subList(0, actual.size()).equals(actual)) {
+                    if (actual.size() < expected.size()
+                            && expected.subList(0, actual.size()).equals(actual)) {
                         // prefix only: chain probably continues elsewhere
                         filesNeedingAllowlist.add(fileName);
                         auditedChains--;
@@ -141,12 +140,14 @@ class VerboseTemplateAuditTest {
 
         // Allowlist hygiene: exactly the files that need it, no rot.
         for (String needed : filesNeedingAllowlist) {
-            assertTrue(PARTIALLY_AUDITED.containsKey(needed),
-                    needed + " has statically unresolvable write chains; audit them manually and add to PARTIALLY_AUDITED");
+            assertTrue(
+                    PARTIALLY_AUDITED.containsKey(needed),
+                    needed
+                            + " has statically unresolvable write chains; audit them manually and add to PARTIALLY_AUDITED");
         }
         for (String listed : PARTIALLY_AUDITED.keySet()) {
-            assertTrue(filesNeedingAllowlist.contains(listed),
-                    listed + " no longer needs PARTIALLY_AUDITED; remove it");
+            assertTrue(
+                    filesNeedingAllowlist.contains(listed), listed + " no longer needs PARTIALLY_AUDITED; remove it");
         }
     }
 
@@ -156,11 +157,13 @@ class VerboseTemplateAuditTest {
         // otherwise template parsing here would diverge from runtime.
         String source = Files.readString(checksRoot.resolve("impl/verbose/VerboseCodecs.java"));
         Set<String> registered = new HashSet<>();
-        Matcher m = Pattern.compile("register(?:Enum|EnumLower)?\\(\\s*\"([a-z_0-9]+)\"").matcher(source);
+        Matcher m = Pattern.compile("register(?:Enum|EnumLower)?\\(\\s*\"([a-z_0-9]+)\"")
+                .matcher(source);
         while (m.find()) registered.add(m.group(1));
         assertFalse(registered.isEmpty());
         for (String tag : registered) {
-            assertTrue(STAND_IN_TAGS.containsKey(tag),
+            assertTrue(
+                    STAND_IN_TAGS.containsKey(tag),
                     "VerboseCodecs registers {" + tag + "} but the audit test doesn't; add it to STAND_IN_TAGS");
         }
     }
@@ -171,8 +174,9 @@ class VerboseTemplateAuditTest {
 
     private static Map<String, List<VerboseSchema.TypeTag>> standInTags() {
         Map<String, List<VerboseSchema.TypeTag>> tags = new LinkedHashMap<>();
-        for (String n : new String[]{"face", "digging", "digging_lower", "clicktype",
-                "clicktype_lower", "entityaction", "hand", "entity"}) {
+        for (String n : new String[] {
+            "face", "digging", "digging_lower", "clicktype", "clicktype_lower", "entityaction", "hand", "entity"
+        }) {
             tags.put(n, List.of(VerboseSchema.TypeTag.VI));
         }
         tags.put("block", List.of(VerboseSchema.TypeTag.ZZ));
@@ -185,10 +189,9 @@ class VerboseTemplateAuditTest {
 
     private static void registerStandInTags() {
         // Same names + wire shapes as VerboseCodecs, no PacketEvents needed.
-        STAND_IN_TAGS.forEach((name, wire) ->
-                VerboseTags.register(name, wire, (in, ctx, out, fmt) -> {
-                    for (VerboseSchema.TypeTag tag : wire) in.skip(tag.tag());
-                }));
+        STAND_IN_TAGS.forEach((name, wire) -> VerboseTags.register(name, wire, (in, ctx, out, fmt) -> {
+            for (VerboseSchema.TypeTag tag : wire) in.skip(tag.tag());
+        }));
     }
 
     private static Map<String, List<VerboseSchema.TypeTag>> writerMethods() {
@@ -281,7 +284,8 @@ class VerboseTemplateAuditTest {
             String shapeExpr = null;
             int close = skipToCloseParen(source, pos);
             String writeArgsTail = source.substring(pos, close).trim();
-            if (writeArgsTail.startsWith(",")) shapeExpr = writeArgsTail.substring(1).trim();
+            if (writeArgsTail.startsWith(","))
+                shapeExpr = writeArgsTail.substring(1).trim();
             pos = close + 1;
 
             List<String> methods = new ArrayList<>();

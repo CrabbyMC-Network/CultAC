@@ -35,8 +35,8 @@ final class VanillaStepProof {
         return hasUnknownCollisionAtDestination(result)
                 || hasCollisionDirectlyBelowDestination(player, result)
                 || (result.getValidMovements().isCanStep()
-                    && player.getClientVersion().usesModernEntityStepCollision()
-                    && hasSourceProvenStepCandidate(player, result));
+                        && player.getClientVersion().usesModernEntityStepCollision()
+                        && hasSourceProvenStepCandidate(player, result));
     }
 
     private boolean needsStepProof(CultPlayer player, PredictionResult result) {
@@ -63,8 +63,7 @@ final class VanillaStepProof {
                 result.getSimulationContext().getToCubeCollision(),
                 0.0D,
                 -SimpleCollisionBox.COLLISION_EPSILON,
-                0.0D
-        );
+                0.0D);
         return downwardCollision.y != -SimpleCollisionBox.COLLISION_EPSILON;
     }
 
@@ -84,13 +83,13 @@ final class VanillaStepProof {
         }
 
         double[] candidateX = axisSamples(target.x, attempted.minX, attempted.maxX);
-        double[] candidateY = axisSamples(target.y, Math.min(desiredY, attempted.minY), Math.max(desiredY, attempted.maxY));
+        double[] candidateY =
+                axisSamples(target.y, Math.min(desiredY, attempted.minY), Math.max(desiredY, attempted.maxY));
         double[] candidateZ = axisSamples(target.z, attempted.minZ, attempted.maxZ);
         for (double desiredX : candidateX) {
             for (double stepDesiredY : candidateY) {
                 for (double desiredZ : candidateZ) {
-                    if (collidesToAcceptedY(player, result, desiredX, stepDesiredY, desiredZ,
-                            requireSelectedStep)) {
+                    if (collidesToAcceptedY(player, result, desiredX, stepDesiredY, desiredZ, requireSelectedStep)) {
                         return true;
                     }
                 }
@@ -100,13 +99,17 @@ final class VanillaStepProof {
         return false;
     }
 
-    private boolean collidesToAcceptedY(CultPlayer player, PredictionResult result,
-                                        double desiredX, double desiredY, double desiredZ,
-                                        boolean requireSelectedStep) {
+    private boolean collidesToAcceptedY(
+            CultPlayer player,
+            PredictionResult result,
+            double desiredX,
+            double desiredY,
+            double desiredZ,
+            boolean requireSelectedStep) {
         List<Collisions.Axis> order = requireSelectedStep
                 ? (Math.abs(desiredX) < Math.abs(desiredZ)
-                ? List.of(Collisions.Axis.Y, Collisions.Axis.Z, Collisions.Axis.X)
-                : List.of(Collisions.Axis.Y, Collisions.Axis.X, Collisions.Axis.Z))
+                        ? List.of(Collisions.Axis.Y, Collisions.Axis.Z, Collisions.Axis.X)
+                        : List.of(Collisions.Axis.Y, Collisions.Axis.X, Collisions.Axis.Z))
                 : null;
         Vec3 collidedMovement = collideLikeClient(
                 player,
@@ -116,16 +119,14 @@ final class VanillaStepProof {
                 desiredY,
                 desiredZ,
                 order,
-                true
-        );
+                true);
         if (Math.abs(collidedMovement.y - result.getTarget().y) > STEP_Y_MATCH_EPSILON) {
             return false;
         }
         if (!requireSelectedStep) {
             return true;
         }
-        if (result.getSimulationContext().isOnGround()
-                && (desiredY >= 0.0D || collidedMovement.y == desiredY)) {
+        if (result.getSimulationContext().isOnGround() && (desiredY >= 0.0D || collidedMovement.y == desiredY)) {
             return false;
         }
 
@@ -137,8 +138,7 @@ final class VanillaStepProof {
                 desiredY,
                 desiredZ,
                 order,
-                false
-        );
+                false);
         return Collisions.getHorizontalDistanceSqr(collidedMovement)
                 > Collisions.getHorizontalDistanceSqr(collisionWithoutStep);
     }
@@ -146,24 +146,31 @@ final class VanillaStepProof {
     private double[] axisSamples(double packetDelta, double minAttemptedDelta, double maxAttemptedDelta) {
         if (Math.abs(maxAttemptedDelta - minAttemptedDelta) <= AXIS_SAMPLE_EPSILON) {
             if (Math.abs(packetDelta - minAttemptedDelta) <= AXIS_SAMPLE_EPSILON) {
-                return new double[]{packetDelta};
+                return new double[] {packetDelta};
             }
-            return new double[]{packetDelta, minAttemptedDelta};
+            return new double[] {packetDelta, minAttemptedDelta};
         }
         if (Math.abs(packetDelta - minAttemptedDelta) <= AXIS_SAMPLE_EPSILON) {
-            return new double[]{packetDelta, maxAttemptedDelta};
+            return new double[] {packetDelta, maxAttemptedDelta};
         }
         if (Math.abs(packetDelta - maxAttemptedDelta) <= AXIS_SAMPLE_EPSILON) {
-            return new double[]{packetDelta, minAttemptedDelta};
+            return new double[] {packetDelta, minAttemptedDelta};
         }
-        return new double[]{packetDelta, minAttemptedDelta, maxAttemptedDelta};
+        return new double[] {packetDelta, minAttemptedDelta, maxAttemptedDelta};
     }
 
-    private Vec3 collideLikeClient(CultPlayer player, PredictionResult result, SimpleCollisionBox box,
-                                   double desiredX, double desiredY, double desiredZ,
-                                   List<Collisions.Axis> order, boolean allowStepping) {
+    private Vec3 collideLikeClient(
+            CultPlayer player,
+            PredictionResult result,
+            SimpleCollisionBox box,
+            double desiredX,
+            double desiredY,
+            double desiredZ,
+            List<Collisions.Axis> order,
+            boolean allowStepping) {
         if (order == null) {
-            return Collisions.collideWithAdditionalCollisionBoxes(player, box, desiredX, desiredY, desiredZ, Collections.emptyList());
+            return Collisions.collideWithAdditionalCollisionBoxes(
+                    player, box, desiredX, desiredY, desiredZ, Collections.emptyList());
         }
 
         return Collisions.collideWithAdditionalCollisionBoxes(
@@ -175,7 +182,6 @@ final class VanillaStepProof {
                 order,
                 allowStepping,
                 Collections.emptyList(),
-                result.getSimulationContext().getLastOnGround().determineOptimistically()
-        );
+                result.getSimulationContext().getLastOnGround().determineOptimistically());
     }
 }

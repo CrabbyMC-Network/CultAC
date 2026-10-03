@@ -6,18 +6,20 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import org.bukkit.Material;
 
-@CheckData(name = "PositionPlace", stableKey = "cult.scaffolding.position_place", description = "Placed a block against a hidden face")
+@CheckData(
+        name = "PositionPlace",
+        stableKey = "cult.scaffolding.position_place",
+        description = "Placed a block against a hidden face")
 public class PositionPlace extends BlockPlaceCheck {
 
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
-
 
     private boolean didLastMovementIncludePosition;
 
@@ -26,8 +28,8 @@ public class PositionPlace extends BlockPlaceCheck {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         didLastMovementIncludePosition = packet.hasPosition();
     }
 
@@ -49,13 +51,17 @@ public class PositionPlace extends BlockPlaceCheck {
             maxEyeHeight = Math.max(maxEyeHeight, height);
         }
         // I love the idle packet, why did you remove it mojang :(
-        // Don't give 0.03 lenience if the player is a 1.8 player and we know they couldn't have 0.03'd because idle packet
-        double movementThreshold = !didLastMovementIncludePosition || canSkipTicks() ? player.getMovementThreshold() : 0;
+        // Don't give 0.03 lenience if the player is a 1.8 player and we know they couldn't have 0.03'd because idle
+        // packet
+        double movementThreshold =
+                !didLastMovementIncludePosition || canSkipTicks() ? player.getMovementThreshold() : 0;
 
-        SimpleCollisionBox eyePositions = new SimpleCollisionBox(player.x, player.y + minEyeHeight, player.z, player.x, player.y + maxEyeHeight, player.z);
+        SimpleCollisionBox eyePositions = new SimpleCollisionBox(
+                player.x, player.y + minEyeHeight, player.z, player.x, player.y + maxEyeHeight, player.z);
         eyePositions.expand(movementThreshold);
 
-        // If the player is inside a block, then they can ray trace through the block and hit the other side of the block
+        // If the player is inside a block, then they can ray trace through the block and hit the other side of the
+        // block
         if (eyePositions.isIntersected(combined)) {
             return;
         }
@@ -81,7 +87,6 @@ public class PositionPlace extends BlockPlaceCheck {
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
-
 }

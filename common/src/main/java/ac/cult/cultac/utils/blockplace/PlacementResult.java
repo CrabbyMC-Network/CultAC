@@ -1,11 +1,10 @@
 package ac.cult.cultac.utils.blockplace;
 
+import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.Collections;
-import java.util.List;
 
 @Getter
 public final class PlacementResult {
@@ -15,7 +14,12 @@ public final class PlacementResult {
     private final boolean consumeInventory;
     private final String resyncReason;
 
-    private PlacementResult(boolean success, List<ChangedBlock> changedBlocks, BlockPos primaryPlacedPosition, boolean consumeInventory, String resyncReason) {
+    private PlacementResult(
+            boolean success,
+            List<ChangedBlock> changedBlocks,
+            BlockPos primaryPlacedPosition,
+            boolean consumeInventory,
+            String resyncReason) {
         this.success = success;
         this.changedBlocks = changedBlocks;
         this.primaryPlacedPosition = primaryPlacedPosition;
@@ -27,10 +31,10 @@ public final class PlacementResult {
         return new PlacementResult(false, Collections.emptyList(), null, false, resyncReason);
     }
 
-    public static PlacementResult success(List<ChangedBlock> changedBlocks, BlockPos primaryPlacedPosition, boolean consumeInventory) {
+    public static PlacementResult success(
+            List<ChangedBlock> changedBlocks, BlockPos primaryPlacedPosition, boolean consumeInventory) {
         return new PlacementResult(true, List.copyOf(changedBlocks), primaryPlacedPosition, consumeInventory, null);
     }
 
-    public record ChangedBlock(BlockPos position, BlockState state) {
-    }
+    public record ChangedBlock(BlockPos position, BlockState state) {}
 }

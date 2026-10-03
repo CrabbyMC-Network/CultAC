@@ -24,5 +24,5 @@ public record BedrockRidingJumpState(int ticks, float scale, boolean held) {
         return new Step(new BedrockRidingJumpState(nextTicks, nextScale, jumping), request);
     }
 
-    public record Step(BedrockRidingJumpState state, int release) { }
+    public record Step(BedrockRidingJumpState state, int release) {}
 }

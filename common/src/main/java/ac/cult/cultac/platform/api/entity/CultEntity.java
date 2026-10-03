@@ -1,11 +1,10 @@
 package ac.cult.cultac.platform.api.entity;
 
-import ac.grim.grimac.api.GrimIdentity;
 import ac.cult.cultac.platform.api.world.PlatformWorld;
 import ac.cult.cultac.utils.math.Location;
-import org.jetbrains.annotations.NotNull;
-
+import ac.grim.grimac.api.GrimIdentity;
 import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
 
 public interface CultEntity extends GrimIdentity {
     /**

@@ -16,23 +16,20 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockWorldSnapshot;
 import java.util.Objects;
 
 public final class BedrockImmobileTick {
-    private BedrockImmobileTick() {
-    }
+    private BedrockImmobileTick() {}
 
     public static Result advance(
             BedrockMovementState current,
             BedrockInputFrame frame,
             BedrockWorldSnapshot baseSnapshot,
             BedrockMobJumpComponentState mobJumpComponent,
-            boolean mayFly
-    ) {
+            boolean mayFly) {
         Objects.requireNonNull(current, "current");
         Objects.requireNonNull(frame, "frame");
         Objects.requireNonNull(baseSnapshot, "baseSnapshot");
         Objects.requireNonNull(mobJumpComponent, "mobJumpComponent");
 
-        BedrockWorldSnapshot snapshot = BedrockSnapshotResolver.forState(
-                baseSnapshot, current, frame);
+        BedrockWorldSnapshot snapshot = BedrockSnapshotResolver.forState(baseSnapshot, current, frame);
         BedrockTravelInput input = new BedrockTravelInput(
                 current,
                 frame,
@@ -49,9 +46,8 @@ public final class BedrockImmobileTick {
         boolean nextCrawling = BedrockPoseInputData.crawlingAfterActions(frame, current.horizontalPose());
         boolean nextSneaking = BedrockPoseInputData.sneakingAfterActions(frame, current.sneakingTicks() > 0L);
 
-        boolean acceptedStartFlying = intent.fly().start()
-                && mayFly
-                && !(facts.swimming().nextActorSwimming() && current.wasInWaterFlag());
+        boolean acceptedStartFlying =
+                intent.fly().start() && mayFly && !(facts.swimming().nextActorSwimming() && current.wasInWaterFlag());
         boolean flyActionReset = acceptedStartFlying || intent.fly().stop();
 
         float nextFallDistance = BedrockFallDistance.update(
@@ -74,7 +70,8 @@ public final class BedrockImmobileTick {
                         Vec3d.ZERO,
                         frame,
                         current.collisionFlags(),
-                        current.coordinateFrame(), current.collisionBox(facts.movementDimensions())),
+                        current.coordinateFrame(),
+                        current.collisionBox(facts.movementDimensions())),
                 new BedrockMovementState.ActorState(
                         new BedrockMovementState.ContactState(
                                 facts.blockMovementSlowdownState(),
@@ -94,7 +91,9 @@ public final class BedrockImmobileTick {
                         facts.boundingBoxMode(),
                         facts.movementDimensions(),
                         current.acknowledgedPlayerDimensions(),
-                        current.actor().horse(), current.actor().boat(), current.collisionDefinition()),
+                        current.actor().horse(),
+                        current.actor().boat(),
+                        current.collisionDefinition()),
                 new BedrockMovementState.TickMemory(
                         current.simulationTick() + 1L,
                         facts.powderSnowTicks(),
@@ -106,15 +105,14 @@ public final class BedrockImmobileTick {
                         prepared.riptide().spinTicks(),
                         nextSneaking ? current.sneakingTicks() + 1L : 0L,
                         prepared.control().itemUseSlowdownTicks(),
-                        prepared.dolphinBoost().endTick(), prepared.cameraWater()), false,
+                        prepared.dolphinBoost().endTick(),
+                        prepared.cameraWater()),
+                false,
                 prepared.input().previousState().attributes());
         return new Result(next, prepared.mobJumpComponent());
     }
 
-    public record Result(
-            BedrockMovementState state,
-            BedrockMobJumpComponentState mobJumpComponent
-    ) {
+    public record Result(BedrockMovementState state, BedrockMobJumpComponentState mobJumpComponent) {
         public Result {
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(mobJumpComponent, "mobJumpComponent");

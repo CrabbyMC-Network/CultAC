@@ -20,15 +20,17 @@ import org.geysermc.geyser.registry.type.BlockMappings;
 final class GeyserBlockStateMappings {
     private static final Map<BlockMappings, Map<Integer, BlockState>> PALETTES = new IdentityHashMap<>();
 
-    private GeyserBlockStateMappings() { }
+    private GeyserBlockStateMappings() {}
 
     static synchronized Map<Integer, BlockState> palette(BlockMappings mappings) {
         return PALETTES.computeIfAbsent(mappings, GeyserBlockStateMappings::create);
     }
 
     private static Map<Integer, BlockState> create(BlockMappings mappings) {
-        int[] javaIds = BedrockServerStateMappings.create(SharedConstants.getProtocolVersion(),
-                Block.BLOCK_STATE_REGISTRY.size(), GameProtocol.getJavaProtocolVersion(),
+        int[] javaIds = BedrockServerStateMappings.create(
+                SharedConstants.getProtocolVersion(),
+                Block.BLOCK_STATE_REGISTRY.size(),
+                GameProtocol.getJavaProtocolVersion(),
                 mappings.getJavaToBedrockBlocks().length);
         return invert(mappings, javaIds);
     }
@@ -40,32 +42,44 @@ final class GeyserBlockStateMappings {
             BlockState state = BedrockBlockLayers.dry(Block.stateById(serverId));
             states.putIfAbsent(definition.getRuntimeId(), state);
             // Inventory holders deliberately send vanilla definitions even with custom overrides.
-            states.putIfAbsent(mappings.getVanillaBedrockBlock(javaIds[serverId]).getRuntimeId(), state);
+            states.putIfAbsent(
+                    mappings.getVanillaBedrockBlock(javaIds[serverId]).getRuntimeId(), state);
         }
         states.put(mappings.getBedrockAir().getRuntimeId(), Blocks.AIR.defaultBlockState());
         // Bedrock item frames replace an otherwise empty block; their Java entity is tracked separately.
         if (mappings.getItemFrames() != null) {
-            mappings.getItemFrames().values().forEach(definition ->
-                    states.putIfAbsent(definition.getRuntimeId(), Blocks.AIR.defaultBlockState()));
+            mappings.getItemFrames()
+                    .values()
+                    .forEach(definition ->
+                            states.putIfAbsent(definition.getRuntimeId(), Blocks.AIR.defaultBlockState()));
         }
         // SkullCache sends these directly; they are not in javaToBedrockBlocks.
         for (var skull : BlockRegistries.CUSTOM_SKULLS.get().values()) {
             for (int rotation = 0; rotation < 16; rotation++) {
                 var definition = mappings.getCustomBlockStateDefinitions().get(skull.getFloorBlockState(rotation));
-                if (definition != null) states.put(definition.getRuntimeId(), Blocks.PLAYER_HEAD.defaultBlockState()
-                        .setValue(BlockStateProperties.ROTATION_16, rotation));
+                if (definition != null)
+                    states.put(
+                            definition.getRuntimeId(),
+                            Blocks.PLAYER_HEAD
+                                    .defaultBlockState()
+                                    .setValue(BlockStateProperties.ROTATION_16, rotation));
             }
             for (Direction direction : Direction.Plane.HORIZONTAL) {
-                var definition = mappings.getCustomBlockStateDefinitions().get(skull.getWallBlockState(
-                        switch (direction) {
-                            case SOUTH -> 0;
-                            case WEST -> 90;
-                            case NORTH -> 180;
-                            case EAST -> 270;
-                            default -> throw new IllegalArgumentException("Non-horizontal skull facing");
-                        }));
-                if (definition != null) states.put(definition.getRuntimeId(), Blocks.PLAYER_WALL_HEAD.defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, direction));
+                var definition = mappings.getCustomBlockStateDefinitions()
+                        .get(skull.getWallBlockState(
+                                switch (direction) {
+                                    case SOUTH -> 0;
+                                    case WEST -> 90;
+                                    case NORTH -> 180;
+                                    case EAST -> 270;
+                                    default -> throw new IllegalArgumentException("Non-horizontal skull facing");
+                                }));
+                if (definition != null)
+                    states.put(
+                            definition.getRuntimeId(),
+                            Blocks.PLAYER_WALL_HEAD
+                                    .defaultBlockState()
+                                    .setValue(BlockStateProperties.HORIZONTAL_FACING, direction));
             }
         }
         return Map.copyOf(states);

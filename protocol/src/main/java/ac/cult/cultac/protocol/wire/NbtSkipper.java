@@ -11,7 +11,7 @@ import io.netty.buffer.ByteBuf;
 
 /** Finds the end of trusted, opaque NBT without building tags or decoding strings. */
 public final class NbtSkipper {
-    private NbtSkipper() { }
+    private NbtSkipper() {}
 
     /** Borrows the input for this call only. Tag zero is the nullable-tag sentinel. */
     public static void skip(ByteBuf input, int maxDepth) {

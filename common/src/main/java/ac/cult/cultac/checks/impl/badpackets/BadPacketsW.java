@@ -1,31 +1,36 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
-
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
 
-@CheckData(name = "BadPacketsW", stableKey = "cult.badpackets.invalid_entity_target", description = "Interacted with non-existent entity", experimental = true)
+@CheckData(
+        name = "BadPacketsW",
+        stableKey = "cult.badpackets.invalid_entity_target",
+        description = "Interacted with non-existent entity",
+        experimental = true)
 public class BadPacketsW extends Check implements CheckListener {
     public BadPacketsW(CultPlayer player) {
         super(player);
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         validateTarget(event, packet);
     }
 
-
-
     @CultPacketHandler
-    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
+    public void onSpectatorAction(
+            PacketReceiveEvent<ServerboundSpectatorAction> event,
+            CultPlayer player,
+            ServerboundSpectatorAction packet) {
         packet.target().ifPresent(entityId -> {
             if (isInvalidEntityTarget(entityId)) {
                 handleInvalidTarget(event, entityId);

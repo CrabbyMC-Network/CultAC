@@ -9,7 +9,13 @@ public final class PlayerInputCodec implements PacketCodec<ServerboundPlayerInpu
     @Override
     public ServerboundPlayerInput read(ByteBuf input, ProtocolContext context) {
         int flags = input.readUnsignedByte();
-        return new ServerboundPlayerInput((flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0,
-                (flags & 8) != 0, (flags & 16) != 0, (flags & 32) != 0, (flags & 64) != 0);
+        return new ServerboundPlayerInput(
+                (flags & 1) != 0,
+                (flags & 2) != 0,
+                (flags & 4) != 0,
+                (flags & 8) != 0,
+                (flags & 16) != 0,
+                (flags & 32) != 0,
+                (flags & 64) != 0);
     }
 }

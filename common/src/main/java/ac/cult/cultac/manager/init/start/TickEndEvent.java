@@ -2,27 +2,30 @@ package ac.cult.cultac.manager.init.start;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.impl.movement.GhostBlockMitigator;
+import ac.cult.cultac.network.protocol.util.SpigotReflectionUtil;
+import ac.cult.cultac.network.protocol.util.reflection.Reflection;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.lists.HookedListWrapper;
-import ac.cult.cultac.network.protocol.util.reflection.Reflection;
-import ac.cult.cultac.network.protocol.util.SpigotReflectionUtil;
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
+import sun.misc.Unsafe;
 
-// Copied from: https://github.com/ThomasOM/Pledge/blob/master/src/main/java/dev/thomazz/pledge/inject/ServerInjector.java
+// Copied from:
+// https://github.com/ThomasOM/Pledge/blob/master/src/main/java/dev/thomazz/pledge/inject/ServerInjector.java
 @SuppressWarnings(value = {"unchecked", "deprecated"})
 public class TickEndEvent implements StartableInitable {
     boolean hasTicked = true;
 
     private static void fireEndOfTick() {
         for (CultPlayer player : CultAPI.INSTANCE.getPlayerDataManager().getEntries()) {
-            if (player.isDisabled()) { continue; } // If we aren't active don't spam extra transactions
+            if (player.isDisabled()) {
+                continue;
+            } // If we aren't active don't spam extra transactions
             player.runSafely(() -> player.onEndOfTickEvent());
             final GhostBlockMitigator ghostBlockMitigator = player.getGhostBlockMitigator();
-            ghostBlockMitigator.onEndOfTickEvent(); player.getServerStateNoSlow().tick();
+            ghostBlockMitigator.onEndOfTickEvent();
+            player.getServerStateNoSlow().tick();
         }
     }
 

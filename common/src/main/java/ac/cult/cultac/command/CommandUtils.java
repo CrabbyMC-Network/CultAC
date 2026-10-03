@@ -1,6 +1,10 @@
 package ac.cult.cultac.command;
 
 import ac.cult.cultac.platform.api.sender.Sender;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.experimental.UtilityClass;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.context.CommandInput;
@@ -8,11 +12,6 @@ import org.incendo.cloud.suggestion.Suggestion;
 import org.incendo.cloud.suggestion.SuggestionProvider;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @UtilityClass
 public class CommandUtils {
@@ -25,7 +24,8 @@ public class CommandUtils {
 
     private record SenderSuggestionProvider(List<Suggestion> suggestions) implements SuggestionProvider<Sender> {
         @Override
-        public @NotNull CompletableFuture<? extends @NotNull Iterable<? extends @NotNull Suggestion>> suggestionsFuture(@NotNull CommandContext context, @NotNull CommandInput input) {
+        public @NotNull CompletableFuture<? extends @NotNull Iterable<? extends @NotNull Suggestion>> suggestionsFuture(
+                @NotNull CommandContext context, @NotNull CommandInput input) {
             return CompletableFuture.completedFuture(suggestions);
         }
     }

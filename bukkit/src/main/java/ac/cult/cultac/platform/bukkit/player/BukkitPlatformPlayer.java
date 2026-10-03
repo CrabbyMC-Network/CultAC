@@ -14,6 +14,8 @@ import ac.cult.cultac.platform.bukkit.utils.reflection.PaperUtils;
 import ac.cult.cultac.utils.anticheat.MultiLibUtil;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
 import ac.cult.cultac.utils.math.Location;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.minecraft.world.phys.Vec3;
@@ -25,12 +27,10 @@ import org.bukkit.permissions.PermissionDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-
 public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPlayer {
     @Getter
     private final Player bukkitPlayer;
+
     @Getter
     private final PlatformInventory inventory;
 
@@ -59,7 +59,8 @@ public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPl
 
     @Override
     public boolean hasPermission(String s, boolean defaultIfUnset) {
-        return this.bukkitPlayer.hasPermission(new Permission(s, defaultIfUnset ? PermissionDefault.TRUE : PermissionDefault.FALSE));
+        return this.bukkitPlayer.hasPermission(
+                new Permission(s, defaultIfUnset ? PermissionDefault.TRUE : PermissionDefault.FALSE));
     }
 
     @Override

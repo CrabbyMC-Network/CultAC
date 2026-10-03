@@ -1,18 +1,21 @@
 package ac.cult.cultac.checks.impl.breaking;
 
-import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import org.bukkit.block.BlockFace;
 
-@CheckData(name = "PositionBreakB", stableKey = "cult.breaking.position_break_b", description = "Cancelled block breaking with an invalid block face")
+@CheckData(
+        name = "PositionBreakB",
+        stableKey = "cult.breaking.position_break_b",
+        description = "Cancelled block breaking with an invalid block face")
 public class PositionBreakB extends Check implements BlockBreakListener {
     private static final Verbose V = Verbose.of("lastFace={face}, action={digging}");
 
@@ -31,9 +34,7 @@ public class PositionBreakB extends Check implements BlockBreakListener {
         }
 
         if (lastFace != null) {
-            flag(V.write(verbose())
-                    .uint(VerboseTags.enumId(lastFace))
-                    .uint(VerboseCodecs.digging(blockBreak.action)));
+            flag(V.write(verbose()).uint(VerboseTags.enumId(lastFace)).uint(VerboseCodecs.digging(blockBreak.action)));
         }
 
         if (blockBreak.action == PlayerAction.ABORT_DESTROY_BLOCK) { // PE DiggingAction.CANCELLED_DIGGING

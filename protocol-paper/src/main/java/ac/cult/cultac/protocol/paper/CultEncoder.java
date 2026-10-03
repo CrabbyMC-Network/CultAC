@@ -46,7 +46,9 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object message, ChannelPromise promise) {
         // Vanilla configuration tasks must run on I/O even while Cult is busy.
-        if (!(message instanceof ByteBuf || message instanceof CultWrite || message instanceof CultConnection.WriteGroup)) {
+        if (!(message instanceof ByteBuf
+                || message instanceof CultWrite
+                || message instanceof CultConnection.WriteGroup)) {
             ctx.write(message, promise);
             return;
         }
@@ -99,8 +101,11 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
                         }
                     }
                 } else {
-                    try { if (!removed && ctx.channel().isActive()) ctx.flush(); }
-                    finally { connection.endWork(); }
+                    try {
+                        if (!removed && ctx.channel().isActive()) ctx.flush();
+                    } finally {
+                        connection.endWork();
+                    }
                 }
             }
         } catch (Throwable failure) {
@@ -127,16 +132,20 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         Throwable error = failure;
         try {
             ctx.executor().execute(() -> {
-                try { complete(ctx, result, error); }
-                finally {
+                try {
+                    complete(ctx, result, error);
+                } finally {
                     busy = false;
                     drain(ctx);
                 }
             });
         } catch (RuntimeException rejected) {
             if (result != null) result.discard(rejected);
-            try { ctx.channel().close(); }
-            finally { connection.endWork(); }
+            try {
+                ctx.channel().close();
+            } finally {
+                connection.endWork();
+            }
         }
     }
 
@@ -158,8 +167,8 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         // Recursive callbacks finish first and append their complete groups here.
         // The enclosing group's frames have not been appended yet, so these writes
         // precede even its opening delimiter. No retained expansion tree is needed.
-        connection.reentrantWriter((message, promise) ->
-                prepare(ctx, new Pending(message, promise), activeFamilies, output));
+        connection.reentrantWriter(
+                (message, promise) -> prepare(ctx, new Pending(message, promise), activeFamilies, output));
         try {
             prepare(ctx, pending, activeFamilies, output);
             return output;
@@ -171,8 +180,8 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private void prepare(ChannelHandlerContext ctx, Pending pending,
-                         ArrayDeque<PacketType<?>> activeFamilies, Output output) {
+    private void prepare(
+            ChannelHandlerContext ctx, Pending pending, ArrayDeque<PacketType<?>> activeFamilies, Output output) {
         // Reentrant writes observe the emitted wire state, not an enclosing
         // group's planned delimiters. I/O cannot emit while this dispatch runs.
         var batch = new Batch(insideBundle);
@@ -191,8 +200,12 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private void prepareGroup(ChannelHandlerContext ctx, CultConnection.WriteGroup group, ChannelPromise promise,
-                              ArrayDeque<PacketType<?>> activeFamilies, Batch batch) {
+    private void prepareGroup(
+            ChannelHandlerContext ctx,
+            CultConnection.WriteGroup group,
+            ChannelPromise promise,
+            ArrayDeque<PacketType<?>> activeFamilies,
+            Batch batch) {
         boolean wrapGroup = group.bundle() && !batch.inside;
         var parts = new LinkedHashSet<ChannelPromise>();
         if (wrapGroup) batch.add(delimiter(ctx));
@@ -223,8 +236,8 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
 
     /** Expands only packets. The caller decides whether this expansion needs a bundle. */
     @SuppressWarnings("unchecked")
-    private boolean expandPacket(ChannelHandlerContext ctx, Pending pending,
-                                 ArrayDeque<PacketType<?>> activeFamilies, Batch batch) {
+    private boolean expandPacket(
+            ChannelHandlerContext ctx, Pending pending, ArrayDeque<PacketType<?>> activeFamilies, Batch batch) {
         var phase = connection.phase(PacketDirection.CLIENTBOUND);
         ByteBuf bytes;
         boolean silent = pending.message instanceof CultWrite write && write.silent();
@@ -260,7 +273,8 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
             activeFamilies.addLast(route.type());
             try {
                 var type = (PacketType<ClientboundPacket>) route.type();
-                var event = new PacketSendEvent<>(connection.user(), phase, type, (ClientboundPacket) original, batch.inside);
+                var event = new PacketSendEvent<>(
+                        connection.user(), phase, type, (ClientboundPacket) original, batch.inside);
                 connection.dispatcher().send(event, route.send());
                 if (event.isCancelled()) {
                     pending.promise.trySuccess();
@@ -331,14 +345,18 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
             if (frame.type == ClientboundPackets.BUNDLE_DELIMITER) insideBundle = !insideBundle;
             else if (frame.type != null) connection.forwarded(frame.type, null);
         }
-        if (!output.tasks.isEmpty()) connection.executeLater(() -> {
-            for (Runnable task : output.tasks) CultNetworkManager.runDeferredPacketTask("tasksAfterSend", task);
-        });
+        if (!output.tasks.isEmpty())
+            connection.executeLater(() -> {
+                for (Runnable task : output.tasks) CultNetworkManager.runDeferredPacketTask("tasksAfterSend", task);
+            });
     }
 
     private void fail(ChannelHandlerContext ctx, Throwable failure) {
-        try { ctx.fireExceptionCaught(failure); }
-        finally { ctx.close(); }
+        try {
+            ctx.fireExceptionCaught(failure);
+        } finally {
+            ctx.close();
+        }
     }
 
     @Override
@@ -352,8 +370,11 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private sealed interface Operation permits Pending, Flush { }
-    private enum Flush implements Operation { INSTANCE }
+    private sealed interface Operation permits Pending, Flush {}
+
+    private enum Flush implements Operation {
+        INSTANCE
+    }
 
     private record Pending(Object message, ChannelPromise promise) implements Operation {
         void discard(Throwable failure) {
@@ -362,8 +383,9 @@ public final class CultEncoder extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private record Frame(ByteBuf bytes, ChannelPromise promise, PacketType<?> type) { }
-    private record GroupCompletion(List<ChannelPromise> parts, ChannelPromise promise) { }
+    private record Frame(ByteBuf bytes, ChannelPromise promise, PacketType<?> type) {}
+
+    private record GroupCompletion(List<ChannelPromise> parts, ChannelPromise promise) {}
 
     /** Local bundle cursor during expansion; it never changes the emitted wire state. */
     private static final class Batch {

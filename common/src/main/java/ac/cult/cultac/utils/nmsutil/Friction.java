@@ -7,21 +7,26 @@ import ac.cult.cultac.utils.data.MainSupportingBlockData;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHappyGhast;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityNautilus;
 import ac.cult.cultac.utils.math.CultMath;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.potion.PotionEffectType;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.potion.PotionEffectType;
 
 public final class Friction {
-    private Friction() {
-    }
+    private Friction() {}
 
-    public static List<Vec3> applyTravelDrag(CultPlayer player, boolean onGround, Vec3 from, Vec3 playerVelocity,
-                                             SimulationContext context, boolean falling, double gravity,
-                                             boolean inWater, boolean inLava) {
+    public static List<Vec3> applyTravelDrag(
+            CultPlayer player,
+            boolean onGround,
+            Vec3 from,
+            Vec3 playerVelocity,
+            SimulationContext context,
+            boolean falling,
+            double gravity,
+            boolean inWater,
+            boolean inLava) {
         if (context.getVehicle() instanceof PacketEntityHappyGhast) {
             if (inWater) {
                 return Collections.singletonList(playerVelocity.scale(0.8F));
@@ -78,7 +83,8 @@ public final class Friction {
 
         // Normal friction is this well known formula, account for slow falling, has lowest priority
         boolean use26Dot2 = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_2);
-        float frictionUnderPlayer = getPlayerFriction(player, from, context.getLastTickMainSupportingBlockData(), onGround, false, false);
+        float frictionUnderPlayer =
+                getPlayerFriction(player, from, context.getLastTickMainSupportingBlockData(), onGround, false, false);
         playerVelocity = playerVelocity.multiply(frictionUnderPlayer, 1.0, frictionUnderPlayer);
 
         if (player.compensatedEntities.getLevitationAmplifier() != null) {
@@ -102,7 +108,8 @@ public final class Friction {
         // MCP-Reborn 26.2 LivingEntity#travelInAir applies the vertical air drag
         // through the air_drag_modifier attribute instead of the raw 0.98 constant.
         double verticalDrag = use26Dot2
-                ? computeModifiedFriction(0.98F, (float) player.compensatedEntities.getEntityInControl().airDragModifier)
+                ? computeModifiedFriction(
+                        0.98F, (float) player.compensatedEntities.getEntityInControl().airDragModifier)
                 : 0.98F;
         playerVelocity = playerVelocity.multiply(1, verticalDrag, 1);
         return Collections.singletonList(playerVelocity);
@@ -113,7 +120,13 @@ public final class Friction {
         return CultMath.clampFloat(1.0F - (1.0F - friction) * modifier, 0.0F, 1.0F);
     }
 
-    private static void addFluidFallingAdjustedMovement(CultPlayer player, SimulationContext context, List<Vec3> results, double gravity, boolean falling, Vec3 movement) {
+    private static void addFluidFallingAdjustedMovement(
+            CultPlayer player,
+            SimulationContext context,
+            List<Vec3> results,
+            double gravity,
+            boolean falling,
+            Vec3 movement) {
         if (!player.compensatedEntities.getEntityInControl().hasGravity || gravity == 0.0D) {
             addDistinct(results, movement);
             return;
@@ -124,14 +137,18 @@ public final class Friction {
         // SimulationContext sprint candidates for this simulated client tick;
         // mutable CultPlayer sprint state may already reflect a later packet.
         for (boolean sprinting : context.getIsSprinting().getStates()) {
-            Vec3 candidate = sprinting && context.getVehicle() == null ? movement : applyFluidGravity(gravity, falling, movement);
+            Vec3 candidate = sprinting && context.getVehicle() == null
+                    ? movement
+                    : applyFluidGravity(gravity, falling, movement);
             addDistinct(results, candidate);
         }
     }
 
     public static Vec3 applyFluidGravity(double gravity, boolean falling, Vec3 movement) {
         double movementWithGravity = movement.y - gravity / 16.0D;
-        double y = falling && Math.abs(movement.y - 0.005D) >= 0.003D && Math.abs(movementWithGravity) < 0.003D ? -0.003D : movementWithGravity;
+        double y = falling && Math.abs(movement.y - 0.005D) >= 0.003D && Math.abs(movementWithGravity) < 0.003D
+                ? -0.003D
+                : movementWithGravity;
         return new Vec3(movement.x, y, movement.z);
     }
 
@@ -144,7 +161,8 @@ public final class Friction {
             }
             return Collections.singletonList((double) friction);
         }
-        boolean skeletonHorse = context.getVehicle() != null && context.getVehicle().type == EntityTypesCompat.SKELETON_HORSE;
+        boolean skeletonHorse =
+                context.getVehicle() != null && context.getVehicle().type == EntityTypesCompat.SKELETON_HORSE;
         boolean dolphinsGrace = context.getEntities().getPotionLevelForPlayer(PotionEffectType.DOLPHINS_GRACE) != null;
         return getSwimFriction(skeletonHorse, dolphinsGrace, context.getDepthStriderLevel());
     }
@@ -163,18 +181,24 @@ public final class Friction {
         return friction + ((0.54600006F - friction) * depthStriderLevel / 3.0F);
     }
 
-    public static float getPlayerFriction(CultPlayer player, Vec3 from, MainSupportingBlockData mainSupportingBlockData,
-                                          boolean onGround, boolean isGliding, boolean isFlying) {
+    public static float getPlayerFriction(
+            CultPlayer player,
+            Vec3 from,
+            MainSupportingBlockData mainSupportingBlockData,
+            boolean onGround,
+            boolean isGliding,
+            boolean isFlying) {
         if (isGliding || isFlying) return 1.0f;
 
         // MCP-Reborn 26.2 LivingEntity#travelInAir passes the block friction and the
         // 0.91 air drag through the friction_modifier / air_drag_modifier attributes.
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_2)) {
-            float airDrag = computeModifiedFriction(0.91F, (float) player.compensatedEntities.getEntityInControl().airDragModifier);
+            float airDrag = computeModifiedFriction(
+                    0.91F, (float) player.compensatedEntities.getEntityInControl().airDragModifier);
             if (!onGround) return airDrag;
-            float blockFriction = computeModifiedFriction(
-                    BlockProperties.getFriction(player, mainSupportingBlockData, from),
-                    (float) player.compensatedEntities.getEntityInControl().frictionModifier);
+            float blockFriction =
+                    computeModifiedFriction(BlockProperties.getFriction(player, mainSupportingBlockData, from), (float)
+                            player.compensatedEntities.getEntityInControl().frictionModifier);
             return blockFriction * airDrag;
         }
 

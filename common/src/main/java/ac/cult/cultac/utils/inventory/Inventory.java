@@ -5,10 +5,10 @@ import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.slot.EquipmentSlot;
 import ac.cult.cultac.utils.inventory.slot.ResultSlot;
 import ac.cult.cultac.utils.inventory.slot.Slot;
-import org.bukkit.inventory.ItemStack;
 import lombok.Getter;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 public class Inventory extends AbstractContainerMenu {
     public static final int SLOT_OFFHAND = 45;
@@ -23,6 +23,7 @@ public class Inventory extends AbstractContainerMenu {
     public static final int SLOT_LEGGINGS = 6;
     public static final int SLOT_BOOTS = 7;
     public int selected = 0;
+
     @Getter
     InventoryStorage inventoryStorage;
 
@@ -123,7 +124,10 @@ public class Inventory extends AbstractContainerMenu {
     }
 
     private boolean hasRemainingSpaceForItem(ItemStack one, ItemStack two) {
-        return !one.isEmpty() && ItemUtil.isSameItemSameTags(one, two) && one.getAmount() < one.getMaxStackSize() && one.getAmount() < this.getMaxStackSize();
+        return !one.isEmpty()
+                && ItemUtil.isSameItemSameTags(one, two)
+                && one.getAmount() < one.getMaxStackSize()
+                && one.getAmount() < this.getMaxStackSize();
     }
 
     private static final int VANILLA_INVENTORY_SIZE = 36;
@@ -211,5 +215,4 @@ public class Inventory extends AbstractContainerMenu {
             }
         }
     }
-
 }

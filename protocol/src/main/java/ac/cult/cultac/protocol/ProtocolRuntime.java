@@ -1,10 +1,9 @@
 package ac.cult.cultac.protocol;
 
 import ac.cult.cultac.protocol.data.ProtocolData;
+import ac.cult.cultac.protocol.packet.Packets;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-import ac.cult.cultac.protocol.packet.Packets;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +24,8 @@ public final class ProtocolRuntime {
         bindings = new ResolvedPacket<?>[ConnectionPhase.values().length][PacketDirection.values().length][];
         for (ConnectionPhase phase : ConnectionPhase.values()) {
             for (PacketDirection direction : PacketDirection.values()) {
-                bindings[phase.ordinal()][direction.ordinal()] = new ResolvedPacket<?>[data.packets(phase, direction).size()];
+                bindings[phase.ordinal()][direction.ordinal()] =
+                        new ResolvedPacket<?>[data.packets(phase, direction).size()];
             }
         }
         Map<Class<?>, PacketType<?>> records = new HashMap<>();
@@ -34,7 +34,8 @@ public final class ProtocolRuntime {
         Set<PacketType<?>> supported = new HashSet<>();
         for (int slot = 0; slot < catalog.size(); slot++) {
             PacketType<?> type = catalog.get(slot);
-            if (keys.put(type.key(), type) != null || (!type.isOpaque() && records.put(type.recordClass(), type) != null)) {
+            if (keys.put(type.key(), type) != null
+                    || (!type.isOpaque() && records.put(type.recordClass(), type) != null)) {
                 throw new ProtocolResolutionException("Duplicate catalog key/record: " + type);
             }
             slots.put(type, slot);
@@ -42,7 +43,8 @@ public final class ProtocolRuntime {
             List<String> present = type.wireNames(data);
             if (present.isEmpty()) continue;
             if (present.size() > 1 && !(type.codec() instanceof VariantCodec<?>)) {
-                throw new ProtocolResolutionException("Renamed family " + type + " carries " + present + " on " + data.version());
+                throw new ProtocolResolutionException(
+                        "Renamed family " + type + " carries " + present + " on " + data.version());
             }
             type.codec().validate(data);
             for (String name : present) {
@@ -52,12 +54,22 @@ public final class ProtocolRuntime {
                         throw new ProtocolResolutionException("Packet " + type + "/" + name + " is missing on "
                                 + data.version() + "/" + phase + " but present in another declared phase");
                     }
-                    ResolvedPacket<?>[] table = bindings[phase.ordinal()][type.direction().ordinal()];
+                    ResolvedPacket<?>[] table =
+                            bindings[phase.ordinal()][type.direction().ordinal()];
                     if (table[id] != null) {
-                        throw new ProtocolResolutionException("Duplicate catalog ID " + id + " on " + phase + "/" + type.direction());
+                        throw new ProtocolResolutionException(
+                                "Duplicate catalog ID " + id + " on " + phase + "/" + type.direction());
                     }
-                    table[id] = resolve(type, new ProtocolContext(type, data, phase, name, commandInputLimit,
-                            type.wireNames().indexOf(name)), slot);
+                    table[id] = resolve(
+                            type,
+                            new ProtocolContext(
+                                    type,
+                                    data,
+                                    phase,
+                                    name,
+                                    commandInputLimit,
+                                    type.wireNames().indexOf(name)),
+                            slot);
                 }
             }
             supported.add(type);
@@ -90,12 +102,25 @@ public final class ProtocolRuntime {
         return new ProtocolRuntime(data, List.copyOf(catalog), commandInputLimit);
     }
 
-    public ProtocolData data() { return data; }
-    public boolean supports(PacketType<?> type) { return supported.contains(type); }
-    public boolean contains(PacketType<?> type) { return byKey.get(type.key()) == type; }
-    public PacketType<?> typeForKey(String key) { return byKey.get(key); }
+    public ProtocolData data() {
+        return data;
+    }
+
+    public boolean supports(PacketType<?> type) {
+        return supported.contains(type);
+    }
+
+    public boolean contains(PacketType<?> type) {
+        return byKey.get(type.key()) == type;
+    }
+
+    public PacketType<?> typeForKey(String key) {
+        return byKey.get(key);
+    }
     /** Catalog metadata, including a declared type absent on this version; null means not in the catalog. */
-    public PacketType<?> typeForRecord(Class<?> type) { return byRecord.get(type); }
+    public PacketType<?> typeForRecord(Class<?> type) {
+        return byRecord.get(type);
+    }
 
     /** Dense index of a catalog type in this runtime, for per-type tables that frame lookups reach through {@link ResolvedPacket#slot()}. */
     public int slot(PacketType<?> type) {
@@ -105,14 +130,16 @@ public final class ProtocolRuntime {
     }
 
     /** One past the largest {@link #slot}; every catalog type has a slot, supported on this version or not. */
-    public int slotCount() { return slots.size(); }
+    public int slotCount() {
+        return slots.size();
+    }
 
     public ResolvedPacket<?> binding(ConnectionPhase phase, PacketDirection direction, int id) {
         var table = bindings[phase.ordinal()][direction.ordinal()];
         return id >= 0 && id < table.length ? table[id] : null;
     }
 
-    public record ResolvedPacket<R>(PacketType<R> type, ProtocolContext context, int slot) { }
+    public record ResolvedPacket<R>(PacketType<R> type, ProtocolContext context, int slot) {}
 
     /** Decode an isolated view positioned after its packet ID. The view is consumed. */
     public Object decode(ConnectionPhase phase, PacketDirection direction, int id, ByteBuf input) {
@@ -138,7 +165,8 @@ public final class ProtocolRuntime {
         if (!type.writable()) throw new UnsupportedOnVersionException("Read-only packet " + type);
         // A variant family names its own variant; a renamed family has one name on this version.
         String name = type.codec() instanceof VariantCodec<R> variants
-                ? type.wireNames().get(variants.variantOf(packet)) : type.wireNames(data).get(0);
+                ? type.wireNames().get(variants.variantOf(packet))
+                : type.wireNames(data).get(0);
         int id = data.packets(phase, type.direction()).id(name);
         var bound = binding(phase, type.direction(), id);
         if (bound == null || bound.type() != type) {
@@ -157,11 +185,13 @@ public final class ProtocolRuntime {
     /** Resolve authored records against this runtime's existing catalog; creates no codec or routing state. */
     @SuppressWarnings("unchecked") // The catalog validates that each record class owns exactly one type.
     public <R> PacketType<R> writableType(R packet) {
-        PacketType<?> type = packet instanceof ac.cult.cultac.protocol.packet.Opaque opaque ? opaque.type() : typeForRecord(packet.getClass());
+        PacketType<?> type = packet instanceof ac.cult.cultac.protocol.packet.Opaque opaque
+                ? opaque.type()
+                : typeForRecord(packet.getClass());
         if (type == null || !contains(type) || !type.writable()) {
-            throw new UnsupportedOnVersionException("No writable catalog entry for " + packet.getClass().getName());
+            throw new UnsupportedOnVersionException(
+                    "No writable catalog entry for " + packet.getClass().getName());
         }
         return (PacketType<R>) type;
     }
-
 }

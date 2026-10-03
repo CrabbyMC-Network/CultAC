@@ -140,14 +140,19 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
         this.playerUuid = source.playerUuid;
     }
 
-    public BedrockCoordinateFrame getCoordinateFrame() { return coordinateFrame; }
+    public BedrockCoordinateFrame getCoordinateFrame() {
+        return coordinateFrame;
+    }
 
-    public boolean hasCoordinateProvenance() { return coordinateProvenance; }
+    public boolean hasCoordinateProvenance() {
+        return coordinateProvenance;
+    }
 
     /** Called only after resolving the origin against the ordered transport queue. */
     public BedrockAuthInputFrame resolveCoordinates(BedrockCoordinateFrame frame) {
         if (frame.equals(coordinateFrame)) return this;
-        Vec3 localFeet = packetPosition == null ? coordinateFrame.toLocal(position)
+        Vec3 localFeet = packetPosition == null
+                ? coordinateFrame.toLocal(position)
                 : new Vec3((float) packetPosition.x, position.y, (float) packetPosition.z);
         return new BedrockAuthInputFrame(this, frame, frame.toWorld(localFeet));
     }
@@ -157,8 +162,7 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
     }
 
     public boolean hasMinimumStrictData() {
-        return position != null
-                && hasRotation;
+        return position != null && hasRotation;
     }
 
     public UUID getPlayerUuid() {
@@ -177,7 +181,9 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
         return inputMode;
     }
 
-    public int getInteractionModel() { return interactionModel; }
+    public int getInteractionModel() {
+        return interactionModel;
+    }
 
     public int getPlayMode() {
         return playMode;
@@ -233,8 +239,7 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
         if (ordinal < Long.SIZE) {
             return (rawInputFlags & (1L << ordinal)) != 0L;
         }
-        return ordinal < Long.SIZE * 2
-                && (rawInputFlagsHigh & (1L << (ordinal - Long.SIZE))) != 0L;
+        return ordinal < Long.SIZE * 2 && (rawInputFlagsHigh & (1L << (ordinal - Long.SIZE))) != 0L;
     }
 
     public boolean isJumping() {
@@ -322,14 +327,20 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
     }
 
     /** Null for captures that did not preserve vehicle identity; -1 means no predicted vehicle. */
-    public Long getPredictedVehicleId() { return predictedVehicleId; }
+    public Long getPredictedVehicleId() {
+        return predictedVehicleId;
+    }
 
     /** The bridge resolves the runtime ID; mount authority still comes from compensated passengers. */
-    public Integer getPredictedVehicleJavaId() { return predictedVehicleJavaId; }
+    public Integer getPredictedVehicleJavaId() {
+        return predictedVehicleJavaId;
+    }
 
-    public VehicleRotation getVehicleRotation() { return vehicleRotation; }
+    public VehicleRotation getVehicleRotation() {
+        return vehicleRotation;
+    }
 
-    public record VehicleRotation(float yaw, float pitch) { }
+    public record VehicleRotation(float yaw, float pitch) {}
 
     public boolean samePacketAs(BedrockAuthInputFrame other) {
         return other != null
@@ -439,7 +450,10 @@ public final class BedrockAuthInputFrame implements AuthoredMovementFrame {
             return this;
         }
 
-        public Builder interactionModel(int value) { interactionModel = value; return this; }
+        public Builder interactionModel(int value) {
+            interactionModel = value;
+            return this;
+        }
 
         public Builder playMode(int playMode) {
             this.playMode = playMode;

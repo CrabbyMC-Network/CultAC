@@ -1,21 +1,24 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
-
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import java.util.ArrayDeque;
 
-@CheckData(name = "PacketOrderE", stableKey = "cult.packetorder.slot_order", description = "Changed held item slot during another conflicting action", experimental = true)
+@CheckData(
+        name = "PacketOrderE",
+        stableKey = "cult.packetorder.slot_order",
+        description = "Changed held item slot during another conflicting action",
+        experimental = true)
 public class PacketOrderE extends Check implements PostPredictionListener {
-    private static final Verbose V = Verbose.of(
-            "attacking={bool}, rightClicking={bool}, openingInventory={bool}, releasing={bool}"
+    private static final Verbose V =
+            Verbose.of("attacking={bool}, rightClicking={bool}, openingInventory={bool}, releasing={bool}"
                     + ", sneaking={bool}, sprinting={bool}, bed={bool}, gliding={bool}, mountJumping={bool}");
 
     private static final int ATTACKING = 1 << 0;
@@ -50,7 +53,8 @@ public class PacketOrderE extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         int currentFlags = currentFlags();
         if (currentFlags != 0) {
             if (player.canSkipTicks() && flags.add(currentFlags) || flag(write(currentFlags))) {

@@ -8,8 +8,7 @@ public final class BedrockBlockMetadata {
     public static final String CONTACT_BEHAVIORS = "contactBehaviors";
     public static final String BLOCK_FRICTION = "blockFriction";
 
-    private BedrockBlockMetadata() {
-    }
+    private BedrockBlockMetadata() {}
 
     public static boolean hasBedrockBlockProperty(PlacedBlockCollision block, long mask) {
         Objects.requireNonNull(block, "block");
@@ -27,9 +26,7 @@ public final class BedrockBlockMetadata {
         if (value instanceof String text) {
             return Long.decode(text);
         }
-        throw new IllegalArgumentException(
-            BLOCK_PROPERTY_MASK + " must be a number or numeric string"
-        );
+        throw new IllegalArgumentException(BLOCK_PROPERTY_MASK + " must be a number or numeric string");
     }
 
     public static Object value(Map<String, Object> bedrockState, String key) {

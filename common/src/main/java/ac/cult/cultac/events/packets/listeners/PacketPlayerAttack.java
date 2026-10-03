@@ -1,29 +1,27 @@
 package ac.cult.cultac.events.packets.listeners;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.packetentity.PacketEntity;
-import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import org.bukkit.inventory.ItemStack;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
+import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.inventory.ItemStack;
 
 public class PacketPlayerAttack {
 
-    //LOW
+    // LOW
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         handleInteractPacket(player, packet);
     }
-
-
 
     @CultPacketHandler("serverbound.client_tick_end")
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
@@ -36,8 +34,10 @@ public class PacketPlayerAttack {
                 ItemStack heldItem = player.getInventory().getHeldItem();
                 PacketEntity entity = player.compensatedEntities.getEntity(interact.entityId());
 
-                if (entity != null && (!(entity.type instanceof LivingEntity) || entity.type == EntityTypesCompat.PLAYER)) {
-                    boolean hasKnockbackSword = heldItem != null && heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0;
+                if (entity != null
+                        && (!(entity.type instanceof LivingEntity) || entity.type == EntityTypesCompat.PLAYER)) {
+                    boolean hasKnockbackSword =
+                            heldItem != null && heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0;
 
                     player.maxPlayerAttackSlow += 1;
 
@@ -56,5 +56,4 @@ public class PacketPlayerAttack {
             }
         }
     }
-
 }

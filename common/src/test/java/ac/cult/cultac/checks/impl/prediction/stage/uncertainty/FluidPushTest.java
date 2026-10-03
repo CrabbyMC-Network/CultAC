@@ -1,10 +1,10 @@
 package ac.cult.cultac.checks.impl.prediction.stage.uncertainty;
 
+import static org.junit.Assert.assertEquals;
+
 import ac.cult.cultac.checks.impl.prediction.PredVector;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class FluidPushTest {
     private static final double WATER_ENTRY_RADIUS = 0.028D;

@@ -3,13 +3,12 @@ package ac.cult.cultac.utils.data.webhook.discord;
 import ac.cult.cultac.utils.data.json.JsonSerializable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -55,7 +54,8 @@ public class EmbedField implements JsonSerializable {
     public @NotNull EmbedField value(@NotNull String value) {
         Objects.requireNonNull(value, "Embed field value cannot be null!");
         if (value.length() > MAX_VALUE_LENGTH) {
-            throw new IllegalArgumentException("Embed field value too long, " + value.length() + " > " + MAX_VALUE_LENGTH);
+            throw new IllegalArgumentException(
+                    "Embed field value too long, " + value.length() + " > " + MAX_VALUE_LENGTH);
         }
 
         this.value = value;

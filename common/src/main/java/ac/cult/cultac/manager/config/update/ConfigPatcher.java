@@ -16,11 +16,8 @@ public final class ConfigPatcher {
 
     // ... (formatValue and YAML_KEYWORDS/SPECIAL_CHARS constants are unchanged) ...
     private static final Set<String> YAML_KEYWORDS_TO_QUOTE = new HashSet<>(Arrays.asList(
-            "y", "Y", "yes", "Yes", "YES", "n", "N", "no", "No", "NO",
-            "true", "True", "TRUE", "false", "False", "FALSE",
-            "on", "On", "ON", "off", "Off", "OFF",
-            "null", "Null", "NULL", "~"
-    ));
+            "y", "Y", "yes", "Yes", "YES", "n", "N", "no", "No", "NO", "true", "True", "TRUE", "false", "False",
+            "FALSE", "on", "On", "ON", "off", "Off", "OFF", "null", "Null", "NULL", "~"));
     private static final String YAML_SPECIAL_CHARS = ":{}[]#|>&*!%@`'\",-?!^$";
 
     public ConfigPatcher(File configFile) throws IOException {
@@ -108,7 +105,9 @@ public final class ConfigPatcher {
         Pattern linePattern = Pattern.compile("^(\\s*[^:]+:\\s*)(.*?)(\\s*#.*)?$");
         Matcher matcher = linePattern.matcher(line);
         if (matcher.matches()) {
-            lines.set(position.lineIndex, matcher.group(1) + valueStr + (matcher.group(3) != null ? matcher.group(3) : ""));
+            lines.set(
+                    position.lineIndex,
+                    matcher.group(1) + valueStr + (matcher.group(3) != null ? matcher.group(3) : ""));
         }
     }
 
@@ -152,7 +151,8 @@ public final class ConfigPatcher {
         }
     }
 
-    // ... (generateListBlock, formatValue, getIndentation, save, NodePosition are unchanged from previous correct version) ...
+    // ... (generateListBlock, formatValue, getIndentation, save, NodePosition are unchanged from previous correct
+    // version) ...
     private String generateListBlock(List<?> list, int indentation) {
         if (list.isEmpty()) return "";
         StringBuilder block = new StringBuilder();
@@ -163,6 +163,7 @@ public final class ConfigPatcher {
         }
         return block.toString();
     }
+
     private String formatValue(Object value) {
         if (value == null) return "null";
         if (value instanceof Boolean || value instanceof Number) return value.toString();
@@ -177,7 +178,9 @@ public final class ConfigPatcher {
                     Double.parseDouble(s);
                     needsQuotes = true;
                 }
-            } catch (NumberFormatException e) { /* Good */ }
+            } catch (NumberFormatException e) {
+                /* Good */
+            }
         }
         if (!needsQuotes) {
             for (char c : YAML_SPECIAL_CHARS.toCharArray()) {
@@ -196,6 +199,7 @@ public final class ConfigPatcher {
         }
         return s;
     }
+
     private int getIndentation(String line) {
         for (int i = 0; i < line.length(); i++) if (line.charAt(i) != ' ') return i;
         return 0;
@@ -231,15 +235,18 @@ public final class ConfigPatcher {
             }
         }
         String valuePart = (hashIdx >= 0 ? afterColon.substring(0, hashIdx) : afterColon).trim();
-        String trailingComment = hashIdx >= 0 ? "  " + afterColon.substring(hashIdx).trim() : "";
+        String trailingComment =
+                hashIdx >= 0 ? "  " + afterColon.substring(hashIdx).trim() : "";
         if (valuePart.startsWith("[") && valuePart.endsWith("]")) {
             // Inline-list form. Keep "key:" + any trailing comment; let the
             // block-list rewrite happen below.
             lines.set(lineIndex, line.substring(0, colonIdx + 1) + trailingComment);
         }
     }
+
     public void save() throws IOException {
         Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
     }
+
     public record NodePosition(int lineIndex, int indent) {}
 }

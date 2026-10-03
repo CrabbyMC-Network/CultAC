@@ -1,6 +1,5 @@
 package ac.cult.cultac.checks.type;
 
-import ac.grim.grimac.api.config.ConfigManager;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.player.CultPlayer;
@@ -9,26 +8,27 @@ import ac.cult.cultac.utils.collisions.HitboxData;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import net.minecraft.tags.BlockTags;
-import org.bukkit.Material;
-import net.minecraft.core.BlockPos;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-
+import ac.grim.grimac.api.config.ConfigManager;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
+import org.bukkit.Material;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public class BlockPlaceCheck extends Check implements CheckListener {
     private static final List<Material> weirdBoxes = new ArrayList<>();
     private static final List<Material> buggyBoxes = new ArrayList<>();
     protected int cancelVL;
 
-
     public BlockPlaceCheck(CultPlayer player) {
         super(player);
     }
 
-    public BlockPlaceCheck(CultPlayer player, CheckInfo checkInfo) { super(player, checkInfo); }
+    public BlockPlaceCheck(CultPlayer player, CheckInfo checkInfo) {
+        super(player, checkInfo);
+    }
 
     @Override
     public void onReload(@NotNull ConfigManager config) {
@@ -47,13 +47,10 @@ public class BlockPlaceCheck extends Check implements CheckListener {
     }
 
     // Method called immediately after a block is placed, before forwarding block place to server
-    public void onBlockPlace(final BlockPlace place) {
-    }
+    public void onBlockPlace(final BlockPlace place) {}
 
     // Method called the flying packet after the block place
-    public void onPostFlyingBlockPlace(BlockPlace place) {
-    }
-
+    public void onPostFlyingBlockPlace(BlockPlace place) {}
 
     static {
         // Fences and walls aren't worth checking.
@@ -94,7 +91,13 @@ public class BlockPlaceCheck extends Check implements CheckListener {
                     clicked.getZ());
         }
 
-        CollisionBox placedOn = HitboxData.getBlockHitbox(player, place.getMaterial(), player.compensatedWorld.getBlockDataAt(clicked), clicked.getX(), clicked.getY(), clicked.getZ());
+        CollisionBox placedOn = HitboxData.getBlockHitbox(
+                player,
+                place.getMaterial(),
+                player.compensatedWorld.getBlockDataAt(clicked),
+                clicked.getX(),
+                clicked.getY(),
+                clicked.getZ());
 
         List<SimpleCollisionBox> boxes = new ArrayList<>();
         placedOn.downCast(boxes);

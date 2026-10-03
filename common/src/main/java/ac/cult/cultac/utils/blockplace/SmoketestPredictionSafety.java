@@ -2,10 +2,9 @@ package ac.cult.cultac.utils.blockplace;
 
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
-import org.bukkit.event.Event;
-
-import java.util.concurrent.atomic.LongAdder;
 import java.lang.reflect.Modifier;
+import java.util.concurrent.atomic.LongAdder;
+import org.bukkit.event.Event;
 
 public final class SmoketestPredictionSafety {
     private static final boolean ENABLED = Boolean.getBoolean("cult.validation.smoketestControl");
@@ -15,8 +14,7 @@ public final class SmoketestPredictionSafety {
     private static final LongAdder VIOLATIONS = new LongAdder();
     private static final LongAdder ADAPTERS = new LongAdder();
 
-    private SmoketestPredictionSafety() {
-    }
+    private SmoketestPredictionSafety() {}
 
     public static Scope enter(CultPlayer player, String action) {
         if (!ENABLED) return Scope.NO_OP;
@@ -46,7 +44,10 @@ public final class SmoketestPredictionSafety {
                     field.setAccessible(true);
                     Object value = field.get(adapter);
                     if (value != null && forbiddenRuntimeType(value.getClass())) {
-                        violation("live-reference", type.getName() + "#" + field.getName() + ":" + value.getClass().getName());
+                        violation(
+                                "live-reference",
+                                type.getName() + "#" + field.getName() + ":"
+                                        + value.getClass().getName());
                     }
                 } catch (ReflectiveOperationException exception) {
                     violation("adapter-audit", type.getName() + "#" + field.getName());
@@ -90,8 +91,10 @@ public final class SmoketestPredictionSafety {
     private static <T> T violation(String kind, String detail) {
         VIOLATIONS.increment();
         Phase phase = PHASE.get();
-        String context = phase == null ? "player=- action=- thread=" + Thread.currentThread().getName()
-                : "player=" + safe(phase.player()) + " action=" + safe(phase.action()) + " thread=" + safe(phase.thread());
+        String context = phase == null
+                ? "player=- action=- thread=" + Thread.currentThread().getName()
+                : "player=" + safe(phase.player()) + " action=" + safe(phase.action()) + " thread="
+                        + safe(phase.thread());
         String message = "Placement safety violation: kind=" + kind + " detail=" + safe(detail) + " " + context;
         LogUtil.error(message);
         throw new IllegalStateException(message);
@@ -105,8 +108,7 @@ public final class SmoketestPredictionSafety {
         PHASE.remove();
     }
 
-    private record Phase(String player, String action, String thread) {
-    }
+    private record Phase(String player, String action, String thread) {}
 
     public enum Scope implements AutoCloseable {
         ACTIVE,

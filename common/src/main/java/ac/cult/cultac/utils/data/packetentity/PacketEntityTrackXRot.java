@@ -9,7 +9,9 @@ public class PacketEntityTrackXRot extends PacketEntity {
     public float interpYaw;
     public int steps = 0;
 
-    public PacketEntityTrackXRot(CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) { super(player, entityId, type, x, y, z);
+    public PacketEntityTrackXRot(
+            CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) {
+        super(player, entityId, type, x, y, z);
         this.packetYaw = xRot;
         this.interpYaw = xRot;
     }

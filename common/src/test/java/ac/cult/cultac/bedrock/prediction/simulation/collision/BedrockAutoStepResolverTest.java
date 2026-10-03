@@ -20,24 +20,13 @@ public final class BedrockAutoStepResolverTest {
         Vec3d feet = new Vec3d(0.5D, 1.0D, 0.5D);
         Vec3d requestedMove = new Vec3d(0.8D, 0.0D, 0.0D);
         BedrockMovementState current = BedrockMovementState.fromPhysicalFeet(
-            feet,
-            Vec3d.ZERO,
-            BedrockInputFrame.idle(0L),
-            BedrockCollisionFlags.ON_GROUND
-        );
+                feet, Vec3d.ZERO, BedrockInputFrame.idle(0L), BedrockCollisionFlags.ON_GROUND);
         List<BlockCollision> rawShapes = List.of(
-            BlockCollision.raw(new WorldCollisionBox(-10.0D, 0.0D, -10.0D, 10.0D, 1.0D, 10.0D)),
-            BlockCollision.raw(new WorldCollisionBox(0.8D, 1.0D, 0.2D, 1.0D, 1.25D, 0.8D))
-        );
+                BlockCollision.raw(new WorldCollisionBox(-10.0D, 0.0D, -10.0D, 10.0D, 1.0D, 10.0D)),
+                BlockCollision.raw(new WorldCollisionBox(0.8D, 1.0D, 0.2D, 1.0D, 1.25D, 0.8D)));
 
         BedrockEntityMove.CollisionMove move = BedrockEntityMove.collide(
-            current,
-            requestedMove,
-            rawShapes,
-            PlayerDimensionsState.DEFAULT,
-            true,
-            0.5625D
-        );
+                current, requestedMove, rawShapes, PlayerDimensionsState.DEFAULT, true, 0.5625D);
 
         assertTrue(move.stepRetryAllowed());
         assertTrue(move.steppedUp());

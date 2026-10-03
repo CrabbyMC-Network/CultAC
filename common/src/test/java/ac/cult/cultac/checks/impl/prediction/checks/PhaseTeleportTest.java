@@ -1,5 +1,8 @@
 package ac.cult.cultac.checks.impl.prediction.checks;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.player.CultPlayer;
@@ -9,15 +12,14 @@ import ac.cult.cultac.utils.data.TeleportData;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 public class PhaseTeleportTest {
-    @Test public void javaAcknowledgementWithoutMovementRebasesHistory() {
+    @Test
+    public void javaAcknowledgementWithoutMovementRebasesHistory() {
         assertTeleportHistory(false);
     }
 
-    @Test public void sleepingBedrockTeleportWithoutTravelRebasesHistory() {
+    @Test
+    public void sleepingBedrockTeleportWithoutTravelRebasesHistory() {
         assertTeleportHistory(true);
     }
 

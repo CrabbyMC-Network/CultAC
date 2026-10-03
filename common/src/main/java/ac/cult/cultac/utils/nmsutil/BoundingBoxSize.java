@@ -1,8 +1,8 @@
 package ac.cult.cultac.utils.nmsutil;
 
 import ac.cult.cultac.bedrock.prediction.state.BedrockHorseProperties;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
@@ -32,9 +32,10 @@ public class BoundingBoxSize {
 
     public static float getWidth(PacketEntity packetEntity, ClientVersion version, boolean bedrock) {
         if (bedrock && packetEntity.isBoat()) {
-            return (float) (packetEntity.bedrockBoat == null
-                    ? ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.DIMENSIONS.width()
-                    : packetEntity.bedrockBoat.dimensions().width());
+            return (float)
+                    (packetEntity.bedrockBoat == null
+                            ? ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.DIMENSIONS.width()
+                            : packetEntity.bedrockBoat.dimensions().width());
         }
         if (bedrock && BedrockHorseProperties.supports(packetEntity.type)) {
             return 1.3965F * ((packetEntity.isBaby ? 0.5F : 1.0F) * packetEntity.scale);
@@ -46,10 +47,10 @@ public class BoundingBoxSize {
         return getWidth(player, packetEntity);
     }
 
-
     private static float getWidthMinusBaby(PacketEntity packetEntity, ClientVersion version) {
         if (packetEntity instanceof PacketEntitySizeable sizeable) {
-            if (EntityTypesCompat.MAGMA_CUBE.equals(packetEntity.type) || EntityTypesCompat.SLIME.equals(packetEntity.type)) {
+            if (EntityTypesCompat.MAGMA_CUBE.equals(packetEntity.type)
+                    || EntityTypesCompat.SLIME.equals(packetEntity.type)) {
                 return 2.04f * (0.255f * (float) sizeable.size);
             }
             if (EntityTypesCompat.PHANTOM.equals(packetEntity.type)) {
@@ -83,29 +84,45 @@ public class BoundingBoxSize {
         return getRidingOffsetFromVehicle(entity, passenger, player, box);
     }
 
-    public static Vec3 getRidingOffsetFromVehicle(PacketEntity entity, PacketEntity passenger, CultPlayer player, SimpleCollisionBox box) {
-        return getRidingOffsetFromVehicle(entity, passenger, player, box, entity.passengers.indexOf(passenger), entity.passengers.size());
+    public static Vec3 getRidingOffsetFromVehicle(
+            PacketEntity entity, PacketEntity passenger, CultPlayer player, SimpleCollisionBox box) {
+        return getRidingOffsetFromVehicle(
+                entity, passenger, player, box, entity.passengers.indexOf(passenger), entity.passengers.size());
     }
 
-    public static Vec3 getRidingOffsetFromVehicle(PacketEntity entity, PacketEntity passenger, CultPlayer player, SimpleCollisionBox box, int passengerIndex) {
+    public static Vec3 getRidingOffsetFromVehicle(
+            PacketEntity entity,
+            PacketEntity passenger,
+            CultPlayer player,
+            SimpleCollisionBox box,
+            int passengerIndex) {
         return getRidingOffsetFromVehicle(entity, passenger, player, box, passengerIndex, entity.passengers.size());
     }
 
-    public static Vec3 getRidingOffsetFromVehicle(PacketEntity entity, PacketEntity passenger, CultPlayer player, SimpleCollisionBox box, int passengerIndex, int passengerCount) {
+    public static Vec3 getRidingOffsetFromVehicle(
+            PacketEntity entity,
+            PacketEntity passenger,
+            CultPlayer player,
+            SimpleCollisionBox box,
+            int passengerIndex,
+            int passengerCount) {
         double x = (box.maxX + box.minX) / 2.0;
         double y = box.minY;
         double z = (box.maxZ + box.minZ) / 2.0;
 
         Vec3 passengerAttachment;
         if (entity instanceof PacketEntityTrackXRot xRotEntity && EntityTypeUtil.isBoat(entity.type)) {
-            passengerAttachment = getBoatPassengerAttachmentPoint(entity, passenger, xRotEntity.interpYaw, passengerIndex, passengerCount);
+            passengerAttachment = getBoatPassengerAttachmentPoint(
+                    entity, passenger, xRotEntity.interpYaw, passengerIndex, passengerCount);
         } else {
             passengerAttachment = getDefaultPassengerAttachmentPoint(entity, passengerIndex);
         }
 
         // Vanilla Entity#positionRider subtracts the rider's current, scaled attachment
         // after the vehicle supplies its passenger point, including for stationary seats.
-        Vec3 vehicleAttachment = baseDimensions(passenger).scale(passenger.scale).attachments()
+        Vec3 vehicleAttachment = baseDimensions(passenger)
+                .scale(passenger.scale)
+                .attachments()
                 .get(EntityAttachment.VEHICLE, 0, getAttachmentYaw(passenger));
         return new Vec3(x, y, z).add(passengerAttachment).subtract(vehicleAttachment);
     }
@@ -117,21 +134,26 @@ public class BoundingBoxSize {
     private static Vec3 getDefaultPassengerAttachmentPoint(PacketEntity vehicle, int passengerIndex) {
         int index = Math.max(passengerIndex, 0);
         float vehicleYaw = getAttachmentYaw(vehicle);
-        Vec3 passengerAttachment = baseDimensions(vehicle).scale(vehicle.scale).attachments()
+        Vec3 passengerAttachment = baseDimensions(vehicle)
+                .scale(vehicle.scale)
+                .attachments()
                 .getClamped(EntityAttachment.PASSENGER, index, vehicleYaw);
         if (vehicle instanceof PacketEntityHorse horse) {
             // MCP-Reborn AbstractHorse#getPassengerAttachmentPoint adds this rearing offset to the default point.
-            passengerAttachment = passengerAttachment.add(new Vec3(0.0D, 0.15D * horse.standAnimO * vehicle.scale, -0.7D * horse.standAnimO * vehicle.scale)
-                    .yRot(-vehicleYaw * ((float) Math.PI / 180F)));
+            passengerAttachment = passengerAttachment.add(
+                    new Vec3(0.0D, 0.15D * horse.standAnimO * vehicle.scale, -0.7D * horse.standAnimO * vehicle.scale)
+                            .yRot(-vehicleYaw * ((float) Math.PI / 180F)));
         } else if (vehicle instanceof PacketEntityStrider strider) {
             // MCP-Reborn Strider#getPassengerAttachmentPoint adds a client-only
             // walk-animation Y offset before passenger positioning.
-            passengerAttachment = passengerAttachment.add(0.0D, (float) strider.getPassengerAttachmentYOffset() * vehicle.scale, 0.0D);
+            passengerAttachment = passengerAttachment.add(
+                    0.0D, (float) strider.getPassengerAttachmentYOffset() * vehicle.scale, 0.0D);
         }
         return passengerAttachment;
     }
 
-    private static Vec3 getBoatPassengerAttachmentPoint(PacketEntity vehicle, PacketEntity passenger, float vehicleYaw, int passengerIndex, int passengerCount) {
+    private static Vec3 getBoatPassengerAttachmentPoint(
+            PacketEntity vehicle, PacketEntity passenger, float vehicleYaw, int passengerIndex, int passengerCount) {
         int index = Math.max(passengerIndex, 0);
         float zOffset = getSingleBoatPassengerOffset(vehicle);
 
@@ -162,9 +184,10 @@ public class BoundingBoxSize {
 
     public static float getHeight(PacketEntity packetEntity, ClientVersion version, boolean bedrock) {
         if (bedrock && packetEntity.isBoat()) {
-            return (float) (packetEntity.bedrockBoat == null
-                    ? ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.DIMENSIONS.height()
-                    : packetEntity.bedrockBoat.dimensions().height());
+            return (float)
+                    (packetEntity.bedrockBoat == null
+                            ? ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.DIMENSIONS.height()
+                            : packetEntity.bedrockBoat.dimensions().height());
         }
         if (bedrock && BedrockHorseProperties.supports(packetEntity.type)) {
             return 1.6F * ((packetEntity.isBaby ? 0.5F : 1.0F) * packetEntity.scale);
@@ -182,13 +205,21 @@ public class BoundingBoxSize {
 
     public static double getMyRidingOffset(PacketEntity packetEntity) {
         // Attachment points require virtual passenger pairs to preserve animated offsets.
-        if (EntityTypesCompat.PIGLIN.equals(packetEntity.type) || EntityTypesCompat.ZOMBIFIED_PIGLIN.equals(packetEntity.type) || EntityTypesCompat.ZOMBIE.equals(packetEntity.type)) {
+        if (EntityTypesCompat.PIGLIN.equals(packetEntity.type)
+                || EntityTypesCompat.ZOMBIFIED_PIGLIN.equals(packetEntity.type)
+                || EntityTypesCompat.ZOMBIE.equals(packetEntity.type)) {
             return packetEntity.isBaby ? -0.05 : -0.45;
         } else if (EntityTypesCompat.SKELETON.equals(packetEntity.type)) {
             return -0.6;
-        } else if (EntityTypesCompat.ENDERMITE.equals(packetEntity.type) || EntityTypesCompat.SILVERFISH.equals(packetEntity.type)) {
+        } else if (EntityTypesCompat.ENDERMITE.equals(packetEntity.type)
+                || EntityTypesCompat.SILVERFISH.equals(packetEntity.type)) {
             return 0.1;
-        } else if (EntityTypesCompat.EVOKER.equals(packetEntity.type) || EntityTypesCompat.ILLUSIONER.equals(packetEntity.type) || EntityTypesCompat.PILLAGER.equals(packetEntity.type) || EntityTypesCompat.RAVAGER.equals(packetEntity.type) || EntityTypesCompat.VINDICATOR.equals(packetEntity.type) || EntityTypesCompat.WITCH.equals(packetEntity.type)) {
+        } else if (EntityTypesCompat.EVOKER.equals(packetEntity.type)
+                || EntityTypesCompat.ILLUSIONER.equals(packetEntity.type)
+                || EntityTypesCompat.PILLAGER.equals(packetEntity.type)
+                || EntityTypesCompat.RAVAGER.equals(packetEntity.type)
+                || EntityTypesCompat.VINDICATOR.equals(packetEntity.type)
+                || EntityTypesCompat.WITCH.equals(packetEntity.type)) {
             return -0.45;
         } else if (EntityTypesCompat.PLAYER.equals(packetEntity.type)) {
             return -0.35;
@@ -202,14 +233,14 @@ public class BoundingBoxSize {
     }
 
     public static double getPassengerRidingOffset(CultPlayer player, PacketEntity packetEntity) {
-        if (packetEntity instanceof PacketEntityHorse)
-            return (getHeight(player, packetEntity) * 0.75) - 0.25;
+        if (packetEntity instanceof PacketEntityHorse) return (getHeight(player, packetEntity) * 0.75) - 0.25;
 
         if (EntityTypeUtil.isMinecart(packetEntity.type)) {
             return 0;
         } else if (EntityTypeUtil.isBoat(packetEntity.type)) {
             return -0.1;
-        } else if (EntityTypesCompat.HOGLIN.equals(packetEntity.type) || EntityTypesCompat.ZOGLIN.equals(packetEntity.type)) {
+        } else if (EntityTypesCompat.HOGLIN.equals(packetEntity.type)
+                || EntityTypesCompat.ZOGLIN.equals(packetEntity.type)) {
             return getHeight(player, packetEntity) - (packetEntity.isBaby ? 0.2 : 0.15);
         } else if (EntityTypesCompat.LLAMA.equals(packetEntity.type)) {
             return getHeight(player, packetEntity) * 0.67;
@@ -221,7 +252,9 @@ public class BoundingBoxSize {
             return (getHeight(player, packetEntity) * 0.75) - 0.1875;
         } else if (EntityTypesCompat.SPIDER.equals(packetEntity.type)) {
             return getHeight(player, packetEntity) * 0.5;
-        } else if (EntityTypesCompat.STRIDER.equals(packetEntity.type)) {// depends on animation position, good luck getting it exactly, this is the best you can do though
+        } else if (EntityTypesCompat.STRIDER.equals(packetEntity
+                .type)) { // depends on animation position, good luck getting it exactly, this is the best you can do
+            // though
             return getHeight(player, packetEntity) - 0.19;
         }
         return getHeight(player, packetEntity) * 0.75;
@@ -229,7 +262,8 @@ public class BoundingBoxSize {
 
     private static float getHeightMinusBaby(PacketEntity packetEntity, ClientVersion version) {
         if (packetEntity instanceof PacketEntitySizeable sizeable) {
-            if (EntityTypesCompat.MAGMA_CUBE.equals(packetEntity.type) || EntityTypesCompat.SLIME.equals(packetEntity.type)) {
+            if (EntityTypesCompat.MAGMA_CUBE.equals(packetEntity.type)
+                    || EntityTypesCompat.SLIME.equals(packetEntity.type)) {
                 return 2.04f * (0.255f * (float) sizeable.size);
             }
         }
@@ -257,7 +291,8 @@ public class BoundingBoxSize {
         if (path.equals("happy_ghast")) return 0.2375F;
         if (path.equals("dolphin")) return 0.65F;
         if (path.equals("armadillo")) return 0.6F;
-        if (EntityTypeUtil.isCamelFamily(entity.type)) return version.isNewerThanOrEquals(ClientVersion.V_26_1) ? 0.6F : 0.45F;
+        if (EntityTypeUtil.isCamelFamily(entity.type))
+            return version.isNewerThanOrEquals(ClientVersion.V_26_1) ? 0.6F : 0.45F;
         if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) {
             if (path.equals("goat")) return 0.55F;
             if (EntityTypeUtil.isHorseFamily(entity.type)) return 0.7F;
@@ -270,18 +305,30 @@ public class BoundingBoxSize {
         String path = EntityTypeUtil.getKey(entity.type).getPath();
         if (version.isNewerThanOrEquals(ClientVersion.V_26_2)) {
             switch (path) {
-                case "axolotl": return 0.375F;
-                case "hoglin", "zoglin": return 0.75F;
-                case "fox": return 0.36F;
-                case "goat": return 0.45F;
-                case "camel", "camel_husk": return 0.95F;
+                case "axolotl":
+                    return 0.375F;
+                case "hoglin", "zoglin":
+                    return 0.75F;
+                case "fox":
+                    return 0.36F;
+                case "goat":
+                    return 0.45F;
+                case "camel", "camel_husk":
+                    return 0.95F;
             }
         }
         return switch (path) {
             case "axolotl", "squid", "glow_squid" -> 0.5F;
             case "chicken" -> 0.3F;
             case "rabbit" -> 0.24F;
-            case "zombie", "drowned", "husk", "zombie_villager", "zombified_piglin", "villager", "piglin", "piglin_brute" -> 0.49F;
+            case "zombie",
+                    "drowned",
+                    "husk",
+                    "zombie_villager",
+                    "zombified_piglin",
+                    "villager",
+                    "piglin",
+                    "piglin_brute" -> 0.49F;
             default -> null;
         };
     }
@@ -291,19 +338,39 @@ public class BoundingBoxSize {
         String path = EntityTypeUtil.getKey(entity.type).getPath();
         if (version.isNewerThanOrEquals(ClientVersion.V_26_2)) {
             switch (path) {
-                case "axolotl": return 0.21F;
-                case "hoglin", "zoglin": return 0.85F;
-                case "fox": return 0.42F;
-                case "goat": return 0.65F;
-                case "camel", "camel_husk": return 1.4F;
-                case "zombie", "drowned", "husk", "zombie_villager", "zombified_piglin", "villager", "piglin", "piglin_brute": return 0.98F;
+                case "axolotl":
+                    return 0.21F;
+                case "hoglin", "zoglin":
+                    return 0.85F;
+                case "fox":
+                    return 0.42F;
+                case "goat":
+                    return 0.65F;
+                case "camel", "camel_husk":
+                    return 1.4F;
+                case "zombie",
+                        "drowned",
+                        "husk",
+                        "zombie_villager",
+                        "zombified_piglin",
+                        "villager",
+                        "piglin",
+                        "piglin_brute":
+                    return 0.98F;
             }
         }
         return switch (path) {
             case "axolotl" -> 0.25F;
             case "chicken", "rabbit" -> 0.4F;
             case "squid", "glow_squid" -> 0.63F;
-            case "zombie", "drowned", "husk", "zombie_villager", "zombified_piglin", "villager", "piglin", "piglin_brute" -> 0.99F;
+            case "zombie",
+                    "drowned",
+                    "husk",
+                    "zombie_villager",
+                    "zombified_piglin",
+                    "villager",
+                    "piglin",
+                    "piglin_brute" -> 0.99F;
             default -> null;
         };
     }

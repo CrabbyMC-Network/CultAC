@@ -2,7 +2,6 @@ package ac.cult.cultac.protocol;
 
 import ac.cult.cultac.protocol.codec.OpaqueCodecs;
 import ac.cult.cultac.protocol.packet.Opaque;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -22,15 +21,22 @@ public final class PacketCatalog {
         this.direction = direction;
     }
 
-    public static PacketCatalog serverbound() { return new PacketCatalog(PacketDirection.SERVERBOUND); }
-    public static PacketCatalog clientbound() { return new PacketCatalog(PacketDirection.CLIENTBOUND); }
+    public static PacketCatalog serverbound() {
+        return new PacketCatalog(PacketDirection.SERVERBOUND);
+    }
+
+    public static PacketCatalog clientbound() {
+        return new PacketCatalog(PacketDirection.CLIENTBOUND);
+    }
 
     /** Declarations carried in exactly these phases. */
     public Scope in(ConnectionPhase phase, ConnectionPhase... more) {
         return new Scope(EnumSet.of(phase, more), ProtocolVersion.values()[0]);
     }
 
-    public List<PacketType<?>> types() { return List.copyOf(types); }
+    public List<PacketType<?>> types() {
+        return List.copyOf(types);
+    }
 
     public final class Scope {
         private final Set<ConnectionPhase> phases;
@@ -42,7 +48,9 @@ public final class PacketCatalog {
         }
 
         /** Limits declarations to the versions their codecs are verified against. */
-        public Scope since(ProtocolVersion version) { return new Scope(phases, version); }
+        public Scope since(ProtocolVersion version) {
+            return new Scope(phases, version);
+        }
 
         /** A family with one wire name, which also forms its key. */
         public <R> PacketType<R> add(String name, Class<R> record, PacketCodec<R> codec) {
@@ -65,17 +73,29 @@ public final class PacketCatalog {
         }
 
         /** Routed by identity; the payload must be empty. */
-        public PacketType<Opaque> empty(String name) { return add(name, Opaque.class, OpaqueCodecs.EMPTY); }
+        public PacketType<Opaque> empty(String name) {
+            return add(name, Opaque.class, OpaqueCodecs.EMPTY);
+        }
 
         /** Routed by identity with an empty payload Cult also writes. */
-        public PacketType<Opaque> writableEmpty(String name) { return add(name, Opaque.class, OpaqueCodecs.WRITABLE_EMPTY); }
+        public PacketType<Opaque> writableEmpty(String name) {
+            return add(name, Opaque.class, OpaqueCodecs.WRITABLE_EMPTY);
+        }
 
         /** Routed by identity; the payload has no consumer and stays unread. */
-        public PacketType<Opaque> ignored(String name) { return add(name, Opaque.class, OpaqueCodecs.IGNORED); }
+        public PacketType<Opaque> ignored(String name) {
+            return add(name, Opaque.class, OpaqueCodecs.IGNORED);
+        }
 
         private <R> PacketType<R> register(String key, List<String> names, Class<R> record, PacketCodec<R> codec) {
-            PacketType<R> type = new PacketType<>(direction.name().toLowerCase(Locale.ROOT) + "." + key, record, direction,
-                    phases, names.stream().map(name -> "minecraft:" + name).toList(), since, codec);
+            PacketType<R> type = new PacketType<>(
+                    direction.name().toLowerCase(Locale.ROOT) + "." + key,
+                    record,
+                    direction,
+                    phases,
+                    names.stream().map(name -> "minecraft:" + name).toList(),
+                    since,
+                    codec);
             types.add(type);
             return type;
         }

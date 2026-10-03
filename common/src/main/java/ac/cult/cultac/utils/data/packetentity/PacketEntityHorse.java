@@ -1,7 +1,6 @@
 package ac.cult.cultac.utils.data.packetentity;
 
 import ac.cult.cultac.bedrock.prediction.integration.BedrockVehiclePredictionState;
-
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
@@ -23,7 +22,9 @@ public class PacketEntityHorse extends PacketEntityTrackXRot {
     public float standAnimO = 0.0F;
     public long horseFlagsRevision;
 
-    public PacketEntityHorse(CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) { super(player, entityId, type, x, y, z, xRot);
+    public PacketEntityHorse(
+            CultPlayer player, int entityId, EntityType type, double x, double y, double z, float xRot) {
+        super(player, entityId, type, x, y, z, xRot);
 
         if (EntityTypeUtil.isChestedHorseFamily(type)) {
             jumpStrength = 0.5;

@@ -19,9 +19,8 @@
 package ac.cult.cultac.platform.api.scheduler;
 
 import ac.grim.grimac.api.plugin.GrimPlugin;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents a scheduler for executing tasks asynchronously.
@@ -58,7 +57,8 @@ public interface AsyncScheduler {
      * @param timeUnit The time unit for the initial delay and period.
      * @return {@link TaskHandle} instance representing a wrapped task
      */
-    TaskHandle runAtFixedRate(@NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, long period, @NotNull TimeUnit timeUnit);
+    TaskHandle runAtFixedRate(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long delay, long period, @NotNull TimeUnit timeUnit);
 
     /**
      * Schedules the specified task to be executed asynchronously after the initial delay has passed, and then periodically executed.
@@ -69,7 +69,8 @@ public interface AsyncScheduler {
      * @param periodTicks       The time period in ticks between each task execution. Any value less-than 1 may throw an error.
      * @return {@link TaskHandle} instance representing a wrapped task
      */
-    TaskHandle runAtFixedRate(@NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks);
+    TaskHandle runAtFixedRate(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks);
 
     /**
      * Attempts to cancel all tasks scheduled by the specified plugin.

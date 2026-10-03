@@ -1,15 +1,18 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "BadPacketsD", stableKey = "cult.badpackets.invalid_pitch", description = "Sent an invalid rotation pitch outside the -90 to 90 range")
+@CheckData(
+        name = "BadPacketsD",
+        stableKey = "cult.badpackets.invalid_pitch",
+        description = "Sent an invalid rotation pitch outside the -90 to 90 range")
 public class BadPacketsD extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("pitch={f32}");
 
@@ -18,7 +21,8 @@ public class BadPacketsD extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.packetStateData.lastPacketWasTeleport) return;
 
         if (!packet.hasRotation()) return;

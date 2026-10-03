@@ -12,9 +12,9 @@ public class KeepAliveData {
     private final long id;
     private final long timeSent;
 
-    @Setter private long timeReceived;
+    @Setter
+    private long timeReceived;
 
-    @Setter private long transReceived;
-
-
+    @Setter
+    private long transReceived;
 }

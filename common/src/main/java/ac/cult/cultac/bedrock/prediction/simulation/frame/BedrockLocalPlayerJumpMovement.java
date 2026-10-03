@@ -5,26 +5,24 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import java.util.Objects;
 
 final class BedrockLocalPlayerJumpMovement {
-    private BedrockLocalPlayerJumpMovement() {
-    }
+    private BedrockLocalPlayerJumpMovement() {}
 
     static boolean requestedLaunch(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        boolean inWater,
-        boolean inLava,
-        boolean inScaffolding,
-        double swimAmount
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            boolean inWater,
+            boolean inLava,
+            boolean inScaffolding,
+            double swimAmount) {
         Objects.requireNonNull(current, "current");
         Objects.requireNonNull(frame, "frame");
         // START_JUMPING describes the original launch. Holding jump can launch on
         // a different tick after a correction changes when the actor is grounded.
         return frame.jumping()
-            && !(swimAmount > 0.0D && swimAmount < 1.0D)
-            && !inWater
-            && !inLava
-            && !inScaffolding
-            && current.collisionFlags().onGround();
+                && !(swimAmount > 0.0D && swimAmount < 1.0D)
+                && !inWater
+                && !inLava
+                && !inScaffolding
+                && current.collisionFlags().onGround();
     }
 }

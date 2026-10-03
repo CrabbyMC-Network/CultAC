@@ -1,32 +1,36 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BucketPickup;
 import net.minecraft.world.level.block.LiquidBlockContainer;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.BlockHitResult;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 /** Preserves native bucket behavior across the nullable Player-to-LivingEntity API change. */
 public final class NmsBucketUtil {
     private static final Method CONTENT_GETTER;
     private static final Field CONTENT_FIELD;
-    private static final Method EMPTY = resolveUserMethod(BucketItem.class, "emptyContents",
-            Level.class, BlockPos.class, BlockHitResult.class);
-    private static final Method PICKUP = resolveUserMethod(BucketPickup.class, "pickupBlock",
-            LevelAccessor.class, BlockPos.class, BlockState.class);
-    private static final Method CAN_PLACE = resolveUserMethod(LiquidBlockContainer.class, "canPlaceLiquid",
-            BlockGetter.class, BlockPos.class, BlockState.class, Fluid.class);
+    private static final Method EMPTY =
+            resolveUserMethod(BucketItem.class, "emptyContents", Level.class, BlockPos.class, BlockHitResult.class);
+    private static final Method PICKUP =
+            resolveUserMethod(BucketPickup.class, "pickupBlock", LevelAccessor.class, BlockPos.class, BlockState.class);
+    private static final Method CAN_PLACE = resolveUserMethod(
+            LiquidBlockContainer.class,
+            "canPlaceLiquid",
+            BlockGetter.class,
+            BlockPos.class,
+            BlockState.class,
+            Fluid.class);
 
     static {
         Method getter = null;
@@ -45,8 +49,7 @@ public final class NmsBucketUtil {
         CONTENT_FIELD = field;
     }
 
-    private NmsBucketUtil() {
-    }
+    private NmsBucketUtil() {}
 
     private static Method resolveUserMethod(Class<?> owner, String name, Class<?>... arguments) {
         Class<?>[] parameters = new Class<?>[arguments.length + 1];
@@ -80,7 +83,8 @@ public final class NmsBucketUtil {
         }
     }
 
-    public static boolean canPlaceLiquid(LiquidBlockContainer container, Level level, BlockPos pos, BlockState state, Fluid fluid) {
+    public static boolean canPlaceLiquid(
+            LiquidBlockContainer container, Level level, BlockPos pos, BlockState state, Fluid fluid) {
         try {
             return (boolean) CAN_PLACE.invoke(container, null, level, pos, state, fluid);
         } catch (ReflectiveOperationException exception) {

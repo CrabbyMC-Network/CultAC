@@ -1,7 +1,7 @@
 package ac.cult.cultac.utils.nmsutil;
 
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemUseAnimation;
@@ -29,7 +29,8 @@ public class IsUsingItem {
         }
         // Before the UseEffects component existed, the client slowed while using
         // items with eat, drink, or block animations.
-        ItemUseAnimation animation = SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
+        ItemUseAnimation animation =
+                SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
         return animation == ItemUseAnimation.EAT
                 || animation == ItemUseAnimation.DRINK
                 || animation == ItemUseAnimation.BLOCK;
@@ -43,10 +44,13 @@ public class IsUsingItem {
         if (USE_EFFECTS_COMPONENT != null) {
             return getUseEffects(activeItem).speedMultiplier();
         }
-        ItemUseAnimation animation = SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
+        ItemUseAnimation animation =
+                SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
         return animation == ItemUseAnimation.EAT
-                || animation == ItemUseAnimation.DRINK
-                || animation == ItemUseAnimation.BLOCK ? 0.2F : 1.0F;
+                        || animation == ItemUseAnimation.DRINK
+                        || animation == ItemUseAnimation.BLOCK
+                ? 0.2F
+                : 1.0F;
     }
 
     public static void stopUseItem(CultPlayer player) {
@@ -66,7 +70,8 @@ public class IsUsingItem {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static DataComponentType<UseEffects> useEffectsComponent() {
         try {
-            return (DataComponentType) DataComponents.class.getField("USE_EFFECTS").get(null);
+            return (DataComponentType)
+                    DataComponents.class.getField("USE_EFFECTS").get(null);
         } catch (ReflectiveOperationException ignored) {
             return null;
         }

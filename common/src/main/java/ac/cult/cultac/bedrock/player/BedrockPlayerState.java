@@ -7,11 +7,11 @@ import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockRidingJumpState;
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
-import ac.cult.cultac.bedrock.protocol.BedrockClientPoseState;
 import ac.cult.cultac.bedrock.protocol.BedrockClientAction;
-import java.util.Set;
+import ac.cult.cultac.bedrock.protocol.BedrockClientPoseState;
 import ac.cult.cultac.bedrock.protocol.BedrockMoveFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockProtocolVersion;
+import java.util.Set;
 import java.util.UUID;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 
@@ -34,13 +34,16 @@ public final class BedrockPlayerState {
     private long processedAuthInputSequence;
     private long lastMovementTick = -1;
 
-    public long lastMovementTick() { return lastMovementTick; }
+    public long lastMovementTick() {
+        return lastMovementTick;
+    }
 
     public boolean acceptMovementTick(long tick) {
         if (tick <= lastMovementTick) return false;
         lastMovementTick = tick;
         return true;
     }
+
     private BedrockMoveFrame lastMoveFrame;
     private String lastAuthInputMatchStatus = "no auth input processed";
     private BedrockAuthInputFrame lastPoseAppliedFrame;
@@ -122,7 +125,8 @@ public final class BedrockPlayerState {
         }
         lastAuthInputMatchStatus = trigger == null
                 ? "processed auth input tick=" + frame.getClientTick() + " sequence=" + processedAuthInputSequence
-                : "processed auth input tick=" + frame.getClientTick() + " via " + trigger + " sequence=" + processedAuthInputSequence;
+                : "processed auth input tick=" + frame.getClientTick() + " via " + trigger + " sequence="
+                        + processedAuthInputSequence;
         actions.forFrame(frame);
         applyClientPoseFrame(frame);
         return processedAuthInputSequence;
@@ -172,8 +176,7 @@ public final class BedrockPlayerState {
                 previous = PlayerDimensionsState.DEFAULT;
             }
             confirmedBoundingBoxSize = new PlayerDimensionsState(
-                    width == null ? previous.width() : width,
-                    height == null ? previous.height() : height);
+                    width == null ? previous.width() : width, height == null ? previous.height() : height);
         }
     }
 
@@ -181,13 +184,13 @@ public final class BedrockPlayerState {
         applyAcknowledgedPoseMetadata(crawling, swimming, null, null, null);
     }
 
-    public void applyAcknowledgedPoseMetadata(Boolean crawling, Boolean swimming,
-                                                          Boolean sneaking, Boolean spinning, Boolean sleeping) {
+    public void applyAcknowledgedPoseMetadata(
+            Boolean crawling, Boolean swimming, Boolean sneaking, Boolean spinning, Boolean sleeping) {
         applyAcknowledgedPoseMetadata(crawling, swimming, sneaking, spinning, sleeping, null);
     }
 
-    public void applyAcknowledgedPoseMetadata(Boolean crawling, Boolean swimming,
-            Boolean sneaking, Boolean spinning, Boolean sleeping, Boolean gliding) {
+    public void applyAcknowledgedPoseMetadata(
+            Boolean crawling, Boolean swimming, Boolean sneaking, Boolean spinning, Boolean sleeping, Boolean gliding) {
         if (crawling != null) {
             trackedPoseState = trackedPoseState.withCrawling(crawling);
         }
@@ -208,13 +211,12 @@ public final class BedrockPlayerState {
     }
 
     public BedrockMovementState applyConfirmedBoundingBoxSize(
-            BedrockMovementState source,
-            BedrockInputFrame currentFrame
-    ) {
+            BedrockMovementState source, BedrockInputFrame currentFrame) {
         if (source != null && !source.isVehicle() && collisionDefinition != null) {
             source = source.withCollisionDefinition(collisionDefinition);
         }
-        if (source == null || confirmedBoundingBoxSize == null
+        if (source == null
+                || confirmedBoundingBoxSize == null
                 || confirmedBoundingBoxSize.equals(source.acknowledgedPlayerDimensions())) {
             return source;
         }
@@ -238,11 +240,25 @@ public final class BedrockPlayerState {
         actions.applyAcknowledgedItemUse(usingItem);
     }
 
-    public void recordItemReleaseAction() { recordClientAction(BedrockClientAction.ITEM_RELEASE); }
-    public void recordStartSpinAttackAction() { recordClientAction(BedrockClientAction.START_SPIN_ATTACK); }
-    public void recordStopSpinAttackAction() { recordClientAction(BedrockClientAction.STOP_SPIN_ATTACK); }
-    public void recordStartGlidingAction() { recordClientAction(BedrockClientAction.START_GLIDING); }
-    public void recordStopGlidingAction() { recordClientAction(BedrockClientAction.STOP_GLIDING); }
+    public void recordItemReleaseAction() {
+        recordClientAction(BedrockClientAction.ITEM_RELEASE);
+    }
+
+    public void recordStartSpinAttackAction() {
+        recordClientAction(BedrockClientAction.START_SPIN_ATTACK);
+    }
+
+    public void recordStopSpinAttackAction() {
+        recordClientAction(BedrockClientAction.STOP_SPIN_ATTACK);
+    }
+
+    public void recordStartGlidingAction() {
+        recordClientAction(BedrockClientAction.START_GLIDING);
+    }
+
+    public void recordStopGlidingAction() {
+        recordClientAction(BedrockClientAction.STOP_GLIDING);
+    }
 
     public Set<String> actionInputFor(BedrockAuthInputFrame frame) {
         return actions.forFrame(frame);
@@ -290,13 +306,10 @@ public final class BedrockPlayerState {
         SNEAKING {
             @Override
             BedrockClientPoseState apply(BedrockClientPoseState state, BedrockAuthInputFrame frame) {
-                if (frame.isStopSneaking()
-                        || frame.hasRawInputFlag(PlayerAuthInputData.SNEAK_RELEASED_RAW)) {
+                if (frame.isStopSneaking() || frame.hasRawInputFlag(PlayerAuthInputData.SNEAK_RELEASED_RAW)) {
                     return state.withSneaking(false);
                 }
-                return frame.hasRawInputFlag(PlayerAuthInputData.SNEAKING)
-                        ? state.withSneaking(true)
-                        : state;
+                return frame.hasRawInputFlag(PlayerAuthInputData.SNEAKING) ? state.withSneaking(true) : state;
             }
         },
         CRAWLING {
@@ -318,13 +331,9 @@ public final class BedrockPlayerState {
             }
         };
 
-        abstract BedrockClientPoseState apply(
-                BedrockClientPoseState state,
-                BedrockAuthInputFrame frame);
+        abstract BedrockClientPoseState apply(BedrockClientPoseState state, BedrockAuthInputFrame frame);
 
-        static BedrockClientPoseState applyAll(
-                BedrockClientPoseState state,
-                BedrockAuthInputFrame frame) {
+        static BedrockClientPoseState applyAll(BedrockClientPoseState state, BedrockAuthInputFrame frame) {
             if (frame == null) {
                 return state;
             }
@@ -378,9 +387,10 @@ public final class BedrockPlayerState {
 
     public void setLastMoveFrame(BedrockMoveFrame lastMoveFrame) {
         this.lastMoveFrame = lastMoveFrame;
-        if (lastMoveFrame != null && lastMoveFrame.protocolVersion() != null && lastMoveFrame.protocolVersion().isKnown()) {
+        if (lastMoveFrame != null
+                && lastMoveFrame.protocolVersion() != null
+                && lastMoveFrame.protocolVersion().isKnown()) {
             protocolVersion = lastMoveFrame.protocolVersion();
         }
     }
-
 }

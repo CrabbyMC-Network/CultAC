@@ -12,7 +12,8 @@ public enum PlayerSenderRequirement implements SenderRequirement {
 
     @Override
     public @NotNull Component errorMessage(Sender sender) {
-        return MessageUtil.getParsedComponent(sender, "run-as-player", "%prefix% &cThis command can only be used by players!");
+        return MessageUtil.getParsedComponent(
+                sender, "run-as-player", "%prefix% &cThis command can only be used by players!");
     }
 
     @Override

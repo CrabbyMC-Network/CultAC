@@ -6,9 +6,16 @@ import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
 import net.minecraft.world.phys.Vec3;
 
-public class PointThreeTesting implements UncertaintyHandler{
+public class PointThreeTesting implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
         // We are testing 0.03 stuff, expand by 0.03
         if (context.isTestingPointThree()) {
             double threshold = player.getMovementThreshold();

@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockActorAttributes;
 import ac.cult.cultac.player.CultPlayer;
@@ -14,11 +17,10 @@ import org.cloudburstmc.protocol.bedrock.data.AttributeData;
 import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class GeyserEntityAttributesTest {
-    @Test public void remoteAttributesWaitForReceiptAndSpawnWithoutRequiringAMount() {
+    @Test
+    public void remoteAttributesWaitForReceiptAndSpawnWithoutRequiringAMount() {
         var harness = new Harness();
         harness.capture(4, 0.35245588F);
         assertTrue(harness.horse.bedrockAttributes.values().isEmpty());
@@ -31,7 +33,8 @@ public class GeyserEntityAttributesTest {
         assertTrue(harness.self.bedrockAttributes.values().isEmpty());
     }
 
-    @Test public void separateActorsAndOmittedAttributesRemainIndependent() {
+    @Test
+    public void separateActorsAndOmittedAttributesRemainIndependent() {
         var harness = new Harness();
         harness.capture(3, 0.14F);
         harness.capture(4, 0.35F);
@@ -42,7 +45,8 @@ public class GeyserEntityAttributesTest {
         assertEquals(0.35F, harness.horse.bedrockAttributes.movement().current(), 0);
     }
 
-    @Test public void entityIdReuseCannotReceiveAnOldRuntimeActorsAttributes() {
+    @Test
+    public void entityIdReuseCannotReceiveAnOldRuntimeActorsAttributes() {
         var harness = new Harness();
         harness.capture(4, 0.35F);
         harness.boundary();
@@ -74,17 +78,27 @@ public class GeyserEntityAttributesTest {
             when(session.getPlayerEntity().geyserId()).thenReturn(3L);
             when(session.getPlayerEntity().getEntityId()).thenReturn(1);
             when(session.getEntityCache().getEntityByGeyserId(4).getEntityId()).thenReturn(71);
-            doAnswer(call -> { receipts.add(call.getArgument(1)); return null; })
-                    .when(player).addBedrockTransactionTask(any(), any());
-            doAnswer(call -> { spawns.add(call.getArgument(1)); return null; })
-                    .when(player.latencyUtils).addRealTimeTask(anyInt(), any(Runnable.class));
+            doAnswer(call -> {
+                        receipts.add(call.getArgument(1));
+                        return null;
+                    })
+                    .when(player)
+                    .addBedrockTransactionTask(any(), any());
+            doAnswer(call -> {
+                        spawns.add(call.getArgument(1));
+                        return null;
+                    })
+                    .when(player.latencyUtils)
+                    .addRealTimeTask(anyInt(), any(Runnable.class));
         }
+
         void capture(long actor, float value) {
             var packet = new UpdateAttributesPacket();
             packet.setRuntimeEntityId(actor);
             packet.setAttributes(List.of(new AttributeData("minecraft:movement", 0, 1024, value, 0.1F)));
             tracker.capture(session, player, GeyserReplayUpdate.capture(packet));
         }
+
         void boundary() {
             try {
                 var constructor = CultPlayer.BedrockTransaction.class.getDeclaredConstructor(int.class, int.class);

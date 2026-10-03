@@ -34,8 +34,7 @@ public final class BedrockCollisionOverrideCatalog {
             JsonObject summary,
             List<BedrockCollisionOverrideShape> shapes,
             Map<Integer, BedrockCollisionOverrideShape> byJavaStateId,
-            Map<Integer, Long> blockPropertyMasksByJavaStateId
-    ) {
+            Map<Integer, Long> blockPropertyMasksByJavaStateId) {
         this.source = source == null ? new JsonObject() : source.deepCopy();
         this.summary = summary == null ? new JsonObject() : summary.deepCopy();
         this.shapes = List.copyOf(shapes);
@@ -74,8 +73,8 @@ public final class BedrockCollisionOverrideCatalog {
         JsonArray javaStateIds = array(root.get("java_state_ids"), "java_state_ids");
         JsonArray indices = array(root.get("indices"), "indices");
         if (javaStateIds.size() != indices.size()) {
-            throw new IllegalArgumentException(
-                    "java_state_ids length " + javaStateIds.size() + " does not match indices length " + indices.size());
+            throw new IllegalArgumentException("java_state_ids length " + javaStateIds.size()
+                    + " does not match indices length " + indices.size());
         }
 
         Map<Integer, BedrockCollisionOverrideShape> byJavaStateId = new LinkedHashMap<>();
@@ -83,11 +82,13 @@ public final class BedrockCollisionOverrideCatalog {
             int javaStateId = integer(javaStateIds.get(i), "java_state_ids[" + i + "]");
             int shapeIndex = integer(indices.get(i), "indices[" + i + "]");
             if (shapeIndex < 0 || shapeIndex >= shapes.size()) {
-                throw new IllegalArgumentException("shape index out of range for Java state id " + javaStateId + ": " + shapeIndex);
+                throw new IllegalArgumentException(
+                        "shape index out of range for Java state id " + javaStateId + ": " + shapeIndex);
             }
             BedrockCollisionOverrideShape previous = byJavaStateId.put(javaStateId, shapes.get(shapeIndex));
             if (previous != null) {
-                throw new IllegalArgumentException("duplicate Bedrock collision override for Java state id " + javaStateId);
+                throw new IllegalArgumentException(
+                        "duplicate Bedrock collision override for Java state id " + javaStateId);
             }
         }
 
@@ -118,13 +119,15 @@ public final class BedrockCollisionOverrideCatalog {
     }
 
     private static BedrockCollisionOverrideCatalog loadBundled() {
-        try (InputStream input = BedrockCollisionOverrideCatalog.class.getClassLoader().getResourceAsStream(BUNDLED_RESOURCE)) {
+        try (InputStream input =
+                BedrockCollisionOverrideCatalog.class.getClassLoader().getResourceAsStream(BUNDLED_RESOURCE)) {
             if (input == null) {
                 throw new IllegalStateException("missing Bedrock collision override resource " + BUNDLED_RESOURCE);
             }
             return load(input);
         } catch (IOException exception) {
-            throw new IllegalStateException("failed to load Bedrock collision override resource " + BUNDLED_RESOURCE, exception);
+            throw new IllegalStateException(
+                    "failed to load Bedrock collision override resource " + BUNDLED_RESOURCE, exception);
         }
     }
 
@@ -228,11 +231,13 @@ public final class BedrockCollisionOverrideCatalog {
             int javaStateId = integer(javaStateIds.get(i), "metadata_java_state_ids[" + i + "]");
             int maskIndex = integer(indices.get(i), "metadata_indices[" + i + "]");
             if (maskIndex < 0 || maskIndex >= masks.size()) {
-                throw new IllegalArgumentException("block property mask index out of range for Java state id " + javaStateId);
+                throw new IllegalArgumentException(
+                        "block property mask index out of range for Java state id " + javaStateId);
             }
             long mask = longInteger(masks.get(maskIndex), "block_property_masks[" + maskIndex + "]");
             if (byJavaStateId.put(javaStateId, mask) != null) {
-                throw new IllegalArgumentException("duplicate block property metadata for Java state id " + javaStateId);
+                throw new IllegalArgumentException(
+                        "duplicate block property metadata for Java state id " + javaStateId);
             }
         }
         return byJavaStateId;

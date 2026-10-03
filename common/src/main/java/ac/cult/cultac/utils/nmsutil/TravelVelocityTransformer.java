@@ -2,19 +2,24 @@ package ac.cult.cultac.utils.nmsutil;
 
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
 
 public final class TravelVelocityTransformer {
-    private TravelVelocityTransformer() {
-    }
+    private TravelVelocityTransformer() {}
 
-    public static List<Vec3> transform(CultPlayer player, boolean onGround, Vec3 from, Vec3 playerVelocity, PredictionResult result, float additionalBlockFriction) {
+    public static List<Vec3> transform(
+            CultPlayer player,
+            boolean onGround,
+            Vec3 from,
+            Vec3 playerVelocity,
+            PredictionResult result,
+            float additionalBlockFriction) {
         // Boat friction is special, not handled here
-        if (result.getSimulationContext().getVehicle() != null && EntityTypeUtil.isBoat(result.getSimulationContext().getVehicle().type)) {
+        if (result.getSimulationContext().getVehicle() != null
+                && EntityTypeUtil.isBoat(result.getSimulationContext().getVehicle().type)) {
             // edge case with teleporting to top of water
             if (player.boatData.nullifyNextY) {
                 return Collections.singletonList(new Vec3(playerVelocity.x, 0, playerVelocity.z));
@@ -25,8 +30,10 @@ public final class TravelVelocityTransformer {
         // There isn't friction or gravity when gliding
         List<Vec3> frictions = new ArrayList<>();
 
-        for (boolean inWater : result.getSimulationContext().getWorldData().getInWater().getStates()) {
-            for (boolean inLava : result.getSimulationContext().getWorldData().getInLava().getStates()) {
+        for (boolean inWater :
+                result.getSimulationContext().getWorldData().getInWater().getStates()) {
+            for (boolean inLava :
+                    result.getSimulationContext().getWorldData().getInLava().getStates()) {
                 for (Vec3 movedVelocity : preTravelRootVelocities(player, result, playerVelocity)) {
                     // Entity#move applies horizontal collision zeroing and then
                     // getBlockSpeedFactor before LivingEntity#travel applies air/water friction.
@@ -47,18 +54,36 @@ public final class TravelVelocityTransformer {
                         grav = Math.min(grav, 0.01D);
                     }
                     if (!player.compensatedEntities.getEntityInControl().hasGravity) grav = 0;
-                    frictions.addAll(Friction.applyTravelDrag(player, onGround, from, movedVelocity, result.getSimulationContext(), falling, grav, inWater, inLava));
+                    frictions.addAll(Friction.applyTravelDrag(
+                            player,
+                            onGround,
+                            from,
+                            movedVelocity,
+                            result.getSimulationContext(),
+                            falling,
+                            grav,
+                            inWater,
+                            inLava));
                 }
             }
         }
 
         // MCP-Reborn Strider#floatStrider only rewrites deltaMovement from the
         // post-travel Strider#tick path while the strider is actually in lava.
-        if (!ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaMovementEngine.contextUsesExactEffects(result.getSimulationContext())
+        if (!ac.cult.cultac.checks.impl.prediction.pipeline.java.JavaMovementEngine.contextUsesExactEffects(
+                        result.getSimulationContext())
                 && result.getSimulationContext().getVehicle() != null
                 && result.getSimulationContext().getVehicle().type == EntityTypesCompat.STRIDER
-                && result.getSimulationContext().getWorldData().getInLava().getStates().contains(true)
-                && !(Above.isAbove(player.y) && player.compensatedWorld.getLavaFluidLevelAt((int) Math.floor(player.x), (int) Math.floor(player.y + 1), (int) Math.floor(player.z)) == 0)) {
+                && result.getSimulationContext()
+                        .getWorldData()
+                        .getInLava()
+                        .getStates()
+                        .contains(true)
+                && !(Above.isAbove(player.y)
+                        && player.compensatedWorld.getLavaFluidLevelAt(
+                                        (int) Math.floor(player.x), (int) Math.floor(player.y + 1), (int)
+                                                Math.floor(player.z))
+                                == 0)) {
             int size = frictions.size();
             for (int i = 0; i < size; i++) {
                 Vec3 friction = frictions.get(i);
@@ -75,5 +100,4 @@ public final class TravelVelocityTransformer {
         // to derive travel drag; applying current here would add it twice.
         return Collections.singletonList(playerVelocity);
     }
-
 }

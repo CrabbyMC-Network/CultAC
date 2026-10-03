@@ -1,8 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.world;
 
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,7 +39,9 @@ public final class BlockCollisionWorld {
         this.collisions = index.collisions();
     }
 
-    public BedrockCoordinateFrame coordinateFrame() { return coordinateFrame; }
+    public BedrockCoordinateFrame coordinateFrame() {
+        return coordinateFrame;
+    }
 
     public BlockCollisionWorld withCoordinateFrame(BedrockCoordinateFrame frame) {
         return frame.equals(coordinateFrame) ? this : new BlockCollisionWorld(blocks, frame);
@@ -91,7 +93,10 @@ public final class BlockCollisionWorld {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || other instanceof BlockCollisionWorld world && blocks.equals(world.blocks) && coordinateFrame.equals(world.coordinateFrame);
+        return this == other
+                || other instanceof BlockCollisionWorld world
+                        && blocks.equals(world.blocks)
+                        && coordinateFrame.equals(world.coordinateFrame);
     }
 
     @Override
@@ -116,8 +121,7 @@ public final class BlockCollisionWorld {
             List<PlacedBlockCollision> waterBlocks,
             List<PlacedBlockCollision> lavaBlocks,
             List<WorldCollisionBox> collisionBoxes,
-            List<BlockCollision> collisions
-    ) {
+            List<BlockCollision> collisions) {
         private static WorldIndex from(List<PlacedBlockCollision> blocks, BedrockCoordinateFrame frame) {
             if (blocks.isEmpty()) {
                 return new WorldIndex(Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of());

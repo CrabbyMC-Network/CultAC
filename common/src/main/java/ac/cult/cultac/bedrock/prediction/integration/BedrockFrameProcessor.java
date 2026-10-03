@@ -9,24 +9,33 @@ import net.minecraft.world.phys.Vec3;
 
 /** Processes an original input frame before its transport representation is changed. */
 public final class BedrockFrameProcessor {
-    private BedrockFrameProcessor() { }
+    private BedrockFrameProcessor() {}
 
-    public static BedrockMovementState process(CultPlayer player, BedrockAuthInputFrame original, BedrockPredictionTrigger trigger) {
-        return process(player, original, trigger, () -> { });
+    public static BedrockMovementState process(
+            CultPlayer player, BedrockAuthInputFrame original, BedrockPredictionTrigger trigger) {
+        return process(player, original, trigger, () -> {});
     }
 
-    public static BedrockMovementState process(CultPlayer player, BedrockAuthInputFrame original,
-                                               BedrockPredictionTrigger trigger, Runnable rejectedMovementControls) {
-        return process(player, original, trigger, rejectedMovementControls, frame -> { });
+    public static BedrockMovementState process(
+            CultPlayer player,
+            BedrockAuthInputFrame original,
+            BedrockPredictionTrigger trigger,
+            Runnable rejectedMovementControls) {
+        return process(player, original, trigger, rejectedMovementControls, frame -> {});
     }
 
-    public static BedrockMovementState process(CultPlayer player, BedrockAuthInputFrame original,
-                                               BedrockPredictionTrigger trigger, Runnable rejectedMovementControls,
-                                               java.util.function.Consumer<BedrockAuthInputFrame> localBlockActions) {
+    public static BedrockMovementState process(
+            CultPlayer player,
+            BedrockAuthInputFrame original,
+            BedrockPredictionTrigger trigger,
+            Runnable rejectedMovementControls,
+            java.util.function.Consumer<BedrockAuthInputFrame> localBlockActions) {
         player.packetStateData.bedrockTranslatedMovement.clear();
-        if (!original.hasMinimumStrictData() || !finite(original.getPosition())
+        if (!original.hasMinimumStrictData()
+                || !finite(original.getPosition())
                 || !finite(original.getReportedEndOfTickVelocity())
-                || !Float.isFinite(original.getYaw()) || !Float.isFinite(original.getPitch())
+                || !Float.isFinite(original.getYaw())
+                || !Float.isFinite(original.getPitch())
                 || !BedrockControlInput.validControl(original)
                 || !player.bedrockState.acceptMovementTick(original.getClientTick())) return null;
         // Key input is independent of position, including while a teleport or
@@ -42,9 +51,11 @@ public final class BedrockFrameProcessor {
         return state;
     }
 
-    private static BedrockMovementState processMovement(CultPlayer player, BedrockAuthInputFrame original,
-                                                        BedrockPredictionTrigger trigger,
-                                                        java.util.function.Consumer<BedrockAuthInputFrame> localBlockActions) {
+    private static BedrockMovementState processMovement(
+            CultPlayer player,
+            BedrockAuthInputFrame original,
+            BedrockPredictionTrigger trigger,
+            java.util.function.Consumer<BedrockAuthInputFrame> localBlockActions) {
         BedrockAuthInputFrame frame = player.getSetbackTeleportUtil().resolveBedrockCoordinates(original);
         if (frame == null) return null;
         var processor = player.checkManager.getSimulationProcessor();
@@ -53,7 +64,8 @@ public final class BedrockFrameProcessor {
         player.bedrockState.offerAuthInputFrame(frame);
         if (frame.hasRawInputFlag(org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData.START_FLYING)
                 && player.canFly) player.isFlying = true;
-        if (frame.hasRawInputFlag(org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData.STOP_FLYING)) player.isFlying = false;
+        if (frame.hasRawInputFlag(org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData.STOP_FLYING))
+            player.isFlying = false;
         if (!teleport.isTeleport() && player.getSetbackTeleportUtil().mustAcknowledgeBedrockTransportTeleport()) {
             processor.processBedrockAuthInputFrame(frame, trigger);
             return null;
@@ -63,16 +75,21 @@ public final class BedrockFrameProcessor {
         if (player.packetStateData.bedrockTranslatedMovement.isRejected()) return null;
         if (result != null) player.checkManager.doChecksWithKnownLook();
         var vehicle = result == null || result.getSimulationContext() == null
-                ? null : result.getSimulationContext().getVehicle();
-        var commit = vehicle == null ? processor.getCurrentPredictionCommit()
+                ? null
+                : result.getSimulationContext().getVehicle();
+        var commit = vehicle == null
+                ? processor.getCurrentPredictionCommit()
                 : vehicle.bedrockPrediction == null ? null : vehicle.bedrockPrediction.commit();
         var state = commit == null ? null : BedrockProfileState.previousState(commit.carry());
-        if (state == null || result == null && !processor.isBedrockSleepingStateObserved()
-                && player.compensatedEntities.getSelf().getRiding() == null) return null;
+        if (state == null
+                || result == null
+                        && !processor.isBedrockSleepingStateObserved()
+                        && player.compensatedEntities.getSelf().getRiding() == null) return null;
         if (!state.isVehicle()) {
             player.isGliding = state.gliding();
             player.isSprinting = state.sprinting();
-            player.compensatedEntities.hasSprintingAttributeEnabled = state.movementAttribute().hasSprintModifier();
+            player.compensatedEntities.hasSprintingAttributeEnabled =
+                    state.movementAttribute().hasSprintModifier();
         }
         return state;
     }

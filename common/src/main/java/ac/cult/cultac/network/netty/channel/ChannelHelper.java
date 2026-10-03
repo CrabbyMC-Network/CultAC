@@ -1,12 +1,10 @@
 package ac.cult.cultac.network.netty.channel;
 
 import io.netty.channel.Channel;
-
 import java.util.stream.Collectors;
 
 public final class ChannelHelper {
-    private ChannelHelper() {
-    }
+    private ChannelHelper() {}
 
     public static void runInEventLoop(Object channel, Runnable runnable) {
         if (!(channel instanceof Channel nettyChannel)) {

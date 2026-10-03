@@ -1,12 +1,12 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
-import ac.cult.cultac.player.CultPlayer;
-import org.junit.Test;
-import org.bukkit.GameMode;
-import org.mockito.Mockito;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import ac.cult.cultac.player.CultPlayer;
+import org.bukkit.GameMode;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class BedrockMovementProfileTest {
     @Test

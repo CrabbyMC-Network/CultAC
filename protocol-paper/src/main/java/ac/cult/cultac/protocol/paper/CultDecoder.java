@@ -91,8 +91,11 @@ public final class CultDecoder extends ChannelDuplexHandler {
             // I/O can shut down while the owner is processing. No callback will
             // take ownership of this result when its return submission fails.
             if (result != null) result.frame.release();
-            try { ctx.channel().close(); }
-            finally { connection.endWork(); }
+            try {
+                ctx.channel().close();
+            } finally {
+                connection.endWork();
+            }
         }
     }
 
@@ -139,7 +142,8 @@ public final class CultDecoder extends ChannelDuplexHandler {
             ByteBuf view = frame.duplicate();
             Wire.readVarInt(view);
             var type = (PacketType<ServerboundPacket>) route.type();
-            var original = (ServerboundPacket) connection.runtime().decode(phase, PacketDirection.SERVERBOUND, id, view);
+            var original =
+                    (ServerboundPacket) connection.runtime().decode(phase, PacketDirection.SERVERBOUND, id, view);
             connection.prepare();
             var event = new PacketReceiveEvent<>(connection.user(), phase, type, original);
             if (route.receive() != null) connection.dispatcher().receive(event, route.receive());
@@ -169,10 +173,14 @@ public final class CultDecoder extends ChannelDuplexHandler {
                 frame.release();
                 frame = replacement;
             }
-            if (packet instanceof ServerboundMovePlayer move && move.hasPosition() && player != null
-                    && connection.user() != null && connection.user().getBedrockBridgeConnection() != null) {
-                player.getSetbackTeleportUtil().setBedrockPaperVisiblePosition(
-                        new net.minecraft.world.phys.Vec3(move.x(), move.y(), move.z()));
+            if (packet instanceof ServerboundMovePlayer move
+                    && move.hasPosition()
+                    && player != null
+                    && connection.user() != null
+                    && connection.user().getBedrockBridgeConnection() != null) {
+                player.getSetbackTeleportUtil()
+                        .setBedrockPaperVisiblePosition(
+                                new net.minecraft.world.phys.Vec3(move.x(), move.y(), move.z()));
             }
             var output = new Forward(frame, route.type(), packet);
             frame = null;
@@ -183,8 +191,11 @@ public final class CultDecoder extends ChannelDuplexHandler {
     }
 
     private void fail(ChannelHandlerContext ctx, Throwable failure) {
-        try { ctx.fireExceptionCaught(failure); }
-        finally { ctx.close(); }
+        try {
+            ctx.fireExceptionCaught(failure);
+        } finally {
+            ctx.close();
+        }
     }
 
     @Override
@@ -223,11 +234,12 @@ public final class CultDecoder extends ChannelDuplexHandler {
     private static Object compressionEvent() {
         try {
             return Class.forName("io.papermc.paper.network.ConnectionEvent")
-                    .getField("COMPRESSION_THRESHOLD_SET").get(null);
+                    .getField("COMPRESSION_THRESHOLD_SET")
+                    .get(null);
         } catch (ReflectiveOperationException absent) {
             return null;
         }
     }
 
-    private record Forward(ByteBuf frame, PacketType<?> type, Object packet) { }
+    private record Forward(ByteBuf frame, PacketType<?> type, Object packet) {}
 }

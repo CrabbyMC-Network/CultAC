@@ -1,30 +1,34 @@
 package ac.cult.cultac.checks.impl.prediction;
 
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.TransactionVel;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
+import ac.cult.cultac.utils.data.TransactionVel;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class PredVector extends Vec3 {
 
     PredVector lastVector = null;
     String reason = null;
+
     @Getter
     boolean isJump = false;
+
     @Getter
     boolean isKnockback = false;
+
     @Getter
     boolean isBoundedStep = false;
+
     @Getter
     @Setter
     boolean isTickSkip = false;
+
     List<TransactionVel> packetModifiers = null;
 
     public PredVector(Vec3 vec, PredVector lastVector, String reason) {
@@ -69,8 +73,7 @@ public class PredVector extends Vec3 {
     }
 
     public void mergePacketModifierProvenance(PredVector equivalent) {
-        if (equivalent == null || equivalent.packetModifiers == null
-                || equivalent.packetModifiers.isEmpty()) {
+        if (equivalent == null || equivalent.packetModifiers == null || equivalent.packetModifiers.isEmpty()) {
             return;
         }
 
@@ -179,8 +182,7 @@ public class PredVector extends Vec3 {
             return Double.POSITIVE_INFINITY;
         }
         return Math.max(
-                Math.max(Math.abs(first.x - second.x), Math.abs(first.y - second.y)),
-                Math.abs(first.z - second.z));
+                Math.max(Math.abs(first.x - second.x), Math.abs(first.y - second.y)), Math.abs(first.z - second.z));
     }
 
     public int packetModifiersLength() {
@@ -200,8 +202,7 @@ public class PredVector extends Vec3 {
         return this;
     }
 
-    public record StepCandidate(PredVector exact, boolean boundedFallback) {
-    }
+    public record StepCandidate(PredVector exact, boolean boundedFallback) {}
 
     public double getX() {
         return x;
@@ -274,16 +275,15 @@ public class PredVector extends Vec3 {
 
     @Override
     public String toString() {
-        return "PredVector{" +
-                "x=" + x +
-                ", y=" + y +
-                ", z=" + z +
-                ", reason='" + reason + '\'' +
-                ", isJump=" + isJump +
-                ", isKnockback=" + isKnockback +
-                ", isTickSkip=" + isTickSkip +
-                ", packetModifiers=" + packetModifiers +
-                ", lastVector=" + lastVector +
-                '}';
+        return "PredVector{" + "x="
+                + x + ", y="
+                + y + ", z="
+                + z + ", reason='"
+                + reason + '\'' + ", isJump="
+                + isJump + ", isKnockback="
+                + isKnockback + ", isTickSkip="
+                + isTickSkip + ", packetModifiers="
+                + packetModifiers + ", lastVector="
+                + lastVector + '}';
     }
 }

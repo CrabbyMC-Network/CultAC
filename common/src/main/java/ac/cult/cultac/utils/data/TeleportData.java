@@ -1,22 +1,25 @@
 package ac.cult.cultac.utils.data;
 
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
-import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation;
+import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
-import net.minecraft.core.Direction;
-import net.minecraft.world.phys.Vec3;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 @Getter
 public class TeleportData {
     @Setter
     BedrockCoordinateFrame bedrockCoordinateFrame = BedrockCoordinateFrame.IDENTITY;
+
     @Setter
     boolean bedrockOriginConfirmed = true;
+
     @Setter
     Vec3 bedrockLocalPacketTarget;
+
     @Setter
     BedrockTeleportOperation bedrockOperation;
 
@@ -31,22 +34,31 @@ public class TeleportData {
     float sourcePitch;
     float finalYaw;
     float finalPitch;
+
     @Setter
     int transaction;
+
     @Setter
     int teleportId;
+
     @Setter
     boolean positionOnly;
+
     @Setter
     boolean rotationOnly;
+
     @Setter
     boolean sentWhileVehicle;
+
     @Setter
     boolean sentDuringVehicleDismount;
+
     @Setter
     Boolean bedrockOnGround;
+
     @Setter
     boolean bedrockTransportOnly;
+
     @Setter
     long bedrockTransportRevision;
 
@@ -54,7 +66,16 @@ public class TeleportData {
         this(location, flags, deltaMovement, transaction, teleportId, 0.0F, 0.0F, 0.0F, 0.0F);
     }
 
-    public TeleportData(Vec3 location, RelativeFlag flags, Vec3 deltaMovement, int transaction, int teleportId, float sourceYaw, float sourcePitch, float finalYaw, float finalPitch) {
+    public TeleportData(
+            Vec3 location,
+            RelativeFlag flags,
+            Vec3 deltaMovement,
+            int transaction,
+            int teleportId,
+            float sourceYaw,
+            float sourcePitch,
+            float finalYaw,
+            float finalPitch) {
         this.location = location;
         this.flags = flags;
         this.deltaMovement = deltaMovement;
@@ -78,7 +99,8 @@ public class TeleportData {
     }
 
     public TeleportData copyWithLocation(Vec3 location) {
-        TeleportData copy = new TeleportData(location, flags, deltaMovement, transaction, teleportId, sourceYaw, sourcePitch, finalYaw, finalPitch);
+        TeleportData copy = new TeleportData(
+                location, flags, deltaMovement, transaction, teleportId, sourceYaw, sourcePitch, finalYaw, finalPitch);
         copy.bedrockOriginConfirmed = bedrockOriginConfirmed;
         copy.bedrockCoordinateFrame = bedrockCoordinateFrame;
         copy.bedrockLocalPacketTarget = bedrockLocalPacketTarget;
@@ -111,8 +133,7 @@ public class TeleportData {
         return new Vec3(
                 applyDeltaAxis(transformed.x, deltaMovement.x, isRelativeDeltaX()),
                 applyDeltaAxis(transformed.y, deltaMovement.y, isRelativeDeltaY()),
-                applyDeltaAxis(transformed.z, deltaMovement.z, isRelativeDeltaZ())
-        );
+                applyDeltaAxis(transformed.z, deltaMovement.z, isRelativeDeltaZ()));
     }
 
     public Vec3 transformInheritedVelocity(Vec3 vector) {
@@ -130,11 +151,7 @@ public class TeleportData {
     }
 
     public Vec3 modifyVector(Vec3 vector) {
-        return new Vec3(
-                isRelativeX() ? vector.x : 0,
-                isRelativeY() ? vector.y : 0,
-                isRelativeZ() ? vector.z : 0
-        );
+        return new Vec3(isRelativeX() ? vector.x : 0, isRelativeY() ? vector.y : 0, isRelativeZ() ? vector.z : 0);
     }
 
     private Vec3 rotateDeltaIfRequired(Vec3 vector) {
@@ -144,9 +161,7 @@ public class TeleportData {
 
         float yawDelta = sourceYaw - finalYaw;
         float pitchDelta = sourcePitch - finalPitch;
-        return vector
-                .xRot((float) Math.toRadians(pitchDelta))
-                .yRot((float) Math.toRadians(yawDelta));
+        return vector.xRot((float) Math.toRadians(pitchDelta)).yRot((float) Math.toRadians(yawDelta));
     }
 
     private double applyDeltaAxis(double current, double change, boolean relative) {

@@ -9,15 +9,13 @@ import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 
 final class BedrockPacketHorizontalCollisionState {
-    private BedrockPacketHorizontalCollisionState() {
-    }
+    private BedrockPacketHorizontalCollisionState() {}
 
     static BedrockMovementState applyToValidationSelectedState(
             BedrockMovementState state,
             BedrockMovementContext context,
             BedrockAuthInputFrame authInputFrame,
-            Vec3d acceptedDelta
-    ) {
+            Vec3d acceptedDelta) {
         if (state == null || state.isVehicle() || authInputFrame == null) {
             return state;
         }
@@ -37,8 +35,7 @@ final class BedrockPacketHorizontalCollisionState {
             BedrockMovementContext context,
             BedrockMovementState state,
             boolean packetHorizontalCollision,
-            Vec3d acceptedDelta
-    ) {
+            Vec3d acceptedDelta) {
         if (!packetHorizontalCollision
                 || acceptedDelta == null
                 || context == null

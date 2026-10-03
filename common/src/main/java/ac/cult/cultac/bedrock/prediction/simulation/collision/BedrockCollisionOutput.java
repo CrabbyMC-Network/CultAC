@@ -6,11 +6,10 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
 import java.util.Objects;
 
 public record BedrockCollisionOutput(
-    BedrockEntityMove.Result blockMove,
-    BedrockClimbableContact nextClimbableContact,
-    BedrockMoveRequest moveRequest,
-    WorldCollisionBox collisionFetchBox
-) {
+        BedrockEntityMove.Result blockMove,
+        BedrockClimbableContact nextClimbableContact,
+        BedrockMoveRequest moveRequest,
+        WorldCollisionBox collisionFetchBox) {
     public BedrockCollisionOutput {
         blockMove = Objects.requireNonNull(blockMove, "blockMove");
         nextClimbableContact = Objects.requireNonNull(nextClimbableContact, "nextClimbableContact");

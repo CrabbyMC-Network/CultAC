@@ -1,8 +1,5 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -11,12 +8,15 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
-import ac.cult.cultac.protocol.value.InteractAction;
-import ac.cult.cultac.protocol.value.Hand;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.Hand;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import org.bukkit.GameMode;
 
 @CheckData(name = "PacketOrderB", stableKey = "cult.packetorder.noswing", description = "Did not swing for attack")
@@ -49,7 +49,8 @@ public class PacketOrderB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (packet.action() == InteractAction.ATTACK
                 && DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) {
             onAttack(event);
@@ -57,7 +58,8 @@ public class PacketOrderB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         if (packet.action() != PlayerAction.STAB) return;
 
         if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)) {
@@ -71,7 +73,8 @@ public class PacketOrderB extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         checkPostAttack();
     }
 

@@ -8,12 +8,7 @@ import net.minecraft.world.phys.Vec3;
  * The shared setback handler may transport this value, but only the movement
  * engine that created the commit may interpret or rebase its carry.
  */
-public record PredictionSetbackState(
-        PredictionCommit commit,
-        Vec3 position,
-        Vec3 velocity,
-        boolean expectedOnGround
-) {
+public record PredictionSetbackState(PredictionCommit commit, Vec3 position, Vec3 velocity, boolean expectedOnGround) {
     public PredictionSetbackState {
         commit = Objects.requireNonNull(commit, "commit");
         position = Objects.requireNonNull(position, "position");

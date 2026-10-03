@@ -12,7 +12,10 @@ public final class IntentionCodec implements PacketCodec<ServerboundIntention> {
     public ServerboundIntention read(ByteBuf input, ProtocolContext context) {
         // All four pinned Papers raise vanilla's 255-character hostname read bound
         // to 32767 for proxy forwarding. Preserve every valid Paper-visible host.
-        return new ServerboundIntention(Wire.readVarInt(input), Wire.readString(input, 32767),
-                input.readUnsignedShort(), ConnectionIntent.fromWire(Wire.readVarInt(input)));
+        return new ServerboundIntention(
+                Wire.readVarInt(input),
+                Wire.readString(input, 32767),
+                input.readUnsignedShort(),
+                ConnectionIntent.fromWire(Wire.readVarInt(input)));
     }
 }

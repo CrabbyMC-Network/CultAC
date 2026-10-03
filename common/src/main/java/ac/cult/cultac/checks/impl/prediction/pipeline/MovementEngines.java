@@ -7,8 +7,7 @@ import ac.cult.cultac.checks.impl.prediction.profile.JavaMovementProfile;
 import ac.cult.cultac.checks.impl.prediction.profile.MovementProfile;
 
 public final class MovementEngines {
-    private MovementEngines() {
-    }
+    private MovementEngines() {}
 
     public static MovementEngine requireForProfile(MovementProfile profile) {
         if (profile instanceof JavaMovementProfile) {
@@ -17,6 +16,7 @@ public final class MovementEngines {
         if (profile instanceof BedrockMovementProfile) {
             return BedrockMovementEngine.INSTANCE;
         }
-        throw new IllegalStateException("missing movement engine for profile " + profile.getClass().getName());
+        throw new IllegalStateException(
+                "missing movement engine for profile " + profile.getClass().getName());
     }
 }

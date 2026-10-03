@@ -1,12 +1,11 @@
 package ac.cult.cultac.utils.math;
 
-import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.experimental.UtilityClass;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 @UtilityClass
 public class CultMath {
@@ -156,7 +155,7 @@ public class CultMath {
 
     @Contract(pure = true)
     public static float sqrt(float value) {
-        return (float)Math.sqrt(value);
+        return (float) Math.sqrt(value);
     }
 
     // Find the closest distance to (1 / 64)
@@ -205,11 +204,13 @@ public class CultMath {
         return degrees * DEGREES_TO_RADIANS;
     }
 
-    private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION = new int[]{
-            0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+    private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION = new int[] {
+        0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5,
+        10, 9
     };
 
-    public static final int PACKED_HORIZONTAL_LENGTH = 1 + CultMath.log2(CultMath.smallestEncompassingPowerOfTwo(30000000));
+    public static final int PACKED_HORIZONTAL_LENGTH =
+            1 + CultMath.log2(CultMath.smallestEncompassingPowerOfTwo(30000000));
     public static final int PACKED_Y_LENGTH = 64 - 2 * PACKED_HORIZONTAL_LENGTH;
     private static final long PACKED_X_MASK = (1L << PACKED_HORIZONTAL_LENGTH) - 1L;
     private static final long PACKED_Y_MASK = (1L << PACKED_Y_LENGTH) - 1L;
@@ -219,9 +220,7 @@ public class CultMath {
 
     @Contract(pure = true)
     public static long asLong(int x, int y, int z) {
-        return (x & PACKED_X_MASK) << X_OFFSET
-                | y & PACKED_Y_MASK
-                | (z & PACKED_Z_MASK) << Z_OFFSET;
+        return (x & PACKED_X_MASK) << X_OFFSET | y & PACKED_Y_MASK | (z & PACKED_Z_MASK) << Z_OFFSET;
     }
 
     public static int log2(int value) {
@@ -230,7 +229,7 @@ public class CultMath {
 
     public static int ceillog2(int value) {
         value = isPowerOfTwo(value) ? value : smallestEncompassingPowerOfTwo(value);
-        return MULTIPLY_DE_BRUIJN_BIT_POSITION[(int)(value * 125613361L >> 27) & 31];
+        return MULTIPLY_DE_BRUIJN_BIT_POSITION[(int) (value * 125613361L >> 27) & 31];
     }
 
     @Contract(pure = true)

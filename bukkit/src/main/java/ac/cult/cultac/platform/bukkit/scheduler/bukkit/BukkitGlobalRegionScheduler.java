@@ -1,9 +1,9 @@
 package ac.cult.cultac.platform.bukkit.scheduler.bukkit;
 
-import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.cult.cultac.platform.api.scheduler.GlobalRegionScheduler;
 import ac.cult.cultac.platform.api.scheduler.TaskHandle;
 import ac.cult.cultac.platform.bukkit.CultACBukkitLoaderPlugin;
+import ac.grim.grimac.api.plugin.GrimPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
@@ -28,8 +28,10 @@ public class BukkitGlobalRegionScheduler implements GlobalRegionScheduler {
     }
 
     @Override
-    public TaskHandle runAtFixedRate(@NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks) {
-        return new BukkitTaskHandle(bukkitScheduler.runTaskTimer(CultACBukkitLoaderPlugin.LOADER, task, initialDelayTicks, periodTicks));
+    public TaskHandle runAtFixedRate(
+            @NotNull GrimPlugin plugin, @NotNull Runnable task, long initialDelayTicks, long periodTicks) {
+        return new BukkitTaskHandle(
+                bukkitScheduler.runTaskTimer(CultACBukkitLoaderPlugin.LOADER, task, initialDelayTicks, periodTicks));
     }
 
     @Override

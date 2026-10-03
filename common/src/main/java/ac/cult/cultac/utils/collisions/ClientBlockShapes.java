@@ -3,105 +3,77 @@ package ac.cult.cultac.utils.collisions;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import ac.cult.cultac.utils.nmsutil.NativeBlockCollisionHelper;
 import ac.cult.cultac.utils.nmsutil.JavaCollisionState;
-import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.block.data.BlockData;
-
+import ac.cult.cultac.utils.nmsutil.NativeBlockCollisionHelper;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.world.level.block.state.BlockState;
+import org.bukkit.block.data.BlockData;
 
 public final class ClientBlockShapes {
     private static final double SHAPE_EPSILON = 1.0E-7D;
 
-    private ClientBlockShapes() {
-    }
+    private ClientBlockShapes() {}
 
-    public static CollisionBox movement(
-            CultPlayer player,
-            BlockData state,
-            int x,
-            int y,
-            int z
-    ) {
+    public static CollisionBox movement(CultPlayer player, BlockData state, int x, int y, int z) {
         return movement(player, state, x, y, z, player == null ? Double.NaN : player.y);
     }
 
-    public static CollisionBox movement(
-            CultPlayer player,
-            BlockData state,
-            int x,
-            int y,
-            int z,
-            double entityBottom
-    ) {
+    public static CollisionBox movement(CultPlayer player, BlockData state, int x, int y, int z, double entityBottom) {
         CollisionBox latestJava = NativeBlockCollisionHelper.getCollisionBox(player, state, x, y, z, entityBottom);
         return selectIfDifferent(latestJava, movementAlternative(player, state, x, y, z, entityBottom));
     }
 
-    public static CollisionBox movement(
-            CultPlayer player,
-            BlockState state,
-            int x,
-            int y,
-            int z
-    ) {
+    public static CollisionBox movement(CultPlayer player, BlockState state, int x, int y, int z) {
         return movement(player, state, x, y, z, player == null ? Double.NaN : player.y);
     }
 
-    public static CollisionBox movement(
-            CultPlayer player,
-            BlockState state,
-            int x,
-            int y,
-            int z,
-            double entityBottom
-    ) {
+    public static CollisionBox movement(CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
         return movement(player, state, x, y, z, entityBottom, JavaCollisionState.current(player));
     }
 
-    public static CollisionBox movement(CultPlayer player, BlockState state, int x, int y, int z,
-                                        double entityBottom, JavaCollisionState actor) {
-        CollisionBox latestJava = NativeBlockCollisionHelper.getCollisionBox(player, state, x, y, z, entityBottom, actor);
-        return selectIfDifferent(latestJava, movementAlternative(player, state == null ? null : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state), x, y, z, entityBottom));
+    public static CollisionBox movement(
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
+        CollisionBox latestJava =
+                NativeBlockCollisionHelper.getCollisionBox(player, state, x, y, z, entityBottom, actor);
+        return selectIfDifferent(
+                latestJava,
+                movementAlternative(
+                        player,
+                        state == null
+                                ? null
+                                : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state),
+                        x,
+                        y,
+                        z,
+                        entityBottom));
     }
 
-    public static CollisionBox visual(
-            CultPlayer player,
-            BlockData state,
-            int x,
-            int y,
-            int z
-    ) {
+    public static CollisionBox visual(CultPlayer player, BlockData state, int x, int y, int z) {
         BlockState blockState = state instanceof org.bukkit.craftbukkit.block.data.CraftBlockData craftBlockData
                 ? craftBlockData.getState()
                 : player == null || player.compensatedWorld == null
-                ? null
-                : player.compensatedWorld.getBlockStateAt(x, y, z);
+                        ? null
+                        : player.compensatedWorld.getBlockStateAt(x, y, z);
         CollisionBox latestJava = NativeBlockCollisionHelper.getSelectionBox(player, blockState, x, y, z);
         return selectIfDifferent(latestJava, visualAlternative(player, state, x, y, z));
     }
 
-    public static CollisionBox visual(
-            CultPlayer player,
-            BlockState state,
-            BlockData blockData,
-            int x,
-            int y,
-            int z
-    ) {
+    public static CollisionBox visual(CultPlayer player, BlockState state, BlockData blockData, int x, int y, int z) {
         CollisionBox latestJava = NativeBlockCollisionHelper.getSelectionBox(player, state, x, y, z);
         return selectIfDifferent(latestJava, visualAlternative(player, blockData, x, y, z));
     }
 
-    private static Optional<CollisionBox> movementAlternative(CultPlayer player, BlockData state, int x, int y, int z, double entityBottom) {
+    private static Optional<CollisionBox> movementAlternative(
+            CultPlayer player, BlockData state, int x, int y, int z, double entityBottom) {
         Optional<CollisionBox> bedrock = BedrockClientBlockShapeMappings.movement(player, state, x, y, z);
         if (bedrock.isPresent()) {
             return bedrock;
         }
-        Optional<CollisionBox> viaReplacement = ViaClientBlockShapeMappings.movement(player, state, x, y, z, entityBottom);
+        Optional<CollisionBox> viaReplacement =
+                ViaClientBlockShapeMappings.movement(player, state, x, y, z, entityBottom);
         if (viaReplacement.isPresent()) {
             return viaReplacement;
         }
@@ -148,8 +120,7 @@ public final class ClientBlockShapes {
         List<SimpleCollisionBox> boxes = new ArrayList<>();
         box.downCast(boxes);
         boxes.removeIf(SimpleCollisionBox::isEmpty);
-        boxes.sort(Comparator
-                .comparingDouble((SimpleCollisionBox simple) -> simple.minX)
+        boxes.sort(Comparator.comparingDouble((SimpleCollisionBox simple) -> simple.minX)
                 .thenComparingDouble(simple -> simple.minY)
                 .thenComparingDouble(simple -> simple.minZ)
                 .thenComparingDouble(simple -> simple.maxX)

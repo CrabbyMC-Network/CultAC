@@ -10,8 +10,7 @@ import org.geysermc.geyser.api.GeyserApi;
 import org.geysermc.geyser.configuration.GeyserConfig;
 
 public final class GeyserUtil {
-    private GeyserUtil() {
-    }
+    private GeyserUtil() {}
 
     public static boolean isGeyserPlayer(UUID uuid) {
         if (uuid == null) {
@@ -61,12 +60,14 @@ public final class GeyserUtil {
         } catch (ReflectiveOperationException | RuntimeException ignored) {
         }
 
-        if (tryBooleanSetter(gameplayConfig, "forwardPlayerPing") || tryBooleanSetter(gameplayConfig, "setForwardPlayerPing")) {
+        if (tryBooleanSetter(gameplayConfig, "forwardPlayerPing")
+                || tryBooleanSetter(gameplayConfig, "setForwardPlayerPing")) {
             LogUtil.info("CultAC forced Geyser forward-player-ping=true for Bedrock transaction validation.");
             return;
         }
 
-        LogUtil.warn("Unable to force Geyser forward-player-ping=true; Bedrock transaction pongs may be Geyser-backed.");
+        LogUtil.warn(
+                "Unable to force Geyser forward-player-ping=true; Bedrock transaction pongs may be Geyser-backed.");
     }
 
     private static boolean isForwardPlayerPingEnabled(Object gameplayConfig) {

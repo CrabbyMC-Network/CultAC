@@ -1,9 +1,6 @@
 package ac.cult.cultac.bedrock.prediction.model;
 
-public record PlayerDimensionsState(
-    double width,
-    double height
-) {
+public record PlayerDimensionsState(double width, double height) {
     public static final double DEFAULT_WIDTH = 0.6D;
     public static final double DEFAULT_HEIGHT = 1.8D;
     public static final PlayerDimensionsState DEFAULT = new PlayerDimensionsState(DEFAULT_WIDTH, DEFAULT_HEIGHT);

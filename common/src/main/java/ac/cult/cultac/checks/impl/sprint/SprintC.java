@@ -9,8 +9,15 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-@CheckData(name = "SprintC", stableKey = "cult.sprint.using_item", description = "Sprinting while using an item", setback = 5, experimental = true)
-@DeadCheck(reason = DeadCheck.Reason.VERSION_GATED, detail = "Returns for protocol >= 485 except exactly 1.21.4; dead for all 1.21.2+ clients except 1.21.4.")
+@CheckData(
+        name = "SprintC",
+        stableKey = "cult.sprint.using_item",
+        description = "Sprinting while using an item",
+        setback = 5,
+        experimental = true)
+@DeadCheck(
+        reason = DeadCheck.Reason.VERSION_GATED,
+        detail = "Returns for protocol >= 485 except exactly 1.21.4; dead for all 1.21.2+ clients except 1.21.4.")
 public class SprintC extends Check implements PostPredictionListener {
     private boolean flaggedLastTick = false;
 
@@ -22,7 +29,6 @@ public class SprintC extends Check implements PostPredictionListener {
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
         // Teleport results carry no simulation context; there is nothing to read.
         if (predictionComplete.isTeleport()) return;
-
 
         if (player.packetStateData.isSlowedByUsingItem()) {
             ClientVersion version = player.getClientVersion();

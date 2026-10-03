@@ -1,8 +1,8 @@
 package ac.cult.cultac.bedrock.bridge;
 
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
-import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
 import ac.cult.cultac.bedrock.protocol.BedrockTeleportOperation;
+import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -17,7 +17,9 @@ final class BedrockOriginDispatch {
     private int depth;
     private BedrockTeleportOperation operation;
 
-    void begin() { depth++; }
+    void begin() {
+        depth++;
+    }
 
     void enqueue(BedrockPacket packet, Runnable write) {
         if (depth != 0) {
@@ -30,8 +32,11 @@ final class BedrockOriginDispatch {
     void withOperation(BedrockTeleportOperation next, Runnable action) {
         BedrockTeleportOperation previous = operation;
         operation = next;
-        try { action.run(); }
-        finally { operation = previous; }
+        try {
+            action.run();
+        } finally {
+            operation = previous;
+        }
     }
 
     void finish(int originX, int originZ, BedrockTeleportOperation operation) {
@@ -50,15 +55,25 @@ final class BedrockOriginDispatch {
         write.run();
     }
 
-    Emission take(BedrockPacket packet) { return emissions.remove(packet); }
-    BedrockCoordinateFrame frame() { return frame; }
-    void clear() { pending.clear(); emissions.clear(); depth = 0; }
+    Emission take(BedrockPacket packet) {
+        return emissions.remove(packet);
+    }
+
+    BedrockCoordinateFrame frame() {
+        return frame;
+    }
+
+    void clear() {
+        pending.clear();
+        emissions.clear();
+        depth = 0;
+    }
 
     record Emission(BedrockCoordinateFrame frame, BedrockTeleportOperation operation) {
         BedrockTeleportProvenance provenance() {
             return operation == null ? BedrockTeleportProvenance.GEYSER : operation.provenance();
         }
-
     }
-    private record Pending(BedrockPacket packet, Runnable write) { }
+
+    private record Pending(BedrockPacket packet, Runnable write) {}
 }

@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.simulation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.prediction.api.BedrockMovementResult;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
@@ -25,40 +28,48 @@ import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public final class BedrockGlideStairStepTest {
     @Test
     public void glidingLandingStepsUpEastFacingStairAndKeepsHorizontalVelocity() {
         // Flag 89, auth tick 26511: the client glided onto the upper half of this stair.
         Vec3d start = new Vec3d(268.13134765625D, 82.55297088623047D, -90.61742401123047D);
-        Vec3d carriedVelocity = new Vec3d(
-            0.2485734522342682D, -0.2382630705833435D, 0.09112013876438141D);
+        Vec3d carriedVelocity = new Vec3d(0.2485734522342682D, -0.2382630705833435D, 0.09112013876438141D);
         PlayerDimensionsState glideSize = new PlayerDimensionsState(0.6F, 0.6F);
         BedrockMovementState previous = BedrockMovementState.fromPhysicalFeet(
-                start, carriedVelocity, BedrockInputFrame.idle(26504L), BedrockCollisionFlags.AIR)
-            .withGliding(true)
-            .withPlayerDimensions(BedrockBoundingBoxMode.HORIZONTAL, glideSize, true);
+                        start, carriedVelocity, BedrockInputFrame.idle(26504L), BedrockCollisionFlags.AIR)
+                .withGliding(true)
+                .withPlayerDimensions(BedrockBoundingBoxMode.HORIZONTAL, glideSize, true);
         BedrockInputFrame frame = new BedrockInputFrame(
-            26505L, -86.39594F, 25.826218F, false, false, true,
-            Set.of("SPRINTING", "SPRINT_DOWN", "GLIDING", "ACTOR_POSE_SNAPSHOT"));
+                26505L,
+                -86.39594F,
+                25.826218F,
+                false,
+                false,
+                true,
+                Set.of("SPRINTING", "SPRINT_DOWN", "GLIDING", "ACTOR_POSE_SNAPSHOT"));
         PlacedBlockCollision stair = PlacedBlockCollision.manual(
-            new BlockPosition(268, 82, -91),
-            "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]",
-            "minecraft:oak_stairs",
-            List.of(
-                new WorldCollisionBox(268.0D, 82.0D, -91.0D, 269.0D, 82.5D, -90.0D),
-                new WorldCollisionBox(268.5D, 82.5D, -91.0D, 269.0D, 83.0D, -90.0D)));
+                new BlockPosition(268, 82, -91),
+                "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]",
+                "minecraft:oak_stairs",
+                List.of(
+                        new WorldCollisionBox(268.0D, 82.0D, -91.0D, 269.0D, 82.5D, -90.0D),
+                        new WorldCollisionBox(268.5D, 82.5D, -91.0D, 269.0D, 83.0D, -90.0D)));
         BedrockMovementContext context = new BedrockMovementContext(
-            BedrockEffectState.NONE, AttributeState.DEFAULT,
-            new WorldContactState(Medium.AIR, FluidState.NONE, new BlockCollisionWorld(List.of(stair))),
-            EquipmentState.NONE, EntityContactState.NONE,
-            new MovementModifierState(true, false, false, false, .05, false, false, false, false, .35, 0), glideSize);
+                BedrockEffectState.NONE,
+                AttributeState.DEFAULT,
+                new WorldContactState(Medium.AIR, FluidState.NONE, new BlockCollisionWorld(List.of(stair))),
+                EquipmentState.NONE,
+                EntityContactState.NONE,
+                new MovementModifierState(true, false, false, false, .05, false, false, false, false, .35, 0),
+                glideSize);
 
-        BedrockMovementResult result = BedrockSimulation.move(previous, frame, context,
-            BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE, true,
-            BedrockSimulation.DEFAULT_MAX_AUTO_STEP);
+        BedrockMovementResult result = BedrockSimulation.move(
+                previous,
+                frame,
+                context,
+                BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE,
+                true,
+                BedrockSimulation.DEFAULT_MAX_AUTO_STEP);
 
         assertTrue(result.selectedGlidingTravel());
         assertTrue(result.steppedUp());

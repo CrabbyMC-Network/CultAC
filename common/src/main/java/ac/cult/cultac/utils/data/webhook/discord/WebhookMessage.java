@@ -1,19 +1,18 @@
 package ac.cult.cultac.utils.data.webhook.discord;
 
+import static ac.cult.cultac.utils.data.json.JsonSerializable.deserializeArray;
+import static ac.cult.cultac.utils.data.json.JsonSerializable.serializeArray;
+
 import ac.cult.cultac.utils.data.json.JsonSerializable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
-
-import static ac.cult.cultac.utils.data.json.JsonSerializable.deserializeArray;
-import static ac.cult.cultac.utils.data.json.JsonSerializable.serializeArray;
 
 @Getter
 @Setter
@@ -36,13 +35,15 @@ public class WebhookMessage implements JsonSerializable {
         if ((element = json.get("username")) != null) username(element.getAsString());
         if ((element = json.get("avatar_url")) != null) avatar(element.getAsString());
         if ((element = json.get("tts")) != null) tts(element.getAsBoolean());
-        if ((element = json.get("embeds")) != null) embeds(deserializeArray(element.getAsJsonArray(), Embed[]::new, Embed::new));
+        if ((element = json.get("embeds")) != null)
+            embeds(deserializeArray(element.getAsJsonArray(), Embed[]::new, Embed::new));
     }
 
     @Contract(value = "_ -> this", mutates = "this")
     public @NotNull WebhookMessage content(@Nullable String content) {
         if (content != null && content.length() > MAX_CONTENT_LENGTH) {
-            throw new IllegalArgumentException("Webhook content too long, " + content.length() + " > " + MAX_CONTENT_LENGTH);
+            throw new IllegalArgumentException(
+                    "Webhook content too long, " + content.length() + " > " + MAX_CONTENT_LENGTH);
         }
 
         this.content = content;

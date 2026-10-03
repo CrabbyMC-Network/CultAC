@@ -1,10 +1,11 @@
 package ac.cult.cultac.bedrock.prediction.simulation.postmove;
 
+import static org.junit.Assert.assertEquals;
+
 import ac.cult.cultac.bedrock.prediction.world.BubbleColumnLayer;
 import ac.cult.cultac.bedrock.prediction.world.BubbleColumnState;
 import java.util.List;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
 public final class BedrockBubbleColumnMovementTest {
     @Test

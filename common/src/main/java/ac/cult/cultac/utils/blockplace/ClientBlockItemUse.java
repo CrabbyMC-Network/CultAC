@@ -2,8 +2,8 @@ package ac.cult.cultac.utils.blockplace;
 
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionResult;
@@ -22,27 +22,33 @@ final class ClientBlockItemUse {
     private static final DataComponentType<?> COMPOSTABLE = compostableComponent();
     private static final java.util.Map<?, ?> LEGACY_COMPOSTABLES = legacyCompostables();
 
-    private ClientBlockItemUse() {
-    }
+    private ClientBlockItemUse() {}
 
-    static @Nullable InteractionResult simulate(BlockState state, Level level, BlockPos pos, PlacementSnapshot snapshot) {
+    static @Nullable InteractionResult simulate(
+            BlockState state, Level level, BlockPos pos, PlacementSnapshot snapshot) {
         if (state.getBlock() instanceof RedStoneOreBlock) {
             // MCP RedStoneOreBlock#useItemOn: client particles do not change LIT.
             // Placement eligibility uses the same snapshot context as BlockItem.
             return snapshot.getItemStack().getItem() instanceof BlockItem
-                    && NmsBlockPlaceResolver.createPlacementContext(level, snapshot).canPlace()
-                    ? InteractionResult.PASS : InteractionResult.SUCCESS;
+                            && NmsBlockPlaceResolver.createPlacementContext(level, snapshot)
+                                    .canPlace()
+                    ? InteractionResult.PASS
+                    : InteractionResult.SUCCESS;
         }
         if (state.getBlock() instanceof JukeboxBlock) {
             // MCP JukeboxPlayable#tryInsertIntoJukebox changes inventory/BE only on the server.
             return snapshot.getItemStack().has(DataComponents.JUKEBOX_PLAYABLE)
-                    ? InteractionResult.SUCCESS : InteractionResult.PASS;
+                    ? InteractionResult.SUCCESS
+                    : InteractionResult.PASS;
         }
         if (state.getBlock() instanceof ComposterBlock && state.getValue(ComposterBlock.LEVEL) < 8) {
             // MCP ComposterBlock#useItemOn: random composting and item consumption are server-only.
-            return (COMPOSTABLE != null ? snapshot.getItemStack().has(COMPOSTABLE)
-                    : LEGACY_COMPOSTABLES.containsKey(snapshot.getItemStack().getItem()))
-                    ? InteractionResult.SUCCESS : InteractionResult.PASS;
+            return (COMPOSTABLE != null
+                            ? snapshot.getItemStack().has(COMPOSTABLE)
+                            : LEGACY_COMPOSTABLES.containsKey(
+                                    snapshot.getItemStack().getItem()))
+                    ? InteractionResult.SUCCESS
+                    : InteractionResult.PASS;
         }
         String id = NmsIdentifierUtil.registryKey(BuiltInRegistries.BLOCK, state.getBlock());
         if (id.endsWith("copper_golem_statue")) {
@@ -66,7 +72,8 @@ final class ClientBlockItemUse {
     private static DataComponentType<?> compostableComponent() {
         try {
             // 26.3 moved the vanilla compostables table to an item component.
-            return (DataComponentType<?>) DataComponents.class.getField("COMPOSTABLE").get(null);
+            return (DataComponentType<?>)
+                    DataComponents.class.getField("COMPOSTABLE").get(null);
         } catch (NoSuchFieldException olderRuntime) {
             return null;
         } catch (IllegalAccessException exception) {
@@ -77,7 +84,8 @@ final class ClientBlockItemUse {
     private static java.util.Map<?, ?> legacyCompostables() {
         if (COMPOSTABLE != null) return java.util.Map.of();
         try {
-            return (java.util.Map<?, ?>) ComposterBlock.class.getField("COMPOSTABLES").get(null);
+            return (java.util.Map<?, ?>)
+                    ComposterBlock.class.getField("COMPOSTABLES").get(null);
         } catch (ReflectiveOperationException exception) {
             throw new ExceptionInInitializerError(exception);
         }

@@ -8,7 +8,8 @@ import net.minecraft.world.entity.EntityType;
 @AllArgsConstructor
 public class TrackerData {
 
-    public TrackerData(double x, double y, double z, float xRot, float yRot, EntityType entityType, int lastTransactionHung) {
+    public TrackerData(
+            double x, double y, double z, float xRot, float yRot, EntityType entityType, int lastTransactionHung) {
         this.x = x;
         this.y = y;
         this.z = z;

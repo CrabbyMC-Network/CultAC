@@ -6,48 +6,55 @@ import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.checks.EngineCheck;
 import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.type.PostPredictionListener;
+import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.data.TeleportData;
 import ac.cult.cultac.utils.data.TransactionVel;
-import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.protocol.ClientVersion;
-import org.bukkit.GameMode;
-import net.minecraft.world.phys.Vec3;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.List;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.GameMode;
 
 @ToString
 public class PacketModHandler extends Check implements EngineCheck, PostPredictionListener {
     double offsetToFlag;
     double maxAdvantage, immediate, ceiling, multiplier;
-    @Getter double threshold;
+
+    @Getter
+    double threshold;
 
     public transient List<TransactionVel> overriddenVels = new ArrayList<>();
     public TransactionVel firstBread = null;
     public transient TransactionVel secondBread = null;
+
     @Getter
     public transient TransactionVel lastSent = null;
 
     @Getter
     boolean canTickSkip = false;
+
     @Setter
     boolean isSetbackVal = false;
 
-    public PacketModHandler(CultPlayer cultPlayer, CheckInfo info) { super(cultPlayer, info); }
+    public PacketModHandler(CultPlayer cultPlayer, CheckInfo info) {
+        super(cultPlayer, info);
+    }
 
     @Override
     public void handleResult(CultPlayer player, PredictionResult result, PredictionResult lastResult) {
         if (firstBread == null && secondBread == null) return;
 
         // The player could have skipped this velocity
-        boolean isPointThree = result.getInitialStartingVel().isKnockback() && result.getSimulationContext().isTestingPointThree() && result.getOffset() < player.getMovementThreshold();
+        boolean isPointThree = result.getInitialStartingVel().isKnockback()
+                && result.getSimulationContext().isTestingPointThree()
+                && result.getOffset() < player.getMovementThreshold();
 
         if (isPointThree) {
             canTickSkip = true;
@@ -131,11 +138,13 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         }
 
         if (predictionComplete.getPredictionResult().getInitialStartingVel().hasPacketModifier(this.firstBread)) {
-            List<PredictionResult> realities = predictionComplete.getPredictionResult().getRealities();
+            List<PredictionResult> realities =
+                    predictionComplete.getPredictionResult().getRealities();
             boolean hasValidNonBreadVector = false;
 
             for (PredictionResult vector : realities) {
-                if (!vector.getInitialStartingVel().hasPacketModifier(this.firstBread) && vector.getFlagSeverity() == 0) {
+                if (!vector.getInitialStartingVel().hasPacketModifier(this.firstBread)
+                        && vector.getFlagSeverity() == 0) {
                     hasValidNonBreadVector = true;
                     break;
                 }
@@ -147,22 +156,28 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
             }
         }
 
-        boolean usedSecondBread = predictionComplete.getPredictionResult().getInitialStartingVel().hasPacketModifier(this.secondBread);
+        boolean usedSecondBread =
+                predictionComplete.getPredictionResult().getInitialStartingVel().hasPacketModifier(this.secondBread);
 
-        if (this.secondBread != null && this.secondBread.getOffset() > offsetToFlag
-                && !player.compensatedEntities.getSelf().isDead && player.gamemode != GameMode.SPECTATOR) {
+        if (this.secondBread != null
+                && this.secondBread.getOffset() > offsetToFlag
+                && !player.compensatedEntities.getSelf().isDead
+                && player.gamemode != GameMode.SPECTATOR) {
             // TODO: Perhaps if the velocity overrode other velocities, we flag multiple times?
             // TODO: Perhaps add maximum latency for velocity.
-            if (player.getSetbackTeleportUtil().isDebug()) { LogUtil.info("Velocity flag: " + this.secondBread.getOffset() + " skip=" + possibleSkip); }
+            if (player.getSetbackTeleportUtil().isDebug()) {
+                LogUtil.info("Velocity flag: " + this.secondBread.getOffset() + " skip=" + possibleSkip);
+            }
             if (!this.secondBread.isSetbackVel()) {
                 final double offset = this.secondBread.getOffset();
                 this.threshold = Math.min(this.threshold + offset, ceiling);
-                String offsetDescription = offset == Double.MAX_VALUE
-                        ? "ignored"
-                        : NumFormatter.formatNumberStandard(offset);
+                String offsetDescription =
+                        offset == Double.MAX_VALUE ? "ignored" : NumFormatter.formatNumberStandard(offset);
                 flag("offset=" + offsetDescription + " threshold=" + NumFormatter.formatNumberStandard(threshold));
                 //
-                if (offset >= immediate || threshold >= maxAdvantage) { setbackIfAboveSetbackVL(); }
+                if (offset >= immediate || threshold >= maxAdvantage) {
+                    setbackIfAboveSetbackVL();
+                }
 
             } else { // We still need to increase violations.
                 player.getSetbackTeleportUtil().executeViolationSetback();
@@ -189,11 +204,13 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         handleTeleport(null);
     }
 
-    @Getter private boolean wasExempt = false;
+    @Getter
+    private boolean wasExempt = false;
 
     private void markVelocityOverriddenByTeleport() {
         // The teleport overrode this velocity completely, don't bother with it
-        this.secondBread = null; this.wasExempt = true;
+        this.secondBread = null;
+        this.wasExempt = true;
     }
 
     public void handleTeleport(TeleportData data) {
@@ -248,7 +265,7 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
     }
 
     protected <R extends ac.cult.cultac.protocol.packet.clientbound.ClientboundPacket>
-    CultPlayer.TrackedTransaction bundlePacketWithTrailingTransaction(PacketSendEvent<R> event, R packet) {
+            CultPlayer.TrackedTransaction bundlePacketWithTrailingTransaction(PacketSendEvent<R> event, R packet) {
         CultPlayer.TrackedTransaction transaction = player.createTrackedTransactionPacketForBundle();
         if (transaction == null) return null;
         // The original record must keep its bytes: legacy velocity quantization is lossy.
@@ -280,14 +297,16 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         int transaction = player.lastTransactionSent.get();
         TransactionVel velocity = new TransactionVel(playerVelocity, transaction, isVel, isSetbackVal, sourceEntityId);
         lastSent = velocity;
-        player.latencyUtils.addRealTimeTaskWithNextTransaction(transaction,
+        player.latencyUtils.addRealTimeTaskWithNextTransaction(
+                transaction,
                 () -> makeVelocityPossible(velocity, playerVelocity),
                 () -> confirmVelocity(velocity, playerVelocity));
         return transaction + 1;
     }
 
     protected void makeVelocityPossible(TransactionVel velocity, Vec3 originalVelocity) {
-        if (!velocity.isVelocity() && shouldCarryPreviousPacketModifier(secondBread, false, velocity.getTransaction())) {
+        if (!velocity.isVelocity()
+                && shouldCarryPreviousPacketModifier(secondBread, false, velocity.getTransaction())) {
             velocity.setVel(originalVelocity.add(secondBread.getVel()));
         }
         firstBread = velocity;
@@ -296,26 +315,31 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
     protected void confirmVelocity(TransactionVel velocity, Vec3 originalVelocity) {
         // The callback owns this entry. A later write may already occupy firstBread.
         if (velocity.isConsumed()) return;
-        if (secondBread != null && velocity.isVelocity()
+        if (secondBread != null
+                && velocity.isVelocity()
                 && shouldCarryPreviousPacketModifier(secondBread, true, velocity.getTransaction())) {
             overriddenVels.add(secondBread);
         }
         if (!velocity.isVelocity()) {
-            velocity.setVel(shouldCarryPreviousPacketModifier(secondBread, false, velocity.getTransaction())
-                    ? originalVelocity.add(secondBread.getVel()) : originalVelocity);
+            velocity.setVel(
+                    shouldCarryPreviousPacketModifier(secondBread, false, velocity.getTransaction())
+                            ? originalVelocity.add(secondBread.getVel())
+                            : originalVelocity);
         }
         if (firstBread == velocity) firstBread = null;
         secondBread = velocity;
     }
 
-    protected void handleEventAfterTransaction(Vec3 playerVelocity, boolean isVel, int transaction, int sourceEntityId) {
+    protected void handleEventAfterTransaction(
+            Vec3 playerVelocity, boolean isVel, int transaction, int sourceEntityId) {
         if (transaction <= 0) return;
         TransactionVel velocity = new TransactionVel(playerVelocity, transaction, isVel, isSetbackVal, sourceEntityId);
         lastSent = velocity;
         player.latencyUtils.addRealTimeTask(transaction, () -> confirmVelocity(velocity, playerVelocity));
     }
 
-    private boolean shouldCarryPreviousPacketModifier(TransactionVel previous, boolean currentIsVelocity, int currentTransaction) {
+    private boolean shouldCarryPreviousPacketModifier(
+            TransactionVel previous, boolean currentIsVelocity, int currentTransaction) {
         if (previous == null) {
             return false;
         }
@@ -342,7 +366,8 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
                 || isVelocityOverrideBetween(previous, knockbackHandler.secondBread, currentTransaction);
     }
 
-    private boolean isVelocityOverrideBetween(TransactionVel previous, TransactionVel velocity, int currentTransaction) {
+    private boolean isVelocityOverrideBetween(
+            TransactionVel previous, TransactionVel velocity, int currentTransaction) {
         return velocity != null
                 && velocity.isVelocity()
                 && velocity.getTransaction() > previous.getTransaction()
@@ -380,5 +405,4 @@ public class PacketModHandler extends Check implements EngineCheck, PostPredicti
         }
         overriddenVels.removeIf(vel -> vel.getSourceEntityId() != entityId);
     }
-
 }

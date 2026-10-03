@@ -10,7 +10,9 @@ public class PacketEntityStrider extends PacketEntityRideable {
     private float walkAnimationSpeed = 0.0F;
     private float walkAnimationPosition = 0.0F;
 
-    public PacketEntityStrider(CultPlayer player, int entityId, EntityType type, double x, double y, double z) { super(player, entityId, type, x, y, z); }
+    public PacketEntityStrider(CultPlayer player, int entityId, EntityType type, double x, double y, double z) {
+        super(player, entityId, type, x, y, z);
+    }
 
     public void updateWalkAnimation(Vec3 from, Vec3 to) {
         double dx = to.x - from.x;

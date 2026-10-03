@@ -30,7 +30,8 @@ public class HorizontalAnalyzer implements EngineCheck {
             return;
         }
         PacketEntity vehicle = result.getSimulationContext().getVehicle();
-        if (result.getSimulationContext().usesFallFlyingMovement() && !result.getSimulationContext().getWorldData().mustBeInLiquid()) {
+        if (result.getSimulationContext().usesFallFlyingMovement()
+                && !result.getSimulationContext().getWorldData().mustBeInLiquid()) {
             return;
         }
         if (vehicle != null) {
@@ -45,7 +46,8 @@ public class HorizontalAnalyzer implements EngineCheck {
         Vec3 closestForSpeed = result.getAcceptedClosestToTarget();
         Vec3 horizDiffForInputs = target.subtract(closestForSpeed).multiply(1, 0, 1);
 
-        Vec3 minimumInputRequired = getBestTheoreticalPlayerInput(horizDiffForInputs, result.getSimulationContext().getXRot()); // player inputs
+        Vec3 minimumInputRequired = getBestTheoreticalPlayerInput(
+                horizDiffForInputs, result.getSimulationContext().getXRot()); // player inputs
 
         // Can a player have a speed of 0?
         double inputScaledToSpeed = minimumInputRequired.length() / playerSpeed;
@@ -60,22 +62,31 @@ public class HorizontalAnalyzer implements EngineCheck {
 
         // A player cannot move more than 0.98 "input" in a single direction
         // A player cannot move more than a total of 1 "input" in a single tick
-        double speedFlagAmount = getHorizontalInputFlagAmount(absInput, playerSpeed,
+        double speedFlagAmount = getHorizontalInputFlagAmount(
+                absInput,
+                playerSpeed,
                 result.getSimulationContext().getWorldData().mustBeInLiquid());
 
         if (speedFlagAmount > 0.0D) {
-            result.addFlag(speedOrStrafe, () -> NumFormatter.formatNumberStandard(minimumInputRequired.x) + " " + NumFormatter.formatNumberStandard(minimumInputRequired.z), speedFlagAmount);
+            result.addFlag(
+                    speedOrStrafe,
+                    () -> NumFormatter.formatNumberStandard(minimumInputRequired.x) + " "
+                            + NumFormatter.formatNumberStandard(minimumInputRequired.z),
+                    speedFlagAmount);
         }
 
-        boolean isSlowed = result.getSimulationContext().isSneaking() && result.getSimulationContext().getVersion().isOlderThanOrEquals(ClientVersion.V_1_14_4);
+        boolean isSlowed = result.getSimulationContext().isSneaking()
+                && result.getSimulationContext().getVersion().isOlderThanOrEquals(ClientVersion.V_1_14_4);
         // 1.14-1.14.4 uses both for slowing, not just one
         if (result.getSimulationContext().getVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
             // TODO: If we want to, require sent a sneaking packet in the last tick to allow tick skip exempt
-            isSlowed = result.getSimulationContext().isLastSneaking() && !result.getInitialStartingVel().isTickSkip();
+            isSlowed = result.getSimulationContext().isLastSneaking()
+                    && !result.getInitialStartingVel().isTickSkip();
             Vec3 from = result.getSimulationContext().getStart();
 
             // The logic is that if the player has collisions above this, they will simply go into swimming position
-            SimpleCollisionBox oldBox = GetBoundingBox.getBoundingBoxFromPosAndSize(from.x, from.y, from.z, 0.6f, 0.6f).expand(-SimpleCollisionBox.COLLISION_EPSILON);
+            SimpleCollisionBox oldBox = GetBoundingBox.getBoundingBoxFromPosAndSize(from.x, from.y, from.z, 0.6f, 0.6f)
+                    .expand(-SimpleCollisionBox.COLLISION_EPSILON);
             if (!Collisions.isEmpty(player, oldBox)) {
                 isSlowed = false;
             }
@@ -83,24 +94,39 @@ public class HorizontalAnalyzer implements EngineCheck {
         }
 
         if (isSlowed) {
-            double maxDirLength = getSneakingMaxInputAxis(playerSpeed, result.getSimulationContext().getSwiftSneakLevel());
+            double maxDirLength = getSneakingMaxInputAxis(
+                    playerSpeed, result.getSimulationContext().getSwiftSneakLevel());
             speedFlagAmount = Math.max(absInput.x - maxDirLength, absInput.z - maxDirLength);
 
             if (!result.getSimulationContext().getWorldData().maybeInLiquid() && speedFlagAmount > 0.001) {
-                result.addFlag(player.checkManager.getListener(NoSneakSlow.class), () -> NumFormatter.formatNumberStandard(minimumInputRequired.x) + " " + NumFormatter.formatNumberStandard(minimumInputRequired.z), speedFlagAmount);
+                result.addFlag(
+                        player.checkManager.getListener(NoSneakSlow.class),
+                        () -> NumFormatter.formatNumberStandard(minimumInputRequired.x) + " "
+                                + NumFormatter.formatNumberStandard(minimumInputRequired.z),
+                        speedFlagAmount);
             }
         }
 
-        StuckEdgeData lastOnEdge = lastResult == null ? null : lastResult.getSimulationContext().getWorldData().getSneak();
+        StuckEdgeData lastOnEdge = lastResult == null
+                ? null
+                : lastResult.getSimulationContext().getWorldData().getSneak();
 
-        // From here on are checks we cannot do if the player doesn't have inputs, is sneaking, or is colliding with a wall
-        if (inputScaledToSpeed < 0.01 || result.getCollideAxisData().getX().isLikelyCollide() || result.getCollideAxisData().getZ().isLikelyCollide()
+        // From here on are checks we cannot do if the player doesn't have inputs, is sneaking, or is colliding with a
+        // wall
+        if (inputScaledToSpeed < 0.01
+                || result.getCollideAxisData().getX().isLikelyCollide()
+                || result.getCollideAxisData().getZ().isLikelyCollide()
                 || (lastOnEdge != null && lastOnEdge.isOnEdge())
-                || (lastResult != null && lastResult.getSimulationContext().getWorldData().getClimbing().determineOptimistically()))
-            return;
+                || (lastResult != null
+                        && lastResult
+                                .getSimulationContext()
+                                .getWorldData()
+                                .getClimbing()
+                                .determineOptimistically())) return;
 
         double playerAngle = normalizeAngle(result.getSimulationContext().getXRot());
-        AngleResult angleResult = getAngleRange(result.getValidMovements().getCollisionIgnoredMaxStartingVelExtents(), target, playerAngle);
+        AngleResult angleResult = getAngleRange(
+                result.getValidMovements().getCollisionIgnoredMaxStartingVelExtents(), target, playerAngle);
 
         double minAngle = CultMath.clamp(0, angleResult.getMinAngle(), angleResult.getMaxAngle());
 
@@ -112,23 +138,31 @@ public class HorizontalAnalyzer implements EngineCheck {
         }
 
         final Check angleCheck = player.checkManager.getAngleCheck();
-        if (result.getValidMovements().getCollisionIgnoredMaxStartingVelExtents().isHorizEmpty()) {
+        if (result.getValidMovements()
+                .getCollisionIgnoredMaxStartingVelExtents()
+                .isHorizEmpty()) {
             double absX = Math.abs(minimumInputRequired.x);
             double absZ = Math.abs(minimumInputRequired.z);
 
             double distToValid = Math.min(Math.min(Math.abs(absX - absZ), absX), absZ);
             if (distToValid > 0.01) { // More lenient than it must be.
-                result.addFlag(angleCheck, () -> "1: " + NumFormatter.formatNumberStandard(distToValid), distToValid / 500); // Not that bad to flag
+                result.addFlag(
+                        angleCheck,
+                        () -> "1: " + NumFormatter.formatNumberStandard(distToValid),
+                        distToValid / 500); // Not that bad to flag
             }
         } else {
             // Angle check - make sure the player isn't moving in (0.8, 0.2) for example
-            double distanceToValid = minDistanceToValidMovementAngle(angleResult.getMinAngle(), angleResult.getMaxAngle());
+            double distanceToValid =
+                    minDistanceToValidMovementAngle(angleResult.getMinAngle(), angleResult.getMaxAngle());
 
             if (distanceToValid > 7) { // Highly lenient but sane threshold
-                result.addFlag(angleCheck, () -> "2: " + NumFormatter.formatNumberStandard(distanceToValid), distanceToValid / 500); // Not that bad to flag
+                result.addFlag(
+                        angleCheck,
+                        () -> "2: " + NumFormatter.formatNumberStandard(distanceToValid),
+                        distanceToValid / 500); // Not that bad to flag
             }
         }
-
 
         // We once had a check for making sure non-whole inputs were not allowed, but it was removed due to sneaking
         // Maybe it can come back, eventually.
@@ -221,14 +255,18 @@ public class HorizontalAnalyzer implements EngineCheck {
     public static Vec3 getBestTheoreticalPlayerInput(Vec3 wantedMovement, float f2) {
         float vanillaSin = VanillaMath.sin(f2 * 0.017453292f);
         float vanillaCos = VanillaMath.cos(f2 * 0.017453292f);
-        Vec3 correctMath = new Vec3(wantedMovement.x * vanillaCos + wantedMovement.z * vanillaSin, 0, wantedMovement.z * vanillaCos - wantedMovement.x * vanillaSin);
+        Vec3 correctMath = new Vec3(
+                wantedMovement.x * vanillaCos + wantedMovement.z * vanillaSin,
+                0,
+                wantedMovement.z * vanillaCos - wantedMovement.x * vanillaSin);
         double absX = Math.abs(correctMath.x);
         double absZ = Math.abs(correctMath.z);
         double correctMathDiff = Math.min(Math.min(Math.abs(absX - absZ), absX), absZ);
 
         float f3 = OptifineFastMath.sin(f2 * 0.017453292f);
         float f4 = OptifineFastMath.cos(f2 * 0.017453292f);
-        Vec3 shitMath = new Vec3(wantedMovement.x * f4 + wantedMovement.z * f3, 0, wantedMovement.z * f4 - wantedMovement.x * f3);
+        Vec3 shitMath = new Vec3(
+                wantedMovement.x * f4 + wantedMovement.z * f3, 0, wantedMovement.z * f4 - wantedMovement.x * f3);
         absX = Math.abs(shitMath.x);
         absZ = Math.abs(shitMath.z);
         double shitMathDiff = Math.min(Math.min(Math.abs(absX - absZ), absX), absZ);

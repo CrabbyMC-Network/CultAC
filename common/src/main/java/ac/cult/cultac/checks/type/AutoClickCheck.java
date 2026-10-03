@@ -1,26 +1,24 @@
 package ac.cult.cultac.checks.type;
 
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
-
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.StringReturner;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.LastInstance;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import ac.cult.cultac.utils.nmsutil.Ray;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
+import java.util.LinkedList;
 import net.minecraft.core.BlockPos;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
-import ac.cult.cultac.protocol.value.PlayerAction;
 import org.bukkit.GameMode;
 import org.bukkit.util.Vector;
-
-import java.util.LinkedList;
 
 /*
  * @author Inspired and originally written Sim0n
@@ -41,8 +39,13 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
     private final double rewardBuffer;
     private final double flagBuffer;
 
-
-    public AutoClickCheck(CultPlayer playerData, CheckInfo checkInfo, int samplesBeforeCheck, double rewardBuffer, double flagBuffer) { super(playerData, checkInfo);
+    public AutoClickCheck(
+            CultPlayer playerData,
+            CheckInfo checkInfo,
+            int samplesBeforeCheck,
+            double rewardBuffer,
+            double flagBuffer) {
+        super(playerData, checkInfo);
         this.samplesBeforeCheck = samplesBeforeCheck;
         this.rewardBuffer = rewardBuffer;
         this.flagBuffer = flagBuffer;
@@ -106,7 +109,8 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         handleDigAction(packet);
     }
 
@@ -120,17 +124,29 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
         Vector playerPos = new Vector(player.lastX, player.lastY, player.lastZ);
 
         // If the player isn't within 10 blocks of the block they are digging, don't bother.
-        if (diggingLocation != null && playerPos.distanceSquared(new Vector(diggingLocation.getX(), diggingLocation.getY(), diggingLocation.getZ())) < 100) {
-            if (lastDiggingAction == PlayerAction.START_DESTROY_BLOCK) { // START_BREAK without FINISH_BREAK or CANCEL_BREAK
+        if (diggingLocation != null
+                && playerPos.distanceSquared(
+                                new Vector(diggingLocation.getX(), diggingLocation.getY(), diggingLocation.getZ()))
+                        < 100) {
+            if (lastDiggingAction
+                    == PlayerAction.START_DESTROY_BLOCK) { // START_BREAK without FINISH_BREAK or CANCEL_BREAK
                 lastDigging.reset();
             } else if (lastDiggingAction == PlayerAction.ABORT_DESTROY_BLOCK) { // Buggy cancel digging
                 // Brute force eye height because desync
                 for (double eyeHeight : player.getPossibleEyeHeights()) {
-                    Ray trace = new Ray(player, playerPos.getX(), playerPos.getY() + eyeHeight, playerPos.getZ(), player.xRot, player.yRot);
+                    Ray trace = new Ray(
+                            player,
+                            playerPos.getX(),
+                            playerPos.getY() + eyeHeight,
+                            playerPos.getZ(),
+                            player.xRot,
+                            player.yRot);
                     Vector endVec = trace.getPointAtDistance(5);
 
-                    SimpleCollisionBox hitbox = new SimpleCollisionBox(diggingLocation).expand(0.1); // Give some more lenience
-                    Vector intercept = ReachUtils.calculateIntercept(hitbox, playerPos, endVec).getFirst();
+                    SimpleCollisionBox hitbox =
+                            new SimpleCollisionBox(diggingLocation).expand(0.1); // Give some more lenience
+                    Vector intercept = ReachUtils.calculateIntercept(hitbox, playerPos, endVec)
+                            .getFirst();
 
                     if (ReachUtils.isVecInside(hitbox, playerPos) || intercept != null) {
                         lastDigging.reset();

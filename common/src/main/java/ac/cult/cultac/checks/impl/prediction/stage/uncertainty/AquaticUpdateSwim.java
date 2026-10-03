@@ -11,11 +11,19 @@ import net.minecraft.world.phys.Vec3;
 
 public class AquaticUpdateSwim implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         if (context.getWorldData().getInWater() == DesyncStatus.FALSE) return start;
         if (context.getVehicle() != null) return start;
 
-        double lookYAmount = ReachUtils.getLook(player, player.xRot, player.yRot).getY();
+        double lookYAmount =
+                ReachUtils.getLook(player, player.xRot, player.yRot).getY();
 
         double upwardsSwimReducer = lookYAmount < -0.2 ? 0.085 : 0.06;
 

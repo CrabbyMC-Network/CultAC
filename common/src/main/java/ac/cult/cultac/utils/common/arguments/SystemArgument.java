@@ -3,8 +3,7 @@ package ac.cult.cultac.utils.common.arguments;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public record SystemArgument<T>(String key, Class<T> clazz, T value, boolean set,
-                                Visibility visibility) {
+public record SystemArgument<T>(String key, Class<T> clazz, T value, boolean set, Visibility visibility) {
 
     public boolean matches(Predicate<T> predicate) {
         return predicate.test(value);
@@ -14,8 +13,8 @@ public record SystemArgument<T>(String key, Class<T> clazz, T value, boolean set
         try {
             return value == null ? otherwise : mapper.apply(value);
         } catch (Exception e) {
-            //TODO: add back logging once LogUtil has been refactored
-            //LogUtil.exception("Failed to map value for argument " + key, e);
+            // TODO: add back logging once LogUtil has been refactored
+            // LogUtil.exception("Failed to map value for argument " + key, e);
         }
         return otherwise;
     }
@@ -37,5 +36,4 @@ public record SystemArgument<T>(String key, Class<T> clazz, T value, boolean set
         HIDDEN, // only visible in console
         SECRET // only visible in console if set
     }
-
 }

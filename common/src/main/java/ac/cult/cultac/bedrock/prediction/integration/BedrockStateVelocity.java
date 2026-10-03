@@ -7,13 +7,15 @@ final class BedrockStateVelocity extends PredVector {
     private final BedrockProfileState.Entry entry;
 
     BedrockStateVelocity(BedrockProfileState.Entry entry) {
-        super(BedrockVectorAdapter.toJava(Objects.requireNonNull(entry, "entry").state().velocity()));
+        super(BedrockVectorAdapter.toJava(
+                Objects.requireNonNull(entry, "entry").state().velocity()));
         this.entry = entry;
     }
 
     BedrockStateVelocity(BedrockProfileState.Entry entry, PredVector source) {
         super(
-                BedrockVectorAdapter.toJava(Objects.requireNonNull(entry, "entry").state().velocity()),
+                BedrockVectorAdapter.toJava(
+                        Objects.requireNonNull(entry, "entry").state().velocity()),
                 Objects.requireNonNull(source, "source"),
                 "bedrock profile state");
         this.entry = entry;

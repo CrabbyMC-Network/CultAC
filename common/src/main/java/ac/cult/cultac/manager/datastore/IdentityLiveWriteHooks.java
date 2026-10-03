@@ -1,14 +1,13 @@
 package ac.cult.cultac.manager.datastore;
 
-import ac.grim.grimac.api.AbstractCheck;
-import ac.grim.grimac.internal.storage.identity.PlayerIdentityService;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
+import ac.grim.grimac.api.AbstractCheck;
+import ac.grim.grimac.internal.storage.identity.PlayerIdentityService;
+import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Live-write facade used when only the player-identity route is available.
@@ -23,16 +22,15 @@ final class IdentityLiveWriteHooks implements LiveWriteHooks {
     }
 
     @Override
-    public void onJoin(
-            @NotNull UUID uuid,
-            @Nullable String name,
-            long now,
-            @NotNull SessionTracker.ClientMeta meta) {
+    public void onJoin(@NotNull UUID uuid, @Nullable String name, long now, @NotNull SessionTracker.ClientMeta meta) {
         identityService.observe(uuid, name, now);
     }
 
-    @Override public void onQuit(@NotNull UUID uuid, long now, @NotNull SessionTracker.ClientMeta meta) {}
-    @Override public void observeBrand(@NotNull UUID uuid, long now, @NotNull SessionTracker.ClientMeta meta) {}
+    @Override
+    public void onQuit(@NotNull UUID uuid, long now, @NotNull SessionTracker.ClientMeta meta) {}
+
+    @Override
+    public void observeBrand(@NotNull UUID uuid, long now, @NotNull SessionTracker.ClientMeta meta) {}
 
     @Override
     public void recordFlag(
@@ -41,8 +39,7 @@ final class IdentityLiveWriteHooks implements LiveWriteHooks {
             double vl,
             @Nullable String verbose,
             long now,
-            @NotNull SessionTracker.ClientMeta meta) {
-    }
+            @NotNull SessionTracker.ClientMeta meta) {}
 
     @Override
     public void recordFlagData(
@@ -51,30 +48,24 @@ final class IdentityLiveWriteHooks implements LiveWriteHooks {
             double vl,
             byte @Nullable [] verboseData,
             long now,
-            @NotNull SessionTracker.ClientMeta meta) {
-    }
+            @NotNull SessionTracker.ClientMeta meta) {}
 
     @Override
     public void onJoinFromUserLogin(@NotNull PlatformPlayer player, @NotNull User user, long now) {
         onJoin(player.getUniqueId(), player.getName(), now, SessionTracker.ClientMeta.empty());
     }
 
-    @Override public void onQuitFromUserDisconnect(@NotNull User user, @Nullable CultPlayer cultPlayer, long now) {}
-    @Override public void observeBrandFromCheck(@NotNull CultPlayer cultPlayer) {}
+    @Override
+    public void onQuitFromUserDisconnect(@NotNull User user, @Nullable CultPlayer cultPlayer, long now) {}
+
+    @Override
+    public void observeBrandFromCheck(@NotNull CultPlayer cultPlayer) {}
 
     @Override
     public void recordFlagFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            @Nullable String verbose) {
-    }
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, @Nullable String verbose) {}
 
     @Override
     public void recordFlagDataFromCheck(
-            @NotNull CultPlayer player,
-            @NotNull AbstractCheck check,
-            double vl,
-            byte @Nullable [] verboseData) {
-    }
+            @NotNull CultPlayer player, @NotNull AbstractCheck check, double vl, byte @Nullable [] verboseData) {}
 }

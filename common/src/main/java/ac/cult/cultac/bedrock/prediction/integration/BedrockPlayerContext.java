@@ -3,18 +3,18 @@ package ac.cult.cultac.bedrock.prediction.integration;
 import ac.cult.cultac.bedrock.prediction.model.AttributeState;
 import ac.cult.cultac.bedrock.prediction.model.BedrockEffectState;
 import ac.cult.cultac.bedrock.prediction.model.EquipmentState;
-import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.model.MovementModifierState;
+import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockClientPoseState;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.latency.CompensatedEntities;
-import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
-import ac.cult.cultac.utils.nmsutil.RiptideUtil;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
+import ac.cult.cultac.utils.nmsutil.RiptideUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -25,8 +25,7 @@ record BedrockPlayerContext(
         PlayerDimensionsState dimensions,
         AttributeState attributes,
         EquipmentState equipment,
-        BedrockEffectState effects
-) {
+        BedrockEffectState effects) {
     private static final double BEDROCK_PLAYER_WIDTH = Double.parseDouble(Float.toString(0.6F));
     private static final double BEDROCK_STANDING_HEIGHT = Double.parseDouble(Float.toString(1.8F));
     private static final double BEDROCK_SNEAKING_HEIGHT = Double.parseDouble(Float.toString(1.49F));
@@ -34,21 +33,26 @@ record BedrockPlayerContext(
     private static final int BEDROCK_ELYTRA_MAX_DAMAGE = 432;
 
     static BedrockPlayerContext from(
-            CultPlayer player,
-            SimulationContext context,
-            BedrockAuthInputFrame frame,
-            boolean actorGliding
-    ) {
+            CultPlayer player, SimulationContext context, BedrockAuthInputFrame frame, boolean actorGliding) {
         if (context.getVehicle() != null && context.getVehicle().isBoat()) {
             var boat = context.getVehicle();
-            return new BedrockPlayerContext(BedrockClientPoseState.STANDING, false,
-                    boat.bedrockBoat.dimensions(), new AttributeState(0, 0, 0, 0, 0), EquipmentState.NONE, BedrockEffectState.NONE);
+            return new BedrockPlayerContext(
+                    BedrockClientPoseState.STANDING,
+                    false,
+                    boat.bedrockBoat.dimensions(),
+                    new AttributeState(0, 0, 0, 0, 0),
+                    EquipmentState.NONE,
+                    BedrockEffectState.NONE);
         }
         if (context.getVehicle() instanceof PacketEntityHorse horse) {
-            return new BedrockPlayerContext(BedrockClientPoseState.STANDING, false,
-                    new PlayerDimensionsState(BoundingBoxSize.getWidth(player, horse), BoundingBoxSize.getHeight(player, horse)),
+            return new BedrockPlayerContext(
+                    BedrockClientPoseState.STANDING,
+                    false,
+                    new PlayerDimensionsState(
+                            BoundingBoxSize.getWidth(player, horse), BoundingBoxSize.getHeight(player, horse)),
                     horse.bedrockAttributes.apply(new AttributeState(0.225F, 0.225F, 0.02F, 0.02F, 0.7F)),
-                    EquipmentState.NONE, horseEffects(horse));
+                    EquipmentState.NONE,
+                    horseEffects(horse));
         }
         BedrockClientPoseState pose = player.bedrockState == null
                 ? BedrockClientPoseState.STANDING
@@ -60,22 +64,19 @@ record BedrockPlayerContext(
                 dimensions(pose, actorGliding, context),
                 attributes(player),
                 equipment,
-                effects(player, context)
-        );
+                effects(player, context));
     }
 
     BedrockMovementContext applyTo(
-            BedrockMovementContext movementContext,
-            CultPlayer player,
-            SimulationContext context
-    ) {
+            BedrockMovementContext movementContext, CultPlayer player, SimulationContext context) {
         return new BedrockMovementContext(
                 effects,
                 attributes,
                 movementContext.worldState(),
                 equipment,
                 movementContext.entityContactState(),
-                context.getVehicle() != null ? MovementModifierState.NONE
+                context.getVehicle() != null
+                        ? MovementModifierState.NONE
                         : BedrockMovementModifierFactory.create(this, player, context),
                 dimensions);
     }
@@ -105,10 +106,7 @@ record BedrockPlayerContext(
     }
 
     private static PlayerDimensionsState dimensions(
-            BedrockClientPoseState pose,
-            boolean actorGliding,
-            SimulationContext context
-    ) {
+            BedrockClientPoseState pose, boolean actorGliding, SimulationContext context) {
 
         double height = pose.lowHeightPose() || actorGliding
                 ? BEDROCK_LOW_POSE_HEIGHT
@@ -117,12 +115,15 @@ record BedrockPlayerContext(
     }
 
     static AttributeState attributes(CultPlayer player) {
-        var commit = player.checkManager == null ? null
+        var commit = player.checkManager == null
+                ? null
                 : player.checkManager.getSimulationProcessor().getCurrentPredictionCommit();
         var state = commit == null ? null : BedrockProfileState.previousState(commit.carry());
-        var attributes = state != null ? state.attributes() : player.compensatedEntities == null
-                ? ac.cult.cultac.bedrock.prediction.state.BedrockActorAttributes.EMPTY
-                : player.compensatedEntities.getSelf().bedrockAttributes;
+        var attributes = state != null
+                ? state.attributes()
+                : player.compensatedEntities == null
+                        ? ac.cult.cultac.bedrock.prediction.state.BedrockActorAttributes.EMPTY
+                        : player.compensatedEntities.getSelf().bedrockAttributes;
         return attributes.apply(AttributeState.DEFAULT);
     }
 
@@ -133,8 +134,7 @@ record BedrockPlayerContext(
                 Math.max(0, context.getSwiftSneakLevel()),
                 riptideLevel(player),
                 wearingLeatherBoots(player),
-                wearingElytra(player)
-        );
+                wearingElytra(player));
     }
 
     private static int riptideLevel(CultPlayer player) {
@@ -157,7 +157,8 @@ record BedrockPlayerContext(
             return false;
         }
         ItemStack chestplate = player.getInventory().getChestplate();
-        return chestplate != null && chestplate.getType() == Material.ELYTRA
+        return chestplate != null
+                && chestplate.getType() == Material.ELYTRA
                 && ItemUtil.getDamageValue(chestplate) < BEDROCK_ELYTRA_MAX_DAMAGE - 1;
     }
 

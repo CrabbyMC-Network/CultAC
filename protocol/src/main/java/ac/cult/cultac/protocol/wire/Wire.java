@@ -7,7 +7,6 @@ import ac.cult.cultac.protocol.value.Relative;
 import ac.cult.cultac.protocol.value.Vec3d;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +19,7 @@ public final class Wire {
     private static final double LP_MIN = 3.051944088384301E-5;
     private static final double LP_MAX = 1.7179869183E10;
 
-    private Wire() {
-    }
+    private Wire() {}
 
     /** Length-prefixed IDs, following PacketEvents' readVarIntArray loop. */
     public static List<Integer> readVarIntList(ByteBuf buffer) {
@@ -30,7 +28,8 @@ public final class Wire {
 
     public static List<Integer> readVarIntList(ByteBuf buffer, int count) {
         // Every VarInt needs at least one byte; reject impossible counts before allocation.
-        if (count < 0 || count > buffer.readableBytes()) throw new MalformedPacketException("Invalid VarInt list size " + count);
+        if (count < 0 || count > buffer.readableBytes())
+            throw new MalformedPacketException("Invalid VarInt list size " + count);
         var values = new ArrayList<Integer>(count);
         for (int i = 0; i < count; i++) values.add(readVarInt(buffer));
         return values;
@@ -195,8 +194,8 @@ public final class Wire {
     }
 
     public static void writeBlockPos(ByteBuf buffer, BlockPos value) {
-        buffer.writeLong(((long) value.x() & 0x3ffffff) << 38
-                | ((long) value.z() & 0x3ffffff) << 12 | (value.y() & 0xfff));
+        buffer.writeLong(
+                ((long) value.x() & 0x3ffffff) << 38 | ((long) value.z() & 0x3ffffff) << 12 | (value.y() & 0xfff));
     }
 
     public static float readAngle(ByteBuf buffer) {
@@ -259,8 +258,11 @@ public final class Wire {
         }
         long scale = (long) Math.ceil(maximum);
         boolean continued = scale > 3;
-        long packed = (scale & 3) | (continued ? 4 : 0)
-                | packLp(x / scale) << 3 | packLp(y / scale) << 18 | packLp(z / scale) << 33;
+        long packed = (scale & 3)
+                | (continued ? 4 : 0)
+                | packLp(x / scale) << 3
+                | packLp(y / scale) << 18
+                | packLp(z / scale) << 33;
         buffer.writeByte((int) packed);
         buffer.writeByte((int) (packed >> 8));
         buffer.writeInt((int) (packed >> 16));

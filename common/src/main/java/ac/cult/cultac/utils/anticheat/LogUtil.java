@@ -1,12 +1,11 @@
 package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.CultAPI;
-import lombok.experimental.UtilityClass;
-import net.kyori.adventure.text.Component;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Logger;
+import lombok.experimental.UtilityClass;
+import net.kyori.adventure.text.Component;
 
 @UtilityClass
 public class LogUtil {
@@ -68,7 +67,10 @@ public class LogUtil {
     }
 
     public void console(final String info) {
-        CultAPI.INSTANCE.getPlatformServer().getConsoleSender().sendMessage(MessageUtil.translateAlternateColorCodes('&', info));
+        CultAPI.INSTANCE
+                .getPlatformServer()
+                .getConsoleSender()
+                .sendMessage(MessageUtil.translateAlternateColorCodes('&', info));
     }
 
     public void console(final Component info) {
@@ -86,5 +88,4 @@ public class LogUtil {
         }
         return message;
     }
-
 }

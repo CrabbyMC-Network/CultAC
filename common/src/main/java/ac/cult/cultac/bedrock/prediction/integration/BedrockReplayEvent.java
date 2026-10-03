@@ -7,68 +7,128 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.protocol.BedrockMovementCorrection;
 
 /** Value-only, ordered changes to a historical movement frame. */
-public sealed interface BedrockReplayEvent permits BedrockReplayAttributeEvent, BedrockReplayEvent.Motion,
-        BedrockReplayEvent.Transform, BedrockReplayEvent.Reposition, BedrockReplayEvent.Metadata, BedrockReplayEvent.Boost,
-        BedrockReplayEvent.HorseMetadata, BedrockReplayBoatMetadata, BedrockReplayContextEvent {
-    default BedrockMovementState state(BedrockMovementState state) { return state; }
-    default BedrockMovementState replayState(BedrockMovementState state) { return state(state); }
-    /** Packet-family fallback when the timestamp is older than retained client history. */
-    default BedrockReplayEvent ordinary() { return this; }
-    default boolean matchesHistory(BedrockMovementState state) { return false; }
-    default BedrockSimulation.Input input(BedrockSimulation.Input input, long elapsed) { return input; }
+public sealed interface BedrockReplayEvent
+        permits BedrockReplayAttributeEvent,
+                BedrockReplayEvent.Motion,
+                BedrockReplayEvent.Transform,
+                BedrockReplayEvent.Reposition,
+                BedrockReplayEvent.Metadata,
+                BedrockReplayEvent.Boost,
+                BedrockReplayEvent.HorseMetadata,
+                BedrockReplayBoatMetadata,
+                BedrockReplayContextEvent {
+    default BedrockMovementState state(BedrockMovementState state) {
+        return state;
+    }
 
-    default BedrockSimulation.Input restoreInput(BedrockSimulation.Input input, BedrockSimulation.Input recorded) { return input; }
+    default BedrockMovementState replayState(BedrockMovementState state) {
+        return state(state);
+    }
+    /** Packet-family fallback when the timestamp is older than retained client history. */
+    default BedrockReplayEvent ordinary() {
+        return this;
+    }
+
+    default boolean matchesHistory(BedrockMovementState state) {
+        return false;
+    }
+
+    default BedrockSimulation.Input input(BedrockSimulation.Input input, long elapsed) {
+        return input;
+    }
+
+    default BedrockSimulation.Input restoreInput(BedrockSimulation.Input input, BedrockSimulation.Input recorded) {
+        return input;
+    }
 
     record Motion(Vec3d velocity) implements BedrockReplayEvent {
-        @Override public BedrockMovementState state(BedrockMovementState state) {
+        @Override
+        public BedrockMovementState state(BedrockMovementState state) {
             return state.withVelocityAndCollisionFlags(velocity, state.collisionFlags());
         }
     }
 
     record Transform(BedrockMovementCorrection correction) implements BedrockReplayEvent {
-        @Override public BedrockMovementState state(BedrockMovementState state) {
+        @Override
+        public BedrockMovementState state(BedrockMovementState state) {
             var next = state.withCoordinateFrame(correction.coordinates())
                     .withPhysicalFeetPosition(BedrockVectorAdapter.toBedrock(correction.position()), 0)
-                    .withVelocityAndCollisionFlags(BedrockVectorAdapter.toBedrock(correction.velocity()),
+                    .withVelocityAndCollisionFlags(
+                            BedrockVectorAdapter.toBedrock(correction.velocity()),
                             state.collisionFlags().withTeleportOnGround(correction.onGround()));
             if (correction.vehicle()) next = next.withRotation(correction.yaw(), correction.pitch());
             return next.isBoat() && correction.angularVelocity() != null
-                    ? next.withBoat(next.boat().withAngularVelocity(correction.angularVelocity())) : next;
+                    ? next.withBoat(next.boat().withAngularVelocity(correction.angularVelocity()))
+                    : next;
         }
     }
 
-    record Reposition(Vec3d position, float yaw, float pitch, boolean onGround,
-                      ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame coordinates) implements BedrockReplayEvent {
-        @Override public BedrockMovementState state(BedrockMovementState state) {
-            return state.withCoordinateFrame(coordinates).withPhysicalFeetPosition(position, 0)
-                    .withRotation(yaw, pitch).withVelocityAndCollisionFlags(state.velocity(),
-                            state.collisionFlags().withTeleportOnGround(onGround));
+    record Reposition(
+            Vec3d position,
+            float yaw,
+            float pitch,
+            boolean onGround,
+            ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame coordinates)
+            implements BedrockReplayEvent {
+        @Override
+        public BedrockMovementState state(BedrockMovementState state) {
+            return state.withCoordinateFrame(coordinates)
+                    .withPhysicalFeetPosition(position, 0)
+                    .withRotation(yaw, pitch)
+                    .withVelocityAndCollisionFlags(
+                            state.velocity(), state.collisionFlags().withTeleportOnGround(onGround));
         }
     }
 
-    record Metadata(Float width, Float height, Boolean gliding, Boolean crawling, Boolean swimming,
-                    Boolean spinning, Boolean sprinting) implements BedrockReplayEvent {
+    record Metadata(
+            Float width,
+            Float height,
+            Boolean gliding,
+            Boolean crawling,
+            Boolean swimming,
+            Boolean spinning,
+            Boolean sprinting)
+            implements BedrockReplayEvent {
         static Metadata trackedValuesOf(BedrockMovementState state) {
             var dimensions = metadataDimensions(state);
-            return new Metadata((float) dimensions.width(), (float) dimensions.height(), state.gliding(),
-                    state.horizontalPose(), state.swimming(), state.riptideSpinActive(), state.sprinting());
+            return new Metadata(
+                    (float) dimensions.width(),
+                    (float) dimensions.height(),
+                    state.gliding(),
+                    state.horizontalPose(),
+                    state.swimming(),
+                    state.riptideSpinActive(),
+                    state.sprinting());
         }
 
         static PlayerDimensionsState metadataDimensions(BedrockMovementState state) {
-            return state.acknowledgedPlayerDimensions() == null ? state.playerDimensions() : state.acknowledgedPlayerDimensions();
+            return state.acknowledgedPlayerDimensions() == null
+                    ? state.playerDimensions()
+                    : state.acknowledgedPlayerDimensions();
         }
 
         Metadata changedValues(Metadata before) {
             var flags = changedFlags(before);
-            boolean resized = !java.util.Objects.equals(width, before.width) || !java.util.Objects.equals(height, before.height);
-            return new Metadata(resized ? width : null, resized ? height : null,
-                    flags.gliding, flags.crawling, flags.swimming, flags.spinning, flags.sprinting);
+            boolean resized =
+                    !java.util.Objects.equals(width, before.width) || !java.util.Objects.equals(height, before.height);
+            return new Metadata(
+                    resized ? width : null,
+                    resized ? height : null,
+                    flags.gliding,
+                    flags.crawling,
+                    flags.swimming,
+                    flags.spinning,
+                    flags.sprinting);
         }
 
-        boolean hasValues() { return hasFlags() || width != null || height != null; }
+        boolean hasValues() {
+            return hasFlags() || width != null || height != null;
+        }
 
         Metadata changedFlags(Metadata before) {
-            return new Metadata(null, null,
+            return new Metadata(
+                    null,
+                    null,
                     java.util.Objects.equals(gliding, before.gliding) ? null : gliding,
                     java.util.Objects.equals(crawling, before.crawling) ? null : crawling,
                     java.util.Objects.equals(swimming, before.swimming) ? null : swimming,
@@ -80,12 +140,16 @@ public sealed interface BedrockReplayEvent permits BedrockReplayAttributeEvent, 
             return gliding != null || crawling != null || swimming != null || spinning != null || sprinting != null;
         }
 
-        @Override public BedrockMovementState state(BedrockMovementState state) {
+        @Override
+        public BedrockMovementState state(BedrockMovementState state) {
             state = replayState(state);
-            return width == null && height == null ? state : state.withPlayerDimensions(metadataDimensions(state), true);
+            return width == null && height == null
+                    ? state
+                    : state.withPlayerDimensions(metadataDimensions(state), true);
         }
 
-        @Override public BedrockMovementState replayState(BedrockMovementState state) {
+        @Override
+        public BedrockMovementState replayState(BedrockMovementState state) {
             if (gliding != null) state = state.withAcknowledgedGliding(gliding);
             if (sprinting != null) state = state.withSprinting(sprinting);
             state = state.withAcknowledgedPose(crawling, swimming, spinning);
@@ -99,15 +163,27 @@ public sealed interface BedrockReplayEvent permits BedrockReplayAttributeEvent, 
     }
 
     record HorseMetadata(Boolean standing, Float width, Float height) implements BedrockReplayEvent {
-        @Override public BedrockMovementState state(BedrockMovementState state) {
+        @Override
+        public BedrockMovementState state(BedrockMovementState state) {
             if (!state.isHorse()) return state;
             var h = state.horse();
-            if (standing != null) state = state.withHorse(new ac.cult.cultac.bedrock.prediction.state.BedrockHorseState(
-                    h.actor(), h.jumping(), h.pendingJump(), standing, h.allowStandSliding(), h.metadataRevision(),
-                    h.release(), h.forwardJump(), h.standAmount()));
-            if (width != null || height != null) state = state.withPlayerDimensions(new PlayerDimensionsState(
-                    width == null ? state.playerDimensions().width() : width,
-                    height == null ? state.playerDimensions().height() : height), true);
+            if (standing != null)
+                state = state.withHorse(new ac.cult.cultac.bedrock.prediction.state.BedrockHorseState(
+                        h.actor(),
+                        h.jumping(),
+                        h.pendingJump(),
+                        standing,
+                        h.allowStandSliding(),
+                        h.metadataRevision(),
+                        h.release(),
+                        h.forwardJump(),
+                        h.standAmount()));
+            if (width != null || height != null)
+                state = state.withPlayerDimensions(
+                        new PlayerDimensionsState(
+                                width == null ? state.playerDimensions().width() : width,
+                                height == null ? state.playerDimensions().height() : height),
+                        true);
             return state;
         }
     }
@@ -116,10 +192,21 @@ public sealed interface BedrockReplayEvent permits BedrockReplayAttributeEvent, 
         public Boost {
             if (duration < -1) duration = 0;
         }
-        @Override public BedrockSimulation.Input input(BedrockSimulation.Input input, long elapsed) {
-            return new BedrockSimulation.Input(input.previousState(), input.frame(), input.intent(), input.snapshot(),
-                    input.canStep(), input.maxUpStep(), input.mobJumpComponent(), input.actorMovementTick(),
-                    input.acceptedTeleport(), input.control(), duration == -1 || elapsed < Math.max(1, duration));
+
+        @Override
+        public BedrockSimulation.Input input(BedrockSimulation.Input input, long elapsed) {
+            return new BedrockSimulation.Input(
+                    input.previousState(),
+                    input.frame(),
+                    input.intent(),
+                    input.snapshot(),
+                    input.canStep(),
+                    input.maxUpStep(),
+                    input.mobJumpComponent(),
+                    input.actorMovementTick(),
+                    input.acceptedTeleport(),
+                    input.control(),
+                    duration == -1 || elapsed < Math.max(1, duration));
         }
     }
 }

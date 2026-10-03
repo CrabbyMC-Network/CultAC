@@ -1,11 +1,11 @@
 package ac.cult.cultac.checks.impl.prediction.pipeline.java;
 
-import ac.cult.cultac.utils.data.CollideAxisData;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import ac.cult.cultac.utils.data.CollideAxisData;
+import org.junit.Test;
 
 public class JavaFallDistanceLandingTest {
     @Test
@@ -38,7 +38,6 @@ public class JavaFallDistanceLandingTest {
         assertTrue(JavaFallDistance.landsOnClip(stored, -0.05D, 1.0D));
         assertFalse(JavaFallDistance.landsOnClip(stored, -0.06D, 1.0D));
         assertFalse(JavaFallDistance.landsOnClip(null, -0.05D, 1.0D));
-        assertFalse(JavaFallDistance.landsOnClip(
-                new CollideAxisData.CollideResult(false, -0.05D), -0.05D, 1.0D));
+        assertFalse(JavaFallDistance.landsOnClip(new CollideAxisData.CollideResult(false, -0.05D), -0.05D, 1.0D));
     }
 }

@@ -1,13 +1,13 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.MovementPlatform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class BedrockBlockReconciliationTest {
     @Test
@@ -38,8 +38,7 @@ public class BedrockBlockReconciliationTest {
             player.latencyUtils.handleNettySyncTransaction(10);
             assertEquals(local, world.getBlockStateAt(pos));
 
-            player.latencyUtils.addRealTimeTask(11,
-                    () -> world.handleServerBlockUpdate(pos, server, 11));
+            player.latencyUtils.addRealTimeTask(11, () -> world.handleServerBlockUpdate(pos, server, 11));
             assertEquals(local, world.getBlockStateAt(pos));
             player.latencyUtils.handleNettySyncTransaction(11);
             assertEquals(server, world.getBlockStateAt(pos));

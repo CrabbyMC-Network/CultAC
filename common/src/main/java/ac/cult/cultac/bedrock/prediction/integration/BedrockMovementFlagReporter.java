@@ -10,10 +10,10 @@ import ac.cult.cultac.player.CultPlayer;
 import java.util.Locale;
 
 final class BedrockMovementFlagReporter {
-    private BedrockMovementFlagReporter() {
-    }
+    private BedrockMovementFlagReporter() {}
 
-    public static void addObservationFlag(CultPlayer player, PredictionResult result, BedrockPredictionResult bedrockResult) {
+    public static void addObservationFlag(
+            CultPlayer player, PredictionResult result, BedrockPredictionResult bedrockResult) {
         if (player.bedrockState == null || result == null || result.isExempt() || bedrockResult == null) {
             return;
         }
@@ -30,25 +30,29 @@ final class BedrockMovementFlagReporter {
         double velocityThreshold = CultAPI.INSTANCE.getConfigManager().getBedrockMovementVelocityFlagThreshold();
         if (!check.shouldEvaluateOffset(offset, positionThreshold)
                 && !check.shouldEvaluateOffset(observation.velocityOffset(), velocityThreshold)) return;
-        result.addFlag(check, () -> String.format(Locale.ROOT,
-                "rawOffset=%.8f positionOffset=%.5f verticalOffset=%.5f threshold=%.5f velocityOffset=%.5f velocityThreshold=%.5f requiredInput=%.5f requiredInputX=%.5f requiredInputZ=%.5f observedInput=%.5f observedInputX=%.5f observedInputZ=%.5f inputLimit=%.5f inputMismatch=%.5f status=%s cause=%s correction=%s",
-                observation.rawPositionOffset(),
-                observation.positionOffset(),
-                observation.verticalOffset(),
-                positionThreshold,
-                observation.velocityOffset(),
-                velocityThreshold,
-                observation.requiredHorizontalInputMagnitude(),
-                observation.requiredHorizontalInput().x(),
-                observation.requiredHorizontalInput().z(),
-                observation.observedHorizontalInputMagnitude(),
-                observation.observedHorizontalInput().x(),
-                observation.observedHorizontalInput().z(),
-                observation.horizontalInputLimit(),
-                observation.horizontalInputExcess(),
-                "REJECTED",
-                "ENGINE_PHYSICS",
-                "REWIND"), Math.max(offset, observation.velocityOffset()));
+        result.addFlag(
+                check,
+                () -> String.format(
+                        Locale.ROOT,
+                        "rawOffset=%.8f positionOffset=%.5f verticalOffset=%.5f threshold=%.5f velocityOffset=%.5f velocityThreshold=%.5f requiredInput=%.5f requiredInputX=%.5f requiredInputZ=%.5f observedInput=%.5f observedInputX=%.5f observedInputZ=%.5f inputLimit=%.5f inputMismatch=%.5f status=%s cause=%s correction=%s",
+                        observation.rawPositionOffset(),
+                        observation.positionOffset(),
+                        observation.verticalOffset(),
+                        positionThreshold,
+                        observation.velocityOffset(),
+                        velocityThreshold,
+                        observation.requiredHorizontalInputMagnitude(),
+                        observation.requiredHorizontalInput().x(),
+                        observation.requiredHorizontalInput().z(),
+                        observation.observedHorizontalInputMagnitude(),
+                        observation.observedHorizontalInput().x(),
+                        observation.observedHorizontalInput().z(),
+                        observation.horizontalInputLimit(),
+                        observation.horizontalInputExcess(),
+                        "REJECTED",
+                        "ENGINE_PHYSICS",
+                        "REWIND"),
+                Math.max(offset, observation.velocityOffset()));
     }
 
     static void addEnginePredictionFailureFlag(CultPlayer player, PredictionResult result) {
@@ -58,12 +62,16 @@ final class BedrockMovementFlagReporter {
 
         BedrockMovement check = player.checkManager.getListener(BedrockMovement.class);
         double positionThreshold = CultAPI.INSTANCE.getConfigManager().getBedrockMovementPositionFlagThreshold();
-        result.addFlag(check, () -> String.format(Locale.ROOT,
-                "offset=Infinity rawOffset=Infinity positionOffset=Infinity verticalOffset=Infinity threshold=%.5f velocityOffset=Infinity velocityThreshold=%.5f status=%s cause=%s correction=%s",
-                positionThreshold,
-                CultAPI.INSTANCE.getConfigManager().getBedrockMovementVelocityFlagThreshold(),
-                "REJECTED",
-                "ENGINE_PHYSICS",
-                "REWIND"), Math.max(1.0D, positionThreshold));
+        result.addFlag(
+                check,
+                () -> String.format(
+                        Locale.ROOT,
+                        "offset=Infinity rawOffset=Infinity positionOffset=Infinity verticalOffset=Infinity threshold=%.5f velocityOffset=Infinity velocityThreshold=%.5f status=%s cause=%s correction=%s",
+                        positionThreshold,
+                        CultAPI.INSTANCE.getConfigManager().getBedrockMovementVelocityFlagThreshold(),
+                        "REJECTED",
+                        "ENGINE_PHYSICS",
+                        "REWIND"),
+                Math.max(1.0D, positionThreshold));
     }
 }

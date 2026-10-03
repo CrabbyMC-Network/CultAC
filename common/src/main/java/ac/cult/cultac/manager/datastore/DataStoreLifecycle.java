@@ -1,8 +1,10 @@
 package ac.cult.cultac.manager.datastore;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
+import ac.cult.cultac.manager.init.start.StartableInitable;
+import ac.cult.cultac.manager.init.stop.StoppableInitable;
+import ac.grim.grimac.api.plugin.GrimPlugin;
 import ac.grim.grimac.api.storage.DataStore;
 import ac.grim.grimac.api.storage.backend.Backend;
 import ac.grim.grimac.api.storage.backend.BackendConfig;
@@ -61,18 +63,7 @@ import ac.grim.grimac.internal.storage.submit.ViolationSinkImpl;
 import ac.grim.grimac.internal.storage.verbose.VerboseManifest;
 import ac.grim.grimac.internal.storage.verbose.VerboseRegistry;
 import ac.grim.grimac.internal.storage.verbose.VerboseRegistryImpl;
-import ac.cult.cultac.manager.init.start.StartableInitable;
-import ac.cult.cultac.manager.init.stop.StoppableInitable;
 import com.mongodb.client.MongoDatabase;
-import lombok.Getter;
-import org.bson.BsonBinarySubType;
-import org.bson.Document;
-import org.bson.types.Binary;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -93,6 +84,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.sql.DataSource;
+import lombok.Getter;
+import org.bson.BsonBinarySubType;
+import org.bson.Document;
+import org.bson.types.Binary;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wires the shared DataStore and services to the plugin lifecycle. This path
@@ -134,6 +133,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
 
     @Getter
     private boolean enabled = true;
+
     @Getter
     private boolean loaded;
 
@@ -149,9 +149,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
     public void start() {
         Path dataFolder = plugin.getDataFolder().toPath();
         DataStoreConfigBuilder builder = new DataStoreConfigBuilder(
-                backendRegistry,
-                dataFolder,
-                CultAPI.INSTANCE.getConfigManager().getConfig());
+                backendRegistry, dataFolder, CultAPI.INSTANCE.getConfigManager().getConfig());
 
         if (!builder.enabled()) {
             logger.info("[cult-datastore] disabled in database.yml - skipping storage init");
@@ -173,12 +171,20 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             this.loaded = buildAndStart(dataFolder);
         } catch (FatalStorageStartupException e) {
             logger.log(Level.SEVERE, "[cult-datastore] fatal storage startup failure - shutting down server", e);
-            try { close(); } catch (Exception closeEx) { logger.log(Level.FINE, "[cult-datastore] close during shutdown failed", closeEx); }
+            try {
+                close();
+            } catch (Exception closeEx) {
+                logger.log(Level.FINE, "[cult-datastore] close during shutdown failed", closeEx);
+            }
             this.enabled = false;
             shutdownServerAfterFatalStorageStartup();
         } catch (Exception | LinkageError e) {
             logger.log(Level.SEVERE, "[cult-datastore] failed to initialise storage - falling back to disabled", e);
-            try { close(); } catch (Exception closeEx) { logger.log(Level.FINE, "[cult-datastore] close during fallback failed", closeEx); }
+            try {
+                close();
+            } catch (Exception closeEx) {
+                logger.log(Level.FINE, "[cult-datastore] close during fallback failed", closeEx);
+            }
             this.enabled = false;
             installLocalVerboseRegistry();
         }
@@ -201,13 +207,14 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             try {
                 v2.init(new SimpleContext(backendConfig, logger, dataFolder));
             } catch (Exception e) {
-                logger.log(Level.SEVERE,
-                        "[cult-datastore] v2 backend init failed for '" + backendId + "'", e);
-                try { v2.close(); }
-                catch (Exception closeFailure) {
-                    logger.log(Level.WARNING,
-                            "[cult-datastore] v2 backend close after failed init failed for '"
-                                    + backendId + "'", closeFailure);
+                logger.log(Level.SEVERE, "[cult-datastore] v2 backend init failed for '" + backendId + "'", e);
+                try {
+                    v2.close();
+                } catch (Exception closeFailure) {
+                    logger.log(
+                            Level.WARNING,
+                            "[cult-datastore] v2 backend close after failed init failed for '" + backendId + "'",
+                            closeFailure);
                 }
                 continue;
             }
@@ -228,8 +235,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             MigrationContext mctx = buildMigrationContext(v2);
             if (mctx == null) mctx = NO_OP_MIGRATION_CONTEXT;
 
-            V2BackendBootstrap.Result result = V2BackendBootstrap.install(
-                    bindings, v2, mctx, routesBuilder, logger);
+            V2BackendBootstrap.Result result = V2BackendBootstrap.install(bindings, v2, mctx, routesBuilder, logger);
             allFailures += result.failures().size();
             if (!result.ok()) {
                 logger.warning("[cult-datastore] v2 bootstrap for '" + backendId
@@ -249,9 +255,11 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                         ownershipAdapter.ensureStore(OWNERSHIP_STORE);
                     } catch (Exception e) {
                         allFailures++;
-                        logger.log(Level.WARNING,
-                                "[cult-datastore] failed to ensure server ownership store on '"
-                                        + sessionBackendId + "'", e);
+                        logger.log(
+                                Level.WARNING,
+                                "[cult-datastore] failed to ensure server ownership store on '" + sessionBackendId
+                                        + "'",
+                                e);
                     }
                 }
                 MigrationContext mctx = buildMigrationContext(sessionBackend);
@@ -261,8 +269,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                         V2InstanceRegistry.STARTUPS,
                         new V2BackendBootstrap.Binding<>(
                                 StoreId.grim("server_startups"), V2BuiltinKinds.serverStartups()));
-                V2BackendBootstrap.Result result = V2BackendBootstrap.install(
-                        bindings, sessionBackend, mctx, routesBuilder, logger);
+                V2BackendBootstrap.Result result =
+                        V2BackendBootstrap.install(bindings, sessionBackend, mctx, routesBuilder, logger);
                 allFailures += result.failures().size();
                 if (result.ok()) {
                     startupRouteInstalled = true;
@@ -297,8 +305,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         this.checkRegistry = buildCheckRegistry(v2ById);
         this.verboseRegistry = buildVerboseRegistry();
 
-        logger.info("[cult-datastore] v2 cutover complete: " + v2ById.size()
-                + " v2 backend(s), " + routes + " routes installed, 0 legacy backends");
+        logger.info("[cult-datastore] v2 cutover complete: " + v2ById.size() + " v2 backend(s), " + routes
+                + " routes installed, 0 legacy backends");
 
         if (!buildServices(routes)) {
             disableStorageAfterDuplicate();
@@ -309,11 +317,12 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
 
     private @NotNull CheckRegistry buildCheckRegistry(@NotNull Map<String, BackendV2> v2ById) {
         String backendId = config.routing().get(Categories.VIOLATION);
-        BackendConfig backendConfig = backendId == null ? null : config.backends().get(backendId);
+        BackendConfig backendConfig =
+                backendId == null ? null : config.backends().get(backendId);
         BackendV2 backend = backendId == null ? null : v2ById.get(backendId);
         if (backend == null || !dataStore.v2Routes().contains(Categories.CHECK_CATALOG)) {
-            logger.warning("[cult-datastore] no routed check catalog available for v2 backend '"
-                    + backendId + "' - check names will be process-local only");
+            logger.warning("[cult-datastore] no routed check catalog available for v2 backend '" + backendId
+                    + "' - check names will be process-local only");
             CheckRegistry fallback = new CheckRegistry(new InMemoryCheckCatalogPersistence());
             fallback.reload();
             return fallback;
@@ -323,24 +332,24 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         try {
             initialRows = loadExistingCheckCatalogRows(backend, backendConfig);
         } catch (RuntimeException e) {
-            logger.log(Level.WARNING,
-                    "[cult-datastore] failed to load persisted check catalog for backend '"
-                            + backendId + "' - falling back to process-local check names", e);
+            logger.log(
+                    Level.WARNING,
+                    "[cult-datastore] failed to load persisted check catalog for backend '" + backendId
+                            + "' - falling back to process-local check names",
+                    e);
             CheckRegistry fallback = new CheckRegistry(new InMemoryCheckCatalogPersistence());
             fallback.reload();
             return fallback;
         }
 
-        CheckCatalogPersistence persistence =
-                new DataStoreCheckCatalogPersistence(initialRows, dataStore, logger);
+        CheckCatalogPersistence persistence = new DataStoreCheckCatalogPersistence(initialRows, dataStore, logger);
         CheckRegistry registry = new CheckRegistry(persistence);
         registry.reload();
         return registry;
     }
 
     private @NotNull List<CheckCatalogRow> loadExistingCheckCatalogRows(
-            @NotNull BackendV2 backend,
-            @Nullable BackendConfig backendConfig) {
+            @NotNull BackendV2 backend, @Nullable BackendConfig backendConfig) {
         DataSource dataSource = backend.unwrap(DataSource.class).orElse(null);
         if (dataSource != null) {
             return rowsFrom(new JdbcCheckCatalogPersistence(dataSource::getConnection, CHECKS_STORE).loadAll());
@@ -361,8 +370,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             if (rows != null) return rows;
         }
 
-        logger.warning("[cult-datastore] no persisted check catalog loader available for v2 backend '"
-                + backend.id() + "' - starting with an empty routed catalog view");
+        logger.warning("[cult-datastore] no persisted check catalog loader available for v2 backend '" + backend.id()
+                + "' - starting with an empty routed catalog view");
         return List.of();
     }
 
@@ -392,8 +401,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
 
     @SuppressWarnings("unchecked")
     private static @Nullable List<CheckCatalogRow> loadRedisCheckCatalogRows(
-            @NotNull BackendV2 backend,
-            @NotNull String keyPrefix) {
+            @NotNull BackendV2 backend, @NotNull String keyPrefix) {
         try {
             Class<?> poolClass = Class.forName("redis.clients.jedis.JedisPool");
             Object pool = backend.unwrap((Class<Object>) poolClass).orElse(null);
@@ -413,9 +421,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                     Object result = jedis.getClass()
                             .getMethod("scan", String.class, scanParamsClass)
                             .invoke(jedis, cursor, params);
-                    List<String> keys = (List<String>) result.getClass()
-                            .getMethod("getResult")
-                            .invoke(result);
+                    List<String> keys = (List<String>)
+                            result.getClass().getMethod("getResult").invoke(result);
                     for (String key : keys) {
                         if (key.startsWith(rowPrefix + "__idx:")) continue;
                         Map<String, String> hash = (Map<String, String>) jedis.getClass()
@@ -461,8 +468,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         }
     }
 
-    private @Nullable BackendV2 constructV2Direct(@NotNull String backendId,
-                                                  @NotNull BackendConfig config) {
+    private @Nullable BackendV2 constructV2Direct(@NotNull String backendId, @NotNull BackendConfig config) {
         return switch (backendId) {
             case "mongo" -> config instanceof MongoBackendConfig c ? new MongoBackendV2(c) : null;
             case "postgres" -> config instanceof PostgresBackendConfig c ? new PostgresBackendV2(c) : null;
@@ -473,23 +479,21 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         };
     }
 
-    private @NotNull Map<Category<?>, V2BackendBootstrap.Binding<?>> bindingsForCategory(
-            @NotNull Category<?> cat) {
+    private @NotNull Map<Category<?>, V2BackendBootstrap.Binding<?>> bindingsForCategory(@NotNull Category<?> cat) {
         Map<Category<?>, V2BackendBootstrap.Binding<?>> out = new LinkedHashMap<>();
         if (cat == Categories.VIOLATION) {
-            out.put(cat, new V2BackendBootstrap.Binding<>(
-                    StoreId.grim("grim_violations"), V2BuiltinKinds.violations()));
-            out.put(Categories.CHECK_CATALOG, new V2BackendBootstrap.Binding<>(
-                    StoreId.grim(CHECKS_STORE), V2BuiltinKinds.checks()));
+            out.put(
+                    cat,
+                    new V2BackendBootstrap.Binding<>(StoreId.grim("grim_violations"), V2BuiltinKinds.violations()));
+            out.put(
+                    Categories.CHECK_CATALOG,
+                    new V2BackendBootstrap.Binding<>(StoreId.grim(CHECKS_STORE), V2BuiltinKinds.checks()));
         } else if (cat == Categories.SESSION) {
-            out.put(cat, new V2BackendBootstrap.Binding<>(
-                    StoreId.grim("grim_sessions"), V2BuiltinKinds.sessions()));
+            out.put(cat, new V2BackendBootstrap.Binding<>(StoreId.grim("grim_sessions"), V2BuiltinKinds.sessions()));
         } else if (cat == Categories.PLAYER_IDENTITY) {
-            out.put(cat, new V2BackendBootstrap.Binding<>(
-                    StoreId.grim("grim_players"), V2BuiltinKinds.players()));
+            out.put(cat, new V2BackendBootstrap.Binding<>(StoreId.grim("grim_players"), V2BuiltinKinds.players()));
         } else if (cat == Categories.SETTING) {
-            out.put(cat, new V2BackendBootstrap.Binding<>(
-                    StoreId.grim("grim_settings"), V2BuiltinKinds.settings()));
+            out.put(cat, new V2BackendBootstrap.Binding<>(StoreId.grim("grim_settings"), V2BuiltinKinds.settings()));
         }
         return out;
     }
@@ -507,8 +511,11 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         boolean settingRouted = routes.contains(Categories.SETTING);
 
         if (sessionRouted && violationRouted) {
-            this.historyService = new HistoryServiceImpl(dataStore, checkRegistry,
-                    config.history().entriesPerPage(), config.history().groupIntervalMs())
+            this.historyService = new HistoryServiceImpl(
+                            dataStore,
+                            checkRegistry,
+                            config.history().entriesPerPage(),
+                            config.history().groupIntervalMs())
                     .withV2Startups(Categories.SERVER_STARTUP)
                     .withVerboseRegistry(verboseRegistry);
         } else {
@@ -527,8 +534,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             logger.warning("[cult-datastore] session tracking disabled; missing session route");
         }
         if (sessionRouted && violationRouted) {
-            this.liveWriteHooks = new LiveWriteHooksImpl(
-                    dataStore, playerIdentityService, checkRegistry, sessionTracker);
+            this.liveWriteHooks =
+                    new LiveWriteHooksImpl(dataStore, playerIdentityService, checkRegistry, sessionTracker);
         } else if (playerIdentityRouted) {
             this.liveWriteHooks = new IdentityLiveWriteHooks(playerIdentityService);
         } else {
@@ -544,17 +551,15 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
     }
 
     private static @NotNull String missingRoutes(
-            boolean firstPresent, @NotNull String first,
-            boolean secondPresent, @NotNull String second) {
+            boolean firstPresent, @NotNull String first, boolean secondPresent, @NotNull String second) {
         if (!firstPresent && !secondPresent) return first + " and " + second + " routes";
         if (!firstPresent) return first + " route";
         return second + " route";
     }
 
     private @Nullable V2InstanceRegistry.StartupClaim startInstanceRegistry() {
-        long heartbeatMs = ownershipGate.enforced()
-                ? config.ownership().renewIntervalMs()
-                : instanceHeartbeatIntervalMs();
+        long heartbeatMs =
+                ownershipGate.enforced() ? config.ownership().renewIntervalMs() : instanceHeartbeatIntervalMs();
         long leaseTtlMs = config.ownership().leaseTtlMs();
         this.instanceId = loadPersistentInstanceId(plugin.getDataFolder().toPath());
         this.startupId = UUID.randomUUID();
@@ -576,8 +581,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         java.util.function.Supplier<byte[]> verboseManifest = () -> manifestRegistry == null
                 ? VerboseManifest.textOnly(VerboseManifest.FLAVOR_V2_PUBLIC)
                 : VerboseManifest.encode(
-                        VerboseManifest.FLAVOR_V2_PUBLIC,
-                        manifestRegistry.checkIdVersions(checkRegistry));
+                        VerboseManifest.FLAVOR_V2_PUBLIC, manifestRegistry.checkIdVersions(checkRegistry));
         ServerOwnershipMetadata metadata = new ServerOwnershipMetadata(
                 config.serverName(),
                 hostname(),
@@ -595,7 +599,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             ownershipClaim = claimOwnershipWithOptionalWait(metadata);
             if (!ownershipClaim.claimed()) {
                 ServerOwnershipSnapshot owner = ownershipClaim.currentOwner();
-                long remaining = owner == null ? -1L
+                long remaining = owner == null
+                        ? -1L
                         : Math.max(0L, owner.leaseExpiresAtEpochMs() - ownershipClaim.dbNowEpochMs());
                 String message = "[cult-datastore] STORAGE DISABLED: live duplicate persistent storage UUID "
                         + instanceId + " detected. Existing startupId="
@@ -606,12 +611,11 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                         + ". A server data folder or storage-instance.uuid appears to be copied.";
                 return ownershipDenied(message, owner == null ? null : owner.ownerStartupId(), remaining);
             }
-            ownershipGate.open(startupId, ownershipFence, leaseTtlMs, config.ownership().safetyMarginMs());
+            ownershipGate.open(
+                    startupId, ownershipFence, leaseTtlMs, config.ownership().safetyMarginMs());
         }
 
-        long dbNow = ownershipClaim != null
-                ? ownershipClaim.dbNowEpochMs()
-                : dbNowBestEffort();
+        long dbNow = ownershipClaim != null ? ownershipClaim.dbNowEpochMs() : dbNowBestEffort();
         V2InstanceRegistry.StartupClaim claim = instanceRegistry.openStartup(
                 config.serverName(),
                 instanceId,
@@ -626,8 +630,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
 
         long recovered = recoverAfterStartupClaim(ownershipClaim, dbNow);
         if (recovered > 0) {
-            logger.warning("[cult-datastore] recovered " + recovered
-                    + " open session(s) after claiming storage startup");
+            logger.warning(
+                    "[cult-datastore] recovered " + recovered + " open session(s) after claiming storage startup");
         }
 
         if (enforceOwnership) {
@@ -677,14 +681,12 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         return claim;
     }
 
-    private @NotNull OwnershipClaimResult claimOwnershipWithOptionalWait(
-            @NotNull ServerOwnershipMetadata metadata) {
+    private @NotNull OwnershipClaimResult claimOwnershipWithOptionalWait(@NotNull ServerOwnershipMetadata metadata) {
         long ttlMs = config.ownership().leaseTtlMs();
         OwnershipClaimResult first = claimOwnership(metadata, ttlMs);
         if (first.claimed()) return first;
         ServerOwnershipSnapshot owner = first.currentOwner();
-        long remaining = owner == null ? 0L
-                : Math.max(0L, owner.leaseExpiresAtEpochMs() - first.dbNowEpochMs());
+        long remaining = owner == null ? 0L : Math.max(0L, owner.leaseExpiresAtEpochMs() - first.dbNowEpochMs());
         long waitMs = Math.min(config.ownership().startupWaitMs(), remaining + 50L);
         if (waitMs <= 0L || owner == null) return first;
         logger.warning("[cult-datastore] persistent storage UUID " + instanceId
@@ -699,9 +701,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         return claimOwnership(metadata, ttlMs);
     }
 
-    private @NotNull OwnershipClaimResult claimOwnership(
-            @NotNull ServerOwnershipMetadata metadata,
-            long ttlMs) {
+    private @NotNull OwnershipClaimResult claimOwnership(@NotNull ServerOwnershipMetadata metadata, long ttlMs) {
         try {
             return ownershipAdapter.claimOwnership(
                     OWNERSHIP_STORE, instanceId, startupId, ownershipFence, ttlMs, metadata);
@@ -711,33 +711,36 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
     }
 
     private @Nullable V2InstanceRegistry.StartupClaim ownershipDenied(
-            @NotNull String message,
-            @Nullable UUID conflictingStartupId,
-            long leaseRemainingMs) {
+            @NotNull String message, @Nullable UUID conflictingStartupId, long leaseRemainingMs) {
         if (config.ownership().duplicatePersistentUuidAction() == DuplicatePersistentUuidAction.FAIL_STARTUP) {
             throw new FatalStorageStartupException(message);
         }
         logger.warning(message);
         ownershipGate.close("duplicate-persistent-uuid");
         return V2InstanceRegistry.StartupClaim.duplicate(
-                startupId, instanceId,
+                startupId,
+                instanceId,
                 conflictingStartupId == null ? startupId : conflictingStartupId,
                 leaseRemainingMs,
                 message);
     }
 
     private void shutdownServerAfterFatalStorageStartup() {
-        Runnable stop = () -> CultAPI.INSTANCE.getPlatformServer().dispatchCommand(
-                CultAPI.INSTANCE.getPlatformServer().getConsoleSender(),
-                "stop");
+        Runnable stop = () -> CultAPI.INSTANCE
+                .getPlatformServer()
+                .dispatchCommand(CultAPI.INSTANCE.getPlatformServer().getConsoleSender(), "stop");
         try {
             CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().run(plugin, stop);
         } catch (RuntimeException e) {
-            logger.log(Level.SEVERE, "[cult-datastore] failed to schedule server shutdown after fatal storage startup", e);
+            logger.log(
+                    Level.SEVERE, "[cult-datastore] failed to schedule server shutdown after fatal storage startup", e);
             try {
                 stop.run();
             } catch (RuntimeException immediateFailure) {
-                logger.log(Level.SEVERE, "[cult-datastore] failed to dispatch stop command after fatal storage startup", immediateFailure);
+                logger.log(
+                        Level.SEVERE,
+                        "[cult-datastore] failed to dispatch stop command after fatal storage startup",
+                        immediateFailure);
             }
         }
     }
@@ -748,15 +751,13 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         }
     }
 
-    private long recoverAfterStartupClaim(
-            @Nullable OwnershipClaimResult ownershipClaim,
-            long dbNow) {
+    private long recoverAfterStartupClaim(@Nullable OwnershipClaimResult ownershipClaim, long dbNow) {
         long closed = 0L;
         if (ownershipClaim != null && ownershipClaim.previousOwner() != null) {
             ServerOwnershipSnapshot previous = ownershipClaim.previousOwner();
             if (!startupId.equals(previous.ownerStartupId())
                     && (previous.closedAtEpochMs() != ServerOwnershipSnapshot.OPEN
-                    || previous.leaseExpiresAtEpochMs() <= dbNow)) {
+                            || previous.leaseExpiresAtEpochMs() <= dbNow)) {
                 closed += instanceRegistry.recoverStartup(previous.ownerStartupId(), "expired-ownership");
             }
         }
@@ -788,10 +789,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         });
         long intervalMs = config.ownership().recoverySweepIntervalMs();
         recoverySweepExecutor.scheduleAtFixedRate(
-                this::runRecoverySweep,
-                intervalMs,
-                intervalMs,
-                TimeUnit.MILLISECONDS);
+                this::runRecoverySweep, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
     }
 
     private void runRecoverySweep() {
@@ -801,9 +799,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         if (ownershipGate.enforced() && !ownershipGate.allowWrites()) return;
         try {
             long closed = registry.recoverStaleStartups(
-                    currentStartup,
-                    dbNowBestEffort(),
-                    config.ownership().staleStartupTtlMs());
+                    currentStartup, dbNowBestEffort(), config.ownership().staleStartupTtlMs());
             if (closed > 0) {
                 logger.warning("[cult-datastore] recovery sweep closed " + closed
                         + " open session(s) from stale startup rows");
@@ -827,10 +823,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
 
     private @NotNull VerboseRegistry buildVerboseRegistry() {
         VerboseCodecs.ensureRegistered();
-        return new VerboseRegistryImpl(
-                dataStore,
-                checkRegistry,
-                VerboseManifest.FLAVOR_V2_PUBLIC);
+        return new VerboseRegistryImpl(dataStore, checkRegistry, VerboseManifest.FLAVOR_V2_PUBLIC);
     }
 
     private void installLocalVerboseRegistry() {
@@ -840,8 +833,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             this.checkRegistry = localChecks;
             this.verboseRegistry = buildVerboseRegistry();
         } catch (RuntimeException e) {
-            logger.log(Level.WARNING,
-                    "[cult-datastore] failed to initialise local verbose registry", e);
+            logger.log(Level.WARNING, "[cult-datastore] failed to initialise local verbose registry", e);
         }
     }
 
@@ -856,17 +848,14 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                 } catch (IllegalArgumentException e) {
                     Path backup = file.resolveSibling(file.getFileName() + ".invalid-" + System.currentTimeMillis());
                     Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
-                    logger.warning("[cult-datastore] invalid storage instance UUID in " + file
-                            + "; moved it to " + backup + " and generated a new persistent id");
+                    logger.warning("[cult-datastore] invalid storage instance UUID in " + file + "; moved it to "
+                            + backup + " and generated a new persistent id");
                 }
             }
 
             UUID generated = UUID.randomUUID();
             Files.writeString(
-                    file,
-                    generated + System.lineSeparator(),
-                    StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE_NEW);
+                    file, generated + System.lineSeparator(), StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
             return generated;
         } catch (IOException e) {
             throw new IllegalStateException("failed to load persistent storage instance id from " + file, e);
@@ -915,11 +904,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             t.setDaemon(true);
             return t;
         });
-        duplicateWarningExecutor.scheduleAtFixedRate(
-                () -> logger.warning(message),
-                60L,
-                60L,
-                TimeUnit.SECONDS);
+        duplicateWarningExecutor.scheduleAtFixedRate(() -> logger.warning(message), 60L, 60L, TimeUnit.SECONDS);
     }
 
     private void stopDuplicateWarning() {
@@ -953,11 +938,10 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         return null;
     }
 
-    private static final MigrationContext NO_OP_MIGRATION_CONTEXT =
-            new MigrationContext() {};
+    private static final MigrationContext NO_OP_MIGRATION_CONTEXT = new MigrationContext() {};
 
     private void maybeWarnUnexpectedIdShape(@NotNull MongoDatabase db) {
-        for (String coll : new String[]{"grim_sessions", "grim_players"}) {
+        for (String coll : new String[] {"grim_sessions", "grim_players"}) {
             try {
                 Document first = db.getCollection(coll).find().limit(1).first();
                 if (first == null) continue;
@@ -965,7 +949,7 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                 if (id instanceof java.util.UUID) continue;
                 if (id instanceof Binary b
                         && (b.getType() == BsonBinarySubType.BINARY.getValue()
-                        || b.getType() == BsonBinarySubType.UUID_STANDARD.getValue())
+                                || b.getType() == BsonBinarySubType.UUID_STANDARD.getValue())
                         && b.getData().length == 16) continue;
                 String idClass = id == null ? "null" : id.getClass().getSimpleName();
                 logger.warning(() -> "[cult-datastore] " + coll + " first-doc _id is "
@@ -973,30 +957,28 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
                         + " entity migration will not handle this row correctly."
                         + " Halt and inspect before proceeding if this is unexpected.");
             } catch (RuntimeException e) {
-                logger.fine(() -> "[cult-datastore] _id sanity probe failed for " + coll
-                        + ": " + e.getMessage());
+                logger.fine(() -> "[cult-datastore] _id sanity probe failed for " + coll + ": " + e.getMessage());
             }
         }
     }
 
     private void closeV2Backends() {
         for (BackendV2 v2 : v2Backends) {
-            try { v2.flush(); }
-            catch (Exception e) {
+            try {
+                v2.flush();
+            } catch (Exception e) {
                 logger.log(Level.WARNING, "[cult-datastore] v2 flush failed for " + v2.id(), e);
             }
-            try { v2.close(); }
-            catch (Exception e) {
+            try {
+                v2.close();
+            } catch (Exception e) {
                 logger.log(Level.WARNING, "[cult-datastore] v2 close failed for " + v2.id(), e);
             }
         }
         v2Backends.clear();
     }
 
-    private NameResolver buildNameResolver(
-            DataStore store,
-            List<String> chain,
-            boolean playerIdentityRouted) {
+    private NameResolver buildNameResolver(DataStore store, List<String> chain, boolean playerIdentityRouted) {
         List<NameResolverLink> links = new ArrayList<>();
         for (String id : chain) {
             switch (id) {
@@ -1021,9 +1003,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
             logger.info("[cult-datastore] migration.skip=true; leaving legacy v0 un-migrated");
             return;
         }
-        V0Sources.V0Source source = V0Sources.detect(
-                dataFolder,
-                CultAPI.INSTANCE.getConfigManager().getConfig());
+        V0Sources.V0Source source =
+                V0Sources.detect(dataFolder, CultAPI.INSTANCE.getConfigManager().getConfig());
         if (source == null) {
             logger.info("[cult-datastore] no legacy v0 store detected; nothing to migrate");
             return;
@@ -1031,9 +1012,12 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         logger.info("[cult-datastore] legacy v0 source: " + source.summary());
         V0Reader reader = new V0Reader(source.jdbcUrl(), source.username(), source.password());
         LegacyMigrator migrator = new LegacyMigrator(
-                reader, sqliteBackend, checkRegistry,
+                reader,
+                sqliteBackend,
+                checkRegistry,
                 ClientVersionResolver::legacyStringToPvn,
-                config.session().gapMs(), logger);
+                config.session().gapMs(),
+                logger);
         long startMs = System.currentTimeMillis();
         try {
             LegacyMigrator.Result result = migrator.run(count -> {
@@ -1067,7 +1051,8 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         playerToggleStore.shutdown();
         if (violationSink != null) violationSink.shutDown();
         shutdownInstanceRegistry();
-        if (dataStore != null && config != null) dataStore.flushAndClose(config.writePath().shutdownDrainTimeoutMs());
+        if (dataStore != null && config != null)
+            dataStore.flushAndClose(config.writePath().shutdownDrainTimeoutMs());
         closeOwnership("graceful");
         ownershipGate.close("shutdown");
         closeV2Backends();
@@ -1108,19 +1093,18 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
     private void shutdownInstanceRegistry() {
         if (instanceRegistry == null || startupId == null || config == null) return;
         if (ownershipGate.enforced() && !ownershipGate.allowWrites()) {
-            logger.warning("[cult-datastore] skipping startup/session shutdown writes because DB ownership is no longer held");
+            logger.warning(
+                    "[cult-datastore] skipping startup/session shutdown writes because DB ownership is no longer held");
             return;
         }
         long now = dbNowBestEffort();
         try {
             long closed = instanceRegistry.closeCurrentStartup(startupId, now);
             if (closed > 0) {
-                logger.info("[cult-datastore] closed " + closed
-                        + " still-open session(s) for this server startup");
+                logger.info("[cult-datastore] closed " + closed + " still-open session(s) for this server startup");
             }
         } catch (RuntimeException e) {
-            logger.log(Level.WARNING,
-                    "[cult-datastore] failed to close sessions for this server startup", e);
+            logger.log(Level.WARNING, "[cult-datastore] failed to close sessions for this server startup", e);
         }
     }
 
@@ -1144,16 +1128,41 @@ public final class DataStoreLifecycle implements StartableInitable, StoppableIni
         }
     }
 
-    public @Nullable DataStore dataStore() { return loaded ? dataStore : null; }
-    public @Nullable HistoryService historyService() { return historyService; }
-    public @Nullable NameResolver nameResolver() { return nameResolver; }
-    public @Nullable ViolationSink violationSink() { return violationSink; }
-    public @Nullable DataStoreConfig config() { return config; }
-    public @Nullable VerboseRegistry verboseRegistry() { return verboseRegistry; }
+    public @Nullable DataStore dataStore() {
+        return loaded ? dataStore : null;
+    }
 
-    public @NotNull LiveWriteHooks liveWriteHooks() { return liveWriteHooks; }
-    public @NotNull SessionTracker sessionTracker() { return sessionTracker; }
-    public @NotNull PlayerToggleStore playerToggleStore() { return playerToggleStore; }
+    public @Nullable HistoryService historyService() {
+        return historyService;
+    }
+
+    public @Nullable NameResolver nameResolver() {
+        return nameResolver;
+    }
+
+    public @Nullable ViolationSink violationSink() {
+        return violationSink;
+    }
+
+    public @Nullable DataStoreConfig config() {
+        return config;
+    }
+
+    public @Nullable VerboseRegistry verboseRegistry() {
+        return verboseRegistry;
+    }
+
+    public @NotNull LiveWriteHooks liveWriteHooks() {
+        return liveWriteHooks;
+    }
+
+    public @NotNull SessionTracker sessionTracker() {
+        return sessionTracker;
+    }
+
+    public @NotNull PlayerToggleStore playerToggleStore() {
+        return playerToggleStore;
+    }
 
     @ApiStatus.Internal
     public @Nullable SqliteBackend sqliteBackendForCommands() {

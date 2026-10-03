@@ -12,8 +12,16 @@ import net.minecraft.world.phys.Vec3;
 public class PistonShulkerPush implements UncertaintyHandler {
 
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, PredVector start, Vec3 end) {
-        MovementTrace transformed = handleMovementTrace(player, valid, result, context, lastResult, MovementTrace.start(start), end);
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            PredVector start,
+            Vec3 end) {
+        MovementTrace transformed =
+                handleMovementTrace(player, valid, result, context, lastResult, MovementTrace.start(start), end);
         Vec3 collisionBaseOffset = transformed.collisionBaseOffset();
         return collisionBaseOffset.lengthSqr() <= 1.0E-14
                 ? transformed.position()
@@ -21,7 +29,14 @@ public class PistonShulkerPush implements UncertaintyHandler {
     }
 
     @Override
-    public MovementTrace handleMovementTrace(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastResult, MovementTrace trace, Vec3 end) {
+    public MovementTrace handleMovementTrace(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastResult,
+            MovementTrace trace,
+            Vec3 end) {
         PredVector start = trace.position();
         ExternalMovementUncertainty.Snapshot snapshot = ExternalMovementUncertainty.capture(context, lastResult);
         SimpleCollisionBox expanded = snapshot.combinedTargetEnvelopeCopy();

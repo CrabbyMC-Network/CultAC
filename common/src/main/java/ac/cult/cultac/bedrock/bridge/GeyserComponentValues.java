@@ -19,7 +19,8 @@ final class GeyserComponentValues extends MinecraftHashEncoder {
         super(registries);
     }
 
-    static <V, T extends DataComponentType<V>> Object serialize(JavaRegistryProvider registries, DataComponent<V, T> component) {
+    static <V, T extends DataComponentType<V>> Object serialize(
+            JavaRegistryProvider registries, DataComponent<V, T> component) {
         var encoder = new GeyserComponentValues(registries);
         return encoder.value(DataComponentHashers.hasher(component.getType()).hash(component.getValue(), encoder));
     }
@@ -30,22 +31,57 @@ final class GeyserComponentValues extends MinecraftHashEncoder {
         return HashCode.fromInt(values.size() - 1);
     }
 
-    Object value(HashCode token) { return values.get(token.asInt()); }
+    Object value(HashCode token) {
+        return values.get(token.asInt());
+    }
 
-    @Override public HashCode empty() { return retain(null); }
-    @Override public HashCode emptyMap() { return retain(Map.of()); }
-    @Override public HashCode number(Number value) { return retain(value); }
-    @Override public HashCode string(String value) { return retain(value); }
-    @Override public HashCode bool(boolean value) { return retain(value); }
-    @Override public HashCode byteArray(byte[] value) { return retain(value.clone()); }
-    @Override public HashCode intArray(int[] value) { return retain(value.clone()); }
-    @Override public HashCode longArray(long[] value) { return retain(value.clone()); }
+    @Override
+    public HashCode empty() {
+        return retain(null);
+    }
 
-    @Override public HashCode list(List<HashCode> list) {
+    @Override
+    public HashCode emptyMap() {
+        return retain(Map.of());
+    }
+
+    @Override
+    public HashCode number(Number value) {
+        return retain(value);
+    }
+
+    @Override
+    public HashCode string(String value) {
+        return retain(value);
+    }
+
+    @Override
+    public HashCode bool(boolean value) {
+        return retain(value);
+    }
+
+    @Override
+    public HashCode byteArray(byte[] value) {
+        return retain(value.clone());
+    }
+
+    @Override
+    public HashCode intArray(int[] value) {
+        return retain(value.clone());
+    }
+
+    @Override
+    public HashCode longArray(long[] value) {
+        return retain(value.clone());
+    }
+
+    @Override
+    public HashCode list(List<HashCode> list) {
         return retain(list.stream().map(this::value).toList());
     }
 
-    @Override public HashCode map(Map<HashCode, HashCode> map) {
+    @Override
+    public HashCode map(Map<HashCode, HashCode> map) {
         var result = new LinkedHashMap<String, Object>();
         map.forEach((key, value) -> result.put((String) value(key), value(value)));
         return retain(result);

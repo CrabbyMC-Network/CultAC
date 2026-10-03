@@ -7,22 +7,24 @@ import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import java.util.Optional;
 
 public final class BedrockStepProjectionResolver {
-    private BedrockStepProjectionResolver() {
-    }
+    private BedrockStepProjectionResolver() {}
 
     public static Optional<Vec3d> candidatePosition(BedrockMovementResult movementResult) {
         if (movementResult == null || movementResult.maxUpStep() <= 0.0D) {
             return Optional.empty();
         }
         Vec3d feet = movementResult.previousState().physicalFeetPosition();
-        return candidatePosition(movementResult, movementResult.rawPredictedPhysicalFeetPosition().subtract(feet));
+        return candidatePosition(
+                movementResult,
+                movementResult.rawPredictedPhysicalFeetPosition().subtract(feet));
     }
 
     public static Optional<Vec3d> candidatePosition(BedrockMovementResult movementResult, Vec3d requestedDelta) {
         if (movementResult == null || requestedDelta == null || movementResult.maxUpStep() <= 0.0D) {
             return Optional.empty();
         }
-        BlockCollisionWorld blockWorld = movementResult.movementContext().worldState().blockCollisionWorld();
+        BlockCollisionWorld blockWorld =
+                movementResult.movementContext().worldState().blockCollisionWorld();
         if (blockWorld.isEmpty()) {
             return Optional.empty();
         }
@@ -48,12 +50,8 @@ public final class BedrockStepProjectionResolver {
                 : Optional.empty();
     }
 
-    private static boolean horizontalMovementChanged(
-            Vec3d requestedDelta,
-            BedrockCollisionSweep.MoveResult move
-    ) {
+    private static boolean horizontalMovementChanged(Vec3d requestedDelta, BedrockCollisionSweep.MoveResult move) {
         return Math.abs(requestedDelta.x() - move.appliedDelta().x()) > BedrockCollisionSweep.EPSILON
                 || Math.abs(requestedDelta.z() - move.appliedDelta().z()) > BedrockCollisionSweep.EPSILON;
     }
-
 }

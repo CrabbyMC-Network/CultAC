@@ -1,28 +1,23 @@
 package ac.cult.cultac.bedrock.prediction.state;
 
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
-import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockActorBox;
-import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
+import ac.cult.cultac.bedrock.prediction.geometry.BedrockPositionTranslator;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
+import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputIntent;
 import ac.cult.cultac.bedrock.prediction.input.BedrockPoseInputData;
-import ac.cult.cultac.bedrock.prediction.model.BedrockCollisionFlags;
 import ac.cult.cultac.bedrock.prediction.model.BedrockBoundingBoxMode;
+import ac.cult.cultac.bedrock.prediction.model.BedrockCollisionFlags;
 import ac.cult.cultac.bedrock.prediction.model.BlockMovementSlowdownState;
 import ac.cult.cultac.bedrock.prediction.model.Medium;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import java.util.Objects;
 
 public record BedrockMovementState(
-    Motion motion,
-    ActorState actor,
-    TickMemory memory,
-    boolean hasTeleported,
-    BedrockActorAttributes attributes
-) {
+        Motion motion, ActorState actor, TickMemory memory, boolean hasTeleported, BedrockActorAttributes attributes) {
     public BedrockMovementState(Motion motion, ActorState actor, TickMemory memory, boolean hasTeleported) {
         this(motion, actor, memory, hasTeleported, BedrockActorAttributes.EMPTY);
     }
@@ -37,107 +32,149 @@ public record BedrockMovementState(
         Objects.requireNonNull(memory, "memory");
         Objects.requireNonNull(attributes, "attributes");
         if (motion.collisionBox() == null) {
-            motion = motion.withCollisionBox(BedrockActorBox.create(motion.physicalFeetPosition(),
-                    actor.playerDimensions(), motion.coordinateFrame()));
+            motion = motion.withCollisionBox(BedrockActorBox.create(
+                    motion.physicalFeetPosition(), actor.playerDimensions(), motion.coordinateFrame()));
         }
     }
 
     public static BedrockMovementState fromPhysicalFeet(
-        Vec3d physicalFeetPosition,
-        Vec3d velocity,
-        BedrockInputFrame inputFrame,
-        BedrockCollisionFlags collisionFlags
-    ) {
+            Vec3d physicalFeetPosition,
+            Vec3d velocity,
+            BedrockInputFrame inputFrame,
+            BedrockCollisionFlags collisionFlags) {
         return fromPhysicalFeet(
-            physicalFeetPosition,
-            velocity,
-            inputFrame,
-            collisionFlags,
-            collisionFlags.onGround() ? Medium.GROUND : Medium.AIR
-        );
+                physicalFeetPosition,
+                velocity,
+                inputFrame,
+                collisionFlags,
+                collisionFlags.onGround() ? Medium.GROUND : Medium.AIR);
     }
 
     public static BedrockMovementState fromPhysicalFeet(
-        Vec3d physicalFeetPosition,
-        Vec3d velocity,
-        BedrockInputFrame inputFrame,
-        BedrockCollisionFlags collisionFlags,
-        Medium movementBranch
-    ) {
-        return fromPhysicalFeet(physicalFeetPosition, velocity, inputFrame, collisionFlags, movementBranch,
+            Vec3d physicalFeetPosition,
+            Vec3d velocity,
+            BedrockInputFrame inputFrame,
+            BedrockCollisionFlags collisionFlags,
+            Medium movementBranch) {
+        return fromPhysicalFeet(
+                physicalFeetPosition,
+                velocity,
+                inputFrame,
+                collisionFlags,
+                movementBranch,
                 BedrockCoordinateFrame.IDENTITY);
     }
 
-    public static BedrockMovementState fromPhysicalFeet(Vec3d physicalFeetPosition, Vec3d velocity,
-            BedrockInputFrame inputFrame, BedrockCollisionFlags collisionFlags, Medium movementBranch,
+    public static BedrockMovementState fromPhysicalFeet(
+            Vec3d physicalFeetPosition,
+            Vec3d velocity,
+            BedrockInputFrame inputFrame,
+            BedrockCollisionFlags collisionFlags,
+            Medium movementBranch,
             BedrockCoordinateFrame coordinateFrame) {
-        return fromPhysicalFeet(physicalFeetPosition, velocity, inputFrame, collisionFlags, movementBranch, coordinateFrame, null);
+        return fromPhysicalFeet(
+                physicalFeetPosition, velocity, inputFrame, collisionFlags, movementBranch, coordinateFrame, null);
     }
 
-    public static BedrockMovementState fromPhysicalFeet(Vec3d physicalFeetPosition, Vec3d velocity,
-            BedrockInputFrame inputFrame, BedrockCollisionFlags collisionFlags, Medium movementBranch,
-            BedrockCoordinateFrame coordinateFrame, BedrockHorseState horse) {
+    public static BedrockMovementState fromPhysicalFeet(
+            Vec3d physicalFeetPosition,
+            Vec3d velocity,
+            BedrockInputFrame inputFrame,
+            BedrockCollisionFlags collisionFlags,
+            Medium movementBranch,
+            BedrockCoordinateFrame coordinateFrame,
+            BedrockHorseState horse) {
         boolean swimming = BedrockSwimmingPoseProgress.initialSwimming(inputFrame);
         return new BedrockMovementState(
-            new Motion(
-                BedrockPositionTranslator.normalizePhysicalFeetPosition(physicalFeetPosition, coordinateFrame,
-                    horse == null ? BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET : 0.0D),
-                velocity,
-                0.0D,
-                Vec3d.ZERO,
-                inputFrame,
-                collisionFlags, coordinateFrame
-            ),
-            new ActorState(
-                new ContactState(
-                    BlockMovementSlowdownState.NONE,
-                    BedrockClimbableContact.NONE,
-                    movementBranch == Medium.WATER),
-                new PoseState(false, swimming,
-                    BedrockSwimmingPoseProgress.initialHorizontalPose(inputFrame), false),
-                new TravelMode(false, false, false, movementBranch == Medium.WATER, movementBranch),
-                BedrockBoundingBoxMode.initial(inputFrame),
-                PlayerDimensionsState.DEFAULT,
-                null,
-                horse
-            ),
-            new TickMemory(
-                0L,
-                0L,
-                0L,
-                0.0F,
-                BedrockSwimmingPoseProgress.initialSwimAmount(inputFrame),
-                0L,
-                false,
-                0L,
-                initialSneakingTicks(inputFrame),
-                0L,
-                BedrockDolphinBoost.INITIAL
-            )
-        );
+                new Motion(
+                        BedrockPositionTranslator.normalizePhysicalFeetPosition(
+                                physicalFeetPosition,
+                                coordinateFrame,
+                                horse == null ? BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET : 0.0D),
+                        velocity,
+                        0.0D,
+                        Vec3d.ZERO,
+                        inputFrame,
+                        collisionFlags,
+                        coordinateFrame),
+                new ActorState(
+                        new ContactState(
+                                BlockMovementSlowdownState.NONE,
+                                BedrockClimbableContact.NONE,
+                                movementBranch == Medium.WATER),
+                        new PoseState(
+                                false, swimming, BedrockSwimmingPoseProgress.initialHorizontalPose(inputFrame), false),
+                        new TravelMode(false, false, false, movementBranch == Medium.WATER, movementBranch),
+                        BedrockBoundingBoxMode.initial(inputFrame),
+                        PlayerDimensionsState.DEFAULT,
+                        null,
+                        horse),
+                new TickMemory(
+                        0L,
+                        0L,
+                        0L,
+                        0.0F,
+                        BedrockSwimmingPoseProgress.initialSwimAmount(inputFrame),
+                        0L,
+                        false,
+                        0L,
+                        initialSneakingTicks(inputFrame),
+                        0L,
+                        BedrockDolphinBoost.INITIAL));
     }
 
-    public BedrockCoordinateFrame coordinateFrame() { return motion.coordinateFrame(); }
+    public BedrockCoordinateFrame coordinateFrame() {
+        return motion.coordinateFrame();
+    }
 
     public BedrockMovementState withRotation(float yaw, float pitch) {
         BedrockInputFrame frame = inputFrame();
-        BedrockInputFrame rotated = new BedrockInputFrame(frame.clientTick(), yaw, pitch,
-                frame.jumping(), frame.sneaking(), frame.sprinting(), frame.inputData(), frame.swimmingRequested());
-        return new BedrockMovementState(new Motion(physicalFeetPosition(), velocity(),
-                motion.lastPhysicalDisplacementSquared(), motion.lastPhysicalDisplacement(), rotated,
-                collisionFlags(), coordinateFrame(), collisionBox()), actor, memory, hasTeleported, attributes);
+        BedrockInputFrame rotated = new BedrockInputFrame(
+                frame.clientTick(),
+                yaw,
+                pitch,
+                frame.jumping(),
+                frame.sneaking(),
+                frame.sprinting(),
+                frame.inputData(),
+                frame.swimmingRequested());
+        return new BedrockMovementState(
+                new Motion(
+                        physicalFeetPosition(),
+                        velocity(),
+                        motion.lastPhysicalDisplacementSquared(),
+                        motion.lastPhysicalDisplacement(),
+                        rotated,
+                        collisionFlags(),
+                        coordinateFrame(),
+                        collisionBox()),
+                actor,
+                memory,
+                hasTeleported,
+                attributes);
     }
 
     public BedrockMovementState withCoordinateFrame(BedrockCoordinateFrame frame) {
-        return frame.equals(coordinateFrame()) ? this : withMotion(new Motion(physicalFeetPosition(), velocity(),
-                lastPhysicalDisplacementSquared(), lastPhysicalDisplacement(), inputFrame(), collisionFlags(), frame,
-                frame.roundBox(collisionBox())));
+        return frame.equals(coordinateFrame())
+                ? this
+                : withMotion(new Motion(
+                        physicalFeetPosition(),
+                        velocity(),
+                        lastPhysicalDisplacementSquared(),
+                        lastPhysicalDisplacement(),
+                        inputFrame(),
+                        collisionFlags(),
+                        frame,
+                        frame.roundBox(collisionBox())));
     }
 
-    public WorldCollisionBox collisionBox() { return motion.collisionBox(); }
+    public WorldCollisionBox collisionBox() {
+        return motion.collisionBox();
+    }
 
     public WorldCollisionBox collisionBox(PlayerDimensionsState dimensions) {
-        return playerDimensions().equals(dimensions) ? collisionBox()
+        return playerDimensions().equals(dimensions)
+                ? collisionBox()
                 : BedrockActorBox.resize(collisionBox(), physicalFeetPosition(), dimensions, coordinateFrame());
     }
 
@@ -146,7 +183,8 @@ public record BedrockMovementState(
     }
 
     public BedrockMovementState withObservedPosition(Vec3d feet, double displacementSquared) {
-        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(feet, coordinateFrame(), packetYOffset());
+        Vec3d position =
+                BedrockPositionTranslator.normalizePhysicalFeetPosition(feet, coordinateFrame(), packetYOffset());
         return withMotion(motion.withPosition(position, displacementSquared, lastPhysicalDisplacement()));
     }
 
@@ -158,77 +196,232 @@ public record BedrockMovementState(
                 .withCollisionBox(BedrockActorBox.move(collisionBox(), movement, coordinateFrame())));
     }
 
-    public Vec3d physicalFeetPosition() { return motion.physicalFeetPosition(); }
-    public Vec3d velocity() { return motion.velocity(); }
-    public double lastPhysicalDisplacementSquared() { return motion.lastPhysicalDisplacementSquared(); }
-    public Vec3d lastPhysicalDisplacement() { return motion.lastPhysicalDisplacement(); }
-    public BedrockInputFrame inputFrame() { return motion.inputFrame(); }
-    public BedrockCollisionFlags collisionFlags() { return motion.collisionFlags(); }
-    public long simulationTick() { return memory.simulationTick(); }
-    public long powderSnowTicks() { return memory.powderSnowTicks(); }
-    public BlockMovementSlowdownState pendingBlockMovementSlowdownState() { return actor.pendingBlockMovementSlowdownState(); }
-    public BedrockClimbableContact climbableContact() { return actor.climbableContact(); }
-    public boolean scaffoldingDescendAllowed() { return actor.scaffoldingDescendAllowed(); }
-    public boolean gliding() { return actor.gliding(); }
-    public boolean glidingRequest() { return actor.glidingRequest(); }
-    public long fallFlyTicks() { return memory.fallFlyTicks(); }
-    public float fallDistance() { return memory.fallDistance(); }
-    public boolean sprinting() { return actor.sprinting(); }
-    public boolean swimming() { return actor.swimming(); }
-    public boolean horizontalPose() { return actor.horizontalPose(); }
-    public double swimAmount() { return memory.swimAmount(); }
-    public BedrockDolphinBoost dolphinBoost() { return memory.dolphinBoost(); }
-    public BedrockCameraWaterState cameraWater() { return memory.cameraWater(); }
+    public Vec3d physicalFeetPosition() {
+        return motion.physicalFeetPosition();
+    }
+
+    public Vec3d velocity() {
+        return motion.velocity();
+    }
+
+    public double lastPhysicalDisplacementSquared() {
+        return motion.lastPhysicalDisplacementSquared();
+    }
+
+    public Vec3d lastPhysicalDisplacement() {
+        return motion.lastPhysicalDisplacement();
+    }
+
+    public BedrockInputFrame inputFrame() {
+        return motion.inputFrame();
+    }
+
+    public BedrockCollisionFlags collisionFlags() {
+        return motion.collisionFlags();
+    }
+
+    public long simulationTick() {
+        return memory.simulationTick();
+    }
+
+    public long powderSnowTicks() {
+        return memory.powderSnowTicks();
+    }
+
+    public BlockMovementSlowdownState pendingBlockMovementSlowdownState() {
+        return actor.pendingBlockMovementSlowdownState();
+    }
+
+    public BedrockClimbableContact climbableContact() {
+        return actor.climbableContact();
+    }
+
+    public boolean scaffoldingDescendAllowed() {
+        return actor.scaffoldingDescendAllowed();
+    }
+
+    public boolean gliding() {
+        return actor.gliding();
+    }
+
+    public boolean glidingRequest() {
+        return actor.glidingRequest();
+    }
+
+    public long fallFlyTicks() {
+        return memory.fallFlyTicks();
+    }
+
+    public float fallDistance() {
+        return memory.fallDistance();
+    }
+
+    public boolean sprinting() {
+        return actor.sprinting();
+    }
+
+    public boolean swimming() {
+        return actor.swimming();
+    }
+
+    public boolean horizontalPose() {
+        return actor.horizontalPose();
+    }
+
+    public double swimAmount() {
+        return memory.swimAmount();
+    }
+
+    public BedrockDolphinBoost dolphinBoost() {
+        return memory.dolphinBoost();
+    }
+
+    public BedrockCameraWaterState cameraWater() {
+        return memory.cameraWater();
+    }
 
     public BedrockMovementState withAcknowledgedPose(Boolean crawling, Boolean swimming, Boolean spinning) {
         PoseState pose = actor.pose();
-        ActorState nextActor = actor.copy(actor.contacts(), new PoseState(pose.sprinting(),
-            swimming == null ? pose.swimming() : swimming,
-            crawling == null ? pose.horizontal() : crawling, pose.itemUseSlowdownActive()), actor.travel());
-        return new BedrockMovementState(motion, nextActor,
-            spinning == null ? memory : memory.withSpin(spinning), hasTeleported, attributes);
+        ActorState nextActor = actor.copy(
+                actor.contacts(),
+                new PoseState(
+                        pose.sprinting(),
+                        swimming == null ? pose.swimming() : swimming,
+                        crawling == null ? pose.horizontal() : crawling,
+                        pose.itemUseSlowdownActive()),
+                actor.travel());
+        return new BedrockMovementState(
+                motion, nextActor, spinning == null ? memory : memory.withSpin(spinning), hasTeleported, attributes);
     }
-    public long riptideChargeTicks() { return memory.riptideChargeTicks(); }
-    public boolean riptideSpinActive() { return memory.riptideSpinActive(); }
-    public long riptideSpinTicks() { return memory.riptideSpinTicks(); }
-    public long sneakingTicks() { return memory.sneakingTicks(); }
-    public boolean itemUseSlowdownActive() { return actor.itemUseSlowdownActive(); }
-    public long itemUseSlowdownTicks() { return memory.itemUseSlowdownTicks(); }
-    public boolean autoClimbTravel() { return actor.autoClimbTravel(); }
-    public boolean waterTravelFlag() { return actor.waterTravelFlag(); }
-    public boolean wasInWaterFlag() { return actor.wasInWaterFlag(); }
-    public Medium movementBranch() { return actor.movementBranch(); }
-    public BedrockBoundingBoxMode boundingBoxMode() { return actor.boundingBoxMode(); }
-    public PlayerDimensionsState playerDimensions() { return actor.playerDimensions(); }
-    public boolean explicitPlayerDimensions() { return actor.acknowledgedPlayerDimensions() != null; }
-    public PlayerDimensionsState acknowledgedPlayerDimensions() { return actor.acknowledgedPlayerDimensions(); }
-    public PlayerDimensionsState collisionDefinition() { return actor.collisionDefinition(); }
+
+    public long riptideChargeTicks() {
+        return memory.riptideChargeTicks();
+    }
+
+    public boolean riptideSpinActive() {
+        return memory.riptideSpinActive();
+    }
+
+    public long riptideSpinTicks() {
+        return memory.riptideSpinTicks();
+    }
+
+    public long sneakingTicks() {
+        return memory.sneakingTicks();
+    }
+
+    public boolean itemUseSlowdownActive() {
+        return actor.itemUseSlowdownActive();
+    }
+
+    public long itemUseSlowdownTicks() {
+        return memory.itemUseSlowdownTicks();
+    }
+
+    public boolean autoClimbTravel() {
+        return actor.autoClimbTravel();
+    }
+
+    public boolean waterTravelFlag() {
+        return actor.waterTravelFlag();
+    }
+
+    public boolean wasInWaterFlag() {
+        return actor.wasInWaterFlag();
+    }
+
+    public Medium movementBranch() {
+        return actor.movementBranch();
+    }
+
+    public BedrockBoundingBoxMode boundingBoxMode() {
+        return actor.boundingBoxMode();
+    }
+
+    public PlayerDimensionsState playerDimensions() {
+        return actor.playerDimensions();
+    }
+
+    public boolean explicitPlayerDimensions() {
+        return actor.acknowledgedPlayerDimensions() != null;
+    }
+
+    public PlayerDimensionsState acknowledgedPlayerDimensions() {
+        return actor.acknowledgedPlayerDimensions();
+    }
+
+    public PlayerDimensionsState collisionDefinition() {
+        return actor.collisionDefinition();
+    }
 
     public BedrockMovementState withCollisionDefinition(PlayerDimensionsState definition) {
-        return withActor(new ActorState(actor.contacts(), actor.pose(), actor.travel(), boundingBoxMode(),
-                playerDimensions(), acknowledgedPlayerDimensions(), horse(), boat(), definition));
+        return withActor(new ActorState(
+                actor.contacts(),
+                actor.pose(),
+                actor.travel(),
+                boundingBoxMode(),
+                playerDimensions(),
+                acknowledgedPlayerDimensions(),
+                horse(),
+                boat(),
+                definition));
     }
 
-    public boolean isHorse() { return actor.horse() != null; }
-    public BedrockHorseState horse() { return actor.horse(); }
-    public boolean isBoat() { return actor.boat() != null; }
-    public boolean isVehicle() { return isHorse() || isBoat(); }
-    public BedrockBoatState boat() { return actor.boat(); }
-    public double packetYOffset() { return isBoat() ? BedrockBoatProperties.ORIGIN_HEIGHT
-            : isHorse() ? 0.0D : BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET; }
+    public boolean isHorse() {
+        return actor.horse() != null;
+    }
+
+    public BedrockHorseState horse() {
+        return actor.horse();
+    }
+
+    public boolean isBoat() {
+        return actor.boat() != null;
+    }
+
+    public boolean isVehicle() {
+        return isHorse() || isBoat();
+    }
+
+    public BedrockBoatState boat() {
+        return actor.boat();
+    }
+
+    public double packetYOffset() {
+        return isBoat()
+                ? BedrockBoatProperties.ORIGIN_HEIGHT
+                : isHorse() ? 0.0D : BedrockPositionTranslator.PLAYER_PACKET_Y_OFFSET;
+    }
 
     public BedrockMovementState withBoat(BedrockBoatState boat) {
-        return withActor(new ActorState(actor.contacts(), actor.pose(), actor.travel(), boundingBoxMode(),
-                playerDimensions(), acknowledgedPlayerDimensions(), null, boat, collisionDefinition()));
+        return withActor(new ActorState(
+                actor.contacts(),
+                actor.pose(),
+                actor.travel(),
+                boundingBoxMode(),
+                playerDimensions(),
+                acknowledgedPlayerDimensions(),
+                null,
+                boat,
+                collisionDefinition()));
     }
 
     public BedrockMovementState withHorse(BedrockHorseState horse) {
-        return withActor(new ActorState(actor.contacts(), actor.pose(), actor.travel(), boundingBoxMode(),
-                playerDimensions(), acknowledgedPlayerDimensions(), horse, null, collisionDefinition()));
+        return withActor(new ActorState(
+                actor.contacts(),
+                actor.pose(),
+                actor.travel(),
+                boundingBoxMode(),
+                playerDimensions(),
+                acknowledgedPlayerDimensions(),
+                horse,
+                null,
+                collisionDefinition()));
     }
 
     public Vec3d bedrockPacketPosition() {
-        return BedrockPositionTranslator.physicalFeetToPacketPosition(physicalFeetPosition(), coordinateFrame(), packetYOffset());
+        return BedrockPositionTranslator.physicalFeetToPacketPosition(
+                physicalFeetPosition(), coordinateFrame(), packetYOffset());
     }
 
     /** Simulation input index; live integration supplies its processed sequence, not a wire timestamp. */
@@ -239,7 +432,6 @@ public record BedrockMovementState(
     public boolean movementGrounded() {
         return collisionFlags().onGround() || movementBranch() == Medium.GROUND;
     }
-
 
     public BedrockMovementState withDolphinBoost(BedrockDolphinBoost value) {
         return new BedrockMovementState(motion, actor, memory.withDolphinBoost(value), hasTeleported, attributes);
@@ -259,22 +451,26 @@ public record BedrockMovementState(
 
     public BedrockMovementState withWaterTravelFlag(boolean waterTravelFlag) {
         return actor.waterTravelFlag() == waterTravelFlag
-            ? this
-            : withActor(actor.withWaterTravelFlag(waterTravelFlag));
+                ? this
+                : withActor(actor.withWaterTravelFlag(waterTravelFlag));
     }
 
     public BedrockMovementState withWasInWaterFlag(boolean wasInWaterFlag) {
-        return actor.wasInWaterFlag() == wasInWaterFlag
-            ? this
-            : withActor(actor.withWasInWaterFlag(wasInWaterFlag));
+        return actor.wasInWaterFlag() == wasInWaterFlag ? this : withActor(actor.withWasInWaterFlag(wasInWaterFlag));
     }
 
-    public BedrockMovementState(Motion motion, ActorState actor, TickMemory memory, boolean hasTeleported,
-                                BedrockMovementAttributeState movementAttribute) {
+    public BedrockMovementState(
+            Motion motion,
+            ActorState actor,
+            TickMemory memory,
+            boolean hasTeleported,
+            BedrockMovementAttributeState movementAttribute) {
         this(motion, actor, memory, hasTeleported, BedrockActorAttributes.EMPTY.withMovement(movementAttribute));
     }
 
-    public BedrockMovementAttributeState movementAttribute() { return attributes.movement(); }
+    public BedrockMovementAttributeState movementAttribute() {
+        return attributes.movement();
+    }
 
     public BedrockMovementState withAttributes(BedrockActorAttributes value) {
         return new BedrockMovementState(motion, actor, memory, hasTeleported, value);
@@ -287,8 +483,11 @@ public record BedrockMovementState(
     /** A sprint transition changes the attribute only when the actor flag changes. */
     public BedrockMovementState applySprintAction(boolean sprinting) {
         if (sprinting() == sprinting) return this;
-        return withSprinting(sprinting).withMovementAttribute(sprinting
-                ? movementAttribute().addSprint() : movementAttribute().removeSprint());
+        return withSprinting(sprinting)
+                .withMovementAttribute(
+                        sprinting
+                                ? movementAttribute().addSprint()
+                                : movementAttribute().removeSprint());
     }
 
     public BedrockMovementState applySprintActions(BedrockInputIntent.SprintIntent intent) {
@@ -302,83 +501,95 @@ public record BedrockMovementState(
         return actor.sprinting() == sprinting ? this : withActor(actor.withSprinting(sprinting));
     }
 
-    public BedrockMovementState withVelocityAndCollisionFlags(
-        Vec3d velocity,
-        BedrockCollisionFlags collisionFlags
-    ) {
+    public BedrockMovementState withVelocityAndCollisionFlags(Vec3d velocity, BedrockCollisionFlags collisionFlags) {
         return withMotion(motion.withVelocityAndCollisionFlags(velocity, collisionFlags));
     }
 
     /** Advances an input frame without changing movement state. */
     public BedrockMovementState withoutActorMovementTick(BedrockInputFrame frame) {
         return withMotion(new Motion(
-            physicalFeetPosition(), velocity(), 0.0D, Vec3d.ZERO, frame, collisionFlags(), coordinateFrame(), collisionBox()));
+                physicalFeetPosition(),
+                velocity(),
+                0.0D,
+                Vec3d.ZERO,
+                frame,
+                collisionFlags(),
+                coordinateFrame(),
+                collisionBox()));
     }
 
     /** Applies an immobile metadata boundary without completing a client tick. */
     public BedrockMovementState afterImmobileBoundary() {
         return withMotion(new Motion(
-            physicalFeetPosition(), Vec3d.ZERO, 0.0D, Vec3d.ZERO, inputFrame(), collisionFlags(), coordinateFrame(), collisionBox()));
+                physicalFeetPosition(),
+                Vec3d.ZERO,
+                0.0D,
+                Vec3d.ZERO,
+                inputFrame(),
+                collisionFlags(),
+                coordinateFrame(),
+                collisionBox()));
     }
 
     public BedrockMovementState withAutoClimbTravel(boolean autoClimbTravel) {
         return actor.autoClimbTravel() == autoClimbTravel
-            ? this
-            : withActor(actor.withAutoClimbTravel(autoClimbTravel));
+                ? this
+                : withActor(actor.withAutoClimbTravel(autoClimbTravel));
     }
 
     public BedrockMovementState withPhysicalFeetPosition(
-        Vec3d physicalFeetPosition,
-        double lastPhysicalDisplacementSquared
-    ) {
-        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(physicalFeetPosition, coordinateFrame(), packetYOffset());
-        return withMotion(motion.withPosition(
-            position,
-            lastPhysicalDisplacementSquared,
-            motion.lastPhysicalDisplacement()
-        ).withCollisionBox(BedrockActorBox.create(position, playerDimensions(), coordinateFrame())));
+            Vec3d physicalFeetPosition, double lastPhysicalDisplacementSquared) {
+        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(
+                physicalFeetPosition, coordinateFrame(), packetYOffset());
+        return withMotion(
+                motion.withPosition(position, lastPhysicalDisplacementSquared, motion.lastPhysicalDisplacement())
+                        .withCollisionBox(BedrockActorBox.create(position, playerDimensions(), coordinateFrame())));
     }
 
     /** Applies an ordered teleport and motion update without restoring older tick state. */
     public BedrockMovementState afterServerTeleport(Vec3d physicalFeetPosition, Vec3d velocity) {
-        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(physicalFeetPosition, coordinateFrame(), packetYOffset());
+        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(
+                physicalFeetPosition, coordinateFrame(), packetYOffset());
         return new BedrockMovementState(
-            // bedrock teleports preserve collision
-            new Motion(position, velocity, 0.0D, Vec3d.ZERO, motion.inputFrame(), motion.collisionFlags(), coordinateFrame()),
-            actor,
-            memory.withFallDistance(0.0F),
-            true, attributes
-        );
+                // bedrock teleports preserve collision
+                new Motion(
+                        position,
+                        velocity,
+                        0.0D,
+                        Vec3d.ZERO,
+                        motion.inputFrame(),
+                        motion.collisionFlags(),
+                        coordinateFrame()),
+                actor,
+                memory.withFallDistance(0.0F),
+                true,
+                attributes);
     }
 
-    public BedrockMovementState withPhysicalFeetPosition(
-        Vec3d physicalFeetPosition,
-        Vec3d lastPhysicalDisplacement
-    ) {
-        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(physicalFeetPosition, coordinateFrame(), packetYOffset());
-        return withMotion(motion.withPosition(
-            position,
-            displacementSquared(lastPhysicalDisplacement),
-            lastPhysicalDisplacement
-        ).withCollisionBox(BedrockActorBox.create(position, playerDimensions(), coordinateFrame())));
+    public BedrockMovementState withPhysicalFeetPosition(Vec3d physicalFeetPosition, Vec3d lastPhysicalDisplacement) {
+        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(
+                physicalFeetPosition, coordinateFrame(), packetYOffset());
+        return withMotion(
+                motion.withPosition(position, displacementSquared(lastPhysicalDisplacement), lastPhysicalDisplacement)
+                        .withCollisionBox(BedrockActorBox.create(position, playerDimensions(), coordinateFrame())));
     }
 
     public BedrockMovementState withItemUseSlowdownState(boolean active, long ticks) {
         return new BedrockMovementState(
-            motion,
-            actor.withItemUseSlowdownActive(active),
-            memory.withItemUseSlowdownTicks(ticks),
-            hasTeleported, attributes
-        );
+                motion,
+                actor.withItemUseSlowdownActive(active),
+                memory.withItemUseSlowdownTicks(ticks),
+                hasTeleported,
+                attributes);
     }
 
     public BedrockMovementState withGliding(boolean gliding) {
         return new BedrockMovementState(
-            motion,
-            actor.withGliding(gliding, gliding),
-            memory.withFallFlyTicks(gliding ? fallFlyTicks() : 0L),
-            hasTeleported, attributes
-        );
+                motion,
+                actor.withGliding(gliding, gliding),
+                memory.withFallFlyTicks(gliding ? fallFlyTicks() : 0L),
+                hasTeleported,
+                attributes);
     }
 
     public BedrockMovementState withAcknowledgedGliding(boolean gliding) {
@@ -394,12 +605,8 @@ public record BedrockMovementState(
     }
 
     public BedrockMovementState withPlayerDimensions(
-        BedrockBoundingBoxMode boundingBoxMode,
-        PlayerDimensionsState dimensions,
-        boolean explicit
-    ) {
-        return withActor(actor.withPlayerDimensions(
-            boundingBoxMode, dimensions, explicit ? dimensions : null));
+            BedrockBoundingBoxMode boundingBoxMode, PlayerDimensionsState dimensions, boolean explicit) {
+        return withActor(actor.withPlayerDimensions(boundingBoxMode, dimensions, explicit ? dimensions : null));
     }
 
     public BedrockMovementState withPendingBlockMovementSlowdownState(BlockMovementSlowdownState state) {
@@ -415,44 +622,57 @@ public record BedrockMovementState(
     }
 
     public BedrockMovementState advance(BedrockMovementUpdate update) {
-        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(update.physicalFeetPosition(), coordinateFrame(), packetYOffset());
+        Vec3d position = BedrockPositionTranslator.normalizePhysicalFeetPosition(
+                update.physicalFeetPosition(), coordinateFrame(), packetYOffset());
         Vec3d displacement = position.subtract(physicalFeetPosition());
         BedrockInputFrame frame = update.frame();
         boolean horizontalPose = BedrockPoseInputData.crawlingAfterActions(frame, horizontalPose());
         // HasTeleportedFlagComponent is cleared only after an actor movement tick.
         return new BedrockMovementState(
-            new Motion(position, update.velocity(), displacementSquared(displacement), displacement,
-                frame, update.collisionFlags(), coordinateFrame(), BedrockActorBox.move(
-                    collisionBox(update.playerDimensions()), displacement, coordinateFrame())),
-            new ActorState(
-                new ContactState(
-                    BlockMovementSlowdownState.NONE,
-                    actor.climbableContact(),
-                    actor.wasInWaterFlag()),
-                new PoseState(sprinting(), update.swimming(), horizontalPose,
-                    update.itemUse().slowdownActive()),
-                new TravelMode(update.glide().active(), update.glide().requested(), false,
-                    actor.waterTravelFlag(), actor.movementBranch()),
-                update.boundingBoxMode(),
-                update.playerDimensions(),
-                actor.acknowledgedPlayerDimensions(),
-                actor.horse(), actor.boat(), actor.collisionDefinition()
-            ),
-            new TickMemory(
-                simulationTick() + 1L,
-                update.powderSnowTicks(),
-                update.glide().active() ? fallFlyTicks() + 1L : 0L,
-                update.fallDistance(),
-                update.swimAmount(),
-                update.riptide().chargeTicks(),
-                update.riptide().spinActive(),
-                update.riptide().spinTicks(),
-                frame.sneaking() ? sneakingTicks() + 1L : 0L,
-                update.itemUse().slowdownTicks(),
-                dolphinBoost(),
-                cameraWater()
-            ), false, attributes
-        );
+                new Motion(
+                        position,
+                        update.velocity(),
+                        displacementSquared(displacement),
+                        displacement,
+                        frame,
+                        update.collisionFlags(),
+                        coordinateFrame(),
+                        BedrockActorBox.move(collisionBox(update.playerDimensions()), displacement, coordinateFrame())),
+                new ActorState(
+                        new ContactState(
+                                BlockMovementSlowdownState.NONE, actor.climbableContact(), actor.wasInWaterFlag()),
+                        new PoseState(
+                                sprinting(),
+                                update.swimming(),
+                                horizontalPose,
+                                update.itemUse().slowdownActive()),
+                        new TravelMode(
+                                update.glide().active(),
+                                update.glide().requested(),
+                                false,
+                                actor.waterTravelFlag(),
+                                actor.movementBranch()),
+                        update.boundingBoxMode(),
+                        update.playerDimensions(),
+                        actor.acknowledgedPlayerDimensions(),
+                        actor.horse(),
+                        actor.boat(),
+                        actor.collisionDefinition()),
+                new TickMemory(
+                        simulationTick() + 1L,
+                        update.powderSnowTicks(),
+                        update.glide().active() ? fallFlyTicks() + 1L : 0L,
+                        update.fallDistance(),
+                        update.swimAmount(),
+                        update.riptide().chargeTicks(),
+                        update.riptide().spinActive(),
+                        update.riptide().spinTicks(),
+                        frame.sneaking() ? sneakingTicks() + 1L : 0L,
+                        update.itemUse().slowdownTicks(),
+                        dolphinBoost(),
+                        cameraWater()),
+                false,
+                attributes);
     }
 
     private BedrockMovementState withMotion(Motion motion) {
@@ -460,8 +680,10 @@ public record BedrockMovementState(
     }
 
     private BedrockMovementState withActor(ActorState actor) {
-        Motion next = playerDimensions().equals(actor.playerDimensions()) ? motion : motion.withCollisionBox(
-                BedrockActorBox.resize(collisionBox(), physicalFeetPosition(), actor.playerDimensions(), coordinateFrame()));
+        Motion next = playerDimensions().equals(actor.playerDimensions())
+                ? motion
+                : motion.withCollisionBox(BedrockActorBox.resize(
+                        collisionBox(), physicalFeetPosition(), actor.playerDimensions(), coordinateFrame()));
         return new BedrockMovementState(next, actor, memory, hasTeleported, attributes);
     }
 
@@ -471,26 +693,37 @@ public record BedrockMovementState(
 
     private static double displacementSquared(Vec3d displacement) {
         return displacement.x() * displacement.x()
-            + displacement.y() * displacement.y()
-            + displacement.z() * displacement.z();
+                + displacement.y() * displacement.y()
+                + displacement.z() * displacement.z();
     }
 
     public record Motion(
-        Vec3d physicalFeetPosition,
-        Vec3d velocity,
-        double lastPhysicalDisplacementSquared,
-        Vec3d lastPhysicalDisplacement,
-        BedrockInputFrame inputFrame,
-        BedrockCollisionFlags collisionFlags,
-        BedrockCoordinateFrame coordinateFrame,
-        WorldCollisionBox collisionBox
-    ) {
-        public Motion(Vec3d position, Vec3d velocity, double distance, Vec3d displacement,
-                      BedrockInputFrame input, BedrockCollisionFlags flags, BedrockCoordinateFrame frame) {
+            Vec3d physicalFeetPosition,
+            Vec3d velocity,
+            double lastPhysicalDisplacementSquared,
+            Vec3d lastPhysicalDisplacement,
+            BedrockInputFrame inputFrame,
+            BedrockCollisionFlags collisionFlags,
+            BedrockCoordinateFrame coordinateFrame,
+            WorldCollisionBox collisionBox) {
+        public Motion(
+                Vec3d position,
+                Vec3d velocity,
+                double distance,
+                Vec3d displacement,
+                BedrockInputFrame input,
+                BedrockCollisionFlags flags,
+                BedrockCoordinateFrame frame) {
             this(position, velocity, distance, displacement, input, flags, frame, null);
         }
-        public Motion(Vec3d position, Vec3d velocity, double distance, Vec3d displacement,
-                      BedrockInputFrame input, BedrockCollisionFlags flags) {
+
+        public Motion(
+                Vec3d position,
+                Vec3d velocity,
+                double distance,
+                Vec3d displacement,
+                BedrockInputFrame input,
+                BedrockCollisionFlags flags) {
             this(position, velocity, distance, displacement, input, flags, BedrockCoordinateFrame.IDENTITY);
         }
 
@@ -508,46 +741,81 @@ public record BedrockMovementState(
 
         Motion withVelocityAndCollisionFlags(Vec3d velocity, BedrockCollisionFlags flags) {
             return new Motion(
-                physicalFeetPosition, velocity, lastPhysicalDisplacementSquared,
-                lastPhysicalDisplacement, inputFrame, flags, coordinateFrame, collisionBox
-            );
+                    physicalFeetPosition,
+                    velocity,
+                    lastPhysicalDisplacementSquared,
+                    lastPhysicalDisplacement,
+                    inputFrame,
+                    flags,
+                    coordinateFrame,
+                    collisionBox);
         }
 
         Motion withPosition(Vec3d position, double displacementSquared, Vec3d displacement) {
-            return new Motion(position, velocity, displacementSquared, displacement, inputFrame, collisionFlags, coordinateFrame, collisionBox);
+            return new Motion(
+                    position,
+                    velocity,
+                    displacementSquared,
+                    displacement,
+                    inputFrame,
+                    collisionFlags,
+                    coordinateFrame,
+                    collisionBox);
         }
 
         Motion withCollisionBox(WorldCollisionBox box) {
-            return new Motion(physicalFeetPosition, velocity, lastPhysicalDisplacementSquared,
-                    lastPhysicalDisplacement, inputFrame, collisionFlags, coordinateFrame, box);
+            return new Motion(
+                    physicalFeetPosition,
+                    velocity,
+                    lastPhysicalDisplacementSquared,
+                    lastPhysicalDisplacement,
+                    inputFrame,
+                    collisionFlags,
+                    coordinateFrame,
+                    box);
         }
     }
 
     public record ActorState(
-        ContactState contacts,
-        PoseState pose,
-        TravelMode travel,
-        BedrockBoundingBoxMode boundingBoxMode,
-        PlayerDimensionsState playerDimensions,
-        PlayerDimensionsState acknowledgedPlayerDimensions,
-        BedrockHorseState horse,
-        BedrockBoatState boat,
-        PlayerDimensionsState collisionDefinition
-    ) {
-        public ActorState(ContactState contacts, PoseState pose, TravelMode travel,
-                          BedrockBoundingBoxMode mode, PlayerDimensionsState dimensions,
-                          PlayerDimensionsState acknowledged, BedrockHorseState horse, BedrockBoatState boat) {
+            ContactState contacts,
+            PoseState pose,
+            TravelMode travel,
+            BedrockBoundingBoxMode boundingBoxMode,
+            PlayerDimensionsState playerDimensions,
+            PlayerDimensionsState acknowledgedPlayerDimensions,
+            BedrockHorseState horse,
+            BedrockBoatState boat,
+            PlayerDimensionsState collisionDefinition) {
+        public ActorState(
+                ContactState contacts,
+                PoseState pose,
+                TravelMode travel,
+                BedrockBoundingBoxMode mode,
+                PlayerDimensionsState dimensions,
+                PlayerDimensionsState acknowledged,
+                BedrockHorseState horse,
+                BedrockBoatState boat) {
             this(contacts, pose, travel, mode, dimensions, acknowledged, horse, boat, null);
         }
-        public ActorState(ContactState contacts, PoseState pose, TravelMode travel,
-                          BedrockBoundingBoxMode mode, PlayerDimensionsState dimensions,
-                          PlayerDimensionsState acknowledged, BedrockHorseState horse) {
+
+        public ActorState(
+                ContactState contacts,
+                PoseState pose,
+                TravelMode travel,
+                BedrockBoundingBoxMode mode,
+                PlayerDimensionsState dimensions,
+                PlayerDimensionsState acknowledged,
+                BedrockHorseState horse) {
             this(contacts, pose, travel, mode, dimensions, acknowledged, horse, null);
         }
 
-        public ActorState(ContactState contacts, PoseState pose, TravelMode travel,
-                          BedrockBoundingBoxMode mode, PlayerDimensionsState dimensions,
-                          PlayerDimensionsState acknowledged) {
+        public ActorState(
+                ContactState contacts,
+                PoseState pose,
+                TravelMode travel,
+                BedrockBoundingBoxMode mode,
+                PlayerDimensionsState dimensions,
+                PlayerDimensionsState acknowledged) {
             this(contacts, pose, travel, mode, dimensions, acknowledged, null);
         }
 
@@ -559,119 +827,225 @@ public record BedrockMovementState(
             Objects.requireNonNull(playerDimensions, "playerDimensions");
         }
 
-        BlockMovementSlowdownState pendingBlockMovementSlowdownState() { return contacts.pendingSlowdown(); }
-        BedrockClimbableContact climbableContact() { return contacts.climbableContact(); }
-        boolean scaffoldingDescendAllowed() { return contacts.scaffoldingDescendAllowed(); }
-        boolean gliding() { return travel.gliding(); }
-        boolean glidingRequest() { return travel.glidingRequest(); }
-        boolean sprinting() { return pose.sprinting(); }
-        boolean swimming() { return pose.swimming(); }
-        boolean horizontalPose() { return pose.horizontal(); }
-        boolean itemUseSlowdownActive() { return pose.itemUseSlowdownActive(); }
-        boolean autoClimbTravel() { return travel.autoClimb(); }
-        boolean waterTravelFlag() { return travel.waterTravel(); }
-        boolean wasInWaterFlag() { return contacts.wasInWater(); }
-        Medium movementBranch() { return travel.movementBranch(); }
+        BlockMovementSlowdownState pendingBlockMovementSlowdownState() {
+            return contacts.pendingSlowdown();
+        }
 
-        ActorState withMovementBranch(Medium value) { return copy(contacts, pose, travel.withMovementBranch(value)); }
-        ActorState withWaterTravelFlag(boolean value) { return copy(contacts, pose, travel.withWaterTravel(value)); }
-        ActorState withWasInWaterFlag(boolean value) { return copy(contacts.withWasInWater(value), pose, travel); }
-        ActorState withSprinting(boolean value) { return copy(contacts, pose.withSprinting(value), travel); }
-        ActorState withAutoClimbTravel(boolean value) { return copy(contacts, pose, travel.withAutoClimb(value)); }
-        ActorState withItemUseSlowdownActive(boolean value) { return copy(contacts, pose.withItemUse(value), travel); }
-        ActorState withGliding(boolean value, boolean request) { return copy(contacts, pose, travel.withGliding(value, request)); }
-        ActorState withPendingBlockMovementSlowdownState(BlockMovementSlowdownState value) { return copy(contacts.withSlowdown(value), pose, travel); }
-        ActorState withClimbableContact(BedrockClimbableContact value) { return copy(contacts.withClimbableContact(value), pose, travel); }
-        ActorState withScaffoldingDescendAllowed(boolean value) { return copy(contacts.withDescendAllowed(value), pose, travel); }
+        BedrockClimbableContact climbableContact() {
+            return contacts.climbableContact();
+        }
+
+        boolean scaffoldingDescendAllowed() {
+            return contacts.scaffoldingDescendAllowed();
+        }
+
+        boolean gliding() {
+            return travel.gliding();
+        }
+
+        boolean glidingRequest() {
+            return travel.glidingRequest();
+        }
+
+        boolean sprinting() {
+            return pose.sprinting();
+        }
+
+        boolean swimming() {
+            return pose.swimming();
+        }
+
+        boolean horizontalPose() {
+            return pose.horizontal();
+        }
+
+        boolean itemUseSlowdownActive() {
+            return pose.itemUseSlowdownActive();
+        }
+
+        boolean autoClimbTravel() {
+            return travel.autoClimb();
+        }
+
+        boolean waterTravelFlag() {
+            return travel.waterTravel();
+        }
+
+        boolean wasInWaterFlag() {
+            return contacts.wasInWater();
+        }
+
+        Medium movementBranch() {
+            return travel.movementBranch();
+        }
+
+        ActorState withMovementBranch(Medium value) {
+            return copy(contacts, pose, travel.withMovementBranch(value));
+        }
+
+        ActorState withWaterTravelFlag(boolean value) {
+            return copy(contacts, pose, travel.withWaterTravel(value));
+        }
+
+        ActorState withWasInWaterFlag(boolean value) {
+            return copy(contacts.withWasInWater(value), pose, travel);
+        }
+
+        ActorState withSprinting(boolean value) {
+            return copy(contacts, pose.withSprinting(value), travel);
+        }
+
+        ActorState withAutoClimbTravel(boolean value) {
+            return copy(contacts, pose, travel.withAutoClimb(value));
+        }
+
+        ActorState withItemUseSlowdownActive(boolean value) {
+            return copy(contacts, pose.withItemUse(value), travel);
+        }
+
+        ActorState withGliding(boolean value, boolean request) {
+            return copy(contacts, pose, travel.withGliding(value, request));
+        }
+
+        ActorState withPendingBlockMovementSlowdownState(BlockMovementSlowdownState value) {
+            return copy(contacts.withSlowdown(value), pose, travel);
+        }
+
+        ActorState withClimbableContact(BedrockClimbableContact value) {
+            return copy(contacts.withClimbableContact(value), pose, travel);
+        }
+
+        ActorState withScaffoldingDescendAllowed(boolean value) {
+            return copy(contacts.withDescendAllowed(value), pose, travel);
+        }
+
         ActorState withPlayerDimensions(PlayerDimensionsState value, PlayerDimensionsState acknowledged) {
-            return new ActorState(contacts, pose, travel, boundingBoxMode, value, acknowledged, horse, boat, collisionDefinition);
+            return new ActorState(
+                    contacts, pose, travel, boundingBoxMode, value, acknowledged, horse, boat, collisionDefinition);
         }
 
         ActorState withPlayerDimensions(
-            BedrockBoundingBoxMode mode,
-            PlayerDimensionsState value,
-            PlayerDimensionsState acknowledged
-        ) {
+                BedrockBoundingBoxMode mode, PlayerDimensionsState value, PlayerDimensionsState acknowledged) {
             return new ActorState(contacts, pose, travel, mode, value, acknowledged, horse, boat, collisionDefinition);
         }
 
         private ActorState copy(ContactState contacts, PoseState pose, TravelMode travel) {
             return new ActorState(
-                contacts, pose, travel, boundingBoxMode, playerDimensions, acknowledgedPlayerDimensions, horse, boat, collisionDefinition);
+                    contacts,
+                    pose,
+                    travel,
+                    boundingBoxMode,
+                    playerDimensions,
+                    acknowledgedPlayerDimensions,
+                    horse,
+                    boat,
+                    collisionDefinition);
         }
     }
 
     public record ContactState(
-        BlockMovementSlowdownState pendingSlowdown,
-        BedrockClimbableContact climbableContact,
-        boolean wasInWater
-    ) {
+            BlockMovementSlowdownState pendingSlowdown, BedrockClimbableContact climbableContact, boolean wasInWater) {
         public ContactState {
             Objects.requireNonNull(pendingSlowdown, "pendingSlowdown");
             Objects.requireNonNull(climbableContact, "climbableContact");
         }
 
-        boolean scaffoldingDescendAllowed() { return climbableContact.scaffoldingDescendAllowed(); }
-        ContactState withSlowdown(BlockMovementSlowdownState value) { return new ContactState(value, climbableContact, wasInWater); }
-        ContactState withClimbableContact(BedrockClimbableContact value) { return new ContactState(pendingSlowdown, value, wasInWater); }
-        ContactState withWasInWater(boolean value) { return new ContactState(pendingSlowdown, climbableContact, value); }
+        boolean scaffoldingDescendAllowed() {
+            return climbableContact.scaffoldingDescendAllowed();
+        }
+
+        ContactState withSlowdown(BlockMovementSlowdownState value) {
+            return new ContactState(value, climbableContact, wasInWater);
+        }
+
+        ContactState withClimbableContact(BedrockClimbableContact value) {
+            return new ContactState(pendingSlowdown, value, wasInWater);
+        }
+
+        ContactState withWasInWater(boolean value) {
+            return new ContactState(pendingSlowdown, climbableContact, value);
+        }
+
         ContactState withDescendAllowed(boolean value) {
             return withClimbableContact(new BedrockClimbableContact(
-                climbableContact.climbing(),
-                climbableContact.scaffolding(),
-                value,
-                climbableContact.ascendableBlock()));
+                    climbableContact.climbing(),
+                    climbableContact.scaffolding(),
+                    value,
+                    climbableContact.ascendableBlock()));
         }
     }
 
-    public record PoseState(
-        boolean sprinting,
-        boolean swimming,
-        boolean horizontal,
-        boolean itemUseSlowdownActive
-    ) {
-        PoseState withSprinting(boolean value) { return new PoseState(value, swimming, horizontal, itemUseSlowdownActive); }
-        PoseState withItemUse(boolean value) { return new PoseState(sprinting, swimming, horizontal, value); }
+    public record PoseState(boolean sprinting, boolean swimming, boolean horizontal, boolean itemUseSlowdownActive) {
+        PoseState withSprinting(boolean value) {
+            return new PoseState(value, swimming, horizontal, itemUseSlowdownActive);
+        }
+
+        PoseState withItemUse(boolean value) {
+            return new PoseState(sprinting, swimming, horizontal, value);
+        }
     }
 
     public record TravelMode(
-        boolean gliding,
-        boolean glidingRequest,
-        boolean autoClimb,
-        boolean waterTravel,
-        Medium movementBranch
-    ) {
+            boolean gliding, boolean glidingRequest, boolean autoClimb, boolean waterTravel, Medium movementBranch) {
         public TravelMode {
             Objects.requireNonNull(movementBranch, "movementBranch");
         }
 
-        TravelMode withMovementBranch(Medium value) { return new TravelMode(gliding, glidingRequest, autoClimb, waterTravel, value); }
-        TravelMode withWaterTravel(boolean value) { return new TravelMode(gliding, glidingRequest, autoClimb, value, movementBranch); }
-        TravelMode withAutoClimb(boolean value) { return new TravelMode(gliding, glidingRequest, value, waterTravel, movementBranch); }
-        TravelMode withGliding(boolean value, boolean request) { return new TravelMode(value, request, autoClimb, waterTravel, movementBranch); }
+        TravelMode withMovementBranch(Medium value) {
+            return new TravelMode(gliding, glidingRequest, autoClimb, waterTravel, value);
+        }
+
+        TravelMode withWaterTravel(boolean value) {
+            return new TravelMode(gliding, glidingRequest, autoClimb, value, movementBranch);
+        }
+
+        TravelMode withAutoClimb(boolean value) {
+            return new TravelMode(gliding, glidingRequest, value, waterTravel, movementBranch);
+        }
+
+        TravelMode withGliding(boolean value, boolean request) {
+            return new TravelMode(value, request, autoClimb, waterTravel, movementBranch);
+        }
     }
 
     public record TickMemory(
-        long simulationTick,
-        long powderSnowTicks,
-        long fallFlyTicks,
-        float fallDistance,
-        double swimAmount,
-        long riptideChargeTicks,
-        boolean riptideSpinActive,
-        long riptideSpinTicks,
-        long sneakingTicks,
-        long itemUseSlowdownTicks,
-        BedrockDolphinBoost dolphinBoost,
-        BedrockCameraWaterState cameraWater
-    ) {
-        public TickMemory(long simulationTick, long powderSnowTicks, long fallFlyTicks, float fallDistance,
-                          double swimAmount, long riptideChargeTicks, boolean riptideSpinActive,
-                          long riptideSpinTicks, long sneakingTicks, long itemUseSlowdownTicks,
-                          BedrockDolphinBoost dolphinBoost) {
-            this(simulationTick, powderSnowTicks, fallFlyTicks, fallDistance, swimAmount, riptideChargeTicks,
-                riptideSpinActive, riptideSpinTicks, sneakingTicks, itemUseSlowdownTicks, dolphinBoost,
-                BedrockCameraWaterState.INITIAL);
+            long simulationTick,
+            long powderSnowTicks,
+            long fallFlyTicks,
+            float fallDistance,
+            double swimAmount,
+            long riptideChargeTicks,
+            boolean riptideSpinActive,
+            long riptideSpinTicks,
+            long sneakingTicks,
+            long itemUseSlowdownTicks,
+            BedrockDolphinBoost dolphinBoost,
+            BedrockCameraWaterState cameraWater) {
+        public TickMemory(
+                long simulationTick,
+                long powderSnowTicks,
+                long fallFlyTicks,
+                float fallDistance,
+                double swimAmount,
+                long riptideChargeTicks,
+                boolean riptideSpinActive,
+                long riptideSpinTicks,
+                long sneakingTicks,
+                long itemUseSlowdownTicks,
+                BedrockDolphinBoost dolphinBoost) {
+            this(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    dolphinBoost,
+                    BedrockCameraWaterState.INITIAL);
         }
 
         public TickMemory {
@@ -695,12 +1069,101 @@ public record BedrockMovementState(
             }
         }
 
-        TickMemory withFallFlyTicks(long value) { return new TickMemory(simulationTick, powderSnowTicks, value, fallDistance, swimAmount, riptideChargeTicks, riptideSpinActive, riptideSpinTicks, sneakingTicks, itemUseSlowdownTicks, dolphinBoost, cameraWater); }
-        TickMemory withFallDistance(float value) { return new TickMemory(simulationTick, powderSnowTicks, fallFlyTicks, value, swimAmount, riptideChargeTicks, riptideSpinActive, riptideSpinTicks, sneakingTicks, itemUseSlowdownTicks, dolphinBoost, cameraWater); }
-        TickMemory withItemUseSlowdownTicks(long value) { return new TickMemory(simulationTick, powderSnowTicks, fallFlyTicks, fallDistance, swimAmount, riptideChargeTicks, riptideSpinActive, riptideSpinTicks, sneakingTicks, value, dolphinBoost, cameraWater); }
-        TickMemory withDolphinBoost(BedrockDolphinBoost value) { return new TickMemory(simulationTick, powderSnowTicks, fallFlyTicks, fallDistance, swimAmount, riptideChargeTicks, riptideSpinActive, riptideSpinTicks, sneakingTicks, itemUseSlowdownTicks, value, cameraWater); }
-        TickMemory withCameraWater(BedrockCameraWaterState value) { return new TickMemory(simulationTick, powderSnowTicks, fallFlyTicks, fallDistance, swimAmount, riptideChargeTicks, riptideSpinActive, riptideSpinTicks, sneakingTicks, itemUseSlowdownTicks, dolphinBoost, value); }
-        TickMemory withSpin(boolean value) { return new TickMemory(simulationTick, powderSnowTicks, fallFlyTicks, fallDistance, swimAmount, riptideChargeTicks, value, value ? riptideSpinTicks : 0L, sneakingTicks, itemUseSlowdownTicks, dolphinBoost, cameraWater); }
+        TickMemory withFallFlyTicks(long value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    value,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    dolphinBoost,
+                    cameraWater);
+        }
+
+        TickMemory withFallDistance(float value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    value,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    dolphinBoost,
+                    cameraWater);
+        }
+
+        TickMemory withItemUseSlowdownTicks(long value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    value,
+                    dolphinBoost,
+                    cameraWater);
+        }
+
+        TickMemory withDolphinBoost(BedrockDolphinBoost value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    value,
+                    cameraWater);
+        }
+
+        TickMemory withCameraWater(BedrockCameraWaterState value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    riptideSpinActive,
+                    riptideSpinTicks,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    dolphinBoost,
+                    value);
+        }
+
+        TickMemory withSpin(boolean value) {
+            return new TickMemory(
+                    simulationTick,
+                    powderSnowTicks,
+                    fallFlyTicks,
+                    fallDistance,
+                    swimAmount,
+                    riptideChargeTicks,
+                    value,
+                    value ? riptideSpinTicks : 0L,
+                    sneakingTicks,
+                    itemUseSlowdownTicks,
+                    dolphinBoost,
+                    cameraWater);
+        }
 
         private static void requireNonNegative(String name, long value) {
             if (value < 0L) {

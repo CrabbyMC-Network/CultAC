@@ -1,13 +1,14 @@
 package ac.cult.cultac.checks.impl.verbose;
 
-import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.protocol.ProtocolVersion;
-import net.minecraft.SharedConstants;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import ac.grim.grimac.api.storage.verbose.VerboseSchema;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
-import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
+import java.util.List;
+import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
@@ -16,8 +17,6 @@ import net.minecraft.world.level.block.Block;
 import org.bukkit.block.BlockFace;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Cult's verbose template tags plus the write-side value encoders that pair
@@ -35,31 +34,38 @@ public final class VerboseCodecs {
         VerboseTags.registerEnum("face", BlockFace.values());
         var version = ProtocolVersion.of(SharedConstants.getProtocolVersion());
         var digging = java.util.Arrays.stream(PlayerAction.values())
-                .filter(action -> (action != PlayerAction.CHANGE_DESTROY_DIRECTION || version.atLeast(ProtocolVersion.V26_3))
-                        && (action != PlayerAction.STAB || version.atLeast(ProtocolVersion.V1_21_11)))
+                .filter(action ->
+                        (action != PlayerAction.CHANGE_DESTROY_DIRECTION || version.atLeast(ProtocolVersion.V26_3))
+                                && (action != PlayerAction.STAB || version.atLeast(ProtocolVersion.V1_21_11)))
                 .toArray(PlayerAction[]::new);
         VerboseTags.registerEnum("digging", digging);
         VerboseTags.registerEnumLower("digging_lower", digging);
         VerboseTags.registerEnum("clicktype", ac.cult.cultac.utils.inventory.inventory.WindowClickType.values());
-        VerboseTags.registerEnumLower("clicktype_lower", ac.cult.cultac.utils.inventory.inventory.WindowClickType.values());
+        VerboseTags.registerEnumLower(
+                "clicktype_lower", ac.cult.cultac.utils.inventory.inventory.WindowClickType.values());
         VerboseTags.registerEnum("entityaction", PlayerCommandAction.values());
         VerboseTags.registerEnum("hand", InteractionHand.values());
-        VerboseTags.register("block", List.of(VerboseSchema.TypeTag.ZZ),
-                (in, ctx, out, fmt) -> out.append(blockName(in.rzz())));
-        VerboseTags.register("item", List.of(VerboseSchema.TypeTag.ZZ),
-                (in, ctx, out, fmt) -> out.append(itemTypeName(in.rzz())));
-        VerboseTags.register("packet", List.of(VerboseSchema.TypeTag.STR),
-                (in, ctx, out, fmt) -> out.append(in.rstr()));
-        VerboseTags.register("entity", List.of(VerboseSchema.TypeTag.VI),
+        VerboseTags.register(
+                "block", List.of(VerboseSchema.TypeTag.ZZ), (in, ctx, out, fmt) -> out.append(blockName(in.rzz())));
+        VerboseTags.register(
+                "item", List.of(VerboseSchema.TypeTag.ZZ), (in, ctx, out, fmt) -> out.append(itemTypeName(in.rzz())));
+        VerboseTags.register(
+                "packet", List.of(VerboseSchema.TypeTag.STR), (in, ctx, out, fmt) -> out.append(in.rstr()));
+        VerboseTags.register(
+                "entity",
+                List.of(VerboseSchema.TypeTag.VI),
                 (in, ctx, out, fmt) -> out.append(entityTypeName(in.rvi())));
-        VerboseTags.register("offset", List.of(VerboseSchema.TypeTag.F64),
+        VerboseTags.register(
+                "offset",
+                List.of(VerboseSchema.TypeTag.F64),
                 (in, ctx, out, fmt) -> out.append(humanFormattedOffset(in.rf64())));
-        VerboseTags.register("stdnum", List.of(VerboseSchema.TypeTag.F64),
+        VerboseTags.register(
+                "stdnum",
+                List.of(VerboseSchema.TypeTag.F64),
                 (in, ctx, out, fmt) -> out.append(formatNumberStandard(in.rf64())));
     }
 
-    private VerboseCodecs() {
-    }
+    private VerboseCodecs() {}
 
     /**
      * Force tag registration. Call before templates parse and before history
@@ -113,9 +119,10 @@ public final class VerboseCodecs {
 
     private static @NotNull String entityTypeName(int entityId) {
         EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.byId(entityId);
-        return entityType == null ? "unknown" : NmsIdentifierUtil.registryKey(BuiltInRegistries.ENTITY_TYPE, entityType);
+        return entityType == null
+                ? "unknown"
+                : NmsIdentifierUtil.registryKey(BuiltInRegistries.ENTITY_TYPE, entityType);
     }
-
 
     private static @NotNull String humanFormattedOffset(double offset) {
         String humanFormattedOffset;
@@ -143,5 +150,4 @@ public final class VerboseCodecs {
         formatted = String.format("%6f", value);
         return formatted.replace("0.", ".");
     }
-
 }

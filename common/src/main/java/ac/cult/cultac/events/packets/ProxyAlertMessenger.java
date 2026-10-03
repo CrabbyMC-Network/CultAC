@@ -7,13 +7,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import java.io.*;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.*;
 
 public class ProxyAlertMessenger implements PluginMessageListener {
     private static boolean usingProxy;
@@ -25,17 +24,23 @@ public class ProxyAlertMessenger implements PluginMessageListener {
 
         if (usingProxy) {
             LogUtil.info("Registering an outgoing plugin channel...");
-            CultAPI.INSTANCE.getPlugin().getServer().getMessenger().registerOutgoingPluginChannel(CultAPI.INSTANCE.getPlugin(), "BungeeCord");
-            CultAPI.INSTANCE.getPlugin().getServer().getMessenger().registerIncomingPluginChannel(CultAPI.INSTANCE.getPlugin(), "BungeeCord", this);
+            CultAPI.INSTANCE
+                    .getPlugin()
+                    .getServer()
+                    .getMessenger()
+                    .registerOutgoingPluginChannel(CultAPI.INSTANCE.getPlugin(), "BungeeCord");
+            CultAPI.INSTANCE
+                    .getPlugin()
+                    .getServer()
+                    .getMessenger()
+                    .registerIncomingPluginChannel(CultAPI.INSTANCE.getPlugin(), "BungeeCord", this);
         }
     }
 
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, @NotNull byte[] data) {
-        if (!ProxyAlertMessenger.canReceiveAlerts())
-            return;
-        if (!channel.equals("BungeeCord") && !channel.equals("bungeecord:main"))
-            return;
+        if (!ProxyAlertMessenger.canReceiveAlerts()) return;
+        if (!channel.equals("BungeeCord") && !channel.equals("bungeecord:main")) return;
 
         ByteArrayDataInput in = ByteStreams.newDataInput(data);
 
@@ -89,7 +94,9 @@ public class ProxyAlertMessenger implements PluginMessageListener {
     }
 
     public static boolean canSendAlerts() {
-        return usingProxy && CultAPI.INSTANCE.getConfigManager().getConfig().getBooleanElse("alerts.proxy.send", false) && Bukkit.getOnlinePlayers().size() > 0;
+        return usingProxy
+                && CultAPI.INSTANCE.getConfigManager().getConfig().getBooleanElse("alerts.proxy.send", false)
+                && Bukkit.getOnlinePlayers().size() > 0;
     }
 
     public static boolean canReceiveAlerts() {

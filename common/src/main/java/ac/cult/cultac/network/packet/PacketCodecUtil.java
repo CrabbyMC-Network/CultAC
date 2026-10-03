@@ -14,8 +14,7 @@ public final class PacketCodecUtil {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
-    private PacketCodecUtil() {
-    }
+    private PacketCodecUtil() {}
 
     public static Vec3 quantizeLpVec3(Vec3 movement) {
         // Mirrors net.minecraft.network.LpVec3, used by ClientboundSetEntityMotionPacket
@@ -32,8 +31,7 @@ public final class PacketCodecUtil {
         return new Vec3(
                 unpackLp(packLp(x / scale)) * scale,
                 unpackLp(packLp(y / scale)) * scale,
-                unpackLp(packLp(z / scale)) * scale
-        );
+                unpackLp(packLp(z / scale)) * scale);
     }
 
     /**
@@ -44,9 +42,7 @@ public final class PacketCodecUtil {
         return quantizeClientboundVelocity(SERVER_VERSION, clientVersion, movement);
     }
 
-    static Vec3 quantizeClientboundVelocity(ClientVersion serverVersion,
-                                            ClientVersion clientVersion,
-                                            Vec3 movement) {
+    static Vec3 quantizeClientboundVelocity(ClientVersion serverVersion, ClientVersion clientVersion, Vec3 movement) {
         boolean serverUsesLp = serverVersion.isNewerThanOrEquals(ClientVersion.V_1_21_9);
         boolean clientUsesLp = clientVersion.isNewerThanOrEquals(ClientVersion.V_1_21_9);
 
@@ -63,8 +59,7 @@ public final class PacketCodecUtil {
         return new Vec3(
                 quantizeLegacyVelocityAxis(movement.x),
                 quantizeLegacyVelocityAxis(movement.y),
-                quantizeLegacyVelocityAxis(movement.z)
-        );
+                quantizeLegacyVelocityAxis(movement.z));
     }
 
     private static double quantizeLegacyVelocityAxis(double value) {
@@ -92,11 +87,7 @@ public final class PacketCodecUtil {
 
     public static Vec3 decodeRelativeEntityPosition(Vec3 base, double deltaX, double deltaY, double deltaZ) {
         return decodeRelativeEntityPosition(
-                base,
-                Math.round(deltaX * 4096.0D),
-                Math.round(deltaY * 4096.0D),
-                Math.round(deltaZ * 4096.0D)
-        );
+                base, Math.round(deltaX * 4096.0D), Math.round(deltaY * 4096.0D), Math.round(deltaZ * 4096.0D));
     }
 
     public static Vec3 decodeRelativeEntityPosition(Vec3 base, long xa, long ya, long za) {
@@ -108,8 +99,7 @@ public final class PacketCodecUtil {
         return new Vec3(
                 xa == 0L ? base.x : decodeEntityPosition(encodeEntityPosition(base.x) + xa),
                 ya == 0L ? base.y : decodeEntityPosition(encodeEntityPosition(base.y) + ya),
-                za == 0L ? base.z : decodeEntityPosition(encodeEntityPosition(base.z) + za)
-        );
+                za == 0L ? base.z : decodeEntityPosition(encodeEntityPosition(base.z) + za));
     }
 
     public static boolean matchesEntityPositionPacketRounding(Vec3 expected, Vec3 actual) {
@@ -130,7 +120,8 @@ public final class PacketCodecUtil {
     }
 
     private static double unpackLp(long value) {
-        return Math.min((double) (value & LP_DATA_BITS_MASK), LP_MAX_QUANTIZED_VALUE) * 2.0D / LP_MAX_QUANTIZED_VALUE - 1.0D;
+        return Math.min((double) (value & LP_DATA_BITS_MASK), LP_MAX_QUANTIZED_VALUE) * 2.0D / LP_MAX_QUANTIZED_VALUE
+                - 1.0D;
     }
 
     private static long encodeEntityPosition(double value) {

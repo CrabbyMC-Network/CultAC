@@ -3,14 +3,16 @@ package ac.cult.cultac.bedrock.prediction.simulation.frame;
 import java.util.Objects;
 
 public record BedrockTravelOptions(
-    StepMode stepMode,
-    double maxUpStep,
-    SprintTravelSpeedMode sprintTravelSpeedMode,
-    SprintJumpImpulseMode sprintJumpImpulseMode,
-    boolean travelActive
-) {
-    public BedrockTravelOptions(StepMode stepMode, double maxUpStep,
-                                SprintTravelSpeedMode sprintTravelSpeedMode, SprintJumpImpulseMode sprintJumpImpulseMode) {
+        StepMode stepMode,
+        double maxUpStep,
+        SprintTravelSpeedMode sprintTravelSpeedMode,
+        SprintJumpImpulseMode sprintJumpImpulseMode,
+        boolean travelActive) {
+    public BedrockTravelOptions(
+            StepMode stepMode,
+            double maxUpStep,
+            SprintTravelSpeedMode sprintTravelSpeedMode,
+            SprintJumpImpulseMode sprintJumpImpulseMode) {
         this(stepMode, maxUpStep, sprintTravelSpeedMode, sprintJumpImpulseMode, true);
     }
 
@@ -33,31 +35,20 @@ public record BedrockTravelOptions(
 
     public static BedrockTravelOptions vanilla(StepMode stepMode, double maxUpStep) {
         return new BedrockTravelOptions(
-            stepMode,
-            maxUpStep,
-            SprintTravelSpeedMode.ORDERED_ACTOR_FLAG,
-            SprintJumpImpulseMode.ORDERED_ACTOR_FLAG
-        );
+                stepMode,
+                maxUpStep,
+                SprintTravelSpeedMode.ORDERED_ACTOR_FLAG,
+                SprintJumpImpulseMode.ORDERED_ACTOR_FLAG);
     }
 
     public BedrockTravelOptions withSprintTravelSpeedMode(SprintTravelSpeedMode sprintTravelSpeedMode) {
         return new BedrockTravelOptions(
-            stepMode,
-            maxUpStep,
-            sprintTravelSpeedMode,
-            sprintJumpImpulseMode,
-            travelActive
-        );
+                stepMode, maxUpStep, sprintTravelSpeedMode, sprintJumpImpulseMode, travelActive);
     }
 
     public BedrockTravelOptions withSprintJumpImpulseMode(SprintJumpImpulseMode sprintJumpImpulseMode) {
         return new BedrockTravelOptions(
-            stepMode,
-            maxUpStep,
-            sprintTravelSpeedMode,
-            sprintJumpImpulseMode,
-            travelActive
-        );
+                stepMode, maxUpStep, sprintTravelSpeedMode, sprintJumpImpulseMode, travelActive);
     }
 
     public boolean canStep() {
@@ -114,5 +105,4 @@ public record BedrockTravelOptions(
             };
         }
     }
-
 }

@@ -4,10 +4,10 @@ import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.blockplace.NmsBlockBreakResolver;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
-import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.GameMasterBlock;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.GameMasterBlock;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.GameMode;
 import org.cloudburstmc.protocol.bedrock.data.PlayerBlockActionData;
@@ -48,18 +48,19 @@ public final class BedrockBlockBreakActions {
                     if (!canDestroy(player, pos)) continue;
                     NmsBlockBreakResolver.applyBlockBreak(player, pos);
                 }
-                default -> { }
+                default -> {}
             }
         }
     }
 
     private static boolean canDestroy(CultPlayer player, BlockPos pos) {
         var state = player.compensatedWorld.getBlockStateAt(pos);
-        return player.gamemode != GameMode.SPECTATOR && !state.isAir()
+        return player.gamemode != GameMode.SPECTATOR
+                && !state.isAir()
                 && !(state.getBlock() instanceof LiquidBlock)
                 && (!(state.getBlock() instanceof GameMasterBlock) || player.canUseGameMasterBlocks())
                 && (player.gamemode == GameMode.CREATIVE
-                    ? BlockBreakSpeed.getBlockDamage(player, pos) >= 1.0
-                    : state.getDestroySpeed(player.compensatedWorld, pos) >= 0);
+                        ? BlockBreakSpeed.getBlockDamage(player, pos) >= 1.0
+                        : state.getDestroySpeed(player.compensatedWorld, pos) >= 0);
     }
 }

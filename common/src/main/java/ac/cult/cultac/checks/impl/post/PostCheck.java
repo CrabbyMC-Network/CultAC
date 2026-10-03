@@ -1,62 +1,60 @@
 package ac.cult.cultac.checks.impl.post;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
-
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSwingAnimation;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundAnimate;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
-import ac.cult.cultac.protocol.value.SwingKind;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
-import ac.cult.cultac.protocol.value.PlayerCommandAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import ac.cult.cultac.network.protocol.ClientVersion;
-
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import ac.cult.cultac.utils.lists.EvictingQueue;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundAnimate;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSwingAnimation;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAbilities;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.value.PlayerCommandAction;
+import ac.cult.cultac.protocol.value.SwingKind;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.cult.cultac.utils.lists.EvictingQueue;
 
-//@CheckData(name = "Post")
+// @CheckData(name = "Post")
 public class PostCheck extends Check implements CheckListener, PostPredictionListener {
     private String post;
     private final EvictingQueue<String> flags = new EvictingQueue<>(10);
     private boolean sentFlying = false;
     private int isExemptFromSwingingCheck = Integer.MIN_VALUE;
 
-    public PostCheck(CultPlayer playerData) { super(playerData, CheckInfo.builder().name("Post").build()); }
+    public PostCheck(CultPlayer playerData) {
+        super(playerData, CheckInfo.builder().name("Post").build());
+    }
 
     @CultPacketHandler
     public void onAnimate(PacketSendEvent<ClientboundAnimate> event, CultPlayer player, ClientboundAnimate packet) {
-        if (ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion()).isOlderThan(ClientVersion.V_26_3)
+        if (ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion())
+                        .isOlderThan(ClientVersion.V_26_3)
                 && packet.entityId() == player.entityID) {
             int action = packet.action();
-            if (action == 0 ||
-                    action == 3) {
+            if (action == 0 || action == 3) {
                 isExemptFromSwingingCheck = player.lastTransactionSent.get();
             }
         }
     }
 
     @CultPacketHandler
-    public void onSwingAnimation(PacketSendEvent<ClientboundSwingAnimation> event, CultPlayer player, ClientboundSwingAnimation packet) {
+    public void onSwingAnimation(
+            PacketSendEvent<ClientboundSwingAnimation> event, CultPlayer player, ClientboundSwingAnimation packet) {
         if (packet.entityId() == player.entityID) {
             isExemptFromSwingingCheck = player.lastTransactionSent.get();
         }
@@ -120,8 +118,8 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer();
     }
 
@@ -138,33 +136,46 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
     }
 
     @CultPacketHandler
-    public void onPlayerAbilities(PacketReceiveEvent<ServerboundPlayerAbilities> event, CultPlayer player, ServerboundPlayerAbilities packet) {
+    public void onPlayerAbilities(
+            PacketReceiveEvent<ServerboundPlayerAbilities> event,
+            CultPlayer player,
+            ServerboundPlayerAbilities packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
-        if ((packet.action() == ac.cult.cultac.protocol.value.InteractAction.ATTACK && event.getUser().getCultConnection().runtime().data().version().atLeast(ac.cult.cultac.protocol.ProtocolVersion.V26_1))) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        if ((packet.action() == ac.cult.cultac.protocol.value.InteractAction.ATTACK
+                && event.getUser()
+                        .getCultConnection()
+                        .runtime()
+                        .data()
+                        .version()
+                        .atLeast(ac.cult.cultac.protocol.ProtocolVersion.V26_1))) {
             if (sentFlying && post == null) post = "attack";
         } else {
             recordPostPacket(packet);
         }
     }
 
-
-
     @CultPacketHandler
-    public void onSpectatorAction(PacketReceiveEvent<ServerboundSpectatorAction> event, CultPlayer player, ServerboundSpectatorAction packet) {
+    public void onSpectatorAction(
+            PacketReceiveEvent<ServerboundSpectatorAction> event,
+            CultPlayer player,
+            ServerboundSpectatorAction packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         recordPostPacket(packet);
     }
 
     @CultPacketHandler
-    public void onUseItemOn(PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
+    public void onUseItemOn(
+            PacketReceiveEvent<ServerboundUseItemOn> event, CultPlayer player, ServerboundUseItemOn packet) {
         recordPostPacket(packet);
     }
 
@@ -174,7 +185,8 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         recordPostPacket(packet);
     }
 
@@ -184,7 +196,8 @@ public class PostCheck extends Check implements CheckListener, PostPredictionLis
     }
 
     @CultPacketHandler
-    public void onPlayerCommand(PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
+    public void onPlayerCommand(
+            PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         handlePlayerCommand(packet);
     }
 

@@ -6,10 +6,10 @@
  */
 package ac.cult.cultac.protocol.codec.entity;
 
-import ac.cult.cultac.protocol.WritablePacketCodec;
+import ac.cult.cultac.protocol.MalformedPacketException;
 import ac.cult.cultac.protocol.ProtocolContext;
 import ac.cult.cultac.protocol.ProtocolVersion;
-import ac.cult.cultac.protocol.MalformedPacketException;
+import ac.cult.cultac.protocol.WritablePacketCodec;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerInfoUpdate;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerInfoUpdate.*;
 import ac.cult.cultac.protocol.value.ByteArray;
@@ -17,7 +17,6 @@ import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.wire.NbtSkipper;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -84,14 +83,17 @@ public final class PlayerInfoUpdateCodec implements WritablePacketCodec<Clientbo
         Wire.writeVarInt(output, packet.entries().size());
         for (Entry entry : packet.entries()) {
             Wire.writeUuid(output, entry.profileId());
-            for (Action action : Action.values()) if (packet.actions().contains(action)) {
-                if (action == Action.UPDATE_GAME_MODE) Wire.writeVarInt(output, entry.gameMode().ordinal());
-                else {
-                    ByteArray bytes = entry.encodedActions().get(action);
-                    if (bytes == null) throw new IllegalArgumentException("Missing retained player-info action " + action);
-                    output.writeBytes(bytes.bytes());
+            for (Action action : Action.values())
+                if (packet.actions().contains(action)) {
+                    if (action == Action.UPDATE_GAME_MODE)
+                        Wire.writeVarInt(output, entry.gameMode().ordinal());
+                    else {
+                        ByteArray bytes = entry.encodedActions().get(action);
+                        if (bytes == null)
+                            throw new IllegalArgumentException("Missing retained player-info action " + action);
+                        output.writeBytes(bytes.bytes());
+                    }
                 }
-            }
         }
     }
 

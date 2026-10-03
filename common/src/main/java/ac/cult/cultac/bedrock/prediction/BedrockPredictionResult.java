@@ -10,15 +10,13 @@ public record BedrockPredictionResult(
         BedrockMovementState nextTickBaseState,
         BedrockMobJumpComponentState nextTickBaseMobJumpComponent,
         BedrockVerticalCollisionVerdict verticalCollisionVerdict,
-        boolean collisionClaimMatchesCandidate
-) {
+        boolean collisionClaimMatchesCandidate) {
     public BedrockPredictionResult {
         nextTickBaseMobJumpComponent = nextTickBaseMobJumpComponent == null
                 ? BedrockMobJumpComponentState.DEFAULT
                 : nextTickBaseMobJumpComponent;
-        verticalCollisionVerdict = verticalCollisionVerdict == null
-                ? BedrockVerticalCollisionVerdict.LEGAL
-                : verticalCollisionVerdict;
+        verticalCollisionVerdict =
+                verticalCollisionVerdict == null ? BedrockVerticalCollisionVerdict.LEGAL : verticalCollisionVerdict;
     }
 
     public BedrockPredictionResult withObservation(BedrockMovementObservation observation) {

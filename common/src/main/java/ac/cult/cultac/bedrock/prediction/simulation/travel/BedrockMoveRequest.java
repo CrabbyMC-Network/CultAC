@@ -3,10 +3,7 @@ package ac.cult.cultac.bedrock.prediction.simulation.travel;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import java.util.Objects;
 
-public record BedrockMoveRequest(
-    BedrockResolvedMove resolvedMove,
-    Vec3d requestedPosition
-) {
+public record BedrockMoveRequest(BedrockResolvedMove resolvedMove, Vec3d requestedPosition) {
     public BedrockMoveRequest {
         resolvedMove = Objects.requireNonNull(resolvedMove, "resolvedMove");
         requestedPosition = Objects.requireNonNull(requestedPosition, "requestedPosition");

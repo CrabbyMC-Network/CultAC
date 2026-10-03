@@ -1,11 +1,10 @@
 package ac.cult.cultac.manager.config.update;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Default {@link YamlMap} implementation. Wraps a parsed YAML map (snakeyaml-
@@ -45,7 +44,11 @@ final class YamlMapImpl implements YamlMap {
         Object v = get(dottedPath);
         if (v instanceof Number n) return n.intValue();
         if (v instanceof String s) {
-            try { return Integer.parseInt(s.trim()); } catch (NumberFormatException ignore) { return null; }
+            try {
+                return Integer.parseInt(s.trim());
+            } catch (NumberFormatException ignore) {
+                return null;
+            }
         }
         return null;
     }
@@ -55,7 +58,11 @@ final class YamlMapImpl implements YamlMap {
         Object v = get(dottedPath);
         if (v instanceof Number n) return n.longValue();
         if (v instanceof String s) {
-            try { return Long.parseLong(s.trim()); } catch (NumberFormatException ignore) { return null; }
+            try {
+                return Long.parseLong(s.trim());
+            } catch (NumberFormatException ignore) {
+                return null;
+            }
         }
         return null;
     }
@@ -65,7 +72,11 @@ final class YamlMapImpl implements YamlMap {
         Object v = get(dottedPath);
         if (v instanceof Number n) return n.doubleValue();
         if (v instanceof String s) {
-            try { return Double.parseDouble(s.trim()); } catch (NumberFormatException ignore) { return null; }
+            try {
+                return Double.parseDouble(s.trim());
+            } catch (NumberFormatException ignore) {
+                return null;
+            }
         }
         return null;
     }

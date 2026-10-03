@@ -1,11 +1,10 @@
 package ac.cult.cultac.platform.api.sender;
 
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Wrapper interface to represent a CommandSender/CommandSource within the common command implementations.
@@ -118,12 +117,14 @@ public interface Sender {
      * <li>Forge/NeoForge: {@code net.minecraft.commands.CommandSourceStack}</li>
      * </ul>
      */
-    @NotNull Object getNativeSender();
+    @NotNull
+    Object getNativeSender();
 
     /**
      * Gets the PlatformPlayer tied to a sender
      *
      * @return PlatformPlayer wrapping the underlying native platform-specific player type, null if Sender is not a player
      */
-    @Nullable PlatformPlayer getPlatformPlayer();
+    @Nullable
+    PlatformPlayer getPlatformPlayer();
 }

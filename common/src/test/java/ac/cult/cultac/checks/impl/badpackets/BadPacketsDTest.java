@@ -1,10 +1,10 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import ac.cult.cultac.player.CultPlayer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BadPacketsDTest {
     @Test

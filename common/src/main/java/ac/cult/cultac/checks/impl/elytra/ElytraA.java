@@ -8,7 +8,10 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 
-@CheckData(name = "ElytraA", stableKey = "cult.elytra.already_gliding", description = "Started gliding while already gliding")
+@CheckData(
+        name = "ElytraA",
+        stableKey = "cult.elytra.already_gliding",
+        description = "Started gliding while already gliding")
 public class ElytraA extends Check implements PostPredictionListener {
     private boolean setback;
 

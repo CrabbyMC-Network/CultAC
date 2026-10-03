@@ -5,6 +5,7 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.ComplexCollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
+import java.util.Optional;
 import net.minecraft.world.level.block.LeavesBlock;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -12,14 +13,15 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Snow;
 
-import java.util.Optional;
-
 /** Pre-flattening shapes from Entity/Block sources, selected after Via replacement. */
 final class LegacyJavaBlockShapes {
     private LegacyJavaBlockShapes() {}
 
     static Optional<CollisionBox> movement(CultPlayer player, BlockData state, int x, int y, int z) {
-        if (player == null || state == null || player.isBedrockMovement() || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
+        if (player == null
+                || state == null
+                || player.isBedrockMovement()
+                || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
             return Optional.empty();
         }
         Material material = state.getMaterial();
@@ -33,10 +35,15 @@ final class LegacyJavaBlockShapes {
             case ANVIL, CHIPPED_ANVIL, DAMAGED_ANVIL -> {
                 BlockFace face = ((Directional) state).getFacing();
                 yield face == BlockFace.EAST || face == BlockFace.WEST
-                        ? box(0, 0, 0.125, 1, 1, 0.875) : box(0.125, 0, 0, 0.875, 1, 1);
+                        ? box(0, 0, 0.125, 1, 1, 0.875)
+                        : box(0.125, 0, 0, 0.875, 1, 1);
             }
-            default -> material == Material.IRON_BARS || material == Material.GLASS_PANE || material.name().endsWith("_STAINED_GLASS_PANE")
-                    ? pane(player, x, y, z) : null;
+            default ->
+                material == Material.IRON_BARS
+                                || material == Material.GLASS_PANE
+                                || material.name().endsWith("_STAINED_GLASS_PANE")
+                        ? pane(player, x, y, z)
+                        : null;
         };
         return shape == null ? Optional.empty() : Optional.of(shape.offset(x, y, z));
     }
@@ -68,9 +75,13 @@ final class LegacyJavaBlockShapes {
         Material material = state.getBukkitMaterial();
         // 1.8 Block#isFullBlock caches isOpaqueCube during construction. Leaves
         // cache true before fancy graphics is enabled; modern leaves never occlude.
-        return state.getBlock() instanceof LeavesBlock || state.isSolidRender()
-                || material == Material.GLASS || material.name().endsWith("_STAINED_GLASS")
-                || material == Material.IRON_BARS || material == Material.GLASS_PANE || material.name().endsWith("_STAINED_GLASS_PANE");
+        return state.getBlock() instanceof LeavesBlock
+                || state.isSolidRender()
+                || material == Material.GLASS
+                || material.name().endsWith("_STAINED_GLASS")
+                || material == Material.IRON_BARS
+                || material == Material.GLASS_PANE
+                || material.name().endsWith("_STAINED_GLASS_PANE");
     }
 
     private static SimpleCollisionBox box(double x, double y, double z, double xx, double yy, double zz) {

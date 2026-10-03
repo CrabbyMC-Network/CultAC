@@ -1,7 +1,6 @@
 package ac.cult.cultac.checks.impl.prediction.stage;
 
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.*;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,9 +32,9 @@ public class UncertaintyPipeline {
             new EntityPush(),
             new Riptide(),
             new PointThreeTesting() // We want to be within 0.03 of the target, not exact
-    ));
+            ));
 
     public static final List<UncertaintyHandler> MODIFIERS_FOR_SETBACKS = MODIFIERS.stream()
-            .filter(modifier -> !(modifier instanceof PointThree || modifier instanceof XZBug)).collect(Collectors.toList());
-
+            .filter(modifier -> !(modifier instanceof PointThree || modifier instanceof XZBug))
+            .collect(Collectors.toList());
 }

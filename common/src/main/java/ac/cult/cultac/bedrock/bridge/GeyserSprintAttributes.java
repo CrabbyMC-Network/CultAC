@@ -37,46 +37,63 @@ final class GeyserSprintAttributes {
         }
     }
 
-    void close() { pending.clear(); }
+    void close() {
+        pending.clear();
+    }
 
     /** Returns false for a superseded actor's queued emission. */
     boolean rewrite(UpdateAttributesPacket packet, Boundary boundary) {
         Long generation = pending.remove(packet);
         if (generation != null) return generation == boundary.generation();
-        var movement = packet.getAttributes().stream().filter(a -> a.getName().equals("minecraft:movement"))
-                .findFirst().orElse(null);
+        var movement = packet.getAttributes().stream()
+                .filter(a -> a.getName().equals("minecraft:movement"))
+                .findFirst()
+                .orElse(null);
         if (movement == null) return true;
         // Direct Bedrock updates already describe Bedrock attribute state; Java echoes go through source().
-        nonSprintValue = GeyserMovementAttributeCodec.capture(movement).removeSprint().current();
-        packet.setAttributes(packet.getAttributes().stream().map(a -> a == movement
-                ? GeyserMovementAttributeCodec.encode(attribute(boundary.sprinting())) : a).toList());
+        nonSprintValue =
+                GeyserMovementAttributeCodec.capture(movement).removeSprint().current();
+        packet.setAttributes(packet.getAttributes().stream()
+                .map(a -> a == movement ? GeyserMovementAttributeCodec.encode(attribute(boundary.sprinting())) : a)
+                .toList());
         packet.setTick(boundary.tick());
         return true;
     }
 
     private BedrockMovementAttributeState attribute(boolean sprinting) {
-        return BedrockMovementAttributeState.serverValue(Float.isNaN(nonSprintValue) ? 0.1F : nonSprintValue, sprinting);
+        return BedrockMovementAttributeState.serverValue(
+                Float.isNaN(nonSprintValue) ? 0.1F : nonSprintValue, sprinting);
     }
 
     static float nonSprintValue(Attribute attribute) {
         // Source packets are full snapshots. Retaining another copy of the Java modifiers is unnecessary.
-        var modifiers = attribute.getModifiers().stream().filter(modifier -> !sprintModifier(modifier)).toList();
+        var modifiers = attribute.getModifiers().stream()
+                .filter(modifier -> !sprintModifier(modifier))
+                .toList();
         double added = attribute.getValue();
-        for (var modifier : modifiers) if (modifier.getOperation() == ModifierOperation.ADD) added += modifier.getAmount();
+        for (var modifier : modifiers)
+            if (modifier.getOperation() == ModifierOperation.ADD) added += modifier.getAmount();
         double value = added;
-        for (var modifier : modifiers) if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_BASE)
-            value += added * modifier.getAmount();
-        for (var modifier : modifiers) if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_TOTAL)
-            value *= 1.0D + modifier.getAmount();
+        for (var modifier : modifiers)
+            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_BASE) value += added * modifier.getAmount();
+        for (var modifier : modifiers)
+            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_TOTAL) value *= 1.0D + modifier.getAmount();
         return (float) Math.max(0, Math.min(1024, value));
     }
 
     private static boolean sprintModifier(AttributeModifier modifier) {
         // Geyser-Spigot relocates Adventure Key. Avoid linking its return type across classloaders.
-        try { return modifier.getClass().getMethod("getId").invoke(modifier).toString().equals("minecraft:sprinting"); }
-        catch (ReflectiveOperationException failure) { throw new IllegalStateException("Cannot read Java modifier ID", failure); }
+        try {
+            return modifier.getClass()
+                    .getMethod("getId")
+                    .invoke(modifier)
+                    .toString()
+                    .equals("minecraft:sprinting");
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Cannot read Java modifier ID", failure);
+        }
     }
 
     /** A call-local view of the existing commit, never retained as another actor timeline. */
-    record Boundary(long generation, long tick, boolean sprinting) { }
+    record Boundary(long generation, long tick, boolean sprinting) {}
 }

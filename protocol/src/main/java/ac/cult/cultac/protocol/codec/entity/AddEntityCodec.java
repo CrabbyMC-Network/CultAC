@@ -22,7 +22,8 @@ public final class AddEntityCodec implements PacketCodec<ClientboundAddEntity> {
         int entityTypeId = Wire.readVarInt(input);
         var types = context.data().registry("minecraft:entity_type");
         // Vanilla's DefaultedMappedRegistry maps unknown entity IDs to pig.
-        String entityType = entityTypeId < 0 || entityTypeId >= types.size() ? "minecraft:pig" : types.name(entityTypeId);
+        String entityType =
+                entityTypeId < 0 || entityTypeId >= types.size() ? "minecraft:pig" : types.name(entityTypeId);
         var position = new Vec3d(input.readDouble(), input.readDouble(), input.readDouble());
         // V1_21_9 moved velocity before the angles and switched it to LpVec3.
         boolean modernVelocity = context.version().atLeast(ProtocolVersion.V1_21_9);

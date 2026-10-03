@@ -7,9 +7,9 @@
 package ac.cult.cultac.protocol.codec.connection;
 
 import ac.cult.cultac.protocol.MalformedPacketException;
-import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.PacketCodec;
 import ac.cult.cultac.protocol.ProtocolContext;
+import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectBundleItem;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;

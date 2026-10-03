@@ -15,7 +15,6 @@ import ac.cult.cultac.protocol.value.AttributeModifier;
 import ac.cult.cultac.protocol.value.AttributeSnapshot;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
-
 import java.util.ArrayList;
 
 public final class UpdateAttributesCodec implements PacketCodec<ClientboundUpdateAttributes> {

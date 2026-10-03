@@ -9,12 +9,19 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.math.VectorUtils;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import org.bukkit.Material;
 import net.minecraft.world.phys.Vec3;
+import org.bukkit.Material;
 
-public class BouncyBlock implements UncertaintyHandler{
+public class BouncyBlock implements UncertaintyHandler {
     @Override
-    public PredVector handleUncertainty(CultPlayer player, ValidMovements valid, PredictionResult result, SimulationContext context, PredictionResult lastContext, PredVector start, Vec3 end) {
+    public PredVector handleUncertainty(
+            CultPlayer player,
+            ValidMovements valid,
+            PredictionResult result,
+            SimulationContext context,
+            PredictionResult lastContext,
+            PredVector start,
+            Vec3 end) {
         if (lastContext == null || start.isKnockback()) return start;
 
         Material onBlock = lastContext.getSimulationContext().getWorldData().getOnBlock();
@@ -59,7 +66,8 @@ public class BouncyBlock implements UncertaintyHandler{
 
         // Living entities (such as the player) will bounce by 0.8, non-living by 1.0
         // 0.66F for beds, times this multiplier again specified above.
-        double bounceMultiplier = player.compensatedEntities.getEntityInControl().isLivingEntity() ? 1.0 : 0.8;
+        double bounceMultiplier =
+                player.compensatedEntities.getEntityInControl().isLivingEntity() ? 1.0 : 0.8;
 
         // The player can bounce this high
         double bounceAmount = minYAmount * -1 * bounceMultiplier * bounceLevel;

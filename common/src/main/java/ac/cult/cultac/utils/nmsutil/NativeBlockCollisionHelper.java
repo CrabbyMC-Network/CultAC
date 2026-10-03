@@ -1,39 +1,39 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.ComplexCollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.NoCollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.CollisionGetter;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
-import java.util.List;
-
 public final class NativeBlockCollisionHelper {
-    private NativeBlockCollisionHelper() {
-    }
+    private NativeBlockCollisionHelper() {}
 
     public static CollisionBox getCollisionBox(CultPlayer player, BlockState state, int x, int y, int z) {
         return getCollisionBox(player, state, x, y, z, player == null ? Double.NaN : player.y);
     }
 
-    public static CollisionBox getCollisionBox(CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
+    public static CollisionBox getCollisionBox(
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
         return getCollisionBox(player, state, x, y, z, entityBottom, JavaCollisionState.current(player));
     }
 
-    public static CollisionBox getCollisionBox(CultPlayer player, BlockState state, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
+    public static CollisionBox getCollisionBox(
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
         if (player == null || player.compensatedWorld == null || state == null || state.isAir()) {
             return NoCollisionBox.INSTANCE;
         }
@@ -59,11 +59,13 @@ public final class NativeBlockCollisionHelper {
         return getCollisionBox(player, data, x, y, z, player == null ? Double.NaN : player.y);
     }
 
-    public static CollisionBox getCollisionBox(CultPlayer player, BlockData data, int x, int y, int z, double entityBottom) {
+    public static CollisionBox getCollisionBox(
+            CultPlayer player, BlockData data, int x, int y, int z, double entityBottom) {
         return getCollisionBox(player, data, x, y, z, entityBottom, JavaCollisionState.current(player));
     }
 
-    public static CollisionBox getCollisionBox(CultPlayer player, BlockData data, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
+    public static CollisionBox getCollisionBox(
+            CultPlayer player, BlockData data, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
         if (player == null || data == null) {
             return NoCollisionBox.INSTANCE;
         }
@@ -77,11 +79,13 @@ public final class NativeBlockCollisionHelper {
         return getCollisionShape(player, state, x, y, z, player == null ? Double.NaN : player.y);
     }
 
-    public static VoxelShape getCollisionShape(CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
+    public static VoxelShape getCollisionShape(
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
         return getCollisionShape(player, state, x, y, z, entityBottom, JavaCollisionState.current(player));
     }
 
-    public static VoxelShape getCollisionShape(CultPlayer player, BlockState state, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
+    public static VoxelShape getCollisionShape(
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
         if (player == null || player.compensatedWorld == null || state == null || state.isAir()) {
             return net.minecraft.world.phys.shapes.Shapes.empty();
         }
@@ -94,7 +98,8 @@ public final class NativeBlockCollisionHelper {
             return player.compensatedWorld.pistons.getMovingPistonCollisionShape(new BlockPos(x, y, z));
         }
 
-        return state.getCollisionShape(player.compensatedWorld, new BlockPos(x, y, z), collisionContext(player, entityBottom));
+        return state.getCollisionShape(
+                player.compensatedWorld, new BlockPos(x, y, z), collisionContext(player, entityBottom));
     }
 
     public static VoxelShape getSelectionShape(CultPlayer player, BlockState state, int x, int y, int z) {
@@ -110,9 +115,7 @@ public final class NativeBlockCollisionHelper {
             return List.of();
         }
 
-        return shape.toAabbs().stream()
-                .map(box -> box.move(x, y, z))
-                .toList();
+        return shape.toAabbs().stream().map(box -> box.move(x, y, z)).toList();
     }
 
     public static CollisionBox fromShape(VoxelShape shape, int x, int y, int z) {
@@ -138,12 +141,7 @@ public final class NativeBlockCollisionHelper {
 
     private static SimpleCollisionBox fromAabb(AABB box, int x, int y, int z) {
         return new SimpleCollisionBox(
-                box.minX + x,
-                box.minY + y,
-                box.minZ + z,
-                box.maxX + x,
-                box.maxY + y,
-                box.maxZ + z);
+                box.minX + x, box.minY + y, box.minZ + z, box.maxX + x, box.maxY + y, box.maxZ + z);
     }
 
     public static CollisionContext collisionContext(CultPlayer player) {

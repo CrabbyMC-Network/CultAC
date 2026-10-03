@@ -1,7 +1,7 @@
 package ac.cult.cultac.utils.data.packetentity;
 
-import ac.cult.cultac.utils.math.VanillaMath;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.utils.math.VanillaMath;
 
 /** Client ItemBasedSteering state, advanced by a tick-produced vehicle packet. */
 public final class RideableBoostState {
@@ -27,8 +27,6 @@ public final class RideableBoostState {
 
     public float factor(ClientVersion version) {
         // Pig/Strider#tickRidden has already advanced before getRiddenSpeed.
-        return boosting
-                ? 1.0F + 1.15F * VanillaMath.sin(version, (float) elapsed / duration * (float) Math.PI)
-                : 1.0F;
+        return boosting ? 1.0F + 1.15F * VanillaMath.sin(version, (float) elapsed / duration * (float) Math.PI) : 1.0F;
     }
 }

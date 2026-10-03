@@ -1,61 +1,56 @@
 package ac.cult.cultac.utils.latency;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectBundleItem;
-
-import ac.cult.cultac.utils.inventory.InventoryClick;
 import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.network.packet.InventoryPackets;
+import ac.cult.cultac.network.packet.InventoryPackets.Content;
+import ac.cult.cultac.network.packet.InventoryPackets.CreativeSlot;
+import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundMountScreenOpen;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectBundleItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectTrade;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.value.InteractAction;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.blockplace.NmsBlockPlaceResolver;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.inventory.EquipmentType;
 import ac.cult.cultac.utils.inventory.Inventory;
+import ac.cult.cultac.utils.inventory.InventoryClick;
+import ac.cult.cultac.utils.inventory.InventoryStorage;
+import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.inventory.GenericContainerMenu;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
 import ac.cult.cultac.utils.inventory.slot.Slot;
-import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
-import ac.cult.cultac.network.event.PacketReceiveEvent;
-import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.utils.inventory.InventoryStorage;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import org.bukkit.inventory.ItemStack;
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
-import lombok.Getter;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.InteractionHand;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import org.bukkit.GameMode;
-import ac.cult.cultac.network.packet.InventoryPackets.Content;
-import ac.cult.cultac.network.packet.InventoryPackets;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundOpenScreen;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundMountScreenOpen;
-
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSelectTrade;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
-import ac.cult.cultac.network.packet.InventoryPackets.CreativeSlot;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.BundleItem;
-import net.minecraft.world.item.component.BundleContents;
-import org.bukkit.Material;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.BundleItem;
+import net.minecraft.world.item.component.BundleContents;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 // Updated to support modern 1.17 protocol
 public class CompensatedInventory extends CultProcessor implements CheckListener {
@@ -88,7 +83,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         if (windowId != 0 && windowId != openWindowID) return;
         var target = windowId == 0 ? inventory : menu;
         changed.forEach((index, item) -> {
-            if (index >= 0 && index < target.getSlots().size()) target.getSlot(index).set(item);
+            if (index >= 0 && index < target.getSlots().size())
+                target.getSlot(index).set(item);
         });
     }
 
@@ -138,8 +134,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     public boolean hasClientSelectedHandItem(Material material) {
-        return getClientSelectedHeldItem().getType() == material
-                || getOffHand().getType() == material;
+        return getClientSelectedHeldItem().getType() == material || getOffHand().getType() == material;
     }
 
     public boolean hasClientSelectableHandItem(Material material) {
@@ -213,8 +208,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             ItemStack beforeCarried,
             List<ItemStack> afterSlots,
             ItemStack afterCarried,
-            PredictedResultSlotValidator.ResultAllowance allowance
-    ) {
+            PredictedResultSlotValidator.ResultAllowance allowance) {
         // Some menus do not expose the offhand slot, but vanilla still uses button 40 for
         // offhand swaps. Include the compensated offhand stack so conservation sees both sides.
         if (isImplicitOffhandSwap(click, afterSlots.size())) {
@@ -222,7 +216,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             List<ItemStack> afterWithOffhand = new ArrayList<>(afterSlots);
             ItemStack offhandBefore = ItemUtil.copy(getOffHand());
             beforeWithOffhand.add(offhandBefore);
-            afterWithOffhand.add(inferOffhandAfterSwap(beforeSlots.get(click.slot()), offhandBefore, afterSlots.get(click.slot())));
+            afterWithOffhand.add(
+                    inferOffhandAfterSwap(beforeSlots.get(click.slot()), offhandBefore, afterSlots.get(click.slot())));
             beforeSlots = beforeWithOffhand;
             afterSlots = afterWithOffhand;
         }
@@ -234,14 +229,13 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                 afterCarried,
                 permitsCreativeCreation(click, player.gamemode),
                 allowance == null ? null : allowance.material(),
-                allowance == null ? 0 : allowance.amount()
-        );
+                allowance == null ? 0 : allowance.amount());
     }
 
     static boolean permitsCreativeCreation(InventoryClick click, GameMode gameMode) {
         return gameMode == GameMode.CREATIVE
                 && (click.clickType() == WindowClickType.CLONE
-                || click.clickType() == WindowClickType.QUICK_CRAFT && (click.button() >> 2 & 3) == 2);
+                        || click.clickType() == WindowClickType.QUICK_CRAFT && (click.button() >> 2 & 3) == 2);
     }
 
     private boolean isImplicitOffhandSwap(InventoryClick click, int menuSlotCount) {
@@ -265,8 +259,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             InventoryClick click,
             List<ItemStack> beforeSlots,
             ItemStack beforeCarried,
-            java.util.function.BiPredicate<Integer, ItemStack> matches
-    ) {
+            java.util.function.BiPredicate<Integer, ItemStack> matches) {
         List<ItemStack> afterSlots = new ArrayList<>(beforeSlots);
         ItemStack clickedSource = click.slot() >= 0 && click.slot() < beforeSlots.size()
                 ? beforeSlots.get(click.slot())
@@ -276,8 +269,13 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             if (slot < 0 || slot >= afterSlots.size()) {
                 return null;
             }
-            ItemStack resolved = resolveClaimedStack(entry.getValue(), beforeSlots.get(slot), beforeSlots,
-                    clickedSource, beforeCarried, candidate -> matches.test(slot, candidate));
+            ItemStack resolved = resolveClaimedStack(
+                    entry.getValue(),
+                    beforeSlots.get(slot),
+                    beforeSlots,
+                    clickedSource,
+                    beforeCarried,
+                    candidate -> matches.test(slot, candidate));
             if (resolved == null) return null;
             afterSlots.set(slot, resolved);
         }
@@ -288,8 +286,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             InventoryClick click,
             List<ItemStack> beforeSlots,
             ItemStack beforeCarried,
-            java.util.function.BiPredicate<Integer, ItemStack> matches
-    ) {
+            java.util.function.BiPredicate<Integer, ItemStack> matches) {
         ItemStack clickedSource = click.slot() >= 0 && click.slot() < beforeSlots.size()
                 ? beforeSlots.get(click.slot())
                 : ItemStack.empty();
@@ -298,7 +295,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                 beforeCarried,
                 beforeSlots,
                 clickedSource,
-                ItemStack.empty(), candidate -> matches.test(-1, candidate));
+                ItemStack.empty(),
+                candidate -> matches.test(-1, candidate));
     }
 
     private ItemStack resolveClaimedStack(
@@ -307,13 +305,12 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             List<ItemStack> beforeSlots,
             ItemStack primarySource,
             ItemStack secondarySource,
-            java.util.function.Predicate<ItemStack> matches
-    ) {
+            java.util.function.Predicate<ItemStack> matches) {
         if (claim == null || claim.isEmpty()) {
             return ItemStack.empty();
         }
 
-        for (ItemStack candidate : new ItemStack[]{previous, primarySource, secondarySource}) {
+        for (ItemStack candidate : new ItemStack[] {previous, primarySource, secondarySource}) {
             ItemStack resolved = copyWithAmountIfMaterialMatches(candidate, claim.getType(), claim.getAmount());
             if (!resolved.isEmpty() && matches.test(resolved)) {
                 return resolved;
@@ -376,13 +373,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                 afterCarried,
                 merchantOffers,
                 selectedMerchantOffer);
-        if (!isClientClickClaimSane(
-                click,
-                beforeSlots,
-                beforeCarried,
-                afterSlots,
-                afterCarried,
-                allowance)) {
+        if (!isClientClickClaimSane(click, beforeSlots, beforeCarried, afterSlots, afterCarried, allowance)) {
             return false;
         }
 
@@ -437,16 +428,19 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         return true;
     }
 
-    private BundleClickResult predictBundleClick(Slot slot, ItemStack clickedBefore, ItemStack carriedBefore, boolean primary) {
+    private BundleClickResult predictBundleClick(
+            Slot slot, ItemStack clickedBefore, ItemStack carriedBefore, boolean primary) {
         net.minecraft.world.item.ItemStack clicked = SpigotConversionUtil.toNmsItemStack(clickedBefore);
         net.minecraft.world.item.ItemStack carried = SpigotConversionUtil.toNmsItemStack(carriedBefore);
 
         if (hasBundleContents(carried)) {
-            BundleContents.Mutable mutable = SpigotConversionUtil.mutableBundle(carried.get(DataComponents.BUNDLE_CONTENTS));
+            BundleContents.Mutable mutable =
+                    SpigotConversionUtil.mutableBundle(carried.get(DataComponents.BUNDLE_CONTENTS));
             if (primary && !clicked.isEmpty()) {
                 mutable.tryInsert(clicked);
                 carried.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
-                return new BundleClickResult(SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
+                return new BundleClickResult(
+                        SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
             }
             if (!primary && clicked.isEmpty()) {
                 net.minecraft.world.item.ItemStack removed = mutable.removeOne();
@@ -461,16 +455,19 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                     mutable.tryInsert(removed);
                 }
                 carried.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
-                return new BundleClickResult(SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
+                return new BundleClickResult(
+                        SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
             }
         }
 
         if (hasBundleContents(clicked)) {
-            BundleContents.Mutable mutable = SpigotConversionUtil.mutableBundle(clicked.get(DataComponents.BUNDLE_CONTENTS));
+            BundleContents.Mutable mutable =
+                    SpigotConversionUtil.mutableBundle(clicked.get(DataComponents.BUNDLE_CONTENTS));
             if (primary && !carried.isEmpty()) {
                 mutable.tryInsert(carried);
                 clicked.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
-                return new BundleClickResult(SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
+                return new BundleClickResult(
+                        SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
             }
             if (!primary && carried.isEmpty()) {
                 net.minecraft.world.item.ItemStack removed = mutable.removeOne();
@@ -478,7 +475,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                     carried = removed;
                 }
                 clicked.set(DataComponents.BUNDLE_CONTENTS, mutable.toImmutable());
-                return new BundleClickResult(SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
+                return new BundleClickResult(
+                        SpigotConversionUtil.fromNmsItemStack(clicked), SpigotConversionUtil.fromNmsItemStack(carried));
             }
         }
 
@@ -507,21 +505,25 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         if (first == null || first.isEmpty()) {
             return second == null || second.isEmpty();
         }
-        return second != null && !second.isEmpty()
+        return second != null
+                && !second.isEmpty()
                 && first.getType() == second.getType()
                 && first.getAmount() == second.getAmount();
     }
 
-    private record BundleClickResult(ItemStack slot, ItemStack carried) {
-    }
+    private record BundleClickResult(ItemStack slot, ItemStack carried) {}
 
     @CultPacketHandler
-    public void onSelectBundleItem(PacketReceiveEvent<ServerboundSelectBundleItem> event, CultPlayer player, ServerboundSelectBundleItem packet) {
+    public void onSelectBundleItem(
+            PacketReceiveEvent<ServerboundSelectBundleItem> event,
+            CultPlayer player,
+            ServerboundSelectBundleItem packet) {
         selectBundleItem(packet.slotId(), packet.selectedItemIndex());
     }
 
     @CultPacketHandler
-    public void onSelectTrade(PacketReceiveEvent<ServerboundSelectTrade> event, CultPlayer player, ServerboundSelectTrade packet) {
+    public void onSelectTrade(
+            PacketReceiveEvent<ServerboundSelectTrade> event, CultPlayer player, ServerboundSelectTrade packet) {
         if (!event.isCancelled()) selectTrade(packet.offer());
     }
 
@@ -546,7 +548,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (event.isCancelled()) {
             return;
         }
@@ -565,7 +568,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         }
 
         InteractionHand hand = interact.hand() == ac.cult.cultac.protocol.value.Hand.MAIN_HAND
-                ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+                ? InteractionHand.MAIN_HAND
+                : InteractionHand.OFF_HAND;
         ItemStack held = getHandItem(hand);
         if (held == null || held.isEmpty()) {
             return;
@@ -604,9 +608,7 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     private static boolean isMilkable(EntityType<?> type) {
-        return type == EntityTypesCompat.COW
-                || type == EntityTypesCompat.MOOSHROOM
-                || type == EntityTypesCompat.GOAT;
+        return type == EntityTypesCompat.COW || type == EntityTypesCompat.MOOSHROOM || type == EntityTypesCompat.GOAT;
     }
 
     private static Material bucketMaterialFor(EntityType<?> type) {
@@ -643,7 +645,9 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
                 return false;
         }
 
-        inventory.getInventoryStorage().setItem(handStorageSlot(hand), ItemUtil.copy(getByEquipmentType(equipmentType)));
+        inventory
+                .getInventoryStorage()
+                .setItem(handStorageSlot(hand), ItemUtil.copy(getByEquipmentType(equipmentType)));
         inventory.getInventoryStorage().setItem(slot, ItemUtil.copy(use));
         return true;
     }
@@ -693,9 +697,11 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         PlayerAction action = packet.action();
-        if (action == PlayerAction.DROP_ITEM || action == PlayerAction.DROP_ALL_ITEMS) dropHeldItem(action == PlayerAction.DROP_ALL_ITEMS);
+        if (action == PlayerAction.DROP_ITEM || action == PlayerAction.DROP_ALL_ITEMS)
+            dropHeldItem(action == PlayerAction.DROP_ALL_ITEMS);
     }
 
     public void dropHeldItem(boolean wholeStack) {
@@ -709,7 +715,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         selectHotbarSlot(packet.slot());
     }
 
@@ -747,7 +754,9 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     private void mirrorImplicitOffhandSwap(InventoryClick click, ItemStack clickedBefore, ItemStack offhandBefore) {
-        if (click.clickType() != WindowClickType.SWAP || click.button() != NMS_OFFHAND_SWAP_BUTTON || click.slot() < 0) {
+        if (click.clickType() != WindowClickType.SWAP
+                || click.button() != NMS_OFFHAND_SWAP_BUTTON
+                || click.slot() < 0) {
             return;
         }
         if (menuExposesOffhand(menu) || !click.changedSlots().containsKey(click.slot())) {
@@ -829,7 +838,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
         }
     }
 
-    @Getter private MenuType serverContainerType = MenuType.CRAFTING;
+    @Getter
+    private MenuType serverContainerType = MenuType.CRAFTING;
 
     private AbstractContainerMenu menuFromContentSlots(int slotCount) {
         if (slotCount <= 0) {
@@ -854,7 +864,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             case GENERIC_3x3 -> new GenericContainerMenu(player, inventory, 9);
             case CRAFTER_3x3 -> new GenericContainerMenu(player, inventory, 9, 1);
             case CRAFTING -> new GenericContainerMenu(player, inventory, 10);
-            case ANVIL, FURNACE, BLAST_FURNACE, SMOKER, GRINDSTONE, MERCHANT, CARTOGRAPHY_TABLE -> new GenericContainerMenu(player, inventory, 3);
+            case ANVIL, FURNACE, BLAST_FURNACE, SMOKER, GRINDSTONE, MERCHANT, CARTOGRAPHY_TABLE ->
+                new GenericContainerMenu(player, inventory, 3);
             case SMITHING, LOOM -> new GenericContainerMenu(player, inventory, 4);
             case BEACON -> new GenericContainerMenu(player, inventory, 1);
             case BREWING_STAND -> new GenericContainerMenu(player, inventory, 5);
@@ -870,7 +881,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onOpenScreen(PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
+    public void onOpenScreen(
+            PacketSendEvent<ClientboundOpenScreen> event, CultPlayer player, ClientboundOpenScreen packet) {
         // Not 1:1 MCP, based on Wiki.VG to be simpler as we need less logic...
         // For example, we don't need permanent storage, only storing data until the client closes the window
         // We also don't need a lot of server-sided only logic
@@ -887,12 +899,14 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onMountScreenOpen(PacketSendEvent<ClientboundMountScreenOpen> event, CultPlayer player, ClientboundMountScreenOpen packet) {
+    public void onMountScreenOpen(
+            PacketSendEvent<ClientboundMountScreenOpen> event, CultPlayer player, ClientboundMountScreenOpen packet) {
         deferClientboundInventoryTask(event, () -> {
             PacketEntity mount = player.compensatedEntities.getEntity(packet.entityId());
-            if (mount == null || (!EntityTypeUtil.isHorseFamily(mount.type)
-                    && !EntityTypeUtil.isType(mount.type, "nautilus")
-                    && !EntityTypeUtil.isType(mount.type, "zombie_nautilus"))) {
+            if (mount == null
+                    || (!EntityTypeUtil.isHorseFamily(mount.type)
+                            && !EntityTypeUtil.isType(mount.type, "nautilus")
+                            && !EntityTypeUtil.isType(mount.type, "zombie_nautilus"))) {
                 return;
             }
             serverContainerType = MenuType.UNKNOWN;
@@ -904,7 +918,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onMerchantOffers(PacketSendEvent<InventoryPackets.Offers> event, CultPlayer player, InventoryPackets.Offers packet) {
+    public void onMerchantOffers(
+            PacketSendEvent<InventoryPackets.Offers> event, CultPlayer player, InventoryPackets.Offers packet) {
         List<MerchantOffer> immutableOffers = packet.offers();
         int containerId = packet.windowId();
         deferClientboundInventoryTask(event, () -> {
@@ -968,23 +983,26 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onSetPlayerInventory(PacketSendEvent<InventoryPackets.PlayerInventory> event, CultPlayer player, InventoryPackets.PlayerInventory packet) {
+    public void onSetPlayerInventory(
+            PacketSendEvent<InventoryPackets.PlayerInventory> event,
+            CultPlayer player,
+            InventoryPackets.PlayerInventory packet) {
         int storageSlot = directPlayerInventorySlotToStorageSlot(packet.slot());
         if (storageSlot != -1) {
-            deferClientboundInventoryTask(event, () -> inventory.getInventoryStorage().setItem(
-                    storageSlot,
-                    packet.item()));
+            deferClientboundInventoryTask(
+                    event, () -> inventory.getInventoryStorage().setItem(storageSlot, packet.item()));
         }
     }
 
     @CultPacketHandler
-    public void onSetCursorItem(PacketSendEvent<InventoryPackets.Cursor> event, CultPlayer player, InventoryPackets.Cursor packet) {
-        deferClientboundInventoryTask(event, () ->
-                setClientCarried(packet.item()));
+    public void onSetCursorItem(
+            PacketSendEvent<InventoryPackets.Cursor> event, CultPlayer player, InventoryPackets.Cursor packet) {
+        deferClientboundInventoryTask(event, () -> setClientCarried(packet.item()));
     }
 
     @CultPacketHandler
-    public void onSetHeldSlot(PacketSendEvent<ClientboundSetHeldSlot> event, CultPlayer player, ClientboundSetHeldSlot packet) {
+    public void onSetHeldSlot(
+            PacketSendEvent<ClientboundSetHeldSlot> event, CultPlayer player, ClientboundSetHeldSlot packet) {
         int slot = packet.slot();
         if (slot >= 0 && slot <= 8) {
             deferClientboundInventoryTask(event, () -> {
@@ -995,7 +1013,8 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     }
 
     @CultPacketHandler
-    public void onContainerSetSlot(PacketSendEvent<InventoryPackets.Slot> event, CultPlayer player, InventoryPackets.Slot slotData) {
+    public void onContainerSetSlot(
+            PacketSendEvent<InventoryPackets.Slot> event, CultPlayer player, InventoryPackets.Slot slotData) {
         Runnable task = () -> {
             if (!isApplicableContainerMirror(slotData.windowId())) {
                 return;
@@ -1006,21 +1025,22 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
             if (slotData.windowId() == 0) {
                 // This packet can only be used to edit the hotbar and offhand of the player's inventory if
                 // window ID is set to 0 (slots 36 through 45) if the player is in creative, with their inventory open,
-                // and not in their survival inventory tab. Otherwise, when window ID is 0, it can edit any slot in the player's inventory.
+                // and not in their survival inventory tab. Otherwise, when window ID is 0, it can edit any slot in the
+                // player's inventory.
                 if (slotData.slot() >= 0 && slotData.slot() <= 45) {
                     Slot slot = inventory.getSlot(slotData.slot());
                     slot.set(slotData.item());
                 }
             } else if (slotData.windowId() == openWindowID) { // Opened inventory (if not valid, client crashes)
                 Slot s = menu.getSlot(slotData.slot());
-                if (s != null) { s.set(slotData.item());
-                    if (serverContainerType == MenuType.MERCHANT
-                            && (slotData.slot() == 0 || slotData.slot() == 1)) {
+                if (s != null) {
+                    s.set(slotData.item());
+                    if (serverContainerType == MenuType.MERCHANT && (slotData.slot() == 0 || slotData.slot() == 1)) {
                         PredictedMerchantInventory.mirrorTrade(menu, merchantOffers, selectedMerchantOffer);
                     }
                 } else {
-                    LogUtil.error(player.getName() + " tried to set slot " + slotData.slot()
-                            + " in window " + openWindowID + " | type=" + serverContainerType);
+                    LogUtil.error(player.getName() + " tried to set slot " + slotData.slot() + " in window "
+                            + openWindowID + " | type=" + serverContainerType);
                 }
             }
         };
@@ -1035,5 +1055,4 @@ public class CompensatedInventory extends CultProcessor implements CheckListener
     static boolean isApplicableContainerMirror(int openWindowId, int windowId) {
         return windowId == 0 || windowId == openWindowId;
     }
-
 }

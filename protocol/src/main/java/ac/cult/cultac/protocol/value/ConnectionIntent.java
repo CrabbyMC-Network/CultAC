@@ -3,7 +3,9 @@ package ac.cult.cultac.protocol.value;
 import ac.cult.cultac.protocol.MalformedPacketException;
 
 public enum ConnectionIntent {
-    STATUS, LOGIN, TRANSFER;
+    STATUS,
+    LOGIN,
+    TRANSFER;
 
     public static ConnectionIntent fromWire(int value) {
         return switch (value) {

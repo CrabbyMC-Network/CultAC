@@ -5,12 +5,11 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.inventory.Inventory;
 import ac.cult.cultac.utils.inventory.InventoryStorage;
-import net.minecraft.SharedConstants;
-import org.bukkit.inventory.ItemStack;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.SharedConstants;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * This is responsible for lag compensation of the player's inventory
@@ -85,8 +84,6 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
         }
 
         super.setItem(item, stack);
-
-
     }
 
     /**
@@ -97,7 +94,6 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
         // The player isn't fully logged in yet, don't bother checking
         if (player.platformPlayer == null) return;
 
-
         // Bukkit uses different slot ID's to vanilla
         int bukkitSlot = getBukkitSlot(slot); // 8 -> 39, should be 36
 
@@ -106,8 +102,15 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
             ItemStack serverside = player.platformPlayer.getInventory().getStack(bukkitSlot, slot);
 
             if (existing.getType() != serverside.getType() || existing.getAmount() != serverside.getAmount()) {
-                CultAPI.INSTANCE.getScheduler().getEntityScheduler().execute(player.platformPlayer, CultAPI.INSTANCE.getGrimPlugin(),
-                        () -> player.platformPlayer.updateInventory(), null, 0);
+                CultAPI.INSTANCE
+                        .getScheduler()
+                        .getEntityScheduler()
+                        .execute(
+                                player.platformPlayer,
+                                CultAPI.INSTANCE.getGrimPlugin(),
+                                () -> player.platformPlayer.updateInventory(),
+                                null,
+                                0);
                 setItem(slot, serverside);
             }
         }
@@ -145,7 +148,9 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
 
         // Loop all slot changes the client has predicted and check that the server has accepted them
         int tickID = CultAPI.INSTANCE.getTickManager().currentTick;
-        for (Iterator<Map.Entry<Integer, Integer>> it = pendingFinalizedSlot.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Integer, Integer>> it =
+                        pendingFinalizedSlot.entrySet().iterator();
+                it.hasNext(); ) {
             Map.Entry<Integer, Integer> entry = it.next();
             // If x ticks have passed, check the slot is equal to the server slot and remove
             if (entry.getValue() <= tickID) {
@@ -154,8 +159,6 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
             }
         }
 
-
-
         // Every five ticks, we pull a new item for the player
         // This means no desync will last longer than 10 seconds
         // (Required as mojang has screwed up some things with inventories that we can't easily fix)
@@ -163,7 +166,8 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
         if (tickID % 5 == 0) {
             int slotToCheck = (tickID / 5) % getSize();
             // If both these things are true, there is nothing that should be broken.
-            if (!pendingFinalizedSlot.containsKey(slotToCheck) && !serverIsCurrentlyProcessingThesePredictions.containsKey(slotToCheck)) {
+            if (!pendingFinalizedSlot.containsKey(slotToCheck)
+                    && !serverIsCurrentlyProcessingThesePredictions.containsKey(slotToCheck)) {
                 checkThatBukkitIsSynced(slotToCheck);
             }
         }

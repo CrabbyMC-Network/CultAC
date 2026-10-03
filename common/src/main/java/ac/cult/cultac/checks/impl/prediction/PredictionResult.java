@@ -10,13 +10,12 @@ import ac.cult.cultac.utils.anticheat.StringReturner;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.CollideAxisData;
 import ac.cult.cultac.utils.data.TeleportData;
-import net.minecraft.world.phys.Vec3;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import lombok.*;
+import net.minecraft.world.phys.Vec3;
 
 @Data
 @RequiredArgsConstructor
@@ -38,25 +37,33 @@ public class PredictionResult {
     double flagSeverity = 0; // Cache for performance and to allow exempting
     private Boolean cachedAnyRealityControlsVerticalMovement;
     private Boolean cachedAnyRealityDidTickSkipGravity;
+
     @Getter
     @Setter
     boolean isExempt = false;
+
     @Setter
     boolean isTeleport = false;
+
     @Getter
     @Setter
     boolean exceedsSlowedSpeed = false;
+
     @Getter
     @Setter
     boolean profileVerboseLog = false;
+
     @Getter
     @Setter
     int identifier;
+
     @Getter
     @Setter
     Boolean desiredOnGround = null;
+
     @Setter
     Object profileResult;
+
     @Setter
     Vec3 profilePredictionVector;
 
@@ -152,14 +159,17 @@ public class PredictionResult {
         }
         float speed = getSimulationContext().getMaxSpeed(player);
         Vec3 closest = getAcceptedClosestToTarget();
-        return UncertaintyHelper.handleCircular(new PredVector(closest), getTarget(),
+        return UncertaintyHelper.handleCircular(
+                new PredVector(closest),
+                getTarget(),
                 getSimulationContext().getVehicle() == null ? speed * 1.3D : speed);
     }
 
     public Vec3 getInputVectorAndVerticals() {
         Vec3 closest = getAcceptedClosestToTarget();
         Vec3 diff = getTarget().subtract(closest);
-        Vec3 minimumInputRequired = HorizontalAnalyzer.getBestTheoreticalPlayerInput(diff, getSimulationContext().getXRot());
+        Vec3 minimumInputRequired = HorizontalAnalyzer.getBestTheoreticalPlayerInput(
+                diff, getSimulationContext().getXRot());
         return new Vec3(minimumInputRequired.x, closest.y, minimumInputRequired.z);
     }
 
@@ -183,8 +193,10 @@ public class PredictionResult {
     }
 
     public DesyncStatus getIsFalling() {
-        if (initialStartingVel.isTickSkip() || validMovements.getCollisionIgnoredMaxStartingVelExtents() == null) return DesyncStatus.UNKNOWN;
-        DesyncStatus falling = DesyncStatus.fromBoolean(validMovements.getCollisionIgnoredMaxStartingVelExtents().minY <= 0);
+        if (initialStartingVel.isTickSkip() || validMovements.getCollisionIgnoredMaxStartingVelExtents() == null)
+            return DesyncStatus.UNKNOWN;
+        DesyncStatus falling =
+                DesyncStatus.fromBoolean(validMovements.getCollisionIgnoredMaxStartingVelExtents().minY <= 0);
         if (falling.determineOptimistically() && validMovements.getCollisionIgnoredMaxStartingVelExtents().maxY > 0) {
             falling = DesyncStatus.UNKNOWN;
         }
@@ -211,17 +223,16 @@ public class PredictionResult {
 
     @Override
     public String toString() {
-        return "PredictionResult{" + "player=" + player.getName() +
-                ", initialStartingVel=" + initialStartingVel +
-                ", simulationContext=" + simulationContext +
-                ", target=" + target +
-                ", setBackData=" + setBackData +
-                ", collideAxisData=" + collideAxisData +
-                ", validMovements=" + validMovements +
-                ", flags=" + flags +
-                ", flagSeverity=" + flagSeverity +
-                ", isExempt=" + isExempt +
-                ", isTeleport=" + isTeleport +
-                '}';
+        return "PredictionResult{" + "player=" + player.getName() + ", initialStartingVel="
+                + initialStartingVel + ", simulationContext="
+                + simulationContext + ", target="
+                + target + ", setBackData="
+                + setBackData + ", collideAxisData="
+                + collideAxisData + ", validMovements="
+                + validMovements + ", flags="
+                + flags + ", flagSeverity="
+                + flagSeverity + ", isExempt="
+                + isExempt + ", isTeleport="
+                + isTeleport + '}';
     }
 }

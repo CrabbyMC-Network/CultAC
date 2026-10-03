@@ -5,25 +5,25 @@ import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockFrameState;
 import ac.cult.cultac.bedrock.prediction.simulation.frame.BedrockTravelInputControl;
 
 final class BedrockAirTravelMovement {
-    private BedrockAirTravelMovement() {
-    }
+    private BedrockAirTravelMovement() {}
 
     static BedrockTravelHorizontalControl.Step resolveHorizontal(BedrockFrameState frame) {
         BedrockFrameFacts frameFacts = frame.frameFacts();
         BedrockTravelInputControl.InputControlState inputControl = frame.control();
 
         return BedrockTravelHorizontalControl.resolveNormalTravel(
-            frame.input().previousState(),
-            frame.input().inputFrame(),
-            frameFacts.context(),
-            frameFacts.effectState(),
-            frameFacts.standingSurfaceState(),
-            frameFacts.climb(),
-            frameFacts.inPowderSnow(),
-            inputControl.sprintSpeedInput(),
-            frame.input().control() != null && !frame.input().previousState().isVehicle()
-                ? 1.0F : inputControl.moveInputScale(),
-            false
-        );
+                frame.input().previousState(),
+                frame.input().inputFrame(),
+                frameFacts.context(),
+                frameFacts.effectState(),
+                frameFacts.standingSurfaceState(),
+                frameFacts.climb(),
+                frameFacts.inPowderSnow(),
+                inputControl.sprintSpeedInput(),
+                frame.input().control() != null
+                                && !frame.input().previousState().isVehicle()
+                        ? 1.0F
+                        : inputControl.moveInputScale(),
+                false);
     }
 }

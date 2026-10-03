@@ -1,11 +1,10 @@
 package ac.cult.cultac.utils.reflection;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 @UtilityClass
 public class ReflectionUtils {
@@ -18,7 +17,8 @@ public class ReflectionUtils {
         return getMethod(clazz, methodName, parameterTypes) != null;
     }
 
-    public static @Nullable Method getMethod(@NotNull Class<?> clazz, @NotNull String methodName, Class<?>... parameterTypes) {
+    public static @Nullable Method getMethod(
+            @NotNull Class<?> clazz, @NotNull String methodName, Class<?>... parameterTypes) {
         try {
             return clazz.getMethod(methodName, parameterTypes);
         } catch (NoSuchMethodException e) {

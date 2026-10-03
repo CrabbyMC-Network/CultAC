@@ -5,28 +5,26 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.NoCollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.Bisected;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import org.bukkit.Material;
+import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
 
 final class VersionedJavaBlockShapes {
     private static final List<ShapeOverride> MOVEMENT_OVERRIDES = List.of(
-            movement(state -> state.getMaterial().name().equals("PALE_MOSS_CARPET"),
+            movement(
+                    state -> state.getMaterial().name().equals("PALE_MOSS_CARPET"),
                     VersionedJavaBlockShapes::paleMossCarpetMovement),
-            movement(Material.PITCHER_CROP, VersionedJavaBlockShapes::pitcherCropMovement)
-    );
+            movement(Material.PITCHER_CROP, VersionedJavaBlockShapes::pitcherCropMovement));
 
     private static final List<ShapeOverride> VISUAL_OVERRIDES = List.of();
 
-    private VersionedJavaBlockShapes() {
-    }
+    private VersionedJavaBlockShapes() {}
 
     static Optional<CollisionBox> movement(CultPlayer player, BlockData state, int x, int y, int z) {
         Optional<CollisionBox> legacy = LegacyJavaBlockShapes.movement(player, state, x, y, z);
@@ -61,7 +59,8 @@ final class VersionedJavaBlockShapes {
                 && player.getClientVersion().isOlderThan(ClientVersion.V_26_2);
     }
 
-    private static Optional<CollisionBox> firstMatch(List<ShapeOverride> overrides, ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+    private static Optional<CollisionBox> firstMatch(
+            List<ShapeOverride> overrides, ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
         for (ShapeOverride override : overrides) {
             if (override.matches(state)) {
                 return override.create(shapeVersion, state, x, y, z);
@@ -70,7 +69,8 @@ final class VersionedJavaBlockShapes {
         return Optional.empty();
     }
 
-    private static Optional<CollisionBox> paleMossCarpetMovement(ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+    private static Optional<CollisionBox> paleMossCarpetMovement(
+            ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
         if (shapeVersion.isNewerThanOrEquals(ClientVersion.V_26_2)) {
             return Optional.empty();
         }
@@ -83,16 +83,20 @@ final class VersionedJavaBlockShapes {
         return Optional.empty();
     }
 
-    private static Optional<CollisionBox> pitcherCropMovement(ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
-        if (!(state instanceof Ageable crop) || crop.getAge() != 0
-                || !(state instanceof Bisected bisected) || bisected.getHalf() != Bisected.Half.TOP) {
+    private static Optional<CollisionBox> pitcherCropMovement(
+            ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+        if (!(state instanceof Ageable crop)
+                || crop.getAge() != 0
+                || !(state instanceof Bisected bisected)
+                || bisected.getHalf() != Bisected.Half.TOP) {
             return Optional.empty();
         }
         // Vanilla PitcherCropBlock#getCollisionShape checks AGE first through 1.21.4;
         // from 1.21.5 it checks HALF first, so an upper age-zero crop has no collision.
-        return Optional.of(shapeVersion.isOlderThan(ClientVersion.V_1_21_5)
-                ? box(x, y, z, 5, -1, 5, 11, 3, 11)
-                : NoCollisionBox.INSTANCE);
+        return Optional.of(
+                shapeVersion.isOlderThan(ClientVersion.V_1_21_5)
+                        ? box(x, y, z, 5, -1, 5, 11, 3, 11)
+                        : NoCollisionBox.INSTANCE);
     }
 
     private static boolean isRaisedMossyCarpet(BlockData state) {
@@ -120,7 +124,8 @@ final class VersionedJavaBlockShapes {
         return new ShapeOverride(matcher, factory);
     }
 
-    private static SimpleCollisionBox box(int x, int y, int z, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+    private static SimpleCollisionBox box(
+            int x, int y, int z, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         return new SimpleCollisionBox(
                 x + minX / 16.0D,
                 y + minY / 16.0D,

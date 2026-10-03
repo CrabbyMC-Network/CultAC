@@ -28,8 +28,7 @@ public interface MovementEngine {
             CultPlayer player,
             SimulationContext context,
             PredictionResult lastPrediction,
-            DesyncStatus lastOnGround
-    );
+            DesyncStatus lastOnGround);
 
     List<PredVector> applyModifiers(
             MovementModifiers modifiers,
@@ -37,22 +36,13 @@ public interface MovementEngine {
             Set<Vec3> startingVelocities,
             SimulationContext context,
             PredictionResult lastPrediction,
-            boolean canTickSkip
-    );
+            boolean canTickSkip);
 
     List<PredVector> startingVelocities(
-            VelocityTransformer transformer,
-            CultPlayer player,
-            List<PredVector> input,
-            SimulationContext context
-    );
+            VelocityTransformer transformer, CultPlayer player, List<PredVector> input, SimulationContext context);
 
     ValidMovements createValidMovements(
-            PredVector initialStartingVelocity,
-            CultPlayer player,
-            PredictionResult result,
-            boolean canStep
-    );
+            PredVector initialStartingVelocity, CultPlayer player, PredictionResult result, boolean canStep);
 
     CollideAxisData probeCollisions(
             CollisionModifier modifier,
@@ -63,11 +53,9 @@ public interface MovementEngine {
             Vec3 playerPos,
             PredVector initialStartingVelocity,
             SimpleCollisionBox attemptedMovementExtents,
-            boolean canStep
-    );
+            boolean canStep);
 
-    default void evaluateCandidate(CultPlayer player, PredictionResult result) {
-    }
+    default void evaluateCandidate(CultPlayer player, PredictionResult result) {}
 
     default boolean isBetterCandidate(PredictionResult candidate, PredictionResult currentBest) {
         return candidate.isBetterThan(currentBest);
@@ -78,8 +66,7 @@ public interface MovementEngine {
             PredictionResult result,
             PredictionResult lastPrediction,
             Vec3 acceptedDiff,
-            PredictionCarry currentCarry
-    );
+            PredictionCarry currentCarry);
 
     /**
      * Captures the engine-derived end-of-tick state used when the current
@@ -95,22 +82,16 @@ public interface MovementEngine {
         return null;
     }
 
-    default PredictionCommit applyTeleportToCarry(
-            PredictionCarry carry,
-            TeleportData teleport
-    ) {
+    default PredictionCommit applyTeleportToCarry(PredictionCarry carry, TeleportData teleport) {
         return null;
     }
 
-    default PredictionCarry applyAcknowledgedGlidingToCarry(
-            PredictionCarry carry,
-            boolean gliding
-    ) {
+    default PredictionCarry applyAcknowledgedGlidingToCarry(PredictionCarry carry, boolean gliding) {
         return carry;
     }
 
-    default PredictionCarry applyAcknowledgedPoseToCarry(PredictionCarry carry,
-            Boolean crawling, Boolean swimming, Boolean spinning) {
+    default PredictionCarry applyAcknowledgedPoseToCarry(
+            PredictionCarry carry, Boolean crawling, Boolean swimming, Boolean spinning) {
         return carry;
     }
 
@@ -119,8 +100,7 @@ public interface MovementEngine {
             CultPlayer player,
             PredictionCarry carry,
             AuthoredMovementFrame authoredMovementFrame,
-            SimulationContext context
-    ) {
+            SimulationContext context) {
         return null;
     }
 }

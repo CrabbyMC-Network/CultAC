@@ -1,11 +1,10 @@
 package ac.cult.cultac.utils.latency;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.chunk.Palette;
 import net.minecraft.world.level.chunk.PalettedContainer;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 final class PalettedContainerAccessor {
     private static final Field DATA_FIELD;
@@ -37,8 +36,7 @@ final class PalettedContainerAccessor {
         }
     }
 
-    private PalettedContainerAccessor() {
-    }
+    private PalettedContainerAccessor() {}
 
     static RawView getRawView(PalettedContainer<?> container) {
         Object data = getDataRecord(container);

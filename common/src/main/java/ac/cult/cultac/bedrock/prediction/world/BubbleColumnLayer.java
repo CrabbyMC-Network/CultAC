@@ -3,12 +3,7 @@ package ac.cult.cultac.bedrock.prediction.world;
 import java.util.Objects;
 
 public record BubbleColumnLayer(
-    int blockY,
-    BubbleColumnLayerType type,
-    boolean dragDown,
-    long activeFromTick,
-    long activeUntilTick
-) {
+        int blockY, BubbleColumnLayerType type, boolean dragDown, long activeFromTick, long activeUntilTick) {
     public BubbleColumnLayer {
         type = Objects.requireNonNull(type, "type");
         if (activeFromTick < 0L) {

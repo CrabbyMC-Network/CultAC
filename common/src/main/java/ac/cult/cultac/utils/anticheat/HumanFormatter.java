@@ -1,8 +1,8 @@
 package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.GrimUser;
 import ac.cult.cultac.player.CultPlayer;
+import ac.grim.grimac.api.GrimUser;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;

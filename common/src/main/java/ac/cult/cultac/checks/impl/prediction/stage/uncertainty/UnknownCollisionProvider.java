@@ -8,21 +8,15 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntityHappyGhast;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityStrider;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
 
 public final class UnknownCollisionProvider {
-    private UnknownCollisionProvider() {
-    }
+    private UnknownCollisionProvider() {}
 
     public static List<SimpleCollisionBox> movementUnknownCollisions(
-            CultPlayer player,
-            SimulationContext context,
-            Vec3 playerPos,
-            SimpleCollisionBox queryBox
-    ) {
+            CultPlayer player, SimulationContext context, Vec3 playerPos, SimpleCollisionBox queryBox) {
         List<SimpleCollisionBox> boxes = entityUnknownCollisions(player, playerPos);
         addDynamicBlockUnknownCollisions(player, context, queryBox, boxes);
         return boxes;
@@ -48,7 +42,9 @@ public final class UnknownCollisionProvider {
                     canPush = true;
                 }
                 // Bats, parrots, and armor stands cannot
-                if (entity.type == EntityTypesCompat.BAT || entity.type == EntityTypesCompat.PARROT || entity.type == EntityTypesCompat.ARMOR_STAND) {
+                if (entity.type == EntityTypesCompat.BAT
+                        || entity.type == EntityTypesCompat.PARROT
+                        || entity.type == EntityTypesCompat.ARMOR_STAND) {
                     canPush = false;
                 }
                 // We ignore some edge cases like horses that are vehicles (why exempt this?) but it's fine.
@@ -57,7 +53,9 @@ public final class UnknownCollisionProvider {
                 }
             }
 
-            if (ridingStrider && entity.type == EntityTypesCompat.SHULKER && !player.compensatedEntities.getSelf().getRiding().hasPassenger(entity)) {
+            if (ridingStrider
+                    && entity.type == EntityTypesCompat.SHULKER
+                    && !player.compensatedEntities.getSelf().getRiding().hasPassenger(entity)) {
                 // Striders suck less.
                 boxes.add(entity.getPossibleCollisionBoxes().expand(1));
             }
@@ -84,8 +82,7 @@ public final class UnknownCollisionProvider {
             CultPlayer player,
             SimulationContext context,
             SimpleCollisionBox queryBox,
-            List<SimpleCollisionBox> unknown
-    ) {
+            List<SimpleCollisionBox> unknown) {
         if (context.getVehicle() != null) {
             return;
         }

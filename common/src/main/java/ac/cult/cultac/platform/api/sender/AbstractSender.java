@@ -2,11 +2,10 @@ package ac.cult.cultac.platform.api.sender;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Simple implementation of {@link Sender} using a {@link SenderFactory}
@@ -77,7 +76,7 @@ public final class AbstractSender<T> implements Sender {
     @Override
     public boolean isValid() {
         return true;
-//        return isConsole() || this.plugin.getBootstrap().isPlayerOnline(this.uniqueId);
+        //        return isConsole() || this.plugin.getBootstrap().isPlayerOnline(this.uniqueId);
     }
 
     @Override

@@ -1,5 +1,9 @@
 package ac.cult.cultac.bedrock.prediction.simulation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.bedrock.prediction.api.BedrockMovementResult;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
@@ -26,17 +30,18 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public final class BedrockGlideWaterTransitionTest {
     private static final Vec3d START = new Vec3d(-175.45814514160156D, 62.62706756591797D, 82.38558959960938D);
     private static final Vec3d CARRY = new Vec3d(-0.47418212890625D, -0.042384033203125D, -0.217333984375D);
     private static final Vec3d OBSERVED = new Vec3d(-175.93243408203125D, 62.57141876220703D, 82.16767883300781D);
     private static final BedrockInputFrame FRAME = new BedrockInputFrame(
-        2573L, 115.10004F, 5.9234467F, true, false, false,
-        Set.of("GLIDING", "ACTOR_POSE_SNAPSHOT", "JUMPING", "JUMP_CURRENT_RAW", "WANT_UP"));
+            2573L,
+            115.10004F,
+            5.9234467F,
+            true,
+            false,
+            false,
+            Set.of("GLIDING", "ACTOR_POSE_SNAPSHOT", "JUMPING", "JUMP_CURRENT_RAW", "WANT_UP"));
 
     @Test
     public void acknowledgedStandingBoxSurvivesGlidePoseUpdate() {
@@ -66,11 +71,10 @@ public final class BedrockGlideWaterTransitionTest {
     }
 
     private static BedrockMovementState glidingState(float height) {
-        return BedrockMovementState.fromPhysicalFeet(START, CARRY, BedrockInputFrame.idle(2572L),
-            BedrockCollisionFlags.AIR, Medium.WATER)
-            .withGliding(true)
-            .withPlayerDimensions(BedrockBoundingBoxMode.HORIZONTAL,
-                new PlayerDimensionsState(0.6F, height), true);
+        return BedrockMovementState.fromPhysicalFeet(
+                        START, CARRY, BedrockInputFrame.idle(2572L), BedrockCollisionFlags.AIR, Medium.WATER)
+                .withGliding(true)
+                .withPlayerDimensions(BedrockBoundingBoxMode.HORIZONTAL, new PlayerDimensionsState(0.6F, height), true);
     }
 
     private static BedrockMovementResult move(BedrockMovementState state, BedrockInputFrame frame) {
@@ -78,18 +82,30 @@ public final class BedrockGlideWaterTransitionTest {
         for (int x = -179; x <= -173; x++) {
             for (int z = 79; z <= 85; z++) {
                 for (int y = 60; y <= 62; y++) {
-                    blocks.add(PlacedBlockCollision.manual(new BlockPosition(x, y, z),
-                        "minecraft:water[level=0]", "minecraft:water", Map.of("liquid_depth", 0), List.of()));
+                    blocks.add(PlacedBlockCollision.manual(
+                            new BlockPosition(x, y, z),
+                            "minecraft:water[level=0]",
+                            "minecraft:water",
+                            Map.of("liquid_depth", 0),
+                            List.of()));
                 }
             }
         }
         BedrockMovementContext context = new BedrockMovementContext(
-            BedrockEffectState.NONE, AttributeState.DEFAULT,
-            new WorldContactState(Medium.WATER, FluidState.NONE, new BlockCollisionWorld(blocks)),
-            new EquipmentState(0, 0, 0, 1, false, true), EntityContactState.NONE,
-            new MovementModifierState(true, true, false, false, 0.04999750480055809D,
-                false, true, false, false, 0.35D, 0L), PlayerDimensionsState.DEFAULT);
-        return BedrockSimulation.move(state, frame, context,
-            BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE, false, BedrockSimulation.DEFAULT_MAX_AUTO_STEP);
+                BedrockEffectState.NONE,
+                AttributeState.DEFAULT,
+                new WorldContactState(Medium.WATER, FluidState.NONE, new BlockCollisionWorld(blocks)),
+                new EquipmentState(0, 0, 0, 1, false, true),
+                EntityContactState.NONE,
+                new MovementModifierState(
+                        true, true, false, false, 0.04999750480055809D, false, true, false, false, 0.35D, 0L),
+                PlayerDimensionsState.DEFAULT);
+        return BedrockSimulation.move(
+                state,
+                frame,
+                context,
+                BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE,
+                false,
+                BedrockSimulation.DEFAULT_MAX_AUTO_STEP);
     }
 }

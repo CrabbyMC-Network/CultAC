@@ -13,12 +13,11 @@ import org.jetbrains.annotations.NotNull;
 public class CultHelp implements BuildableCommand {
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("help", Description.of("Display help information"))
-                        .permission("cult.help")
-                        .handler(this::handleHelp)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("help", Description.of("Display help information"))
+                .permission("cult.help")
+                .handler(this::handleHelp));
     }
 
     private void handleHelp(@NotNull CommandContext<Sender> context) {

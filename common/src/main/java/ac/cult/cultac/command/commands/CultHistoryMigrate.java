@@ -1,12 +1,7 @@
 package ac.cult.cultac.command.commands;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.storage.backend.BackendException;
 import ac.cult.cultac.command.BuildableCommand;
-import ac.grim.grimac.internal.storage.backend.sqlite.SqliteBackend;
-import ac.grim.grimac.internal.storage.checks.CheckRegistry;
-import ac.grim.grimac.internal.storage.migrate.LegacyMigrator;
-import ac.grim.grimac.internal.storage.migrate.V0Reader;
 import ac.cult.cultac.manager.datastore.ClientVersionResolver;
 import ac.cult.cultac.manager.datastore.DataStoreLifecycle;
 import ac.cult.cultac.manager.datastore.V0Sources;
@@ -14,16 +9,20 @@ import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.context.CommandContext;
-
+import ac.grim.grimac.api.storage.backend.BackendException;
+import ac.grim.grimac.internal.storage.backend.sqlite.SqliteBackend;
+import ac.grim.grimac.internal.storage.checks.CheckRegistry;
+import ac.grim.grimac.internal.storage.migrate.LegacyMigrator;
+import ac.grim.grimac.internal.storage.migrate.V0Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Logger;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.context.CommandContext;
 
 /**
  * {@code /cult history migrate [--delete]} — on-demand v0 → v1 migration outside
@@ -44,16 +43,16 @@ public class CultHistoryMigrate implements BuildableCommand {
 
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("history")
-                        .literal("migrate")
-                        .permission("cult.history.migrate")
-                        .flag(commandManager.flagBuilder("delete")
-                                .withDescription(org.incendo.cloud.description.Description.of(
-                                        "Drop the legacy v0 tables after migration completes")))
-                        .handler(this::handle)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("history")
+                .literal("migrate")
+                .permission("cult.history.migrate")
+                .flag(commandManager
+                        .flagBuilder("delete")
+                        .withDescription(org.incendo.cloud.description.Description.of(
+                                "Drop the legacy v0 tables after migration completes")))
+                .handler(this::handle));
     }
 
     private void handle(CommandContext<Sender> context) {
@@ -77,25 +76,33 @@ public class CultHistoryMigrate implements BuildableCommand {
                 CultAPI.INSTANCE.getGrimPlugin().getDataFolder().toPath(),
                 CultAPI.INSTANCE.getConfigManager().getConfig());
         if (source == null) {
-            logBoth(sender, Component.text("No legacy v0 source detected — nothing to migrate.", NamedTextColor.YELLOW));
+            logBoth(
+                    sender,
+                    Component.text("No legacy v0 source detected — nothing to migrate.", NamedTextColor.YELLOW));
             return;
         }
 
-        logBoth(sender, Component.text()
-                .append(Component.text("Starting v0 → v1 migration from ", NamedTextColor.AQUA))
-                .append(Component.text(source.summary(), NamedTextColor.WHITE))
-                .asComponent());
+        logBoth(
+                sender,
+                Component.text()
+                        .append(Component.text("Starting v0 → v1 migration from ", NamedTextColor.AQUA))
+                        .append(Component.text(source.summary(), NamedTextColor.WHITE))
+                        .asComponent());
 
         try {
-            LegacyMigrator.Result result =
-                    runLegacy(lifecycle, source, sender);
-            logBoth(sender, Component.text()
-                    .append(Component.text("Migration complete: ", NamedTextColor.GREEN))
-                    .append(Component.text(result.sessionsWritten() + " sessions, "))
-                    .append(Component.text(result.violationsWritten() + " violations in "))
-                    .append(Component.text(result.elapsedMs() + "ms"))
-                    .append(result.resumed() ? Component.text(" (resumed)", NamedTextColor.GRAY) : Component.empty())
-                    .asComponent());
+            LegacyMigrator.Result result = runLegacy(lifecycle, source, sender);
+            logBoth(
+                    sender,
+                    Component.text()
+                            .append(Component.text("Migration complete: ", NamedTextColor.GREEN))
+                            .append(Component.text(result.sessionsWritten() + " sessions, "))
+                            .append(Component.text(result.violationsWritten() + " violations in "))
+                            .append(Component.text(result.elapsedMs() + "ms"))
+                            .append(
+                                    result.resumed()
+                                            ? Component.text(" (resumed)", NamedTextColor.GRAY)
+                                            : Component.empty())
+                            .asComponent());
             if (delete) {
                 dropLegacy(source, sender);
             }
@@ -105,28 +112,27 @@ public class CultHistoryMigrate implements BuildableCommand {
         }
     }
 
-    private LegacyMigrator.Result runLegacy(
-            DataStoreLifecycle lifecycle, V0Sources.V0Source source, Sender sender) throws BackendException {
-        V0Reader reader =
-                new V0Reader(
-                        source.jdbcUrl(), source.username(), source.password());
+    private LegacyMigrator.Result runLegacy(DataStoreLifecycle lifecycle, V0Sources.V0Source source, Sender sender)
+            throws BackendException {
+        V0Reader reader = new V0Reader(source.jdbcUrl(), source.username(), source.password());
         // Legacy migration only targets SQLite today — V0Reader understands
         // the old grim_history_* schema and writes through SqliteBackend's
         // bulk-import path. /cult history copy is the general-purpose
         // cross-backend hammer once more targets exist.
         SqliteBackend v1 = lifecycle.sqliteBackendForCommands();
         if (v1 == null) {
-            throw new BackendException(
-                    "no SQLite backend in routing — legacy migration needs SQLite as its target; "
-                            + "switch a category to sqlite in database.yml or use /cult history copy instead");
+            throw new BackendException("no SQLite backend in routing — legacy migration needs SQLite as its target; "
+                    + "switch a category to sqlite in database.yml or use /cult history copy instead");
         }
         CheckRegistry registry = lifecycle.checkRegistryForCommands();
         long gapMs = lifecycle.config().session().gapMs();
-        LegacyMigrator migrator =
-                new LegacyMigrator(
-                        reader, v1, registry,
-                        ClientVersionResolver::legacyStringToPvn,
-                        gapMs, Logger.getLogger("cult-history-migrate"));
+        LegacyMigrator migrator = new LegacyMigrator(
+                reader,
+                v1,
+                registry,
+                ClientVersionResolver::legacyStringToPvn,
+                gapMs,
+                Logger.getLogger("cult-history-migrate"));
         return migrator.run(count -> {
             if (count > 0 && count % 5000 == 0) {
                 logBoth(sender, Component.text("… " + count + " violations migrated so far", NamedTextColor.GRAY));
@@ -137,24 +143,28 @@ public class CultHistoryMigrate implements BuildableCommand {
     private void dropLegacy(V0Sources.V0Source source, Sender sender) {
         logBoth(sender, Component.text("--delete requested — dropping legacy v0 tables…", NamedTextColor.YELLOW));
         String[] tables = {
-                "grim_history_violations",
-                "grim_history_check_names",
-                "grim_history_servers",
-                "grim_history_versions",
-                "grim_history_client_brands",
-                "grim_history_client_versions",
-                "grim_history_server_versions",
+            "grim_history_violations",
+            "grim_history_check_names",
+            "grim_history_servers",
+            "grim_history_versions",
+            "grim_history_client_brands",
+            "grim_history_client_versions",
+            "grim_history_server_versions",
         };
-        try (Connection c = open(source); Statement s = c.createStatement()) {
+        try (Connection c = open(source);
+                Statement s = c.createStatement()) {
             for (String t : tables) {
-                try { s.executeUpdate("DROP TABLE IF EXISTS " + t); }
-                catch (SQLException e) {
+                try {
+                    s.executeUpdate("DROP TABLE IF EXISTS " + t);
+                } catch (SQLException e) {
                     logBoth(sender, Component.text("  drop " + t + " failed: " + e.getMessage(), NamedTextColor.RED));
                 }
             }
             logBoth(sender, Component.text("Legacy v0 tables dropped.", NamedTextColor.GREEN));
         } catch (SQLException e) {
-            logBoth(sender, Component.text("Failed to open legacy source for --delete: " + e.getMessage(), NamedTextColor.RED));
+            logBoth(
+                    sender,
+                    Component.text("Failed to open legacy source for --delete: " + e.getMessage(), NamedTextColor.RED));
         }
     }
 

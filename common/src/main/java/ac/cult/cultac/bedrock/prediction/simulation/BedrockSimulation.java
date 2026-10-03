@@ -23,13 +23,15 @@ import java.util.Optional;
 public final class BedrockSimulation {
     public static final double DEFAULT_MAX_AUTO_STEP = 0.5625D;
 
-    private BedrockSimulation() {
-    }
+    private BedrockSimulation() {}
 
     /** Runs one movement tick with bounded controls. */
     public static Candidate movementTick(Input input, Vec3d control) {
-        if (control.y() != 0.0D || !Double.isFinite(control.x()) || !Double.isFinite(control.z())
-                || Math.abs(control.x()) > 1.0D || Math.abs(control.z()) > 1.0D) {
+        if (control.y() != 0.0D
+                || !Double.isFinite(control.x())
+                || !Double.isFinite(control.z())
+                || Math.abs(control.x()) > 1.0D
+                || Math.abs(control.z()) > 1.0D) {
             throw new IllegalArgumentException("Invalid movement control");
         }
         if (!input.actorMovementTick()) return candidates(input).getFirst();
@@ -37,22 +39,33 @@ public final class BedrockSimulation {
         if (state.isHorse()) state = state.withHorse(state.horse().withForwardJump(control.z() > 0.0D));
         var options = BedrockTravelOptions.vanilla(input.canStep(), input.maxUpStep())
                 .withTravelActive(!state.hasTeleported());
-        var scaffolding = !state.isVehicle() && input.intent().vertical().descendInput()
-                && state.climbableContact().descendAllowed()
-                ? BedrockTravelInput.ScaffoldingVerticalBranch.DESCEND : BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE;
-        var result = BedrockTravelEngine.INSTANCE.travel(new BedrockTravelInput(state, input.frame(), input.intent(),
-                BedrockSnapshotResolver.forState(snapshotForBranch(input.snapshot(), scaffolding), state, input.frame()),
-                scaffolding, state.velocity(), options, control, input.glideBoost()), input.mobJumpComponent());
+        var scaffolding = !state.isVehicle()
+                        && input.intent().vertical().descendInput()
+                        && state.climbableContact().descendAllowed()
+                ? BedrockTravelInput.ScaffoldingVerticalBranch.DESCEND
+                : BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE;
+        var result = BedrockTravelEngine.INSTANCE.travel(
+                new BedrockTravelInput(
+                        state,
+                        input.frame(),
+                        input.intent(),
+                        BedrockSnapshotResolver.forState(
+                                snapshotForBranch(input.snapshot(), scaffolding), state, input.frame()),
+                        scaffolding,
+                        state.velocity(),
+                        options,
+                        control,
+                        input.glideBoost()),
+                input.mobJumpComponent());
         return new Candidate(result.movementResult(), result.mobJumpComponent());
     }
 
     public static List<Candidate> candidates(Input input) {
         if (!input.actorMovementTick()) {
             return List.of(new Candidate(
-                BedrockMovementResultBuilder.withoutActorMovementTick(
-                    input.previousState(), input.frame(), input.snapshot(),
-                    input.canStep(), input.maxUpStep()),
-                input.mobJumpComponent()));
+                    BedrockMovementResultBuilder.withoutActorMovementTick(
+                            input.previousState(), input.frame(), input.snapshot(), input.canStep(), input.maxUpStep()),
+                    input.mobJumpComponent()));
         }
         if (input.control() != null || input.previousState().isBoat()) {
             return List.of(movementTick(input, input.control() == null ? Vec3d.ZERO : input.control()));
@@ -63,7 +76,7 @@ public final class BedrockSimulation {
             return List.copyOf(candidates);
         }
         if (input.intent().vertical().descendInput()
-            && input.previousState().climbableContact().descendAllowed()) {
+                && input.previousState().climbableContact().descendAllowed()) {
             addBranchCandidates(candidates, input, BedrockTravelInput.ScaffoldingVerticalBranch.DESCEND);
             addBranchCandidates(candidates, input, BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE);
         } else {
@@ -77,45 +90,45 @@ public final class BedrockSimulation {
         int branches = horse.canLaunch(input.previousState().collisionFlags().onGround()) ? 2 : 1;
         for (int branch = 0; branch < branches; branch++) {
             var state = input.previousState().withHorse(horse.withForwardJump(branch == 1));
-            var result = travel(state, input.frame(), input.intent(), input.snapshot(),
+            var result = travel(
+                    state,
+                    input.frame(),
+                    input.intent(),
+                    input.snapshot(),
                     BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE,
                     BedrockTravelOptions.vanilla(input.canStep(), input.maxUpStep())
-                            .withTravelActive(!state.hasTeleported()), input.mobJumpComponent());
+                            .withTravelActive(!state.hasTeleported()),
+                    input.mobJumpComponent());
             candidates.add(new Candidate(result.movementResult(), result.mobJumpComponent()));
         }
     }
 
     public static List<NextState> deriveNextStates(
-        BedrockMovementResult result,
-        List<BedrockMovementState> sourceStates,
-        Vec3d acceptedDiff
-    ) {
+            BedrockMovementResult result, List<BedrockMovementState> sourceStates, Vec3d acceptedDiff) {
         return deriveNextStates(result, sourceStates, acceptedDiff, false, false);
     }
 
     public static List<NextState> deriveNextStates(
-        BedrockMovementResult result,
-        List<BedrockMovementState> sourceStates,
-        Vec3d acceptedDiff,
-        boolean selectedXCollision,
-        boolean selectedZCollision
-    ) {
-        return deriveNextStates(
-            result, sourceStates, acceptedDiff, selectedXCollision, selectedZCollision, false);
+            BedrockMovementResult result,
+            List<BedrockMovementState> sourceStates,
+            Vec3d acceptedDiff,
+            boolean selectedXCollision,
+            boolean selectedZCollision) {
+        return deriveNextStates(result, sourceStates, acceptedDiff, selectedXCollision, selectedZCollision, false);
     }
 
     public static List<NextState> deriveNextStates(
-        BedrockMovementResult result,
-        List<BedrockMovementState> sourceStates,
-        Vec3d acceptedDiff,
-        boolean selectedXCollision,
-        boolean selectedZCollision,
-        boolean canStep
-    ) {
+            BedrockMovementResult result,
+            List<BedrockMovementState> sourceStates,
+            Vec3d acceptedDiff,
+            boolean selectedXCollision,
+            boolean selectedZCollision,
+            boolean canStep) {
         return BedrockNextTickStateDeriver.withAcceptedDiff(
-            result, sourceStates, acceptedDiff, selectedXCollision, selectedZCollision, canStep).stream()
-            .map(state -> new NextState(state.state(), state.lineageState()))
-            .toList();
+                        result, sourceStates, acceptedDiff, selectedXCollision, selectedZCollision, canStep)
+                .stream()
+                .map(state -> new NextState(state.state(), state.lineageState()))
+                .toList();
     }
 
     public static Optional<Vec3d> stepCandidate(BedrockMovementResult result) {
@@ -127,36 +140,40 @@ public final class BedrockSimulation {
     }
 
     static BedrockMovementResult move(
-        BedrockMovementState state,
-        BedrockInputFrame frame,
-        BedrockMovementContext context,
-        BedrockTravelInput.ScaffoldingVerticalBranch scaffolding,
-        boolean canStep,
-        double maxUpStep
-    ) {
-        BedrockWorldSnapshot snapshot = BedrockSnapshotResolver.forState(
-            BedrockWorldSnapshot.fromContext(context), state, frame
-        );
-        return travel(state, frame, frame.intent(), snapshot, scaffolding,
-            BedrockTravelOptions.vanilla(canStep, maxUpStep), BedrockMobJumpComponentState.DEFAULT)
-            .movementResult();
+            BedrockMovementState state,
+            BedrockInputFrame frame,
+            BedrockMovementContext context,
+            BedrockTravelInput.ScaffoldingVerticalBranch scaffolding,
+            boolean canStep,
+            double maxUpStep) {
+        BedrockWorldSnapshot snapshot =
+                BedrockSnapshotResolver.forState(BedrockWorldSnapshot.fromContext(context), state, frame);
+        return travel(
+                        state,
+                        frame,
+                        frame.intent(),
+                        snapshot,
+                        scaffolding,
+                        BedrockTravelOptions.vanilla(canStep, maxUpStep),
+                        BedrockMobJumpComponentState.DEFAULT)
+                .movementResult();
     }
 
     private static void addBranchCandidates(
-        List<Candidate> candidates,
-        Input input,
-        BedrockTravelInput.ScaffoldingVerticalBranch scaffolding
-    ) {
+            List<Candidate> candidates, Input input, BedrockTravelInput.ScaffoldingVerticalBranch scaffolding) {
         ArrayList<Candidate> branch = new ArrayList<>();
         BedrockTravelOptions options = BedrockTravelOptions.vanilla(input.canStep(), input.maxUpStep())
-            .withTravelActive(!input.previousState().hasTeleported());
+                .withTravelActive(!input.previousState().hasTeleported());
         for (BedrockTravelOptions.SprintTravelSpeedMode speed : sprintSpeedModes()) {
             for (BedrockTravelOptions.SprintJumpImpulseMode jump : sprintJumpModes(input)) {
                 BedrockTravelResult result = travel(
-                    input.previousState(), input.frame(), input.intent(), snapshotForBranch(input.snapshot(), scaffolding), scaffolding,
-                    options.withSprintTravelSpeedMode(speed).withSprintJumpImpulseMode(jump),
-                    input.mobJumpComponent()
-                );
+                        input.previousState(),
+                        input.frame(),
+                        input.intent(),
+                        snapshotForBranch(input.snapshot(), scaffolding),
+                        scaffolding,
+                        options.withSprintTravelSpeedMode(speed).withSprintJumpImpulseMode(jump),
+                        input.mobJumpComponent());
                 Candidate candidate = new Candidate(result.movementResult(), result.mobJumpComponent());
                 if (!branch.contains(candidate)) {
                     branch.add(candidate);
@@ -167,48 +184,50 @@ public final class BedrockSimulation {
     }
 
     private static BedrockWorldSnapshot snapshotForBranch(
-        BedrockWorldSnapshot snapshot,
-        BedrockTravelInput.ScaffoldingVerticalBranch branch
-    ) {
+            BedrockWorldSnapshot snapshot, BedrockTravelInput.ScaffoldingVerticalBranch branch) {
         if (branch == BedrockTravelInput.ScaffoldingVerticalBranch.SOURCE) {
             return snapshot;
         }
         List<PlacedBlockCollision> blocks = snapshot.blockCollisionWorld().blocks().stream()
-            .map(block -> descendThroughCollision(block)
-                ? new PlacedBlockCollision(
-                    block.position(), block.javaState(), block.javaStateProperties(),
-                    block.bedrockIdentifier(), block.bedrockState(), List.of(),
-                    block.contactBoxes(), block.insideBlockContactBoxes(), block.contactBehaviors())
-                : block)
-            .toList();
-        BlockCollisionWorld collisionWorld = new BlockCollisionWorld(blocks, snapshot.blockCollisionWorld().coordinateFrame());
+                .map(block -> descendThroughCollision(block)
+                        ? new PlacedBlockCollision(
+                                block.position(),
+                                block.javaState(),
+                                block.javaStateProperties(),
+                                block.bedrockIdentifier(),
+                                block.bedrockState(),
+                                List.of(),
+                                block.contactBoxes(),
+                                block.insideBlockContactBoxes(),
+                                block.contactBehaviors())
+                        : block)
+                .toList();
+        BlockCollisionWorld collisionWorld =
+                new BlockCollisionWorld(blocks, snapshot.blockCollisionWorld().coordinateFrame());
         return snapshot.withBlockCollisionWorld(collisionWorld);
     }
 
     private static boolean descendThroughCollision(PlacedBlockCollision block) {
 
         return block.hasContactBehavior(PlacedBlockCollision.BlockContactBehavior.SCAFFOLDING)
-            || block.hasContactBehavior(PlacedBlockCollision.BlockContactBehavior.POWDER_SNOW);
+                || block.hasContactBehavior(PlacedBlockCollision.BlockContactBehavior.POWDER_SNOW);
     }
 
     private static BedrockTravelResult travel(
-        BedrockMovementState state,
-        BedrockInputFrame frame,
-        BedrockInputIntent intent,
-        BedrockWorldSnapshot snapshot,
-        BedrockTravelInput.ScaffoldingVerticalBranch scaffolding,
-        BedrockTravelOptions options,
-        BedrockMobJumpComponentState mobJumpComponent
-    ) {
-        return BedrockTravelEngine.INSTANCE.travel(new BedrockTravelInput(
-            state, frame, intent, snapshot, scaffolding, state.velocity(), options
-        ), mobJumpComponent);
+            BedrockMovementState state,
+            BedrockInputFrame frame,
+            BedrockInputIntent intent,
+            BedrockWorldSnapshot snapshot,
+            BedrockTravelInput.ScaffoldingVerticalBranch scaffolding,
+            BedrockTravelOptions options,
+            BedrockMobJumpComponentState mobJumpComponent) {
+        return BedrockTravelEngine.INSTANCE.travel(
+                new BedrockTravelInput(state, frame, intent, snapshot, scaffolding, state.velocity(), options),
+                mobJumpComponent);
     }
 
     private static List<BedrockTravelOptions.SprintTravelSpeedMode> sprintSpeedModes() {
-        return List.of(
-            BedrockTravelOptions.SprintTravelSpeedMode.ORDERED_ACTOR_FLAG
-        );
+        return List.of(BedrockTravelOptions.SprintTravelSpeedMode.ORDERED_ACTOR_FLAG);
     }
 
     private static List<BedrockTravelOptions.SprintJumpImpulseMode> sprintJumpModes(Input input) {
@@ -216,63 +235,114 @@ public final class BedrockSimulation {
             return List.of(BedrockTravelOptions.SprintJumpImpulseMode.ORDERED_ACTOR_FLAG);
         }
         return List.of(
-            BedrockTravelOptions.SprintJumpImpulseMode.ORDERED_ACTOR_FLAG,
-            BedrockTravelOptions.SprintJumpImpulseMode.FORCE_NOT_SPRINTING,
-            BedrockTravelOptions.SprintJumpImpulseMode.FORCE_SPRINTING
-        );
+                BedrockTravelOptions.SprintJumpImpulseMode.ORDERED_ACTOR_FLAG,
+                BedrockTravelOptions.SprintJumpImpulseMode.FORCE_NOT_SPRINTING,
+                BedrockTravelOptions.SprintJumpImpulseMode.FORCE_SPRINTING);
     }
 
     private static boolean sprintJumpAmbiguous(Input input) {
         var intent = input.intent();
         var previousSprint = input.previousState().inputFrame().intent().sprint();
 
-        return intent.jump().start() && (intent.sprint().sprinting()
-            || input.previousState().sprinting() || previousSprint.sprinting()
-            || intent.sprint().start() || intent.sprint().stop() || previousSprint.stop());
+        return intent.jump().start()
+                && (intent.sprint().sprinting()
+                        || input.previousState().sprinting()
+                        || previousSprint.sprinting()
+                        || intent.sprint().start()
+                        || intent.sprint().stop()
+                        || previousSprint.stop());
     }
 
     public record Input(
-        BedrockMovementState previousState,
-        BedrockInputFrame frame,
-        BedrockInputIntent intent,
-        BedrockWorldSnapshot snapshot,
-        boolean canStep,
-        double maxUpStep,
-        BedrockMobJumpComponentState mobJumpComponent,
-        boolean actorMovementTick,
-        boolean acceptedTeleport,
-        Vec3d control,
-        boolean glideBoost
-    ) {
-        public Input(BedrockMovementState previousState, BedrockInputFrame frame, BedrockInputIntent intent,
-                     BedrockWorldSnapshot snapshot, boolean canStep, double maxUpStep,
-                     BedrockMobJumpComponentState mobJumpComponent, boolean actorMovementTick, boolean acceptedTeleport,
-                     Vec3d control) {
-            this(previousState, frame, intent, snapshot, canStep, maxUpStep, mobJumpComponent,
-                    actorMovementTick, acceptedTeleport, control, false);
-        }
-        public Input(BedrockMovementState previousState, BedrockInputFrame frame, BedrockInputIntent intent,
-                     BedrockWorldSnapshot snapshot, boolean canStep, double maxUpStep,
-                     BedrockMobJumpComponentState mobJumpComponent, boolean actorMovementTick, boolean acceptedTeleport) {
-            this(previousState, frame, intent, snapshot, canStep, maxUpStep, mobJumpComponent,
-                    actorMovementTick, acceptedTeleport, null);
-        }
-
-        public Input(
             BedrockMovementState previousState,
             BedrockInputFrame frame,
             BedrockInputIntent intent,
             BedrockWorldSnapshot snapshot,
             boolean canStep,
             double maxUpStep,
-            BedrockMobJumpComponentState mobJumpComponent
-        ) {
+            BedrockMobJumpComponentState mobJumpComponent,
+            boolean actorMovementTick,
+            boolean acceptedTeleport,
+            Vec3d control,
+            boolean glideBoost) {
+        public Input(
+                BedrockMovementState previousState,
+                BedrockInputFrame frame,
+                BedrockInputIntent intent,
+                BedrockWorldSnapshot snapshot,
+                boolean canStep,
+                double maxUpStep,
+                BedrockMobJumpComponentState mobJumpComponent,
+                boolean actorMovementTick,
+                boolean acceptedTeleport,
+                Vec3d control) {
+            this(
+                    previousState,
+                    frame,
+                    intent,
+                    snapshot,
+                    canStep,
+                    maxUpStep,
+                    mobJumpComponent,
+                    actorMovementTick,
+                    acceptedTeleport,
+                    control,
+                    false);
+        }
+
+        public Input(
+                BedrockMovementState previousState,
+                BedrockInputFrame frame,
+                BedrockInputIntent intent,
+                BedrockWorldSnapshot snapshot,
+                boolean canStep,
+                double maxUpStep,
+                BedrockMobJumpComponentState mobJumpComponent,
+                boolean actorMovementTick,
+                boolean acceptedTeleport) {
+            this(
+                    previousState,
+                    frame,
+                    intent,
+                    snapshot,
+                    canStep,
+                    maxUpStep,
+                    mobJumpComponent,
+                    actorMovementTick,
+                    acceptedTeleport,
+                    null);
+        }
+
+        public Input(
+                BedrockMovementState previousState,
+                BedrockInputFrame frame,
+                BedrockInputIntent intent,
+                BedrockWorldSnapshot snapshot,
+                boolean canStep,
+                double maxUpStep,
+                BedrockMobJumpComponentState mobJumpComponent) {
             this(previousState, frame, intent, snapshot, canStep, maxUpStep, mobJumpComponent, true);
         }
-        public Input(BedrockMovementState previousState, BedrockInputFrame frame, BedrockInputIntent intent,
-                     BedrockWorldSnapshot snapshot, boolean canStep, double maxUpStep,
-                     BedrockMobJumpComponentState mobJumpComponent, boolean actorMovementTick) {
-            this(previousState, frame, intent, snapshot, canStep, maxUpStep, mobJumpComponent, actorMovementTick, false);
+
+        public Input(
+                BedrockMovementState previousState,
+                BedrockInputFrame frame,
+                BedrockInputIntent intent,
+                BedrockWorldSnapshot snapshot,
+                boolean canStep,
+                double maxUpStep,
+                BedrockMobJumpComponentState mobJumpComponent,
+                boolean actorMovementTick) {
+            this(
+                    previousState,
+                    frame,
+                    intent,
+                    snapshot,
+                    canStep,
+                    maxUpStep,
+                    mobJumpComponent,
+                    actorMovementTick,
+                    false);
         }
 
         public Input {

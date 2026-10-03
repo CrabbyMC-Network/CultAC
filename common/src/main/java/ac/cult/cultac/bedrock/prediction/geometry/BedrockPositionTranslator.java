@@ -5,15 +5,11 @@ import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 public final class BedrockPositionTranslator {
     public static final double PLAYER_PACKET_Y_OFFSET = 1.6200103759765625D;
 
-    private BedrockPositionTranslator() {
-    }
+    private BedrockPositionTranslator() {}
 
     public static Vec3d physicalFeetToPacketPosition(Vec3d physicalFeetPosition) {
         return roundTripPacketPosition(new Vec3d(
-            physicalFeetPosition.x(),
-            physicalFeetPosition.y() + PLAYER_PACKET_Y_OFFSET,
-            physicalFeetPosition.z()
-        ));
+                physicalFeetPosition.x(), physicalFeetPosition.y() + PLAYER_PACKET_Y_OFFSET, physicalFeetPosition.z()));
     }
 
     public static Vec3d packetPositionToPhysicalFeet(Vec3d packetPosition) {
@@ -48,7 +44,10 @@ public final class BedrockPositionTranslator {
     }
 
     public static Vec3d roundTripPacketPosition(Vec3d position) {
-        return new Vec3d(packetFloatToDouble(position.x()), packetFloatToDouble(position.y()), packetFloatToDouble(position.z()));
+        return new Vec3d(
+                packetFloatToDouble(position.x()),
+                packetFloatToDouble(position.y()),
+                packetFloatToDouble(position.z()));
     }
 
     public static double packetFloatToDouble(double value) {

@@ -1,6 +1,15 @@
 package ac.cult.cultac.command.commands;
 
 import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.command.BuildableCommand;
+import ac.cult.cultac.command.render.HistoryComponentRenderer;
+import ac.cult.cultac.manager.datastore.DataStoreLifecycle;
+import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import ac.cult.cultac.platform.api.sender.Sender;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.utils.anticheat.LogUtil;
+import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.grim.grimac.api.AbstractCheck;
 import ac.grim.grimac.api.storage.backend.Backend;
 import ac.grim.grimac.api.storage.category.Categories;
@@ -15,29 +24,7 @@ import ac.grim.grimac.api.storage.model.PlayerIdentity;
 import ac.grim.grimac.api.storage.query.Cursor;
 import ac.grim.grimac.api.storage.query.Page;
 import ac.grim.grimac.api.storage.query.Queries;
-import ac.cult.cultac.command.BuildableCommand;
-import ac.cult.cultac.command.render.HistoryComponentRenderer;
 import ac.grim.grimac.internal.storage.checks.CheckRegistry;
-import ac.cult.cultac.manager.datastore.DataStoreLifecycle;
-import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
-import ac.cult.cultac.platform.api.player.PlatformPlayer;
-import ac.cult.cultac.platform.api.sender.Sender;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.LogUtil;
-import ac.cult.cultac.utils.anticheat.MessageUtil;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.incendo.cloud.Command;
-import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.context.CommandContext;
-import org.incendo.cloud.description.Description;
-import org.incendo.cloud.parser.standard.IntegerParser;
-import org.incendo.cloud.parser.standard.StringParser;
-import org.incendo.cloud.suggestion.Suggestion;
-import org.incendo.cloud.suggestion.SuggestionProvider;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -52,6 +39,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.incendo.cloud.Command;
+import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.description.Description;
+import org.incendo.cloud.parser.standard.IntegerParser;
+import org.incendo.cloud.parser.standard.StringParser;
+import org.incendo.cloud.suggestion.Suggestion;
+import org.incendo.cloud.suggestion.SuggestionProvider;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * <pre>
@@ -82,24 +81,31 @@ public class CultHistory implements BuildableCommand {
         SuggestionProvider<Sender> violationPageSuggestions = violationPageSuggestions();
         SuggestionProvider<Sender> targetSuggestions = targetSuggestions(arguments);
 
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("history", "hist")
-                        .literal("repair")
-                        .literal("check-ids")
-                        .permission("cult.history.repair")
-                        .handler(this::handleRepairCheckIds)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("history", "hist")
+                .literal("repair")
+                .literal("check-ids")
+                .permission("cult.history.repair")
+                .handler(this::handleRepairCheckIds));
 
         // Bare + 'player'-prefixed forms; the prefix is the escape hatch
         // for players whose name collides with a sibling literal at the
         // same tree depth (today: 'repair', 'player').
-        registerHistoryViewBranches(commandManager, false,
-                targetSuggestions, listPageNumberSuggestions,
-                sessionOrdinalSuggestions, violationPageSuggestions);
-        registerHistoryViewBranches(commandManager, true,
-                targetSuggestions, listPageNumberSuggestions,
-                sessionOrdinalSuggestions, violationPageSuggestions);
+        registerHistoryViewBranches(
+                commandManager,
+                false,
+                targetSuggestions,
+                listPageNumberSuggestions,
+                sessionOrdinalSuggestions,
+                violationPageSuggestions);
+        registerHistoryViewBranches(
+                commandManager,
+                true,
+                targetSuggestions,
+                listPageNumberSuggestions,
+                sessionOrdinalSuggestions,
+                violationPageSuggestions);
     }
 
     /** Registers the bare or {@code player}-prefixed view branches. */
@@ -112,7 +118,8 @@ public class CultHistory implements BuildableCommand {
             SuggestionProvider<Sender> violationPageSuggestions) {
         // Fresh builder per branch — reusing one cross-pollinates siblings.
         java.util.function.Supplier<Command.Builder<Sender>> base = () -> {
-            Command.Builder<Sender> b = commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
+            Command.Builder<Sender> b = commandManager
+                    .commandBuilder("cult", "cultac", "grim", "grimac")
                     .literal("history", "hist")
                     .permission("cult.history");
             if (withPlayerLiteral) b = b.literal("player");
@@ -123,64 +130,77 @@ public class CultHistory implements BuildableCommand {
         final boolean viaPlayer = withPlayerLiteral;
 
         // List, page 1
-        commandManager.command(
-                applyFilterFlags(commandManager, base.get())
-                        .handler(this::handleListPage1)
-        );
+        commandManager.command(applyFilterFlags(commandManager, base.get()).handler(this::handleListPage1));
         // List, page N
-        commandManager.command(
-                applyFilterFlags(commandManager, base.get()
-                        .literal("page")
-                        .required("page_number", IntegerParser.integerParser(1), listPageNumberSuggestions))
-                        .handler(this::handleListPageN)
-        );
+        commandManager.command(applyFilterFlags(
+                        commandManager,
+                        base.get()
+                                .literal("page")
+                                .required("page_number", IntegerParser.integerParser(1), listPageNumberSuggestions))
+                .handler(this::handleListPageN));
         // Help branch on bare 'session' — Cloud would otherwise reject with
         // a parse error that reads like a syntax mistake, not a hint.
-        commandManager.command(
-                base.get().literal("session")
-                        .handler(ctx -> handleSessionHelp(ctx, viaPlayer))
-        );
+        commandManager.command(base.get().literal("session").handler(ctx -> handleSessionHelp(ctx, viaPlayer)));
         // 'session' literal at the same tree slot as 'page'; session-ordinal is
         // String so it accepts 'latest' / 'last' / 'l' alongside integers.
-        commandManager.command(
-                applyFilterFlags(commandManager, base.get()
-                        .literal("session")
-                        .required("session", StringParser.stringParser(), sessionOrdinalSuggestions)
-                        .flag(commandManager.flagBuilder("detailed").withAliases("d")
-                                .withDescription(Description.of("Show each violation as its own row instead of time-bucketed groups.")))
-                        .flag(commandManager.flagBuilder("verbose").withAliases("v")
-                                .withDescription(Description.of("Include the raw verbose text inline on each line (also always available on hover)."))))
-                        .handler(this::handleDetailDefaultPage)
-        );
+        commandManager.command(applyFilterFlags(
+                        commandManager,
+                        base.get()
+                                .literal("session")
+                                .required("session", StringParser.stringParser(), sessionOrdinalSuggestions)
+                                .flag(commandManager
+                                        .flagBuilder("detailed")
+                                        .withAliases("d")
+                                        .withDescription(Description.of(
+                                                "Show each violation as its own row instead of time-bucketed groups.")))
+                                .flag(
+                                        commandManager
+                                                .flagBuilder("verbose")
+                                                .withAliases("v")
+                                                .withDescription(
+                                                        Description.of(
+                                                                "Include the raw verbose text inline on each line (also always available on hover)."))))
+                .handler(this::handleDetailDefaultPage));
         // Detail, violation page N
-        commandManager.command(
-                applyFilterFlags(commandManager, base.get()
-                        .literal("session")
-                        .required("session", StringParser.stringParser(), sessionOrdinalSuggestions)
-                        .literal("page")
-                        .required("page_number", IntegerParser.integerParser(1), violationPageSuggestions)
-                        .flag(commandManager.flagBuilder("detailed").withAliases("d")
-                                .withDescription(Description.of("Show each violation as its own row instead of time-bucketed groups.")))
-                        .flag(commandManager.flagBuilder("verbose").withAliases("v")
-                                .withDescription(Description.of("Include the raw verbose text inline on each line (also always available on hover)."))))
-                        .handler(this::handleDetailPageN)
-        );
+        commandManager.command(applyFilterFlags(
+                        commandManager,
+                        base.get()
+                                .literal("session")
+                                .required("session", StringParser.stringParser(), sessionOrdinalSuggestions)
+                                .literal("page")
+                                .required("page_number", IntegerParser.integerParser(1), violationPageSuggestions)
+                                .flag(commandManager
+                                        .flagBuilder("detailed")
+                                        .withAliases("d")
+                                        .withDescription(Description.of(
+                                                "Show each violation as its own row instead of time-bucketed groups.")))
+                                .flag(
+                                        commandManager
+                                                .flagBuilder("verbose")
+                                                .withAliases("v")
+                                                .withDescription(
+                                                        Description.of(
+                                                                "Include the raw verbose text inline on each line (also always available on hover)."))))
+                .handler(this::handleDetailPageN));
     }
 
     /** Attach the {@code --name} / {@code --match} / {@code --grep} regex flags. */
     private static Command.Builder<Sender> applyFilterFlags(
-            CommandManager<Sender> commandManager,
-            Command.Builder<Sender> b) {
-        return b
-                .flag(commandManager.flagBuilder("name")
+            CommandManager<Sender> commandManager, Command.Builder<Sender> b) {
+        return b.flag(commandManager
+                        .flagBuilder("name")
                         .withComponent(StringParser.stringParser())
-                        .withDescription(Description.of("Filter to violations whose check display name matches this regex.")))
-                .flag(commandManager.flagBuilder("match")
+                        .withDescription(
+                                Description.of("Filter to violations whose check display name matches this regex.")))
+                .flag(commandManager
+                        .flagBuilder("match")
                         .withComponent(StringParser.stringParser())
                         .withDescription(Description.of("Filter to violations whose verbose text matches this regex.")))
-                .flag(commandManager.flagBuilder("grep")
+                .flag(commandManager
+                        .flagBuilder("grep")
                         .withComponent(StringParser.stringParser())
-                        .withDescription(Description.of("Filter to violations whose display name OR verbose text matches this regex.")));
+                        .withDescription(Description.of(
+                                "Filter to violations whose display name OR verbose text matches this regex.")));
     }
 
     private void handleListPage1(CommandContext<Sender> context) {
@@ -188,8 +208,11 @@ public class CultHistory implements BuildableCommand {
         String target = context.get("target");
         Predicate<ViolationEntry> filter = parseFilterFromContext(sender, context);
         if (filter == FILTER_ERROR) return;
-        runWithPrelude(sender, target, (uuid, displayName, lifecycle, history) ->
-                renderList(sender, lifecycle, history, uuid, displayName, 1, filter));
+        runWithPrelude(
+                sender,
+                target,
+                (uuid, displayName, lifecycle, history) ->
+                        renderList(sender, lifecycle, history, uuid, displayName, 1, filter));
     }
 
     private void handleListPageN(CommandContext<Sender> context) {
@@ -198,8 +221,11 @@ public class CultHistory implements BuildableCommand {
         int page = context.<Integer>get("page_number");
         Predicate<ViolationEntry> filter = parseFilterFromContext(sender, context);
         if (filter == FILTER_ERROR) return;
-        runWithPrelude(sender, target, (uuid, displayName, lifecycle, history) ->
-                renderList(sender, lifecycle, history, uuid, displayName, Math.max(1, page), filter));
+        runWithPrelude(
+                sender,
+                target,
+                (uuid, displayName, lifecycle, history) ->
+                        renderList(sender, lifecycle, history, uuid, displayName, Math.max(1, page), filter));
     }
 
     private void handleDetailDefaultPage(CommandContext<Sender> context) {
@@ -213,12 +239,22 @@ public class CultHistory implements BuildableCommand {
         runWithPrelude(sender, target, (uuid, displayName, lifecycle, history) -> {
             Integer ordinal = resolveSessionOrdinal(sessionRaw, uuid, history);
             if (ordinal == null) {
-                return List.of(message("cult-history-session-not-found",
+                return List.of(message(
+                        "cult-history-session-not-found",
                         "%prefix% &cSession &f%ordinal%&c not found for &f%player%&c.",
                         Map.of("player", displayName, "ordinal", sessionRaw)));
             }
-            return renderDetail(sender, lifecycle, history, uuid, displayName,
-                    ordinal, detailed, verbose, /*pageArg*/ null, filter);
+            return renderDetail(
+                    sender,
+                    lifecycle,
+                    history,
+                    uuid,
+                    displayName,
+                    ordinal,
+                    detailed,
+                    verbose, /*pageArg*/
+                    null,
+                    filter);
         });
     }
 
@@ -234,12 +270,22 @@ public class CultHistory implements BuildableCommand {
         runWithPrelude(sender, target, (uuid, displayName, lifecycle, history) -> {
             Integer ordinal = resolveSessionOrdinal(sessionRaw, uuid, history);
             if (ordinal == null) {
-                return List.of(message("cult-history-session-not-found",
+                return List.of(message(
+                        "cult-history-session-not-found",
                         "%prefix% &cSession &f%ordinal%&c not found for &f%player%&c.",
                         Map.of("player", displayName, "ordinal", sessionRaw)));
             }
-            return renderDetail(sender, lifecycle, history, uuid, displayName,
-                    ordinal, detailed, verbose, Math.max(1, page), filter);
+            return renderDetail(
+                    sender,
+                    lifecycle,
+                    history,
+                    uuid,
+                    displayName,
+                    ordinal,
+                    detailed,
+                    verbose,
+                    Math.max(1, page),
+                    filter);
         });
     }
 
@@ -264,7 +310,8 @@ public class CultHistory implements BuildableCommand {
                 NamedTextColor.GRAY));
         sender.sendMessage(Component.text("Optional:", NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  page <P>", NamedTextColor.YELLOW)
-                .append(Component.text("                  page through this session's violations", NamedTextColor.GRAY)));
+                .append(Component.text(
+                        "                  page through this session's violations", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("  --detailed / -d", NamedTextColor.YELLOW)
                 .append(Component.text("           raw per-violation rows (no time-bucketing)", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("  --verbose / -v", NamedTextColor.YELLOW)
@@ -274,7 +321,9 @@ public class CultHistory implements BuildableCommand {
         sender.sendMessage(Component.text("  --match <regex>", NamedTextColor.YELLOW)
                 .append(Component.text("           filter by verbose text", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("  --grep <regex>", NamedTextColor.YELLOW)
-                .append(Component.text("            filter by either name or verbose (AND-composes with others)", NamedTextColor.GRAY)));
+                .append(Component.text(
+                        "            filter by either name or verbose (AND-composes with others)",
+                        NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("Examples:", NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  " + addressPrefix, NamedTextColor.GRAY)
                 .append(Component.text(target, NamedTextColor.WHITE))
@@ -293,7 +342,8 @@ public class CultHistory implements BuildableCommand {
      * AND-composed. Null = no filter; {@link #FILTER_ERROR} = bad regex,
      * sender already messaged.
      */
-    private static @Nullable Predicate<ViolationEntry> parseFilterFromContext(Sender sender, CommandContext<Sender> ctx) {
+    private static @Nullable Predicate<ViolationEntry> parseFilterFromContext(
+            Sender sender, CommandContext<Sender> ctx) {
         Pattern namePat;
         Pattern verbosePat;
         Pattern grepPat;
@@ -338,6 +388,7 @@ public class CultHistory implements BuildableCommand {
     private static final class BadRegexException extends RuntimeException {
         final String flag;
         final String detail;
+
         BadRegexException(String flag, String detail) {
             super(detail);
             this.flag = flag;
@@ -364,7 +415,8 @@ public class CultHistory implements BuildableCommand {
 
     @FunctionalInterface
     private interface HistoryAction {
-        List<Component> run(UUID uuid, String displayName, DataStoreLifecycle lifecycle, HistoryService history) throws Exception;
+        List<Component> run(UUID uuid, String displayName, DataStoreLifecycle lifecycle, HistoryService history)
+                throws Exception;
     }
 
     private void runWithPrelude(Sender sender, String target, HistoryAction action) {
@@ -373,59 +425,83 @@ public class CultHistory implements BuildableCommand {
         // when start() caught an init failure. Distinguish in the message so
         // the operator knows whether to flip config or check the log.
         if (lifecycle == null || !lifecycle.isEnabled()) {
-            sender.sendMessage(message("cult-history-disabled",
-                    "%prefix% &cHistory subsystem is disabled!", Map.of()));
+            sender.sendMessage(message("cult-history-disabled", "%prefix% &cHistory subsystem is disabled!", Map.of()));
             return;
         }
         if (!lifecycle.isLoaded()) {
-            sender.sendMessage(message("cult-history-load-failure",
-                    "%prefix% &cHistory subsystem failed to load! Check server console for errors.", Map.of()));
+            sender.sendMessage(message(
+                    "cult-history-load-failure",
+                    "%prefix% &cHistory subsystem failed to load! Check server console for errors.",
+                    Map.of()));
             return;
         }
 
         UUID onlineUuid = onlineUuid(target);
-        CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(
-                CultAPI.INSTANCE.getGrimPlugin(),
-                () -> runWithPreludeAsync(sender, target, onlineUuid, lifecycle, action));
+        CultAPI.INSTANCE
+                .getScheduler()
+                .getAsyncScheduler()
+                .runNow(
+                        CultAPI.INSTANCE.getGrimPlugin(),
+                        () -> runWithPreludeAsync(sender, target, onlineUuid, lifecycle, action));
     }
 
-    private void runWithPreludeAsync(Sender sender, String target, @Nullable UUID onlineUuid,
-                                     DataStoreLifecycle lifecycle, HistoryAction action) {
+    private void runWithPreludeAsync(
+            Sender sender,
+            String target,
+            @Nullable UUID onlineUuid,
+            DataStoreLifecycle lifecycle,
+            HistoryAction action) {
         try {
             HistoryService history = lifecycle.historyService();
             if (history == null) {
-                sendHistoryMessage(sender, message("cult-history-disabled",
-                        "%prefix% &cHistory subsystem is disabled!", Map.of()));
+                sendHistoryMessage(
+                        sender,
+                        message("cult-history-disabled", "%prefix% &cHistory subsystem is disabled!", Map.of()));
                 return;
             }
             UUID targetUuid = resolveUuid(target, lifecycle, onlineUuid);
             if (targetUuid == null) {
-                sendHistoryMessage(sender, message("cult-history-unknown-player",
-                        "%prefix% &cUnknown player: &f%player%", Map.of("player", target)));
+                sendHistoryMessage(
+                        sender,
+                        message(
+                                "cult-history-unknown-player",
+                                "%prefix% &cUnknown player: &f%player%",
+                                Map.of("player", target)));
                 return;
             }
             sendHistoryMessages(sender, action.run(targetUuid, target, lifecycle, history));
         } catch (Exception e) {
             // Some exception types carry a null message; fall back to the
             // class name so operators still see *something* useful.
-            sendHistoryMessage(sender, message("cult-history-failed",
-                    "%prefix% &cFailed to load history: &7%error%",
-                    Map.of("error", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage())));
+            sendHistoryMessage(
+                    sender,
+                    message(
+                            "cult-history-failed",
+                            "%prefix% &cFailed to load history: &7%error%",
+                            Map.of(
+                                    "error",
+                                    e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage())));
         }
     }
 
-    private List<Component> renderList(Sender sender, DataStoreLifecycle lifecycle, HistoryService history,
-                                       UUID uuid, String displayName, int page,
-                                       @Nullable Predicate<ViolationEntry> filter) throws Exception {
+    private List<Component> renderList(
+            Sender sender,
+            DataStoreLifecycle lifecycle,
+            HistoryService history,
+            UUID uuid,
+            String displayName,
+            int page,
+            @Nullable Predicate<ViolationEntry> filter)
+            throws Exception {
         int entriesPerPage = lifecycle.config().history().entriesPerPage();
         long totalSessions = history.countSessions(uuid).toCompletableFuture().get(5, TimeUnit.SECONDS);
         int maxPages = Math.max(1, (int) ((totalSessions + entriesPerPage - 1) / Math.max(1, entriesPerPage)));
         if (page > maxPages) page = maxPages;
 
         Cursor cursor = advanceToPage(history, uuid, entriesPerPage, page);
-        Page<SessionSummary> result = history
-                .listSessions(uuid, cursor, entriesPerPage)
-                .toCompletableFuture().get(10, TimeUnit.SECONDS);
+        Page<SessionSummary> result = history.listSessions(uuid, cursor, entriesPerPage)
+                .toCompletableFuture()
+                .get(10, TimeUnit.SECONDS);
 
         // Filter active: keep only sessions with at least one matching
         // violation. Costs N+1 detail fetches per visible page — acceptable
@@ -438,14 +514,14 @@ public class CultHistory implements BuildableCommand {
                 sender, uuid, displayName, page, maxPages, result, ongoingSessionId);
     }
 
-    private static Page<SessionSummary> filterSessionsByDetail(HistoryService history, UUID uuid,
-                                                               Page<SessionSummary> result,
-                                                               Predicate<ViolationEntry> filter) {
+    private static Page<SessionSummary> filterSessionsByDetail(
+            HistoryService history, UUID uuid, Page<SessionSummary> result, Predicate<ViolationEntry> filter) {
         List<SessionSummary> kept = new ArrayList<>();
         for (SessionSummary s : result.items()) {
             try {
                 SessionDetail d = history.getSessionDetail(uuid, s.sessionId())
-                        .toCompletableFuture().get(2, TimeUnit.SECONDS);
+                        .toCompletableFuture()
+                        .get(2, TimeUnit.SECONDS);
                 if (d == null) continue;
                 if (d.violations().stream().anyMatch(filter)) kept.add(s);
             } catch (Exception ignored) {
@@ -456,29 +532,36 @@ public class CultHistory implements BuildableCommand {
         return new Page<>(kept, result.nextCursor());
     }
 
-    private List<Component> renderDetail(Sender sender, DataStoreLifecycle lifecycle, HistoryService history,
-                                         UUID uuid, String displayName, int sessionOrdinal,
-                                         boolean detailed, boolean verbose, @Nullable Integer violationPage,
-                                         @Nullable Predicate<ViolationEntry> filter) throws Exception {
+    private List<Component> renderDetail(
+            Sender sender,
+            DataStoreLifecycle lifecycle,
+            HistoryService history,
+            UUID uuid,
+            String displayName,
+            int sessionOrdinal,
+            boolean detailed,
+            boolean verbose,
+            @Nullable Integer violationPage,
+            @Nullable Predicate<ViolationEntry> filter)
+            throws Exception {
         SessionDetail detail = null;
         if (history instanceof ac.grim.grimac.internal.storage.history.HistoryServiceImpl impl) {
             detail = impl.getSessionDetailByOrdinal(uuid, sessionOrdinal)
-                    .toCompletableFuture().get(10, TimeUnit.SECONDS);
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS);
         }
         if (detail == null) {
-            return List.of(message("cult-history-session-not-found",
+            return List.of(message(
+                    "cult-history-session-not-found",
                     "%prefix% &cSession &f%ordinal%&c not found for &f%player%&c.",
-                    Map.of(
-                            "player", displayName,
-                            "ordinal", Integer.toString(sessionOrdinal))));
+                    Map.of("player", displayName, "ordinal", Integer.toString(sessionOrdinal))));
         }
         if (filter != null) detail = HistoryComponentRenderer.applyFilter(detail, filter);
         int pageSize = lifecycle.config().history().entriesPerPage();
         UUID ongoingSessionId = ongoingSessionIdFor(lifecycle, uuid);
         boolean isOngoing = ongoingSessionId != null && ongoingSessionId.equals(detail.sessionId());
         return HistoryComponentRenderer.renderSessionDetail(
-                sender, displayName, detail, detailed, verbose,
-                violationPage, pageSize, isOngoing);
+                sender, displayName, detail, detailed, verbose, violationPage, pageSize, isOngoing);
     }
 
     private void handleRepairCheckIds(CommandContext<Sender> context) {
@@ -491,13 +574,15 @@ public class CultHistory implements BuildableCommand {
 
         String backendId = lifecycle.config().routing().get(Categories.VIOLATION);
         if (backendId == null || backendId.equalsIgnoreCase("none")) {
-            sender.sendMessage(Component.text("No violation backend is routed; nothing to repair.", NamedTextColor.YELLOW));
+            sender.sendMessage(
+                    Component.text("No violation backend is routed; nothing to repair.", NamedTextColor.YELLOW));
             return;
         }
 
         Backend backend = lifecycle.allBackendsForCommands().get(backendId);
         if (backend == null) {
-            sender.sendMessage(Component.text("Violation backend '" + backendId + "' is not active.", NamedTextColor.RED));
+            sender.sendMessage(
+                    Component.text("Violation backend '" + backendId + "' is not active.", NamedTextColor.RED));
             return;
         }
 
@@ -507,26 +592,28 @@ public class CultHistory implements BuildableCommand {
         }
 
         List<CheckDefinition> liveChecks = snapshotLiveCheckDefinitions();
-        logBoth(sender, Component.text(
-                "Repairing history check ids on backend '" + backendId + "' in the background...", NamedTextColor.AQUA));
-        CultAPI.INSTANCE.getScheduler().getAsyncScheduler().runNow(
-                CultAPI.INSTANCE.getGrimPlugin(),
-                () -> runRepairAsync(sender, lifecycle, backend, liveChecks));
+        logBoth(
+                sender,
+                Component.text(
+                        "Repairing history check ids on backend '" + backendId + "' in the background...",
+                        NamedTextColor.AQUA));
+        CultAPI.INSTANCE
+                .getScheduler()
+                .getAsyncScheduler()
+                .runNow(CultAPI.INSTANCE.getGrimPlugin(), () -> runRepairAsync(sender, lifecycle, backend, liveChecks));
     }
 
     private static void runRepairAsync(
-            Sender sender,
-            DataStoreLifecycle lifecycle,
-            Backend backend,
-            List<CheckDefinition> liveChecks) {
+            Sender sender, DataStoreLifecycle lifecycle, Backend backend, List<CheckDefinition> liveChecks) {
         try {
             int prewarmed = prewarmCatalog(lifecycle, liveChecks);
             RepairPlan plan = buildRepairPlan(backend);
-            CheckCatalogRepairResult result = backend.repairCheckCatalog(
-                    plan.legacyToCatalogIds(), currentCultVersion());
+            CheckCatalogRepairResult result =
+                    backend.repairCheckCatalog(plan.legacyToCatalogIds(), currentCultVersion());
             runOnGlobalThread(() -> reportRepairComplete(sender, prewarmed, plan, result));
         } catch (Exception e) {
-            runOnGlobalThread(() -> logBoth(sender, Component.text("Repair failed: " + e.getMessage(), NamedTextColor.RED)));
+            runOnGlobalThread(
+                    () -> logBoth(sender, Component.text("Repair failed: " + e.getMessage(), NamedTextColor.RED)));
             LogUtil.error("v1 check-id repair failed via /cult history repair check-ids", e);
         } finally {
             REPAIR_RUNNING.set(false);
@@ -534,23 +621,24 @@ public class CultHistory implements BuildableCommand {
     }
 
     private static void reportRepairComplete(
-            Sender sender,
-            int prewarmed,
-            RepairPlan plan,
-            CheckCatalogRepairResult result) {
-        logBoth(sender, Component.text()
-                .append(Component.text("Repair complete: ", NamedTextColor.GREEN))
-                .append(Component.text(prewarmed + " live check definitions prewarmed, "))
-                .append(Component.text(result.mappingsApplied() + " id mapping(s), "))
-                .append(Component.text(result.violationsUpdated() + " violation row(s) rewritten, "))
-                .append(Component.text(result.catalogVersionsUpdated() + " stub version row(s) fixed"))
-                .asComponent());
+            Sender sender, int prewarmed, RepairPlan plan, CheckCatalogRepairResult result) {
+        logBoth(
+                sender,
+                Component.text()
+                        .append(Component.text("Repair complete: ", NamedTextColor.GREEN))
+                        .append(Component.text(prewarmed + " live check definitions prewarmed, "))
+                        .append(Component.text(result.mappingsApplied() + " id mapping(s), "))
+                        .append(Component.text(result.violationsUpdated() + " violation row(s) rewritten, "))
+                        .append(Component.text(result.catalogVersionsUpdated() + " stub version row(s) fixed"))
+                        .asComponent());
         if (plan.ambiguousHashes() > 0 || plan.catalogIdCollisions() > 0) {
-            logBoth(sender, Component.text()
-                    .append(Component.text("Skipped ", NamedTextColor.YELLOW))
-                    .append(Component.text(plan.ambiguousHashes() + " ambiguous hash mapping(s), "))
-                    .append(Component.text(plan.catalogIdCollisions() + " catalog-id collision(s)."))
-                    .asComponent());
+            logBoth(
+                    sender,
+                    Component.text()
+                            .append(Component.text("Skipped ", NamedTextColor.YELLOW))
+                            .append(Component.text(plan.ambiguousHashes() + " ambiguous hash mapping(s), "))
+                            .append(Component.text(plan.catalogIdCollisions() + " catalog-id collision(s)."))
+                            .asComponent());
         }
     }
 
@@ -586,7 +674,9 @@ public class CultHistory implements BuildableCommand {
         Map<Integer, List<CheckCatalogRow>> byLegacyHash = new LinkedHashMap<>();
         for (CheckCatalogRow row : backend.checkCatalog().loadAll()) {
             catalogIds.add(row.checkId());
-            byLegacyHash.computeIfAbsent(row.stableKey().hashCode(), k -> new ArrayList<>()).add(row);
+            byLegacyHash
+                    .computeIfAbsent(row.stableKey().hashCode(), k -> new ArrayList<>())
+                    .add(row);
         }
 
         Map<Integer, Integer> repairIds = new LinkedHashMap<>();
@@ -614,10 +704,7 @@ public class CultHistory implements BuildableCommand {
         return CultAPI.INSTANCE.getExternalAPI().getGrimVersion();
     }
 
-    private record RepairPlan(
-            Map<Integer, Integer> legacyToCatalogIds,
-            int ambiguousHashes,
-            int catalogIdCollisions) {}
+    private record RepairPlan(Map<Integer, Integer> legacyToCatalogIds, int ambiguousHashes, int catalogIdCollisions) {}
 
     private record CheckDefinition(String stableKey, String display, String description) {}
 
@@ -635,8 +722,7 @@ public class CultHistory implements BuildableCommand {
     }
 
     private static void runOnGlobalThread(Runnable task) {
-        CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().run(
-                CultAPI.INSTANCE.getGrimPlugin(), task);
+        CultAPI.INSTANCE.getScheduler().getGlobalRegionScheduler().run(CultAPI.INSTANCE.getGrimPlugin(), task);
     }
 
     private static void logBoth(Sender sender, Component msg) {
@@ -660,7 +746,8 @@ public class CultHistory implements BuildableCommand {
         Cursor cursor = null;
         for (int i = 1; i < page; i++) {
             Page<SessionSummary> r = history.listSessions(uuid, cursor, pageSize)
-                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS);
             cursor = r.nextCursor();
             if (cursor == null) break;
         }
@@ -686,8 +773,10 @@ public class CultHistory implements BuildableCommand {
 
             List<Suggestion> onlineSuggestions;
             try {
-                Iterable<? extends Suggestion> onlineIt = onlineProvider.suggestionsFuture(ctx, in)
-                        .toCompletableFuture().get(500, TimeUnit.MILLISECONDS);
+                Iterable<? extends Suggestion> onlineIt = onlineProvider
+                        .suggestionsFuture(ctx, in)
+                        .toCompletableFuture()
+                        .get(500, TimeUnit.MILLISECONDS);
                 onlineSuggestions = new ArrayList<>();
                 onlineIt.forEach(onlineSuggestions::add);
             } catch (Exception e) {
@@ -708,10 +797,12 @@ public class CultHistory implements BuildableCommand {
             DataStoreLifecycle dsl = CultAPI.INSTANCE.getDataStoreLifecycle();
             if (dsl == null || !dsl.isLoaded() || dsl.dataStore() == null) return out;
             try {
-                Page<PlayerIdentity> page = dsl.dataStore().query(
+                Page<PlayerIdentity> page = dsl.dataStore()
+                        .query(
                                 Categories.PLAYER_IDENTITY,
                                 Queries.listPlayersByNamePrefix(partialLower, MAX_PLAYER_SUGGESTIONS))
-                        .toCompletableFuture().get(1, TimeUnit.SECONDS);
+                        .toCompletableFuture()
+                        .get(1, TimeUnit.SECONDS);
                 for (PlayerIdentity id : page.items()) {
                     if (id.currentName() == null) continue;
                     if (seen.add(id.currentName().toLowerCase(Locale.ROOT))) {
@@ -734,8 +825,10 @@ public class CultHistory implements BuildableCommand {
             DataStoreLifecycle dsl = CultAPI.INSTANCE.getDataStoreLifecycle();
             if (dsl == null || !dsl.isLoaded() || dsl.historyService() == null) return List.of();
             try {
-                long total = dsl.historyService().countSessions(uuid)
-                        .toCompletableFuture().get(1, TimeUnit.SECONDS);
+                long total = dsl.historyService()
+                        .countSessions(uuid)
+                        .toCompletableFuture()
+                        .get(1, TimeUnit.SECONDS);
                 int entriesPerPage = dsl.config().history().entriesPerPage();
                 int maxPages = Math.max(1, (int) ((total + entriesPerPage - 1) / Math.max(1, entriesPerPage)));
                 return rangeSuggestions(1, Math.min(maxPages, MAX_SUGGESTIONS));
@@ -755,8 +848,10 @@ public class CultHistory implements BuildableCommand {
                 return List.of(Suggestion.suggestion(LATEST_ALIAS));
             }
             try {
-                long total = dsl.historyService().countSessions(uuid)
-                        .toCompletableFuture().get(1, TimeUnit.SECONDS);
+                long total = dsl.historyService()
+                        .countSessions(uuid)
+                        .toCompletableFuture()
+                        .get(1, TimeUnit.SECONDS);
                 int max = (int) Math.min(total, MAX_SUGGESTIONS);
                 List<Suggestion> out = new ArrayList<>(max + 1);
                 out.add(Suggestion.suggestion(LATEST_ALIAS));
@@ -785,11 +880,13 @@ public class CultHistory implements BuildableCommand {
                 Integer ordinal = resolveSessionOrdinal(sessionRaw, uuid, dsl.historyService());
                 if (ordinal == null) return List.of();
                 SessionDetail detail;
-                if (!(dsl.historyService() instanceof ac.grim.grimac.internal.storage.history.HistoryServiceImpl impl)) {
+                if (!(dsl.historyService()
+                        instanceof ac.grim.grimac.internal.storage.history.HistoryServiceImpl impl)) {
                     return List.of();
                 }
                 detail = impl.getSessionDetailByOrdinal(uuid, ordinal)
-                        .toCompletableFuture().get(1, TimeUnit.SECONDS);
+                        .toCompletableFuture()
+                        .get(1, TimeUnit.SECONDS);
                 if (detail == null) return List.of();
                 int entriesPerPage = dsl.config().history().entriesPerPage();
                 // Page unit depends on --detailed; without that info here, suggest
@@ -819,14 +916,15 @@ public class CultHistory implements BuildableCommand {
         return resolveUuid(name, lifecycle, onlineUuid(name));
     }
 
-    private static @Nullable UUID resolveUuid(String name, @Nullable DataStoreLifecycle lifecycle, @Nullable UUID onlineUuid) {
+    private static @Nullable UUID resolveUuid(
+            String name, @Nullable DataStoreLifecycle lifecycle, @Nullable UUID onlineUuid) {
         if (onlineUuid != null) return onlineUuid;
         if (lifecycle != null && lifecycle.isLoaded()) {
             NameResolver resolver = lifecycle.nameResolver();
             if (resolver != null) {
                 try {
-                    Optional<UUID> hit = resolver.resolveByName(name)
-                            .toCompletableFuture().get(2, TimeUnit.SECONDS);
+                    Optional<UUID> hit =
+                            resolver.resolveByName(name).toCompletableFuture().get(2, TimeUnit.SECONDS);
                     if (hit.isPresent()) return hit.get();
                 } catch (Exception ignored) {
                 }

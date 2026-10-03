@@ -1,8 +1,8 @@
 package ac.cult.cultac.utils.data;
 
-import net.minecraft.core.BlockPos;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 @Data
@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 public class MainSupportingBlockData {
     @Nullable
     BlockPos blockPos;
+
     boolean onGround;
 
     public boolean lastOnGroundAndNoBlock() {

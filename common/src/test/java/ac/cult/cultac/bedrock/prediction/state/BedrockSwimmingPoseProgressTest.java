@@ -1,7 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.state;
 
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public final class BedrockSwimmingPoseProgressTest {
     @Test

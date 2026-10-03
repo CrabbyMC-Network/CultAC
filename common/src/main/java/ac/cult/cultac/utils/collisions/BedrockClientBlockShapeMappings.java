@@ -2,15 +2,15 @@ package ac.cult.cultac.utils.collisions;
 
 import ac.cult.cultac.bedrock.prediction.api.BedrockCollisionShapeQuery;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionOverrideCatalog;
-import ac.cult.cultac.bedrock.prediction.geometry.BedrockServerStateMappings;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionOverrideShape;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockCollisionWorldBuilder;
+import ac.cult.cultac.bedrock.prediction.geometry.BedrockServerStateMappings;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockAabb;
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.ComplexCollisionBox;
@@ -31,17 +31,20 @@ import org.bukkit.inventory.ItemStack;
 public final class BedrockClientBlockShapeMappings {
     // The bundled generator targets the latest Java version supported by this CultAC build.
     private static final ClientVersion CATALOG_JAVA_VERSION = ClientVersion.V_26_2;
-    private static final BedrockCollisionOverrideCatalog NATIVE_FALLBACK = BedrockCollisionOverrideCatalog.nativeFallback();
+    private static final BedrockCollisionOverrideCatalog NATIVE_FALLBACK =
+            BedrockCollisionOverrideCatalog.nativeFallback();
     private static final AtomicReference<Snapshot> SNAPSHOT = new AtomicReference<>(Snapshot.empty());
 
-    private BedrockClientBlockShapeMappings() {
-    }
+    private BedrockClientBlockShapeMappings() {}
 
     public static void initialize() {
         BedrockCollisionOverrideCatalog artifact = BedrockCollisionOverrideCatalog.bundled();
         int serverProtocol = net.minecraft.SharedConstants.getProtocolVersion();
-        int[] mappings = BedrockServerStateMappings.create(serverProtocol, Block.BLOCK_STATE_REGISTRY.size(),
-                CATALOG_JAVA_VERSION.getProtocolVersion(), artifact.javaStateCount());
+        int[] mappings = BedrockServerStateMappings.create(
+                serverProtocol,
+                Block.BLOCK_STATE_REGISTRY.size(),
+                CATALOG_JAVA_VERSION.getProtocolVersion(),
+                artifact.javaStateCount());
         Snapshot snapshot = build(artifact.forServerStates(mappings));
         SNAPSHOT.set(snapshot);
         LogUtil.info("[ClientBlockShapes] Bedrock collision cache: server protocol " + serverProtocol
@@ -103,14 +106,19 @@ public final class BedrockClientBlockShapeMappings {
                 continue;
             }
             Optional<CollisionBox> movement = override.map(shape -> fromLocalBoxes(shape.boxes()))
-                    .or(() -> VersionedJavaBlockShapes.movement(CATALOG_JAVA_VERSION,
-                            ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state), 0, 0, 0));
+                    .or(() -> VersionedJavaBlockShapes.movement(
+                            CATALOG_JAVA_VERSION,
+                            ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state),
+                            0,
+                            0,
+                            0));
             movement.ifPresent(shape -> entries.put(javaStateId, new Entry(shape, false, false)));
         }
         return new Snapshot(Map.copyOf(entries), catalog.shapeCount(), catalog);
     }
 
-    private static Optional<CollisionBox> buildDynamicMovement(BedrockCollisionOverrideCatalog catalog, CultPlayer player, BlockState state, int x, int y, int z) {
+    private static Optional<CollisionBox> buildDynamicMovement(
+            BedrockCollisionOverrideCatalog catalog, CultPlayer player, BlockState state, int x, int y, int z) {
         BlockPosition position = new BlockPosition(x, y, z);
         BlockCollisionWorld world = new BedrockCollisionWorldBuilder(catalog)
                 .build(Map.of(position, state), bedrockQuery(player, position, state));
@@ -120,13 +128,9 @@ public final class BedrockClientBlockShapeMappings {
     }
 
     private static CollisionBox bedrockMovement(
-            BedrockCollisionOverrideCatalog catalog,
-            BlockState state,
-            BedrockCollisionShapeQuery query
-    ) {
+            BedrockCollisionOverrideCatalog catalog, BlockState state, BedrockCollisionShapeQuery query) {
         BlockPosition position = new BlockPosition(0, 0, 0);
-        BlockCollisionWorld world = new BedrockCollisionWorldBuilder(catalog)
-                .build(Map.of(position, state), query);
+        BlockCollisionWorld world = new BedrockCollisionWorldBuilder(catalog).build(Map.of(position, state), query);
         return world.blockAt(position)
                 .map(block -> fromWorldBoxes(block.collisionBoxes()))
                 .orElse(NoCollisionBox.INSTANCE);
@@ -143,17 +147,15 @@ public final class BedrockClientBlockShapeMappings {
         return null;
     }
 
-    private static BedrockCollisionShapeQuery bedrockQuery(CultPlayer player, BlockPosition position, BlockState state) {
+    private static BedrockCollisionShapeQuery bedrockQuery(
+            CultPlayer player, BlockPosition position, BlockState state) {
         if (player == null || player.boundingBox == null) {
             return BedrockCollisionShapeQuery.NONE;
         }
         SimpleCollisionBox box = player.boundingBox;
         WorldCollisionBox actorBox = new WorldCollisionBox(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
         boolean wearingLeatherBoots = wearingLeatherBoots(player);
-        return BedrockCollisionShapeQuery.actor(
-                actorBox,
-                player.isSneaking,
-                wearingLeatherBoots);
+        return BedrockCollisionShapeQuery.actor(actorBox, player.isSneaking, wearingLeatherBoots);
     }
 
     private static boolean wearingLeatherBoots(CultPlayer player) {
@@ -234,10 +236,5 @@ public final class BedrockClientBlockShapeMappings {
         }
     }
 
-    record Entry(
-            CollisionBox movement,
-            boolean dynamicMovement,
-            boolean clientComputedMovement
-    ) {
-    }
+    record Entry(CollisionBox movement, boolean dynamicMovement, boolean clientComputedMovement) {}
 }

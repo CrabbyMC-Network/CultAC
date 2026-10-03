@@ -48,13 +48,20 @@ public class Ray implements Cloneable {
         return orig.add(dir.multiply(distance));
     }
 
-    //https://en.wikipedia.org/wiki/Skew_lines#Nearest_Points
+    // https://en.wikipedia.org/wiki/Skew_lines#Nearest_Points
     public Pair<Vector, Vector> closestPointsBetweenLines(Ray other) {
         Vector n1 = direction.clone().crossProduct(other.direction.clone().crossProduct(direction));
         Vector n2 = other.direction.clone().crossProduct(direction.clone().crossProduct(other.direction));
 
-        Vector c1 = origin.clone().add(direction.clone().multiply(other.origin.clone().subtract(origin).dot(n2) / direction.dot(n2)));
-        Vector c2 = other.origin.clone().add(other.direction.clone().multiply(origin.clone().subtract(other.origin).dot(n1) / other.direction.dot(n1)));
+        Vector c1 = origin.clone()
+                .add(direction
+                        .clone()
+                        .multiply(other.origin.clone().subtract(origin).dot(n2) / direction.dot(n2)));
+        Vector c2 = other.origin
+                .clone()
+                .add(other.direction
+                        .clone()
+                        .multiply(origin.clone().subtract(other.origin).dot(n1) / other.direction.dot(n1)));
 
         return new Pair<>(c1, c2);
     }

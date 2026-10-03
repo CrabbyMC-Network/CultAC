@@ -5,6 +5,7 @@ import lombok.Getter;
 
 public class TrigHandler {
     CultPlayer player;
+
     @Getter
     private boolean isVanillaMath = true;
 
@@ -15,7 +16,6 @@ public class TrigHandler {
     public void toggleShitMath() {
         isVanillaMath = !isVanillaMath;
     }
-
 
     public float sin(float f) {
         return isVanillaMath ? VanillaMath.sin(f) : OptifineFastMath.sin(f);

@@ -1,12 +1,12 @@
 package ac.cult.cultac.checks;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.AbstractProcessor;
-import ac.grim.grimac.api.config.ConfigManager;
-import ac.grim.grimac.api.config.ConfigReloadable;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.StringReturner;
 import ac.cult.cultac.utils.common.ConfigReloadObserver;
+import ac.grim.grimac.api.AbstractProcessor;
+import ac.grim.grimac.api.config.ConfigManager;
+import ac.grim.grimac.api.config.ConfigReloadable;
 
 public abstract class CultProcessor implements AbstractProcessor, ConfigReloadable, ConfigReloadObserver {
 
@@ -56,7 +56,5 @@ public abstract class CultProcessor implements AbstractProcessor, ConfigReloadab
     }
 
     @Override
-    public void onReload(ConfigManager config) {
-    }
-
+    public void onReload(ConfigManager config) {}
 }

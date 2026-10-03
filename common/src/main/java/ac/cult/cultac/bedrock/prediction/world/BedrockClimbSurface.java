@@ -1,10 +1,6 @@
 package ac.cult.cultac.bedrock.prediction.world;
 
-public record BedrockClimbSurface(
-    Type type,
-    boolean descendAllowed,
-    boolean fluidSuppressesFallClamp
-) {
+public record BedrockClimbSurface(Type type, boolean descendAllowed, boolean fluidSuppressesFallClamp) {
     public BedrockClimbSurface {
         java.util.Objects.requireNonNull(type, "type");
     }

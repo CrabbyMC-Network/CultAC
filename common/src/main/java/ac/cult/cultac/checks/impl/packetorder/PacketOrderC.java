@@ -1,31 +1,34 @@
 package ac.cult.cultac.checks.impl.packetorder;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
-import ac.grim.grimac.api.storage.verbose.VerboseTags;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.DeadCheck;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.DecodedPacketReliability;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.packetentity.PacketEntity;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.value.Hand;
+import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import ac.grim.grimac.api.storage.verbose.VerboseTags;
 
-@CheckData(name = "PacketOrderC", stableKey = "cult.packetorder.interact_order", description = "Sent INTERACT and INTERACT_AT entity packets in the wrong order")
+@CheckData(
+        name = "PacketOrderC",
+        stableKey = "cult.packetorder.interact_order",
+        description = "Sent INTERACT and INTERACT_AT entity packets in the wrong order")
 @DeadCheck(reason = DeadCheck.Reason.VERSION_GATED, detail = "isApplicable() requires a client older than 26.1.")
 public class PacketOrderC extends Check implements CheckListener {
     // Shape index == KIND_* constant value.
-    private static final Verbose V = Verbose
-            .of("Skipped Interact-At")
+    private static final Verbose V = Verbose.of("Skipped Interact-At")
             .or("Skipped Interact")
             .or("Skipped Interact (Tick)")
-            .or("requiredEntity={sint}, entity={sint}, requiredHand={hand}, hand={hand}, requiredSneaking={bool}, sneaking={bool}");
+            .or(
+                    "requiredEntity={sint}, entity={sint}, requiredHand={hand}, hand={hand}, requiredSneaking={bool}, sneaking={bool}");
 
     static final int KIND_SKIPPED_INTERACT_AT = 0;
     static final int KIND_SKIPPED_INTERACT = 1;
@@ -52,10 +55,9 @@ public class PacketOrderC extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
-        if (!isApplicable()
-                || !DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
-
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+        if (!isApplicable() || !DecodedPacketReliability.interactionFamilyReliable(player.getClientVersion())) return;
 
         final PacketEntity entity = player.compensatedEntities.entityMap.get(packet.entityId());
 
@@ -75,14 +77,17 @@ public class PacketOrderC extends Check implements CheckListener {
                         event.setCancelled(true);
                         player.onPacketCancel();
                     }
-                } else if (packet.entityId() != requiredEntity || packet.hand() != requiredHand || sneaking != requiredSneaking) {
+                } else if (packet.entityId() != requiredEntity
+                        || packet.hand() != requiredHand
+                        || sneaking != requiredSneaking) {
                     if (flag(V.write(verbose(), KIND_MISMATCH)
-                            .sint(requiredEntity)
-                            .sint(packet.entityId())
-                            .uint(VerboseTags.enumId(requiredHand))
-                            .uint(VerboseTags.enumId(packet.hand()))
-                            .bool(requiredSneaking)
-                            .bool(sneaking)) && shouldModifyPackets()) {
+                                    .sint(requiredEntity)
+                                    .sint(packet.entityId())
+                                    .uint(VerboseTags.enumId(requiredHand))
+                                    .uint(VerboseTags.enumId(packet.hand()))
+                                    .bool(requiredSneaking)
+                                    .bool(sneaking))
+                            && shouldModifyPackets()) {
                         event.setCancelled(true);
                         player.onPacketCancel();
                     }
@@ -108,10 +113,9 @@ public class PacketOrderC extends Check implements CheckListener {
         }
     }
 
-
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable()) return;
 
         if (sentInteractAt) {

@@ -8,8 +8,8 @@ public final class BedrockLiquidVerticalMovement {
     public static final double WATER_VERTICAL_IMPULSE = 0.03999999910593033D;
     public static final double LAVA_FRICTION = 0.5D;
     public static final double LAVA_GRAVITY = 0.02D;
-    private BedrockLiquidVerticalMovement() {
-    }
+
+    private BedrockLiquidVerticalMovement() {}
 
     public static boolean descendInput(BedrockInputIntent intent) {
         return intent.vertical().descendInput();
@@ -17,10 +17,9 @@ public final class BedrockLiquidVerticalMovement {
 
     public static Vec3d waterDescendVelocity(Vec3d currentVelocity) {
         return new Vec3d(
-            currentVelocity.x(),
-            (double) (float) ((float) currentVelocity.y() - (float) WATER_VERTICAL_IMPULSE),
-            currentVelocity.z()
-        );
+                currentVelocity.x(),
+                (double) (float) ((float) currentVelocity.y() - (float) WATER_VERTICAL_IMPULSE),
+                currentVelocity.z());
     }
 
     public static double waterJumpImpulse(boolean jumpImpulseApplies) {

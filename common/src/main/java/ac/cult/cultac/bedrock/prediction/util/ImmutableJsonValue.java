@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class ImmutableJsonValue {
-    private ImmutableJsonValue() {
-    }
+    private ImmutableJsonValue() {}
 
     public static Map<String, Object> copyObjectMap(Map<String, Object> values) {
         if (values == null || values.isEmpty()) {
@@ -20,10 +19,10 @@ public final class ImmutableJsonValue {
 
     private static Object copyValue(Object value) {
         if (value == null
-            || value instanceof String
-            || value instanceof Number
-            || value instanceof Boolean
-            || value instanceof Character) {
+                || value instanceof String
+                || value instanceof Number
+                || value instanceof Boolean
+                || value instanceof Character) {
             return value;
         }
         if (value instanceof Map<?, ?> map) {
@@ -33,9 +32,8 @@ public final class ImmutableJsonValue {
             return copyCollection(collection);
         }
         throw new IllegalArgumentException(
-            "JSON metadata values must be strings, numbers, booleans, null, lists, or maps: "
-                + value.getClass().getName()
-        );
+                "JSON metadata values must be strings, numbers, booleans, null, lists, or maps: "
+                        + value.getClass().getName());
     }
 
     private static Map<String, Object> copyMap(Map<?, ?> values) {

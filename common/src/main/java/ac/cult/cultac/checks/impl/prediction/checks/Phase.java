@@ -9,33 +9,36 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import net.minecraft.core.BlockPos;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.data.BlockData;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.block.data.BlockData;
 
 @BedrockSupported
 public class Phase extends Check implements PostPredictionListener {
     // Temporary Bedrock penetration approximation, inset on every face.
     private static final double BEDROCK_PENETRATION_INSET = 0.001D;
 
-    public Phase(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder()
-            .name("Phase")
-            .stableKey("cult.prediction.phase")
-            .description("Moved into a solid block during movement prediction")
-            .setback(1)
-            .decay(0.005)
-            .build()); }
+    public Phase(CultPlayer cultPlayer) {
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("Phase")
+                        .stableKey("cult.prediction.phase")
+                        .description("Moved into a solid block during movement prediction")
+                        .setback(1)
+                        .decay(0.005)
+                        .build());
+    }
 
     SimpleCollisionBox oldBox = null;
 
@@ -45,7 +48,8 @@ public class Phase extends Check implements PostPredictionListener {
         ServerboundMovePlayer flying = packet;
         if (!flying.hasPosition()) return;
 
-        checkMovement(new Vec3(flying.x(), flying.y(), flying.z()), false, player.packetStateData.lastPacketWasTeleport);
+        checkMovement(
+                new Vec3(flying.x(), flying.y(), flying.z()), false, player.packetStateData.lastPacketWasTeleport);
     }
 
     @Override
@@ -62,7 +66,9 @@ public class Phase extends Check implements PostPredictionListener {
         var context = result.getSimulationContext();
         if (context == null || !context.hasTrustedAuthoredInput() || context.getBedrockInput() == null) return;
 
-        checkMovement(context.getEnd(), true,
+        checkMovement(
+                context.getEnd(),
+                true,
                 complete.isTeleport() || context.isBedrockTeleportTick() || complete.isExempt());
     }
 
@@ -72,8 +78,11 @@ public class Phase extends Check implements PostPredictionListener {
             oldBox = historyBox;
             return;
         }
-        if (player.inVehicle() || teleportOrExempt || player.getSetbackTeleportUtil().shouldBlockMovement()
-                || player.checkManager.getSimulationProcessor().isExempt() || player.getSetbackTeleportUtil().isPendingSetback()) {
+        if (player.inVehicle()
+                || teleportOrExempt
+                || player.getSetbackTeleportUtil().shouldBlockMovement()
+                || player.checkManager.getSimulationProcessor().isExempt()
+                || player.getSetbackTeleportUtil().isPendingSetback()) {
             oldBox = historyBox;
             return;
         }
@@ -95,7 +104,8 @@ public class Phase extends Check implements PostPredictionListener {
 
         for (SimpleCollisionBox box : boxes) {
             if (intersects(newBox, box, bedrock) && !intersects(oldBox, box, bedrock)) {
-                BlockPos blockPos = BlockPos.containing((box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2, (box.minZ + box.maxZ) / 2);
+                BlockPos blockPos = BlockPos.containing(
+                        (box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2, (box.minZ + box.maxZ) / 2);
                 BlockData state = player.compensatedWorld.getBlockDataAt(blockPos);
                 // We don't attempt to calculate the many ways a block can be updated
                 if (NmsBlockTags.isConnectingBlock(state.getMaterial())) {
@@ -104,7 +114,8 @@ public class Phase extends Check implements PostPredictionListener {
 
                 // Simply resync if the player has ghost blocks.
                 if (hasGhostBlocks) {
-                    final ac.cult.cultac.manager.player.SetbackTeleportUtil setbackUtil = player.getSetbackTeleportUtil();
+                    final ac.cult.cultac.manager.player.SetbackTeleportUtil setbackUtil =
+                            player.getSetbackTeleportUtil();
                     setbackUtil.executeForceResync("phase");
                 } else if (flagWithSetback()) {
                     final String playerName = player.getName();
@@ -120,21 +131,25 @@ public class Phase extends Check implements PostPredictionListener {
     }
 
     private static SimpleCollisionBox boxAt(Vec3 location, float height, boolean bedrock) {
-        SimpleCollisionBox box = GetBoundingBox.getBoundingBoxFromPosAndSize(location.x, location.y, location.z, 0.6f, height);
+        SimpleCollisionBox box =
+                GetBoundingBox.getBoundingBoxFromPosAndSize(location.x, location.y, location.z, 0.6f, height);
         return bedrock ? box.expand(-BEDROCK_PENETRATION_INSET) : box;
     }
 
     private static boolean intersects(SimpleCollisionBox first, SimpleCollisionBox second, boolean bedrock) {
         if (!bedrock) return first.isIntersected(second);
         // The inset supplies the entire threshold; do not add COLLISION_EPSILON.
-        return first.maxX > second.minX && first.minX < second.maxX
-                && first.maxY > second.minY && first.minY < second.maxY
-                && first.maxZ > second.minZ && first.minZ < second.maxZ;
+        return first.maxX > second.minX
+                && first.minX < second.maxX
+                && first.maxY > second.minY
+                && first.minY < second.maxY
+                && first.maxZ > second.minZ
+                && first.minZ < second.maxZ;
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(packet);
     }
 }

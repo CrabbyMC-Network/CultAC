@@ -3,8 +3,8 @@ package ac.cult.cultac.checks.impl.bedrock;
 import ac.cult.cultac.checks.BedrockSupported;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.checks.type.CheckListener;
+import ac.cult.cultac.player.CultPlayer;
 import java.util.Locale;
 import org.bukkit.ChatColor;
 
@@ -17,11 +17,13 @@ public final class BedrockMovement extends Check implements CheckListener {
     private Integer lastVehicleMountSwitchTick;
 
     public BedrockMovement(CultPlayer player) {
-        super(player, CheckInfo.builder()
-                .name("BedrockMovement")
-                .stableKey("cult.bedrock.movement")
-                .description("Validates Bedrock server-authoritative movement with CultAC Bedrock prediction")
-                .build());
+        super(
+                player,
+                CheckInfo.builder()
+                        .name("BedrockMovement")
+                        .stableKey("cult.bedrock.movement")
+                        .description("Validates Bedrock server-authoritative movement with CultAC Bedrock prediction")
+                        .build());
     }
 
     @Override
@@ -64,5 +66,4 @@ public final class BedrockMovement extends Check implements CheckListener {
     static boolean shouldFlag(double offset, double threshold, double immediateSetbackThreshold) {
         return offset >= threshold || offset >= immediateSetbackThreshold;
     }
-
 }

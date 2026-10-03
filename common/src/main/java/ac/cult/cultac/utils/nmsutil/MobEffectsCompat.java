@@ -1,9 +1,8 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import java.lang.reflect.Field;
 import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
-
-import java.lang.reflect.Field;
 
 /**
  * Cross-version access to vanilla mob effect constants. 26.2 renamed several
@@ -24,8 +23,7 @@ public final class MobEffectsCompat {
     public static final Holder<MobEffect> SLOW_FALLING = holder("SLOW_FALLING");
     public static final Holder<MobEffect> WEAVING = holder("WEAVING");
 
-    private MobEffectsCompat() {
-    }
+    private MobEffectsCompat() {}
 
     @SuppressWarnings("unchecked")
     private static Holder<MobEffect> holder(String... names) {

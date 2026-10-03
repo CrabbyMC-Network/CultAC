@@ -1,5 +1,7 @@
 package ac.cult.cultac.command.commands;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
@@ -23,8 +25,6 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.*;
-
 public final class CultDebugVelocityTest {
     @Test
     public void bedrockSilentWriteReachesWireWithoutTrackingAndNormalWriteStillTracks() throws Exception {
@@ -35,7 +35,8 @@ public final class CultDebugVelocityTest {
             var observer = CultDebugVelocity.BedrockVelocity.observerContext(transport.wire.pipeline());
             assertNotNull(observer);
 
-            assertTrue(CultDebugVelocity.BedrockVelocity.writeSilently(observer, packet).isSuccess());
+            assertTrue(CultDebugVelocity.BedrockVelocity.writeSilently(observer, packet)
+                    .isSuccess());
             transport.javaChannel.runPendingTasks();
             assertSame(packet, transport.read());
             assertNull(transport.wire.readOutbound());
@@ -69,7 +70,9 @@ public final class CultDebugVelocityTest {
             connections.setAccessible(true);
             users = map(connections.get(manager), "currentByUuid");
             taps = map(null, GeyserBedrockBridgeRuntime.class, "PACKET_TAPS");
-            synchronized (user.getCultConnection()) { user.getCultConnection().player(player); }
+            synchronized (user.getCultConnection()) {
+                user.getCultConnection().player(player);
+            }
             users.put(uuid, user.getCultConnection());
             Mockito.when(session.javaUuid()).thenReturn(uuid);
             Mockito.when(session.getPlayerEntity().geyserId()).thenReturn(123L);
@@ -77,8 +80,8 @@ public final class CultDebugVelocityTest {
                     .thenReturn(javaChannel.unsafe().remoteAddress());
 
             Class<?> tapType = Class.forName(GeyserBedrockBridgeRuntime.class.getName() + "$PacketTapHandler");
-            var tapConstructor = tapType.getDeclaredConstructor(GeyserSession.class, BedrockSession.class,
-                    BedrockPacketHandler.class, GeyserQueue.class);
+            var tapConstructor = tapType.getDeclaredConstructor(
+                    GeyserSession.class, BedrockSession.class, BedrockPacketHandler.class, GeyserQueue.class);
             tapConstructor.setAccessible(true);
             Object tap = tapConstructor.newInstance(session, null, null, new GeyserQueue());
             taps.put(session, tap);
@@ -101,7 +104,9 @@ public final class CultDebugVelocityTest {
         @Override
         public void close() {
             taps.remove(session);
-            synchronized (player.user.getCultConnection()) { player.user.getCultConnection().player(null); }
+            synchronized (player.user.getCultConnection()) {
+                player.user.getCultConnection().player(null);
+            }
             users.remove(player.playerUUID, player.user.getCultConnection());
             wire.finishAndReleaseAll();
             javaChannel.finishAndReleaseAll();

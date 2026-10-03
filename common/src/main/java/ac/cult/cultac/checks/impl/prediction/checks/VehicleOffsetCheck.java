@@ -6,9 +6,8 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.Locale;
+import net.minecraft.world.phys.Vec3;
 
 public class VehicleOffsetCheck implements EngineCheck {
     private static final double VEHICLE_OFFSET_THRESHOLD = 0.005D;
@@ -26,16 +25,15 @@ public class VehicleOffsetCheck implements EngineCheck {
         double severity = offset.length();
         if (severity > VEHICLE_OFFSET_THRESHOLD) {
             String vehicleType = EntityTypeUtil.getKey(vehicle.type).toString();
-            result.addFlag(player.checkManager.getListener(VehicleOffset.class),
+            result.addFlag(
+                    player.checkManager.getListener(VehicleOffset.class),
                     () -> "type=" + vehicleType + " offset=" + formatOffset(offset),
                     severity);
         }
     }
 
     private String formatOffset(Vec3 offset) {
-        return "(x=" + formatAxis(offset.x)
-                + ", y=" + formatAxis(offset.y)
-                + ", z=" + formatAxis(offset.z) + ")";
+        return "(x=" + formatAxis(offset.x) + ", y=" + formatAxis(offset.y) + ", z=" + formatAxis(offset.z) + ")";
     }
 
     private String formatAxis(double value) {

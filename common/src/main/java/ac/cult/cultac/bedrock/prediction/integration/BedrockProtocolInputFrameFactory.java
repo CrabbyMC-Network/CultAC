@@ -15,8 +15,7 @@ final class BedrockProtocolInputFrameFactory {
             BedrockClientPoseState poseState,
             boolean actorGliding,
             boolean swimmingRequested,
-            Set<String> extraInputData
-    ) {
+            Set<String> extraInputData) {
         TreeSet<String> inputData = new TreeSet<>();
         addFrameInputData(inputData, frame, poseState, actorGliding);
         inputData.addAll(extraInputData);
@@ -29,16 +28,14 @@ final class BedrockProtocolInputFrameFactory {
                 frame.isSneaking(),
                 frame.isSprinting(),
                 inputData,
-                swimmingRequested
-        );
+                swimmingRequested);
     }
 
     private static void addFrameInputData(
             TreeSet<String> inputData,
             BedrockAuthInputFrame frame,
             BedrockClientPoseState poseState,
-            boolean actorGliding
-    ) {
+            boolean actorGliding) {
         add(inputData, frame.isJumpStarted(), "START_JUMPING");
         add(inputData, frame.isJumpPressedRaw(), "JUMP_PRESSED_RAW");
         add(inputData, frame.isJumpCurrentRaw(), "JUMP_CURRENT_RAW");

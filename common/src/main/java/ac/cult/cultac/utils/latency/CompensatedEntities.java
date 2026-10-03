@@ -1,9 +1,11 @@
 package ac.cult.cultac.utils.latency;
 
+import ac.cult.cultac.network.packet.EntityMetadata;
 import ac.cult.cultac.network.protocol.ClientVersion;
-
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.AttributeModifier;
+import ac.cult.cultac.protocol.value.AttributeSnapshot;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.ShulkerData;
 import ac.cult.cultac.utils.data.TrackerData;
@@ -18,31 +20,29 @@ import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.WatchableIndexUtil;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import ac.cult.cultac.protocol.value.AttributeSnapshot;
-import ac.cult.cultac.network.packet.EntityMetadata;
+import java.util.*;
+import java.util.function.Consumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import ac.cult.cultac.protocol.value.AttributeModifier;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
-
-import java.util.*;
-import java.util.function.Consumer;
 
 public class CompensatedEntities {
     private static final EquipmentSlot SADDLE_EQUIPMENT_SLOT = resolveEquipmentSlot("saddle");
     private static final String SPRINTING_MODIFIER_ID = "minecraft:sprinting";
     public static final String SNOW_MODIFIER_ID = "minecraft:powder_snow";
     private static final long LOCAL_PLAYER_CLIENT_TICK_ORDER = 0L;
-    private static final boolean USES_SADDLE_EQUIPMENT_SLOT = Arrays.stream(EquipmentSlot.values())
-            .anyMatch(slot -> slot.name().equals("SADDLE"));
+    private static final boolean USES_SADDLE_EQUIPMENT_SLOT =
+            Arrays.stream(EquipmentSlot.values()).anyMatch(slot -> slot.name().equals("SADDLE"));
     public final Int2ObjectOpenHashMap<PacketEntity> entityMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
     public final Int2ObjectOpenHashMap<TrackerData> serverPositionsMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
-    private final Int2ObjectOpenHashMap<List<AttributeSnapshot>> pendingAttributes = new Int2ObjectOpenHashMap<>(10, 0.7f);
-    private final Int2ObjectOpenHashMap<List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>>> pendingEquipment = new Int2ObjectOpenHashMap<>(10, 0.7f);
+    private final Int2ObjectOpenHashMap<List<AttributeSnapshot>> pendingAttributes =
+            new Int2ObjectOpenHashMap<>(10, 0.7f);
+    private final Int2ObjectOpenHashMap<List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>>>
+            pendingEquipment = new Int2ObjectOpenHashMap<>(10, 0.7f);
     public final CompensatedVehicleState vehicles;
     public boolean hasSprintingAttributeEnabled = false;
     public List<SimpleCollisionBox> fishingRodPulls = new EvictingQueue<>(100); // sanity limit to prevent leaks.
@@ -58,7 +58,8 @@ public class CompensatedEntities {
         this.playerEntity = new PacketEntitySelf(player);
         this.vehicles = new CompensatedVehicleState(player, this);
         resetClientTickOrder();
-        this.selfTrackedEntity = new TrackerData(0, 0, 0, 0, 0, EntityTypesCompat.PLAYER, player.lastTransactionSent.get());
+        this.selfTrackedEntity =
+                new TrackerData(0, 0, 0, 0, 0, EntityTypesCompat.PLAYER, player.lastTransactionSent.get());
     }
 
     public void resetClientTickOrder() {
@@ -168,12 +169,8 @@ public class CompensatedEntities {
 
                     // The server can set the player's sprinting attribute
                     if (!player.isBedrockMovement()) hasSprintingAttributeEnabled = foundSprintingModifier;
-                    player.compensatedEntities.getSelf().playerSpeed = calculateAttribute(
-                            snapshot,
-                            0.0,
-                            1024.0,
-                            Set.of(SPRINTING_MODIFIER_ID, SNOW_MODIFIER_ID)
-                    );
+                    player.compensatedEntities.getSelf().playerSpeed =
+                            calculateAttribute(snapshot, 0.0, 1024.0, Set.of(SPRINTING_MODIFIER_ID, SNOW_MODIFIER_ID));
                 }
 
                 if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttribute(snapshot, "scale")) {
@@ -205,7 +202,9 @@ public class CompensatedEntities {
                 }
 
                 if (matchesAttribute(snapshot, "block_interaction_range")) {
-                    player.compensatedEntities.getSelf().setBlockInteractionRange(calculateAttribute(snapshot, 0.0, 64.0));
+                    player.compensatedEntities
+                            .getSelf()
+                            .setBlockInteractionRange(calculateAttribute(snapshot, 0.0, 64.0));
                 }
 
                 if (matchesAttribute(snapshot, "block_break_speed")) {
@@ -277,7 +276,8 @@ public class CompensatedEntities {
                 }
 
                 if (matchesAttribute(snapshot, "flying_speed")) {
-                    ((PacketEntityRideable) entity).flyingSpeedAttribute = (float) calculateAttribute(snapshot, 0.0, 1024.0);
+                    ((PacketEntityRideable) entity).flyingSpeedAttribute =
+                            (float) calculateAttribute(snapshot, 0.0, 1024.0);
                 }
             }
         }
@@ -319,21 +319,12 @@ public class CompensatedEntities {
     }
 
     private double calculateAttribute(
-            AttributeSnapshot snapshot,
-            double minValue,
-            double maxValue,
-            Set<String> excludedModifierIds
-    ) {
+            AttributeSnapshot snapshot, double minValue, double maxValue, Set<String> excludedModifierIds) {
         return CultMath.clampFloat(
-                (float) calculateAttributeValue(snapshot, excludedModifierIds),
-                (float) minValue,
-                (float) maxValue);
+                (float) calculateAttributeValue(snapshot, excludedModifierIds), (float) minValue, (float) maxValue);
     }
 
-    private double calculateAttributeValue(
-            AttributeSnapshot snapshot,
-            Set<String> excludedModifierIds
-    ) {
+    private double calculateAttributeValue(AttributeSnapshot snapshot, Set<String> excludedModifierIds) {
         double d0 = snapshot.base();
 
         List<AttributeModifier> modifiers = new ArrayList<>(snapshot.modifiers());
@@ -382,21 +373,18 @@ public class CompensatedEntities {
 
     public void positionPassenger(PacketEntity riding, PacketEntity passenger) {
         Vec3 passengerPosition = BoundingBoxSize.getRidingOffsetFromVehicle(riding, passenger, player);
-        passenger.setPassengerPosition(player, GetBoundingBox.getPacketEntityBoundingBox(
+        passenger.setPassengerPosition(
                 player,
-                passengerPosition.x,
-                passengerPosition.y,
-                passengerPosition.z,
-                passenger
-        ));
+                GetBoundingBox.getPacketEntityBoundingBox(
+                        player, passengerPosition.x, passengerPosition.y, passengerPosition.z, passenger));
         if (passenger == playerEntity) {
             player.packetStateData.clientSidePosition = passengerPosition;
         }
-
     }
 
     public void addEntity(int entityID, EntityType entityType, Vec3 position, float xRot, float yRot, int data) {
-        // Dropped items are all server sided and players can't interact with them (except create them!), save the performance
+        // Dropped items are all server sided and players can't interact with them (except create them!), save the
+        // performance
         if (entityType == EntityTypesCompat.ITEM) return;
 
         PacketEntity packetEntity = createTrackedEntity(entityID, entityType, position, xRot, data);
@@ -416,7 +404,8 @@ public class CompensatedEntities {
         if (pending != null) {
             updateAttributes(entityID, pending);
         }
-        List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> pendingEquipmentUpdates = pendingEquipment.remove(entityID);
+        List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> pendingEquipmentUpdates =
+                pendingEquipment.remove(entityID);
         if (pendingEquipmentUpdates != null) {
             updateEntityEquipment(entityID, pendingEquipmentUpdates);
         }
@@ -429,7 +418,9 @@ public class CompensatedEntities {
         if (EntityTypeUtil.isHorseFamily(entityType)) {
             return new PacketEntityHorse(player, entityID, entityType, position.x, position.y, position.z, xRot);
         }
-        if (entityType == EntityTypesCompat.SLIME || entityType == EntityTypesCompat.MAGMA_CUBE || entityType == EntityTypesCompat.PHANTOM) {
+        if (entityType == EntityTypesCompat.SLIME
+                || entityType == EntityTypesCompat.MAGMA_CUBE
+                || entityType == EntityTypesCompat.PHANTOM) {
             return new PacketEntitySizeable(player, entityID, entityType, position.x, position.y, position.z);
         }
         if (EntityTypesCompat.PIG.equals(entityType)) {
@@ -474,7 +465,8 @@ public class CompensatedEntities {
         return serverPositionsMap.get(id);
     }
 
-    public void updateEntityEquipment(int entityID, List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> slots) {
+    public void updateEntityEquipment(
+            int entityID, List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> slots) {
         PacketEntity entity = getEntity(entityID);
         if (entity == null) {
             List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> merged = new ArrayList<>();
@@ -587,7 +579,8 @@ public class CompensatedEntities {
             applyHappyGhastMetadata(happyGhast, watchableObjects);
         }
         if (entity instanceof PacketEntityNautilus nautilus) {
-            EntityMetadata.Entry dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.NAUTILUS_DASH);
+            EntityMetadata.Entry dashData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.NAUTILUS_DASH);
             if (dashData != null && dashData.value() instanceof Boolean dashing) {
                 nautilus.setDashingFromMetadata(dashing);
             }
@@ -595,13 +588,15 @@ public class CompensatedEntities {
         applyGravityMetadata(entity, watchableObjects);
 
         if (entity.type == EntityTypesCompat.FIREWORK_ROCKET) {
-            EntityMetadata.Entry fireworkData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FIREWORK_ATTACHED_TO_TARGET);
+            EntityMetadata.Entry fireworkData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FIREWORK_ATTACHED_TO_TARGET);
             if (fireworkData == null) return;
             trackFireworkIfAttachedToPlayer(entityID, fireworkData.value());
         }
 
         if (entity instanceof PacketEntityHook) {
-            EntityMetadata.Entry hookedData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FISHING_HOOKED_ENTITY);
+            EntityMetadata.Entry hookedData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.FISHING_HOOKED_ENTITY);
             if (hookedData == null) return;
             ((PacketEntityHook) entity).attached = (Integer) hookedData.value() - 1; // the server adds 1 to the ID
         }
@@ -629,7 +624,9 @@ public class CompensatedEntities {
     private void applySizeMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (!entity.isSize()) return;
 
-        int sizeIndex = entity.type == EntityTypesCompat.PHANTOM ? WatchableIndexUtil.PHANTOM_SIZE : WatchableIndexUtil.SLIME_SIZE;
+        int sizeIndex = entity.type == EntityTypesCompat.PHANTOM
+                ? WatchableIndexUtil.PHANTOM_SIZE
+                : WatchableIndexUtil.SLIME_SIZE;
         EntityMetadata.Entry sizeData = WatchableIndexUtil.getIndex(watchableObjects, sizeIndex);
         if (sizeData == null) return;
 
@@ -642,10 +639,12 @@ public class CompensatedEntities {
     }
 
     private void applyShulkerMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
-        EntityMetadata.Entry attachFaceData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_ATTACH_FACE);
+        EntityMetadata.Entry attachFaceData =
+                WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_ATTACH_FACE);
         if (attachFaceData != null) {
             // This NMS -> Bukkit conversion is great and works in all 11 versions.
-            ((PacketEntityShulker) entity).facing = BlockFace.valueOf(attachFaceData.value().toString().toUpperCase());
+            ((PacketEntityShulker) entity).facing =
+                    BlockFace.valueOf(attachFaceData.value().toString().toUpperCase());
         }
 
         EntityMetadata.Entry peekData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_PEEK);
@@ -669,7 +668,8 @@ public class CompensatedEntities {
 
     private void applyRideableBoostMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (entity.type == EntityTypesCompat.PIG) {
-            EntityMetadata.Entry boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.PIG_BOOST_TIME);
+            EntityMetadata.Entry boostData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.PIG_BOOST_TIME);
             if (boostData != null) {
                 ((PacketEntityRideable) entity).boost.onSynced((int) boostData.value());
             }
@@ -677,7 +677,8 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityStrider) {
-            EntityMetadata.Entry boostData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.STRIDER_BOOST_TIME);
+            EntityMetadata.Entry boostData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.STRIDER_BOOST_TIME);
             if (boostData != null) {
                 ((PacketEntityRideable) entity).boost.onSynced((int) boostData.value());
             }
@@ -699,15 +700,18 @@ public class CompensatedEntities {
         }
 
         if (entity instanceof PacketEntityCamel camel) {
-            EntityMetadata.Entry dashData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.CAMEL_DASH);
+            EntityMetadata.Entry dashData =
+                    WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.CAMEL_DASH);
             if (dashData != null) {
                 camel.setDashingFromMetadata((boolean) dashData.value());
             }
         }
     }
 
-    private void applyHappyGhastMetadata(PacketEntityHappyGhast happyGhast, List<EntityMetadata.Entry> watchableObjects) {
-        EntityMetadata.Entry staysStillData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HAPPY_GHAST_STAYS_STILL);
+    private void applyHappyGhastMetadata(
+            PacketEntityHappyGhast happyGhast, List<EntityMetadata.Entry> watchableObjects) {
+        EntityMetadata.Entry staysStillData =
+                WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.HAPPY_GHAST_STAYS_STILL);
         if (staysStillData != null && staysStillData.value() instanceof Boolean staysStill) {
             happyGhast.staysStill = staysStill;
         }
@@ -715,7 +719,8 @@ public class CompensatedEntities {
 
     private void applyGravityMetadata(PacketEntity entity, List<EntityMetadata.Entry> watchableObjects) {
         if (!player.isBedrockMovement() && player.getClientVersion().isOlderThan(ClientVersion.V_1_10)) return;
-        EntityMetadata.Entry gravityData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.ENTITY_NO_GRAVITY);
+        EntityMetadata.Entry gravityData =
+                WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.ENTITY_NO_GRAVITY);
         if (gravityData != null && gravityData.value() instanceof Boolean noGravity) {
             // Vanilla uses hasNoGravity, which is a bad name IMO
             // hasGravity > hasNoGravity
@@ -724,7 +729,9 @@ public class CompensatedEntities {
     }
 
     private void trackFireworkIfAttachedToPlayer(int entityID, Object rawValue) {
-        boolean attachedToPlayer = rawValue instanceof OptionalInt optionalInt && optionalInt.isPresent() && optionalInt.getAsInt() == player.entityID;
+        boolean attachedToPlayer = rawValue instanceof OptionalInt optionalInt
+                && optionalInt.isPresent()
+                && optionalInt.getAsInt() == player.entityID;
         if (!attachedToPlayer && rawValue instanceof Optional<?> optional) {
             attachedToPlayer = optional.isPresent() && Objects.equals(optional.get(), player.entityID);
         }
@@ -744,7 +751,8 @@ public class CompensatedEntities {
     public boolean isTicking(PacketEntity entity) {
         if (entity.type == EntityTypesCompat.PLAYER) return true;
         Vec3 position = entity.clientPhysicalPosition;
-        return position != null && player.compensatedWorld.isChunkLoaded(Mth.floor(position.x) >> 4, Mth.floor(position.z) >> 4);
+        return position != null
+                && player.compensatedWorld.isChunkLoaded(Mth.floor(position.x) >> 4, Mth.floor(position.z) >> 4);
     }
 
     public void tickClientEntities(Consumer<PacketEntity> tick) {
@@ -752,7 +760,8 @@ public class CompensatedEntities {
         roots.add(getSelf());
         roots.removeIf(entity -> entity.getRiding() != null || !isTicking(entity));
         roots.sort(Comparator.comparingLong(PacketEntity::getClientTickOrder));
-        boolean frozen = player.packetStateData.serverTicksFrozen && player.packetStateData.serverFrozenTickStepsRemaining == 0;
+        boolean frozen =
+                player.packetStateData.serverTicksFrozen && player.packetStateData.serverFrozenTickStepsRemaining == 0;
         for (PacketEntity root : roots) {
             if (!frozen || containsPlayer(root)) tickEntityTree(root, tick);
         }

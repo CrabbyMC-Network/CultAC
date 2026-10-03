@@ -25,8 +25,7 @@ public final class BedrockAerialMovement {
     private static final double RIPTIDE_IMPULSE_PER_LEVEL_PLUS_ONE = 0.75D;
     private static final float GROUNDED_RIPTIDE_VERTICAL_BOOST = 0.08F;
 
-    private BedrockAerialMovement() {
-    }
+    private BedrockAerialMovement() {}
 
     public static double airGravity(Vec3d startingVelocity, boolean slowFalling) {
         return slowFalling && startingVelocity.y() < 0.0D ? SLOW_FALLING_AIR_GRAVITY : AIR_GRAVITY;
@@ -62,10 +61,8 @@ public final class BedrockAerialMovement {
         float viewZ = BedrockMath.cos(viewYawRadians) * negativeCosViewPitch;
         float cosPitch = BedrockMath.cos(pitchRadians);
         float horizontalViewLength = (float) Math.sqrt(viewX * viewX + viewZ * viewZ);
-        float horizontalVelocityLength = (float) Math.sqrt(
-            (float) currentVelocity.x() * (float) currentVelocity.x()
-                + (float) currentVelocity.z() * (float) currentVelocity.z()
-        );
+        float horizontalVelocityLength = (float) Math.sqrt((float) currentVelocity.x() * (float) currentVelocity.x()
+                + (float) currentVelocity.z() * (float) currentVelocity.z());
         float viewLength = (float) Math.sqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
         float glideFactor = Math.min(viewLength / 0.4F, 1.0F) * cosPitch * cosPitch;
 
@@ -85,8 +82,10 @@ public final class BedrockAerialMovement {
             velocityZ -= viewZ * pitchLift / horizontalViewLength;
         }
         if (horizontalViewLength > 0.0F) {
-            velocityX += (horizontalVelocityLength * viewX / horizontalViewLength - velocityX) * GLIDE_HORIZONTAL_ALIGNMENT;
-            velocityZ += (horizontalVelocityLength * viewZ / horizontalViewLength - velocityZ) * GLIDE_HORIZONTAL_ALIGNMENT;
+            velocityX +=
+                    (horizontalVelocityLength * viewX / horizontalViewLength - velocityX) * GLIDE_HORIZONTAL_ALIGNMENT;
+            velocityZ +=
+                    (horizontalVelocityLength * viewZ / horizontalViewLength - velocityZ) * GLIDE_HORIZONTAL_ALIGNMENT;
         }
         if (boost) {
             velocityX += (viewX * 1.5F - velocityX) * 0.5F + viewX * 0.1F;
@@ -94,40 +93,28 @@ public final class BedrockAerialMovement {
             velocityZ += (viewZ * 1.5F - velocityZ) * 0.5F + viewZ * 0.1F;
         }
         return new Vec3d(
-            velocityX * GLIDE_HORIZONTAL_DRAG,
-            velocityY * GLIDE_VERTICAL_DRAG,
-            velocityZ * GLIDE_HORIZONTAL_DRAG
-        );
+                velocityX * GLIDE_HORIZONTAL_DRAG, velocityY * GLIDE_VERTICAL_DRAG, velocityZ * GLIDE_HORIZONTAL_DRAG);
     }
 
     public static Vec3d glideInputSystemVelocity(
-        Vec3d currentVelocity,
-        BedrockMovementState current,
-        BedrockInputIntent intent,
-        BedrockMovementContext context,
-        boolean actorGlidingAfterActions
-    ) {
+            Vec3d currentVelocity,
+            BedrockMovementState current,
+            BedrockInputIntent intent,
+            BedrockMovementContext context,
+            boolean actorGlidingAfterActions) {
         // The upward glide boost requires Instabuild, independently of MayFly.
         if (!actorGlidingAfterActions
-            || !context.movementAbilityInstabuild()
-            || current.fallFlyTicks() <= MIN_GLIDE_TICKS_FOR_WANT_UP_BOOST
-            || !intent.vertical().wantUp()) {
+                || !context.movementAbilityInstabuild()
+                || current.fallFlyTicks() <= MIN_GLIDE_TICKS_FOR_WANT_UP_BOOST
+                || !intent.vertical().wantUp()) {
             return currentVelocity;
         }
         return new Vec3d(
-            currentVelocity.x(),
-            (float) currentVelocity.y() + GLIDE_INPUT_WANT_UP_BOOST,
-            currentVelocity.z()
-        );
+                currentVelocity.x(), (float) currentVelocity.y() + GLIDE_INPUT_WANT_UP_BOOST, currentVelocity.z());
     }
 
     public static Vec3d riptideImpulse(
-        BedrockInputFrame frame,
-        int riptideLevel,
-        boolean onGround,
-        boolean wasInWater,
-        boolean headInWater
-    ) {
+            BedrockInputFrame frame, int riptideLevel, boolean onGround, boolean wasInWater, boolean headInWater) {
         Vec3d direction = BedrockMath.viewVector(frame);
         float directionX = (float) direction.x();
         float directionY = (float) direction.y();
@@ -139,15 +126,10 @@ public final class BedrockAerialMovement {
         float scale = (float) riptideImpulseStrength(riptideLevel) / length;
         float impulseY = directionY * scale;
         if (onGround) {
-            impulseY = wasInWater && !headInWater
-                ? (impulseY / 0.8F) * 0.98F
-                : impulseY + GROUNDED_RIPTIDE_VERTICAL_BOOST;
+            impulseY =
+                    wasInWater && !headInWater ? (impulseY / 0.8F) * 0.98F : impulseY + GROUNDED_RIPTIDE_VERTICAL_BOOST;
         }
-        return new Vec3d(
-            directionX * scale,
-            impulseY,
-            directionZ * scale
-        );
+        return new Vec3d(directionX * scale, impulseY, directionZ * scale);
     }
 
     private static double riptideImpulseStrength(int riptideLevel) {

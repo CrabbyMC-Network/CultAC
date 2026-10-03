@@ -1,59 +1,60 @@
 package ac.cult.cultac.bedrock.prediction.simulation.collision;
 
-import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollision;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 import ac.cult.cultac.bedrock.prediction.world.PlacedBlockCollision;
+import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import java.util.Optional;
 
 public final class BedrockStandingBlockResolver {
     public static final double QUERY_Y_OFFSET = 0.2D;
     private static final double CENTER_SCALE = 0.5D;
 
-    private BedrockStandingBlockResolver() {
+    private BedrockStandingBlockResolver() {}
+
+    public static Optional<StandingSupport> resolve(
+            Vec3d feet, BlockCollisionWorld world, PlayerDimensionsState dimensions) {
+        return resolve(
+                BedrockCollisionSweep.playerBox(feet, dimensions, world.coordinateFrame()),
+                world.collisions(),
+                world.coordinateFrame());
     }
 
     public static Optional<StandingSupport> resolve(
-        Vec3d feet,
-        BlockCollisionWorld world,
-        PlayerDimensionsState dimensions
-    ) {
-        return resolve(BedrockCollisionSweep.playerBox(feet, dimensions, world.coordinateFrame()), world.collisions(), world.coordinateFrame());
-    }
-
-    public static Optional<StandingSupport> resolve(
-        WorldCollisionBox collisionBox,
-        Iterable<BlockCollision> collisionShapes
-    ) {
+            WorldCollisionBox collisionBox, Iterable<BlockCollision> collisionShapes) {
         return resolve(collisionBox, collisionShapes, BedrockCoordinateFrame.IDENTITY);
     }
 
-    public static Optional<StandingSupport> resolve(WorldCollisionBox collisionBox,
-            Iterable<BlockCollision> collisionShapes, BedrockCoordinateFrame frame) {
+    public static Optional<StandingSupport> resolve(
+            WorldCollisionBox collisionBox, Iterable<BlockCollision> collisionShapes, BedrockCoordinateFrame frame) {
         WorldCollisionBox query = collisionBox.move(0.0D, -QUERY_Y_OFFSET, 0.0D);
         return select(query, collisionShapes, frame, true)
-            .map(obstacle -> new StandingSupport(obstacle.block().get(), obstacle.box().maxY()));
+                .map(obstacle -> new StandingSupport(
+                        obstacle.block().get(), obstacle.box().maxY()));
     }
 
     public static Optional<StandingSupport> resolveFetched(
-        Vec3d feet,
-        BlockCollisionWorld world,
-        PlayerDimensionsState dimensions,
-        WorldCollisionBox fetchBox
-    ) {
+            Vec3d feet, BlockCollisionWorld world, PlayerDimensionsState dimensions, WorldCollisionBox fetchBox) {
         BedrockCoordinateFrame frame = world.coordinateFrame();
-        WorldCollisionBox query = BedrockCollisionSweep.playerBox(feet, dimensions, frame).move(0.0D, -QUERY_Y_OFFSET, 0.0D);
-        var fetched = world.collisions().stream().filter(obstacle -> fetchBox.intersects(obstacle.box())).toList();
+        WorldCollisionBox query =
+                BedrockCollisionSweep.playerBox(feet, dimensions, frame).move(0.0D, -QUERY_Y_OFFSET, 0.0D);
+        var fetched = world.collisions().stream()
+                .filter(obstacle -> fetchBox.intersects(obstacle.box()))
+                .toList();
         return select(query, fetched, frame, false)
-            .filter(obstacle -> nonEmpty(obstacle.box()))
-            .map(obstacle -> new StandingSupport(obstacle.block().get(), obstacle.box().maxY()));
+                .filter(obstacle -> nonEmpty(obstacle.box()))
+                .map(obstacle -> new StandingSupport(
+                        obstacle.block().get(), obstacle.box().maxY()));
     }
 
-    private static Optional<BlockCollision> select(WorldCollisionBox query, Iterable<BlockCollision> collisionShapes,
-            BedrockCoordinateFrame frame, boolean requireQueryOverlap) {
+    private static Optional<BlockCollision> select(
+            WorldCollisionBox query,
+            Iterable<BlockCollision> collisionShapes,
+            BedrockCoordinateFrame frame,
+            boolean requireQueryOverlap) {
         double centerX = frame.roundX((query.minX() + query.maxX()) * CENTER_SCALE);
         double centerY = f((query.minY() + query.maxY()) * CENTER_SCALE);
         double centerZ = frame.roundZ((query.minZ() + query.maxZ()) * CENTER_SCALE);
@@ -72,11 +73,10 @@ public final class BedrockStandingBlockResolver {
             if (verticalGap < 0.0F) {
                 continue;
             }
-            float centerDistance = (float) squaredDistance(
-                centerX, centerY, centerZ, boxCenterX, boxCenterY, boxCenterZ
-            );
+            float centerDistance =
+                    (float) squaredDistance(centerX, centerY, centerZ, boxCenterX, boxCenterY, boxCenterZ);
             if (verticalGap < selectedVerticalGap
-                || verticalGap == selectedVerticalGap && centerDistance < selectedCenterDistance) {
+                    || verticalGap == selectedVerticalGap && centerDistance < selectedCenterDistance) {
                 selected = obstacle;
                 selectedVerticalGap = verticalGap;
                 selectedCenterDistance = centerDistance;
@@ -92,31 +92,23 @@ public final class BedrockStandingBlockResolver {
     private static boolean verticalQueryContainsShape(WorldCollisionBox query, WorldCollisionBox shape) {
         double epsilon = BedrockCollisionSweep.CONTACT_EPSILON;
         return query.maxY() > shape.minY()
-            && query.minY() < shape.maxY()
-            && query.maxX() - shape.minX() > epsilon
-            && shape.maxX() - query.minX() > epsilon
-            && query.maxZ() - shape.minZ() > epsilon
-            && shape.maxZ() - query.minZ() > epsilon;
+                && query.minY() < shape.maxY()
+                && query.maxX() - shape.minX() > epsilon
+                && shape.maxX() - query.minX() > epsilon
+                && query.maxZ() - shape.minZ() > epsilon
+                && shape.maxZ() - query.minZ() > epsilon;
     }
 
     private static double f(double value) {
         return (float) value;
     }
 
-    private static double squaredDistance(
-        double ax,
-        double ay,
-        double az,
-        double bx,
-        double by,
-        double bz
-    ) {
+    private static double squaredDistance(double ax, double ay, double az, double bx, double by, double bz) {
         double dx = ax - bx;
         double dy = ay - by;
         double dz = az - bz;
         return dx * dx + dy * dy + dz * dz;
     }
 
-    public record StandingSupport(PlacedBlockCollision block, double surfaceY) {
-    }
+    public record StandingSupport(PlacedBlockCollision block, double surfaceY) {}
 }

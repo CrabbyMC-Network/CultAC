@@ -4,6 +4,13 @@ import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.manager.init.stop.StoppableInitable;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.event.EventSubscription;
 import net.luckperms.api.event.LuckPermsEvent;
@@ -19,14 +26,6 @@ import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.node.types.InheritanceNode;
 import net.luckperms.api.node.types.PermissionNode;
-
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
 
 public abstract class AbstractLuckPermsHandler implements StoppableInitable {
     private List<EventSubscription<?>> subscriptions;
@@ -49,10 +48,7 @@ public abstract class AbstractLuckPermsHandler implements StoppableInitable {
     }
 
     protected abstract <T extends LuckPermsEvent> EventSubscription<T> subscribe(
-            LuckPerms luckPerms,
-            Class<T> eventClass,
-            Consumer<? super T> handler
-    );
+            LuckPerms luckPerms, Class<T> eventClass, Consumer<? super T> handler);
 
     protected abstract UUID contextSubjectUuid(ContextUpdateEvent event);
 
@@ -106,13 +102,15 @@ public abstract class AbstractLuckPermsHandler implements StoppableInitable {
 
     private boolean shouldRefreshUserForNode(Node node) {
         if (node instanceof PermissionNode permissionNode) return isCultPermission(permissionNode);
-        if (node instanceof InheritanceNode inheritanceNode) return inheritedGroupMayAffectCultPermissions(inheritanceNode);
+        if (node instanceof InheritanceNode inheritanceNode)
+            return inheritedGroupMayAffectCultPermissions(inheritanceNode);
         return false;
     }
 
     private boolean shouldRefreshGroupForNode(Node node) {
         if (node instanceof PermissionNode permissionNode) return isCultPermission(permissionNode);
-        if (node instanceof InheritanceNode inheritanceNode) return inheritedGroupMayAffectCultPermissions(inheritanceNode);
+        if (node instanceof InheritanceNode inheritanceNode)
+            return inheritedGroupMayAffectCultPermissions(inheritanceNode);
         return false;
     }
 

@@ -8,7 +8,8 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerRotation;
 import io.netty.buffer.ByteBuf;
 
 public final class PlayerRotationCodec implements WritablePacketCodec<ClientboundPlayerRotation> {
-    @Override public ClientboundPlayerRotation read(ByteBuf input, ProtocolContext context) {
+    @Override
+    public ClientboundPlayerRotation read(ByteBuf input, ProtocolContext context) {
         boolean relative = context.version().atLeast(ProtocolVersion.V1_21_9);
         float yaw = input.readFloat();
         boolean relativeYaw = relative && input.readBoolean();
@@ -16,7 +17,8 @@ public final class PlayerRotationCodec implements WritablePacketCodec<Clientboun
         return new ClientboundPlayerRotation(yaw, relativeYaw, pitch, relative && input.readBoolean());
     }
 
-    @Override public void write(ByteBuf output, ProtocolContext context, ClientboundPlayerRotation packet) {
+    @Override
+    public void write(ByteBuf output, ProtocolContext context, ClientboundPlayerRotation packet) {
         boolean relative = context.version().atLeast(ProtocolVersion.V1_21_9);
         if (!relative && (packet.relativeYaw() || packet.relativePitch())) {
             throw new UnsupportedOnVersionException("Relative player rotation is absent on " + context.version());

@@ -5,18 +5,12 @@ import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 
 public record BlockModification(
-        BlockData oldBlockContents,
-        BlockData newBlockContents,
-        BlockPos location,
-        int tick,
-        Cause cause
-) {
+        BlockData oldBlockContents, BlockData newBlockContents, BlockPos location, int tick, Cause cause) {
     @Override
     public @NotNull String toString() {
         return String.format(
                 "BlockModification{location=%s, old=%s, new=%s, tick=%d, cause=%s}",
-                location, oldBlockContents, newBlockContents, tick, cause
-        );
+                location, oldBlockContents, newBlockContents, tick, cause);
     }
 
     public enum Cause {

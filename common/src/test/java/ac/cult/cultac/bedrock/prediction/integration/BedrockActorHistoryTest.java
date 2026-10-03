@@ -1,5 +1,7 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
+import static org.junit.Assert.*;
+
 import ac.cult.cultac.bedrock.prediction.geometry.BlockPosition;
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.geometry.WorldCollisionBox;
@@ -16,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public final class BedrockActorHistoryTest {
     @Test
@@ -39,7 +40,8 @@ public final class BedrockActorHistoryTest {
         Vec3d lastVelocity = new Vec3d(-0.12, -0.0784, 0.03);
         history.apply(7, new BedrockReplayEvent.Motion(lastVelocity), (state, world) -> world);
         history.apply(2, new BedrockReplayEvent.Motion(Vec3d.ZERO), (state, world) -> world);
-        assertEquals(lastVelocity, history.frames().get(6).end().getFirst().state().velocity());
+        assertEquals(
+                lastVelocity, history.frames().get(6).end().getFirst().state().velocity());
         assertEquals(1, history.frames().get(6).events().size());
         assertEquals(1, history.frames().get(1).events().size());
     }
@@ -49,7 +51,9 @@ public final class BedrockActorHistoryTest {
         var history = history(1, 3);
         history.apply(2, new BedrockReplayEvent.Motion(new Vec3d(1, 2, 3)), (state, world) -> world);
         history.apply(2, new BedrockReplayEvent.Motion(new Vec3d(4, 5, 6)), (state, world) -> world);
-        assertEquals(new Vec3d(4, 5, 6), history.frames().get(1).end().getFirst().state().velocity());
+        assertEquals(
+                new Vec3d(4, 5, 6),
+                history.frames().get(1).end().getFirst().state().velocity());
     }
 
     @Test
@@ -86,11 +90,14 @@ public final class BedrockActorHistoryTest {
         var history = history(1, 3);
         var anchor = history.frames().getFirst().end().getFirst().state();
         var calls = new AtomicInteger();
-        history.apply(1, new BedrockReplayEvent.Reposition(anchor.physicalFeetPosition().add(new Vec3d(2, 0, 0)),
-                0, 0, true, anchor.coordinateFrame()), (state, world) -> {
-            calls.incrementAndGet();
-            return world;
-        });
+        history.apply(
+                1,
+                new BedrockReplayEvent.Reposition(
+                        anchor.physicalFeetPosition().add(new Vec3d(2, 0, 0)), 0, 0, true, anchor.coordinateFrame()),
+                (state, world) -> {
+                    calls.incrementAndGet();
+                    return world;
+                });
         assertTrue(calls.get() > 0);
     }
 
@@ -98,9 +105,13 @@ public final class BedrockActorHistoryTest {
     public void historicalContextPatchStopsAtItsRecordedReceiptBoundary() {
         var history = history(1, 4);
         var original = history.current().getFirst();
-        history.apply(1, new BedrockReplayContextEvent(Map.of("minecraft:movement", 0.2F),
-                null, null, -1, null, null), (state, world) -> world);
-        assertNotEquals(original.state().physicalFeetPosition(), history.current().getFirst().state().physicalFeetPosition());
+        history.apply(
+                1,
+                new BedrockReplayContextEvent(Map.of("minecraft:movement", 0.2F), null, null, -1, null, null),
+                (state, world) -> world);
+        assertNotEquals(
+                original.state().physicalFeetPosition(),
+                history.current().getFirst().state().physicalFeetPosition());
         // This frame was captured after receipt; its context already contains subsequent updates.
         var next = forward(history.current().getFirst(), 5, ground(), new Vec3d(0, 0, 1));
         history.advance(next, (state, world) -> world);
@@ -110,14 +121,18 @@ public final class BedrockActorHistoryTest {
     @Test
     public void captureVelocityInjectionConvergesAfterTheHistoricalCorrection() {
         // Regression values from the 740 correction and the subsequent 742-744 inputs.
-        var state = BedrockMovementState.fromPhysicalFeet(new Vec3d(289.4287F, 82, -86.09165F),
-                new Vec3d(-0.08224659F, -0.0784F, 0.011113953F),
-                new BedrockInputFrame(740, 82.30463F, 5.652817F, false, false, true), BedrockCollisionFlags.ON_GROUND)
+        var state = BedrockMovementState.fromPhysicalFeet(
+                        new Vec3d(289.4287F, 82, -86.09165F),
+                        new Vec3d(-0.08224659F, -0.0784F, 0.011113953F),
+                        new BedrockInputFrame(740, 82.30463F, 5.652817F, false, false, true),
+                        BedrockCollisionFlags.ON_GROUND)
                 .applySprintAction(true);
         var entry = new Entry(state, BedrockMobJumpComponentState.DEFAULT);
-        double[][] endpoints = {{288.98013F, -86.03104F, -0.13109092F, 0.017713573F},
-                {288.72278F, -85.99626F, -0.1405096F, 0.018986221F},
-                {288.45602F, -85.96021F, -0.1456522F, 0.019681087F}};
+        double[][] endpoints = {
+            {288.98013F, -86.03104F, -0.13109092F, 0.017713573F},
+            {288.72278F, -85.99626F, -0.1405096F, 0.018986221F},
+            {288.45602F, -85.96021F, -0.1456522F, 0.019681087F}
+        };
         var history = new BedrockActorHistory();
         for (long tick = 741; tick <= 744; tick++) {
             var frame = forward(entry, tick, ground(), new Vec3d(0, 0, 1));
@@ -125,11 +140,23 @@ public final class BedrockActorHistoryTest {
             entry = frame.end().getFirst();
             if (tick == 741) {
                 // A delivered correction does not make this old input corrected movement.
-                assertTrue(entry.state().physicalFeetPosition().subtract(new Vec3d(289.35892F, 82.9116, -86.08222F)).length() > 0.5);
+                assertTrue(entry.state()
+                                .physicalFeetPosition()
+                                .subtract(new Vec3d(289.35892F, 82.9116, -86.08222F))
+                                .length()
+                        > 0.5);
             } else {
                 var expected = endpoints[(int) tick - 742];
-                assertTrue(entry.state().physicalFeetPosition().subtract(new Vec3d(expected[0], 82, expected[1])).length() <= 0.001);
-                assertTrue(entry.state().velocity().subtract(new Vec3d(expected[2], -0.0784F, expected[3])).length() <= 0.001);
+                assertTrue(entry.state()
+                                .physicalFeetPosition()
+                                .subtract(new Vec3d(expected[0], 82, expected[1]))
+                                .length()
+                        <= 0.001);
+                assertTrue(entry.state()
+                                .velocity()
+                                .subtract(new Vec3d(expected[2], -0.0784F, expected[3]))
+                                .length()
+                        <= 0.001);
             }
         }
         assertTrue(Math.abs(entry.state().velocity().x()) > 0.14);
@@ -137,16 +164,21 @@ public final class BedrockActorHistoryTest {
 
     @Test
     public void horseAndBoatReplayRetainValuesWithoutLiveActorHandles() {
-        var base = BedrockMovementState.fromPhysicalFeet(new Vec3d(289, 82, -86), Vec3d.ZERO,
-                BedrockInputFrame.idle(0), BedrockCollisionFlags.ON_GROUND);
+        var base = BedrockMovementState.fromPhysicalFeet(
+                new Vec3d(289, 82, -86), Vec3d.ZERO, BedrockInputFrame.idle(0), BedrockCollisionFlags.ON_GROUND);
         var horse = org.mockito.Mockito.mock(ac.cult.cultac.utils.data.packetentity.PacketEntityHorse.class);
         var boat = org.mockito.Mockito.mock(ac.cult.cultac.utils.data.packetentity.PacketEntity.class);
         var horseState = base.withHorse(new ac.cult.cultac.bedrock.prediction.state.BedrockHorseState(
                 horse, false, 0, false, false, 0, -1, false, 0));
-        var boatState = base.withBoat(new ac.cult.cultac.bedrock.prediction.state.BedrockBoatState(boat,
-                ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.initial(12), 0, 0, 0,
+        var boatState = base.withBoat(new ac.cult.cultac.bedrock.prediction.state.BedrockBoatState(
+                boat,
+                ac.cult.cultac.bedrock.prediction.state.BedrockBoatProperties.initial(12),
+                0,
+                0,
+                0,
                 ac.cult.cultac.bedrock.prediction.state.BedrockBoatState.Paddle.INITIAL,
-                ac.cult.cultac.bedrock.prediction.state.BedrockBoatState.Paddle.INITIAL, true));
+                ac.cult.cultac.bedrock.prediction.state.BedrockBoatState.Paddle.INITIAL,
+                true));
         for (var initial : List.of(horseState, boatState)) {
             var history = new BedrockActorHistory();
             var entry = new Entry(initial, BedrockMobJumpComponentState.DEFAULT);
@@ -158,16 +190,24 @@ public final class BedrockActorHistoryTest {
             var expected = history.current();
             var first = history.frames().getFirst().end().getFirst().state();
             assertNull(first.isHorse() ? first.horse().actor() : first.boat().actor());
-            assertEquals(expected, history.apply(1, new BedrockReplayEvent.Motion(first.velocity()), (state, world) -> world));
+            assertEquals(
+                    expected,
+                    history.apply(1, new BedrockReplayEvent.Motion(first.velocity()), (state, world) -> world));
             var live = BedrockReplaySnapshot.attach(history.current().getFirst().state(), initial);
-            assertSame(initial.isHorse() ? horse : boat, live.isHorse() ? live.horse().actor() : live.boat().actor());
+            assertSame(
+                    initial.isHorse() ? horse : boat,
+                    live.isHorse() ? live.horse().actor() : live.boat().actor());
         }
     }
 
     static BedrockActorHistory history(long first, long last) {
         var history = new BedrockActorHistory();
-        var entry = new Entry(BedrockMovementState.fromPhysicalFeet(new Vec3d(289, 82, -86),
-                new Vec3d(0, -0.0784F, 0), BedrockInputFrame.idle(first - 1), BedrockCollisionFlags.ON_GROUND),
+        var entry = new Entry(
+                BedrockMovementState.fromPhysicalFeet(
+                        new Vec3d(289, 82, -86),
+                        new Vec3d(0, -0.0784F, 0),
+                        BedrockInputFrame.idle(first - 1),
+                        BedrockCollisionFlags.ON_GROUND),
                 BedrockMobJumpComponentState.DEFAULT);
         for (long tick = first; tick <= last; tick++) {
             var frame = forward(entry, tick, ground(), new Vec3d(0, 0, 1));
@@ -178,23 +218,50 @@ public final class BedrockActorHistoryTest {
     }
 
     static BedrockActorHistory.Frame forward(Entry previous, long tick, BedrockWorldSnapshot world, Vec3d controls) {
-        var input = new BedrockInputFrame(tick, 82.30463F, 5.652817F, false, false,
-                previous.state().sprinting(), Set.of("UP", "SPRINTING"));
-        var request = new BedrockSimulation.Input(previous.state(), input, input.intent(), world, true,
-                BedrockSimulation.DEFAULT_MAX_AUTO_STEP, previous.mobJumpComponent(), true, false, controls);
+        var input = new BedrockInputFrame(
+                tick, 82.30463F, 5.652817F, false, false, previous.state().sprinting(), Set.of("UP", "SPRINTING"));
+        var request = new BedrockSimulation.Input(
+                previous.state(),
+                input,
+                input.intent(),
+                world,
+                true,
+                BedrockSimulation.DEFAULT_MAX_AUTO_STEP,
+                previous.mobJumpComponent(),
+                true,
+                false,
+                controls);
         var movement = BedrockForwardTick.simulate(request).getFirst();
         var state = movement.movementResult().predictedState();
         var entries = BedrockForwardTick.finish(movement.movementResult(), state).stream()
-                .map(next -> new Entry(next, movement.mobJumpComponent())).toList();
-        return new BedrockActorHistory.Frame(tick, request, entries, entries, null, Vec3d.ZERO, Vec3d.ZERO,
-                state.physicalFeetPosition(), state.velocity(), List.of());
+                .map(next -> new Entry(next, movement.mobJumpComponent()))
+                .toList();
+        return new BedrockActorHistory.Frame(
+                tick,
+                request,
+                entries,
+                entries,
+                null,
+                Vec3d.ZERO,
+                Vec3d.ZERO,
+                state.physicalFeetPosition(),
+                state.velocity(),
+                List.of());
     }
 
     static BedrockWorldSnapshot ground() {
-        var floor = PlacedBlockCollision.manual(new BlockPosition(270, 81, -110), "minecraft:stone", "minecraft:stone",
+        var floor = PlacedBlockCollision.manual(
+                new BlockPosition(270, 81, -110),
+                "minecraft:stone",
+                "minecraft:stone",
                 List.of(new WorldCollisionBox(270, 81, -110, 310, 82, -60)));
-        return BedrockWorldSnapshot.fromContext(new BedrockMovementContext(BedrockEffectState.NONE, AttributeState.DEFAULT,
+        return BedrockWorldSnapshot.fromContext(new BedrockMovementContext(
+                BedrockEffectState.NONE,
+                AttributeState.DEFAULT,
                 new WorldContactState(Medium.AIR, FluidState.NONE, new BlockCollisionWorld(List.of(floor))),
-                EquipmentState.NONE, EntityContactState.NONE, MovementModifierState.NONE, PlayerDimensionsState.DEFAULT));
+                EquipmentState.NONE,
+                EntityContactState.NONE,
+                MovementModifierState.NONE,
+                PlayerDimensionsState.DEFAULT));
     }
 }

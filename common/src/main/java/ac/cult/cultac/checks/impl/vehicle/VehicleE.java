@@ -1,19 +1,23 @@
 package ac.cult.cultac.checks.impl.vehicle;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import net.minecraft.core.registries.BuiltInRegistries;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 import net.minecraft.world.entity.EntityType;
 
-@CheckData(name = "VehicleE", stableKey = "cult.vehicle.spoofed_boat", experimental = true, description = "Sent boat paddle states while not in a boat")
+@CheckData(
+        name = "VehicleE",
+        stableKey = "cult.vehicle.spoofed_boat",
+        experimental = true,
+        description = "Sent boat paddle states while not in a boat")
 public class VehicleE extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("vehicle=[{entity}|null]");
 
@@ -21,14 +25,17 @@ public class VehicleE extends Check implements CheckListener {
         super(player);
     }
 
-
     @CultPacketHandler
-    public void onPaddleBoat(PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
+    public void onPaddleBoat(
+            PacketReceiveEvent<ServerboundPaddleBoat> event, CultPlayer player, ServerboundPaddleBoat packet) {
         final PacketEntity riding = player.compensatedEntities.getSelf().getRiding();
         final EntityType<?> vehicle = riding == null ? null : riding.type;
 
         if (!EntityTypeUtil.isBoat(vehicle)) {
-            if (flag(V.write(verbose()).bool(vehicle != null).uint(vehicle == null ? 0 : BuiltInRegistries.ENTITY_TYPE.getId(vehicle))) && shouldModifyPackets()) {
+            if (flag(V.write(verbose())
+                            .bool(vehicle != null)
+                            .uint(vehicle == null ? 0 : BuiltInRegistries.ENTITY_TYPE.getId(vehicle)))
+                    && shouldModifyPackets()) {
                 event.setCancelled(true);
                 player.onPacketCancel();
             }

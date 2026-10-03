@@ -1,7 +1,5 @@
 package ac.cult.cultac.checks.impl.badpackets;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
@@ -9,9 +7,14 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "BadPacketsE", stableKey = "cult.badpackets.invalid_position", description = "Sent too many movement packets without updating position")
+@CheckData(
+        name = "BadPacketsE",
+        stableKey = "cult.badpackets.invalid_position",
+        description = "Sent too many movement packets without updating position")
 public class BadPacketsE extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("ticks={uint}");
 
@@ -24,7 +27,8 @@ public class BadPacketsE extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (packet.hasPosition()) {
             noReminderTicks = 0;
             return;

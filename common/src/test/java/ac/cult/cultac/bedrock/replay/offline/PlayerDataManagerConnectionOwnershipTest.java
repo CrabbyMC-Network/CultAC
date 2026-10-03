@@ -1,16 +1,15 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.PlayerDataManager;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
-
 import java.util.UUID;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public final class PlayerDataManagerConnectionOwnershipTest {
     private static final UUID SHARED_UUID = UUID.fromString("d4624974-6c22-4635-b82d-8d72e998e5d6");

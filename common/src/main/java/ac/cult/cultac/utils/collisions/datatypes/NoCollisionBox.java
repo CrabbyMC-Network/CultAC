@@ -6,8 +6,7 @@ public class NoCollisionBox implements CollisionBox {
 
     public static final NoCollisionBox INSTANCE = new NoCollisionBox();
 
-    private NoCollisionBox() {
-    }
+    private NoCollisionBox() {}
 
     @Override
     public boolean isCollided(SimpleCollisionBox other) {
@@ -25,7 +24,9 @@ public class NoCollisionBox implements CollisionBox {
     }
 
     @Override
-    public void downCast(List<SimpleCollisionBox> list) { /**/ }
+    public void downCast(List<SimpleCollisionBox> list) {
+        /**/
+    }
 
     @Override
     public boolean isNull() {

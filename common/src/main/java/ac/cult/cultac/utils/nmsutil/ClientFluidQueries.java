@@ -20,10 +20,10 @@ import org.bukkit.block.data.BlockData;
 
 /** Vanilla liquid-presence, body-depth, and eye queries deliberately have different bounds. */
 public final class ClientFluidQueries {
-    private static final TagKey<EntityType<?>> CAN_FLOAT_WHILE_RIDDEN = NmsIdentifierUtil.tagKey(
-            Registries.ENTITY_TYPE, "minecraft:can_float_while_ridden");
-    private static final TagKey<Fluid> ENTITY_FLOATABLE = NmsIdentifierUtil.tagKey(
-            Registries.FLUID, "minecraft:entity_floatable");
+    private static final TagKey<EntityType<?>> CAN_FLOAT_WHILE_RIDDEN =
+            NmsIdentifierUtil.tagKey(Registries.ENTITY_TYPE, "minecraft:can_float_while_ridden");
+    private static final TagKey<Fluid> ENTITY_FLOATABLE =
+            NmsIdentifierUtil.tagKey(Registries.FLUID, "minecraft:entity_floatable");
 
     private ClientFluidQueries() {}
 
@@ -37,12 +37,12 @@ public final class ClientFluidQueries {
 
     /** Classify one compensated cell without changing the caller's body-query bounds. */
     public static Sample sample(CultPlayer player, BlockData block, BlockPos pos) {
-        if (usesTagBasedFluidRules(player) || (!player.isBedrockMovement() && player.getClientVersion().isOlderThan(ClientVersion.V_1_13))) {
+        if (usesTagBasedFluidRules(player)
+                || (!player.isBedrockMovement() && player.getClientVersion().isOlderThan(ClientVersion.V_1_13))) {
             FluidState fluid = player.compensatedWorld.getFluidState(pos);
             if (fluid.isEmpty()) return Sample.EMPTY;
-            return new Sample(fluid.is(FluidTags.WATER),
-                    fluid.is(FluidTags.LAVA),
-                    fluid.getHeight(player.compensatedWorld, pos));
+            return new Sample(
+                    fluid.is(FluidTags.WATER), fluid.is(FluidTags.LAVA), fluid.getHeight(player.compensatedWorld, pos));
         }
         // Older clients and Bedrock retain the existing material and height rules,
         // including waterlogged blocks and the amount/9 height calculation.
@@ -64,12 +64,17 @@ public final class ClientFluidQueries {
             return eyesInside(player, body, feet, eyeY, FluidTags.WATER);
         }
         double legacyEyeY = eyeY - 0.1111111119389534D;
-        return legacyEyeY < (float) Math.floor(legacyEyeY)
-                + player.compensatedWorld.getWaterFluidLevelAt(feet.x, legacyEyeY, feet.z);
+        return legacyEyeY
+                < (float) Math.floor(legacyEyeY)
+                        + player.compensatedWorld.getWaterFluidLevelAt(feet.x, legacyEyeY, feet.z);
     }
 
-    public static DesyncStatus floatWhileRidden(CultPlayer player, SimulationContext context,
-                                               boolean inWater, double waterDepth, boolean waterTimingUncertain) {
+    public static DesyncStatus floatWhileRidden(
+            CultPlayer player,
+            SimulationContext context,
+            boolean inWater,
+            double waterDepth,
+            boolean waterTimingUncertain) {
         var vehicle = context.getVehicle();
         if (vehicle == null) return DesyncStatus.FALSE;
         // LivingEntity#floatInLiquidWhileRidden reads the pre-travel body depth.
@@ -84,7 +89,8 @@ public final class ClientFluidQueries {
 
     public static int liquidMaximum(ClientVersion version, double maximum) {
         return version.isNewerThanOrEquals(ClientVersion.V_26_3)
-                ? (int) Math.floor(maximum) : (int) Math.ceil(maximum) - 1;
+                ? (int) Math.floor(maximum)
+                : (int) Math.ceil(maximum) - 1;
     }
 
     public static boolean containsAnyLiquid(BlockGetter world, SimpleCollisionBox box, ClientVersion version) {
@@ -116,11 +122,14 @@ public final class ClientFluidQueries {
         return depth;
     }
 
-    public static boolean eyesInside(CultPlayer player, SimpleCollisionBox body, Vec3 feet, double eyeY, TagKey<Fluid> tag) {
+    public static boolean eyesInside(
+            CultPlayer player, SimpleCollisionBox body, Vec3 feet, double eyeY, TagKey<Fluid> tag) {
         SimpleCollisionBox box = body.copy().expand(-0.001D);
         int x = (int) Math.floor(feet.x), z = (int) Math.floor(feet.z);
-        if (x < Math.floor(box.minX) || x >= Math.ceil(box.maxX)
-                || z < Math.floor(box.minZ) || z >= Math.ceil(box.maxZ)) return false;
+        if (x < Math.floor(box.minX)
+                || x >= Math.ceil(box.maxX)
+                || z < Math.floor(box.minZ)
+                || z >= Math.ceil(box.maxZ)) return false;
         for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++) {
             BlockPos pos = new BlockPos(x, y, z);
             FluidState fluid = player.compensatedWorld.getFluidState(pos);
@@ -128,8 +137,12 @@ public final class ClientFluidQueries {
             float ordinaryHeight = fluid.getHeight(player.compensatedWorld, pos);
             if ((double) y + ordinaryHeight < box.minY || eyeY < y) continue;
             BlockPos above = pos.above();
-            float eyeHeight = fluid.isSource() && player.compensatedWorld.getBlockState(above)
-                    .isFaceSturdy(player.compensatedWorld, above, Direction.DOWN) ? 1.0F : ordinaryHeight;
+            float eyeHeight = fluid.isSource()
+                            && player.compensatedWorld
+                                    .getBlockState(above)
+                                    .isFaceSturdy(player.compensatedWorld, above, Direction.DOWN)
+                    ? 1.0F
+                    : ordinaryHeight;
             if (eyeY <= (double) y + eyeHeight) return true;
         }
         return false;

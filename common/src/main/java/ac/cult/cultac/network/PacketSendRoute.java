@@ -21,7 +21,9 @@ public final class PacketSendRoute<R> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <R> PacketSendRoute<R> empty() { return EMPTY; }
+    public static <R> PacketSendRoute<R> empty() {
+        return EMPTY;
+    }
 
     public boolean isEmpty() {
         return handlers.length == 0;

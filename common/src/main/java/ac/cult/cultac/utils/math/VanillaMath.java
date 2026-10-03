@@ -13,6 +13,7 @@ public class VanillaMath {
 
     // Mth switched to double indexing and long masking in 1.21.11.
     private static final float[] MODERN_SIN = new float[65536];
+
     static {
         for (int i = 0; i < MODERN_SIN.length; i++) {
             MODERN_SIN[i] = (float) StrictMath.sin(i / 10430.378350470453D);
@@ -20,12 +21,14 @@ public class VanillaMath {
     }
 
     public static float sin(ClientVersion version, float angle) {
-        return version.isOlderThan(ClientVersion.V_1_21_11) ? sin(angle)
+        return version.isOlderThan(ClientVersion.V_1_21_11)
+                ? sin(angle)
                 : MODERN_SIN[(int) ((long) (angle * 10430.378350470453D) & 65535L)];
     }
 
     public static float cos(ClientVersion version, float angle) {
-        return version.isOlderThan(ClientVersion.V_1_21_11) ? cos(angle)
+        return version.isOlderThan(ClientVersion.V_1_21_11)
+                ? cos(angle)
                 : MODERN_SIN[(int) ((long) (angle * 10430.378350470453D + 16384.0D) & 65535L)];
     }
 

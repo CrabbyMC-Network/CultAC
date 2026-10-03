@@ -1,5 +1,10 @@
 package ac.cult.cultac.bedrock.prediction.integration;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
@@ -9,11 +14,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class BedrockGlideEquipmentTest {
     @BeforeClass
@@ -67,7 +67,8 @@ public final class BedrockGlideEquipmentTest {
         SimulationContext context = mock(SimulationContext.class);
         when(context.getScale()).thenReturn(1.0F);
         BedrockPlayerContext playerContext = BedrockPlayerContext.from(player, context, null, false);
-        return BedrockMovementModifierFactory.create(playerContext, player, context).elytraGlideAvailable();
+        return BedrockMovementModifierFactory.create(playerContext, player, context)
+                .elytraGlideAvailable();
     }
 
     private static ItemStack item(Material material, int damage) {

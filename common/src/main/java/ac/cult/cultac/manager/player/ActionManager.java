@@ -4,30 +4,30 @@ import ac.cult.cultac.checks.CultProcessor;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.type.ClientTickEndListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.GameMode;
-import lombok.Getter;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundSetHeldSlot;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.PlayerAction;
+import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import lombok.Getter;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.item.equipment.Equippable;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 @Getter
 public class ActionManager extends CultProcessor implements CheckListener, ClientTickEndListener {
@@ -51,7 +51,9 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
 
     private PacketEntity target = null;
 
-    public ActionManager(CultPlayer cultPlayer) { super(cultPlayer); }
+    public ActionManager(CultPlayer cultPlayer) {
+        super(cultPlayer);
+    }
 
     private InteractionHand hand;
 
@@ -71,13 +73,13 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
         if (heldStack == null) heldStack = ItemStack.empty();
 
         this.blocking = heldStack.getType() == Material.SHIELD
-                || (player.getClientVersion().isOlderThan(ClientVersion.V_1_9) && heldStack.getType().name().endsWith("_SWORD"));
+                || (player.getClientVersion().isOlderThan(ClientVersion.V_1_9)
+                        && heldStack.getType().name().endsWith("_SWORD"));
 
         if (canStartUsingItem(heldStack)) {
             player.packetStateData.setSlowedByUsingItem(true);
             player.packetStateData.itemInUseHand = hand;
-        } else if (!player.packetStateData.isSlowedByUsingItem()
-                || player.packetStateData.itemInUseHand == hand) {
+        } else if (!player.packetStateData.isSlowedByUsingItem() || player.packetStateData.itemInUseHand == hand) {
             // A rejected use in the other hand does not stop an existing use.
             player.packetStateData.setSlowedByUsingItem(false);
         }
@@ -106,8 +108,10 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     private boolean canStartUsingItem(ItemStack stack) {
-        if (stack == null || stack.isEmpty()
-                || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && player.checkManager.getCompensatedCooldown().hasItem(stack))) {
+        if (stack == null
+                || stack.isEmpty()
+                || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
+                        && player.checkManager.getCompensatedCooldown().hasItem(stack))) {
             return false;
         }
 
@@ -133,8 +137,10 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
             if (consumable != null) {
                 FoodProperties food = nms.get(DataComponents.FOOD);
                 return consumable.consumeSeconds() > 0.0F
-                        && (food == null || food.canAlwaysEat() || player.food < 20
-                        || player.gamemode == GameMode.CREATIVE);
+                        && (food == null
+                                || food.canAlwaysEat()
+                                || player.food < 20
+                                || player.gamemode == GameMode.CREATIVE);
             }
 
             Equippable equippable = nms.get(DataComponents.EQUIPPABLE);
@@ -161,25 +167,25 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
 
         Consumable consumable = nms.get(DataComponents.CONSUMABLE);
         FoodProperties food = nms.get(DataComponents.FOOD);
-        return consumable != null && consumable.consumeSeconds() > 0.0F
-                && (food == null || food.canAlwaysEat() || player.food < 20
-                || player.gamemode == GameMode.CREATIVE);
+        return consumable != null
+                && consumable.consumeSeconds() > 0.0F
+                && (food == null || food.canAlwaysEat() || player.food < 20 || player.gamemode == GameMode.CREATIVE);
     }
 
     private static DataComponentType<?> findDataComponent(String fieldName) {
         try {
-            return (DataComponentType<?>) DataComponents.class.getField(fieldName).get(null);
+            return (DataComponentType<?>)
+                    DataComponents.class.getField(fieldName).get(null);
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
 
     @CultPacketHandler
-    public void onInteract(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteract(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         handleInteract(packet);
     }
-
-
 
     @CultPacketHandler
     public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
@@ -187,20 +193,28 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         handlePlayerAction(packet);
     }
 
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
+    public void onPlayerInput(
+            PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         ServerboundPlayerInput input = packet;
         player.packetStateData.knownInput = new ac.cult.cultac.utils.data.KnownInput(
-                input.forward(), input.backward(), input.left(), input.right(),
-                input.jump(), input.shift(), input.sprint());
+                input.forward(),
+                input.backward(),
+                input.left(),
+                input.right(),
+                input.jump(),
+                input.shift(),
+                input.sprint());
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         selectHotbarSlot();
     }
 
@@ -211,15 +225,10 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     @CultPacketHandler
-    public void onMovePlayerPos(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayerPos(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         clearMainHandUseAfterSlotChange();
     }
-
-
-
-
-
-
 
     @Override
     public void onPlayerTickEnd(final PacketReceiveEvent event) {
@@ -243,7 +252,10 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     }
 
     @CultPacketHandler
-    public void onSetHeldSlot(ac.cult.cultac.network.event.PacketSendEvent<ClientboundSetHeldSlot> event, CultPlayer player, ClientboundSetHeldSlot packet) {
+    public void onSetHeldSlot(
+            ac.cult.cultac.network.event.PacketSendEvent<ClientboundSetHeldSlot> event,
+            CultPlayer player,
+            ClientboundSetHeldSlot packet) {
         this.blocking = false;
         player.packetStateData.setSlowedByUsingItem(false);
     }
@@ -267,5 +279,4 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
             player.packetStateData.setSlowedByUsingItem(false);
         }
     }
-
 }

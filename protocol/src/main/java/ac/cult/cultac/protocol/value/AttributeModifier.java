@@ -8,5 +8,9 @@ public record AttributeModifier(String id, double amount, Operation operation) {
         Objects.requireNonNull(operation, "operation");
     }
 
-    public enum Operation { ADD_VALUE, ADD_MULTIPLIED_BASE, ADD_MULTIPLIED_TOTAL }
+    public enum Operation {
+        ADD_VALUE,
+        ADD_MULTIPLIED_BASE,
+        ADD_MULTIPLIED_TOTAL
+    }
 }

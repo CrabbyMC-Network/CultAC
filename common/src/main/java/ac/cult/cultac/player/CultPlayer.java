@@ -1,12 +1,6 @@
 package ac.cult.cultac.player;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.event.events.GrimTransactionSendEvent;
-import ac.grim.grimac.api.AbstractCheck;
-import ac.grim.grimac.api.GrimUser;
-import ac.grim.grimac.api.PacketWorld;
-import ac.grim.grimac.api.config.ConfigManager;
-import ac.grim.grimac.api.handler.ResyncHandler;
 import ac.cult.cultac.bedrock.MovementPlatform;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.checks.Check;
@@ -28,11 +22,14 @@ import ac.cult.cultac.manager.player.PluginChannelManager;
 import ac.cult.cultac.manager.player.SetbackTeleportUtil;
 import ac.cult.cultac.manager.player.features.FeatureManagerImpl;
 import ac.cult.cultac.manager.player.handlers.NoOpResyncHandler;
+import ac.cult.cultac.network.CultWrite;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import ac.cult.cultac.protocol.ConnectionPhase;
+import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
 import ac.cult.cultac.utils.anticheat.HumanFormatter;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
@@ -41,10 +38,10 @@ import ac.cult.cultac.utils.change.PlayerBlockHistory;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.BoatData;
 import ac.cult.cultac.utils.data.PacketStateData;
-import ac.cult.cultac.utils.latency.ClientComponentRegistries;
 import ac.cult.cultac.utils.data.VehicleData;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.enums.Pose;
+import ac.cult.cultac.utils.latency.ClientComponentRegistries;
 import ac.cult.cultac.utils.latency.CompensatedCameraEntity;
 import ac.cult.cultac.utils.latency.CompensatedEntities;
 import ac.cult.cultac.utils.latency.CompensatedFireworks;
@@ -60,33 +57,15 @@ import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
+import ac.grim.grimac.api.AbstractCheck;
+import ac.grim.grimac.api.GrimUser;
+import ac.grim.grimac.api.PacketWorld;
+import ac.grim.grimac.api.config.ConfigManager;
+import ac.grim.grimac.api.event.events.GrimTransactionSendEvent;
+import ac.grim.grimac.api.handler.ResyncHandler;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.protocol.packet.PacketTracker;
-import lombok.Getter;
-import lombok.Setter;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.minecraft.SharedConstants;
-import ac.cult.cultac.protocol.ConnectionPhase;
-import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
-import ac.cult.cultac.network.CultWrite;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.entity.Player;
-import org.bukkit.permissions.Permission;
-import org.bukkit.permissions.PermissionDefault;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
@@ -103,6 +82,26 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
+import lombok.Setter;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.minecraft.SharedConstants;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 // Everything in this class should be sync'd to the anticheat thread.
 // Put variables sync'd to the Netty thread in PacketStateData
@@ -113,12 +112,15 @@ public class CultPlayer implements GrimUser {
         private static final GrimTransactionSendEvent.Channel SEND =
                 CultAPI.INSTANCE.getEventBus().get(GrimTransactionSendEvent.class);
     }
+
     private static final Method SERVER_PLAYER_LEVEL_METHOD = resolveServerPlayerLevelMethod();
     private static final @NotNull ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
     public record TrackedTransaction(int transaction, CultWrite packet) {
-        public int id() { return ((ClientboundPing) packet.packet()).id(); }
+        public int id() {
+            return ((ClientboundPing) packet.packet()).id();
+        }
     }
 
     @lombok.Getter
@@ -154,7 +156,8 @@ public class CultPlayer implements GrimUser {
     // Determining player ping
     // The difference between keepalive and transactions is that keepalive is async while transactions are sync
     private Queue<SentTransaction> transactionsSent = new ArrayDeque<>();
-    private final @NotNull Map<@NotNull Integer, @NotNull TrackedTransaction> transactionsPendingSend = new HashMap<>(4);
+    private final @NotNull Map<@NotNull Integer, @NotNull TrackedTransaction> transactionsPendingSend =
+            new HashMap<>(4);
     public final @NotNull AtomicInteger lastTransactionSent = new AtomicInteger(0);
     public final @NotNull AtomicInteger lastTransactionReceived = new AtomicInteger(0);
     // End transaction handling stuff
@@ -162,17 +165,24 @@ public class CultPlayer implements GrimUser {
     public @NotNull CheckManager checkManager;
     public @NotNull ActionManager actionManager;
     public final @NotNull PunishmentManager punishmentManager;
-    @Getter private final @NotNull FeatureManagerImpl featureManager = new FeatureManagerImpl(this);
+
+    @Getter
+    private final @NotNull FeatureManagerImpl featureManager = new FeatureManagerImpl(this);
     // The resync handler defaults to a no-op until the packet-sending implementation is
     // available on this platform's networking stack.
-    @Getter @Setter private @NotNull ResyncHandler resyncHandler = NoOpResyncHandler.INSTANCE;
+    @Getter
+    @Setter
+    private @NotNull ResyncHandler resyncHandler = NoOpResyncHandler.INSTANCE;
     // End manager like classes
     public int riptideSpinAttackTicks;
     private @MonotonicNonNull PacketTracker packetTracker;
     public final @NotNull PacketOrderProcessor packetOrderProcessor = new PacketOrderProcessor(this);
     public long rawTransactionPing = 0;
     public long lastTransSent = 0;
-    @Getter private long playerClockAtLeast = System.nanoTime();
+
+    @Getter
+    private long playerClockAtLeast = System.nanoTime();
+
     public int powderSnowFrozenTicks = 0;
     public double x;
     public double y;
@@ -244,7 +254,10 @@ public class CultPlayer implements GrimUser {
     public boolean serverOpenedInventoryThisTick;
     // Whether this tick's movement intersected a nether portal block (see MultiActionsD)
     public boolean intersectedWithNetherPortal;
-    @Getter private final @NotNull MovementData movementData;
+
+    @Getter
+    private final @NotNull MovementData movementData;
+
     public int minPlayerAttackSlow = 0;
     public int maxPlayerAttackSlow = 0;
     public @MonotonicNonNull GameMode gamemode;
@@ -266,13 +279,16 @@ public class CultPlayer implements GrimUser {
     }
 
     public boolean shouldEnforceMovementSetbacks() {
-        return movementPlatform == MovementPlatform.JAVA || (bedrockState != null && bedrockState.shouldEnforceSetbacks());
+        return movementPlatform == MovementPlatform.JAVA
+                || (bedrockState != null && bedrockState.shouldEnforceSetbacks());
     }
 
     public void onPacketCancel() {
         if (spamThreshold != -1 && cancelledPackets.incrementAndGet() > spamThreshold) {
-            LogUtil.info("Disconnecting " + getName() + " for spamming invalid packets, packets cancelled within a second " + cancelledPackets);
-            disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(this, CultAPI.INSTANCE.getConfigManager().getDisconnectClosed())));
+            LogUtil.info("Disconnecting " + getName()
+                    + " for spamming invalid packets, packets cancelled within a second " + cancelledPackets);
+            disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(
+                    this, CultAPI.INSTANCE.getConfigManager().getDisconnectClosed())));
             cancelledPackets.set(0);
 
             if (debugPacketCancel) {
@@ -290,10 +306,21 @@ public class CultPlayer implements GrimUser {
     @Setter
     private boolean disabled = false;
 
-    @Getter @Setter private boolean experimentalChecks;
-    @Getter @Setter private boolean exemptElytra;
-    @Getter @Setter private boolean forceStuckSpeed = true;
-    @Getter @Setter private boolean forceSlowMovement = true;
+    @Getter
+    @Setter
+    private boolean experimentalChecks;
+
+    @Getter
+    @Setter
+    private boolean exemptElytra;
+
+    @Getter
+    @Setter
+    private boolean forceStuckSpeed = true;
+
+    @Getter
+    @Setter
+    private boolean forceSlowMovement = true;
 
     private static final Permission DISABLED_PERMISSION = new Permission("cult.disabled", PermissionDefault.FALSE);
 
@@ -309,7 +336,8 @@ public class CultPlayer implements GrimUser {
         this(user, MovementPlatform.JAVA, null);
     }
 
-    public CultPlayer(@NotNull User user, @NotNull MovementPlatform movementPlatform, @Nullable BedrockPlayerState bedrockState) {
+    public CultPlayer(
+            @NotNull User user, @NotNull MovementPlatform movementPlatform, @Nullable BedrockPlayerState bedrockState) {
         this.user = Objects.requireNonNull(user, "user");
         this.playerUUID = Objects.requireNonNull(user.getUUID(), "uuid");
         this.movementPlatform = movementPlatform;
@@ -372,7 +400,7 @@ public class CultPlayer implements GrimUser {
     }
 
     private static Method resolveServerPlayerLevelMethod() {
-        for (String candidate : new String[]{"level", "serverLevel"}) {
+        for (String candidate : new String[] {"level", "serverLevel"}) {
             try {
                 return ServerPlayer.class.getMethod(candidate);
             } catch (NoSuchMethodException ignored) {
@@ -406,8 +434,9 @@ public class CultPlayer implements GrimUser {
         var owner = user.getPacketExecutor();
         if (owner.inEventLoop() || owner.isTerminated()) cleanup.run();
         else {
-            try { owner.execute(cleanup); }
-            catch (java.util.concurrent.RejectedExecutionException rejected) {
+            try {
+                owner.execute(cleanup);
+            } catch (java.util.concurrent.RejectedExecutionException rejected) {
                 owner.terminationFuture().addListener(ignored -> cleanup.run());
             }
         }
@@ -436,9 +465,7 @@ public class CultPlayer implements GrimUser {
 
         // A skipped transaction is only suspicious with a valid keep alive baseline;
         // switching servers can legitimately drop transaction responses.
-        if (!isBedrockMovement()
-                && skipped > 0
-                && keepAliveProcessor.lastKeepAlivePing > 0) {
+        if (!isBedrockMovement() && skipped > 0 && keepAliveProcessor.lastKeepAlivePing > 0) {
             checkManager.getCheck(TransactionOrder.class).skipped(skipped);
         }
 
@@ -489,7 +516,8 @@ public class CultPlayer implements GrimUser {
         compensatedWorld.removeInvalidPistonLikeStuff(lastTransactionReceived.get());
     }
 
-    @Getter private final @NotNull EvictingQueue<@NotNull Long> transPings = new EvictingQueue<>(60);
+    @Getter
+    private final @NotNull EvictingQueue<@NotNull Long> transPings = new EvictingQueue<>(60);
 
     public float getMaxUpStep() {
         PacketEntity riding = compensatedEntities.getSelf().getRiding();
@@ -503,7 +531,8 @@ public class CultPlayer implements GrimUser {
             return 0f;
         }
 
-        if ((isBedrockMovement() || getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)) && riding.stepHeightAttribute != null) {
+        if ((isBedrockMovement() || getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5))
+                && riding.stepHeightAttribute != null) {
             return riding.stepHeightAttribute.floatValue();
         }
 
@@ -608,7 +637,8 @@ public class CultPlayer implements GrimUser {
     }
 
     private int nextTransactionId() {
-        boolean legacyAcknowledgement = !isBedrockMovement() && getClientVersion().isOlderThan(ClientVersion.V_1_17);
+        boolean legacyAcknowledgement =
+                !isBedrockMovement() && getClientVersion().isOlderThan(ClientVersion.V_1_17);
         int id;
         boolean used;
         do {
@@ -757,12 +787,8 @@ public class CultPlayer implements GrimUser {
 
     private boolean canPlayerFitWithinBlocksAndEntitiesWhen(Pose newPose) {
         SimpleCollisionBox box = GetBoundingBox.getBoundingBoxFromPosAndSize(
-                x,
-                y,
-                z,
-                newPose.width * getScale(),
-                newPose.height * getScale()
-        ).expand(-1.0E-7D);
+                        x, y, z, newPose.width * getScale(), newPose.height * getScale())
+                .expand(-1.0E-7D);
         return Collisions.isEmpty(this, box, y) && hasNoEntityCollision(box);
     }
 
@@ -797,12 +823,14 @@ public class CultPlayer implements GrimUser {
 
     public void closeInventorySafely() {
         if (bukkitPlayer != null) {
-            FoliaCompatUtil.runTaskForEntity(bukkitPlayer, CultAPI.INSTANCE.getPlugin(), () -> bukkitPlayer.closeInventory(), null, 0);
+            FoliaCompatUtil.runTaskForEntity(
+                    bukkitPlayer, CultAPI.INSTANCE.getPlugin(), () -> bukkitPlayer.closeInventory(), null, 0);
         }
     }
 
     public void timedOut() {
-        disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(this, CultAPI.INSTANCE.getConfigManager().getDisconnectTimeout())));
+        disconnect(MessageUtil.miniMessage(MessageUtil.replacePlaceholders(
+                this, CultAPI.INSTANCE.getConfigManager().getDisconnectTimeout())));
     }
 
     private final AtomicBoolean hasDisconnected = new AtomicBoolean(false);
@@ -822,12 +850,20 @@ public class CultPlayer implements GrimUser {
         try {
             user.write(new CultWrite(MessageUtil.disconnectPacket(reason), false));
         } catch (Exception ignored) { // The player may be in the wrong state to receive a disconnect packet
-            LogUtil.warn("Failed to send disconnect packet to disconnect " + user.getProfile().getName() + "! Disconnecting anyways.");
+            LogUtil.warn("Failed to send disconnect packet to disconnect "
+                    + user.getProfile().getName() + "! Disconnecting anyways.");
         }
         user.closeConnection();
         if (platformPlayer != null) {
-            CultAPI.INSTANCE.getScheduler().getEntityScheduler().execute(platformPlayer, CultAPI.INSTANCE.getGrimPlugin(),
-                    () -> platformPlayer.kickPlayer(textReason), null, 1);
+            CultAPI.INSTANCE
+                    .getScheduler()
+                    .getEntityScheduler()
+                    .execute(
+                            platformPlayer,
+                            CultAPI.INSTANCE.getGrimPlugin(),
+                            () -> platformPlayer.kickPlayer(textReason),
+                            null,
+                            1);
         }
     }
 
@@ -862,8 +898,7 @@ public class CultPlayer implements GrimUser {
         // `database.session.heartbeat-interval-ms`, so this runs every tick
         // but only emits a row upsert every N seconds. Bounds how stale
         // last_activity_epoch_ms can be when the server crashes.
-        CultAPI.INSTANCE.getDataStoreLifecycle().sessionTracker()
-                .pollHeartbeat(playerUUID, System.currentTimeMillis());
+        CultAPI.INSTANCE.getDataStoreLifecycle().sessionTracker().pollHeartbeat(playerUUID, System.currentTimeMillis());
     }
 
     public boolean noModifyPacketPermission = false;
@@ -872,7 +907,7 @@ public class CultPlayer implements GrimUser {
     public boolean chatBypass = false;
     public boolean healthPermission = false;
 
-    //TODO: Create a configurable timer for this
+    // TODO: Create a configurable timer for this
     @Override
     public void updatePermissions() {
         if (bukkitPlayer == null) return;
@@ -957,7 +992,8 @@ public class CultPlayer implements GrimUser {
     //
     // There are two predictable scenarios where this happens:
     // 1. The player moves more than 0.03/0.0002 blocks every tick
-    //     - This code runs after the prediction engine to prevent a false when immediately switching back to 1.9-like movements
+    //     - This code runs after the prediction engine to prevent a false when immediately switching back to 1.9-like
+    // movements
     //     - 3 ticks is a magic value, but it should buffer out incorrect predictions somewhat.
     // 2. The player is in a vehicle
     public boolean isTickingReliablyFor(int ticks) {
@@ -1101,7 +1137,8 @@ public class CultPlayer implements GrimUser {
         }
         if (ViaVersionUtil.isAvailable()) {
             try {
-                int protocolVersion = Via.getAPI().getPlayerProtocolVersion(playerUUID).getOriginalVersion();
+                int protocolVersion =
+                        Via.getAPI().getPlayerProtocolVersion(playerUUID).getOriginalVersion();
                 if (protocolVersion > 0) {
                     // A connection's negotiated protocol never changes after the handshake.
                     resolved = ClientVersion.fromProtocolVersion(protocolVersion);
@@ -1193,6 +1230,6 @@ public class CultPlayer implements GrimUser {
         endOfTickTasks.add(task);
     }
 
-    @Getter private int tick;
-
+    @Getter
+    private int tick;
 }

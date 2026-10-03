@@ -23,8 +23,7 @@ final class BedrockBlockFluidResolver {
     private static final double LIQUID_CURRENT_PUSH_PER_TICK = 0.014D;
     private static final double LAVA_CURRENT_PUSH_PER_TICK = 0.0035000001080334187D;
 
-    private BedrockBlockFluidResolver() {
-    }
+    private BedrockBlockFluidResolver() {}
 
     static BedrockFluidResolution resolve(BlockCollisionWorld blockWorld, WorldCollisionBox actorBox) {
         if (blockWorld.isEmpty()) {
@@ -120,8 +119,8 @@ final class BedrockBlockFluidResolver {
         double currentY = liquidMovementMedium == Medium.LAVA ? lavaFlowY : waterFlowY;
         double currentZ = liquidMovementMedium == Medium.LAVA ? lavaFlowZ : waterFlowZ;
         boolean appliesFlow = liquidMovementMedium == Medium.LAVA
-            ? appliesFlow(fetchedLava, lavaBox, BedrockLiquidKind.LAVA, liquidByPosition)
-            : appliesFlow(fetchedWater, waterBox, BedrockLiquidKind.WATER, liquidByPosition);
+                ? appliesFlow(fetchedLava, lavaBox, BedrockLiquidKind.LAVA, liquidByPosition)
+                : appliesFlow(fetchedWater, waterBox, BedrockLiquidKind.WATER, liquidByPosition);
         if (!appliesFlow) {
             currentX = 0.0D;
             currentY = 0.0D;
@@ -131,39 +130,35 @@ final class BedrockBlockFluidResolver {
         boolean currentNegativeX = currentX < 0.0D;
         boolean currentPositiveZ = currentZ > 0.0D;
         boolean currentNegativeZ = currentZ < 0.0D;
-        boolean liquidCurrent = currentPositiveX || currentNegativeX || currentPositiveZ || currentNegativeZ || currentY != 0.0D;
+        boolean liquidCurrent =
+                currentPositiveX || currentNegativeX || currentPositiveZ || currentNegativeZ || currentY != 0.0D;
         FluidCurrentState currentState = liquidCurrent
-            ? fluidCurrentStateFor(liquidMovementMedium, currentX, currentY, currentZ)
-            : FluidCurrentState.NONE;
+                ? fluidCurrentStateFor(liquidMovementMedium, currentX, currentY, currentZ)
+                : FluidCurrentState.NONE;
         bubbleLayers.sort(Comparator.comparingInt(BubbleColumnLayer::blockY));
         FluidState fluidState = new FluidState(
-            liquidCurrent,
-            currentPositiveX,
-            currentNegativeX,
-            currentPositiveZ,
-            currentNegativeZ,
-            upwardBubbleContact,
-            downwardBubbleContact,
-            currentState,
-            bubbleLayers.isEmpty() ? BubbleColumnState.NONE : bubbleColumnState(bubbleLayers, actorBox.maxY() - actorBox.minY()),
-            false,
-            1.0D
-        );
+                liquidCurrent,
+                currentPositiveX,
+                currentNegativeX,
+                currentPositiveZ,
+                currentNegativeZ,
+                upwardBubbleContact,
+                downwardBubbleContact,
+                currentState,
+                bubbleLayers.isEmpty()
+                        ? BubbleColumnState.NONE
+                        : bubbleColumnState(bubbleLayers, actorBox.maxY() - actorBox.minY()),
+                false,
+                1.0D);
         return new BedrockFluidResolution(
-            waterContact ? Medium.WATER : Medium.LAVA,
-            fluidState,
-            waterContact,
-            lavaContact,
-            liquidMovementMedium
-        );
+                waterContact ? Medium.WATER : Medium.LAVA, fluidState, waterContact, lavaContact, liquidMovementMedium);
     }
 
     private static boolean appliesFlow(
-        List<PlacedBlockCollision> fetched,
-        WorldCollisionBox liquidBox,
-        BedrockLiquidKind liquidKind,
-        Map<BlockPosition, PlacedBlockCollision> liquidByPosition
-    ) {
+            List<PlacedBlockCollision> fetched,
+            WorldCollisionBox liquidBox,
+            BedrockLiquidKind liquidKind,
+            Map<BlockPosition, PlacedBlockCollision> liquidByPosition) {
         for (PlacedBlockCollision block : fetched) {
             if (isFlowing(block)) {
                 return true;
@@ -176,9 +171,9 @@ final class BedrockBlockFluidResolver {
         for (PlacedBlockCollision block : fetched) {
             BlockPosition position = block.position();
             if ((position.z() == minZ && hasFlowingNeighbor(position, 0, -1, liquidKind, liquidByPosition))
-                || (position.z() == maxZ && hasFlowingNeighbor(position, 0, 1, liquidKind, liquidByPosition))
-                || (position.x() == minX && hasFlowingNeighbor(position, -1, 0, liquidKind, liquidByPosition))
-                || (position.x() == maxX && hasFlowingNeighbor(position, 1, 0, liquidKind, liquidByPosition))) {
+                    || (position.z() == maxZ && hasFlowingNeighbor(position, 0, 1, liquidKind, liquidByPosition))
+                    || (position.x() == minX && hasFlowingNeighbor(position, -1, 0, liquidKind, liquidByPosition))
+                    || (position.x() == maxX && hasFlowingNeighbor(position, 1, 0, liquidKind, liquidByPosition))) {
                 return true;
             }
         }
@@ -186,17 +181,14 @@ final class BedrockBlockFluidResolver {
     }
 
     private static boolean hasFlowingNeighbor(
-        BlockPosition position,
-        int dx,
-        int dz,
-        BedrockLiquidKind liquidKind,
-        Map<BlockPosition, PlacedBlockCollision> liquidByPosition
-    ) {
-        PlacedBlockCollision neighbor = liquidByPosition.get(
-            new BlockPosition(position.x() + dx, position.y(), position.z() + dz));
-        return neighbor != null
-            && BedrockLiquidGeometry.liquidKind(neighbor) == liquidKind
-            && isFlowing(neighbor);
+            BlockPosition position,
+            int dx,
+            int dz,
+            BedrockLiquidKind liquidKind,
+            Map<BlockPosition, PlacedBlockCollision> liquidByPosition) {
+        PlacedBlockCollision neighbor =
+                liquidByPosition.get(new BlockPosition(position.x() + dx, position.y(), position.z() + dz));
+        return neighbor != null && BedrockLiquidGeometry.liquidKind(neighbor) == liquidKind && isFlowing(neighbor);
     }
 
     private static boolean isFlowing(PlacedBlockCollision block) {
@@ -212,40 +204,27 @@ final class BedrockBlockFluidResolver {
     }
 
     private static FluidCurrentState fluidCurrentStateFor(
-        Medium liquidMovementMedium,
-        double directionX,
-        double directionY,
-        double directionZ
-    ) {
-        double push = liquidMovementMedium == Medium.LAVA
-            ? LAVA_CURRENT_PUSH_PER_TICK
-            : LIQUID_CURRENT_PUSH_PER_TICK;
+            Medium liquidMovementMedium, double directionX, double directionY, double directionZ) {
+        double push = liquidMovementMedium == Medium.LAVA ? LAVA_CURRENT_PUSH_PER_TICK : LIQUID_CURRENT_PUSH_PER_TICK;
         return new FluidCurrentState(
-            push,
-            Double.POSITIVE_INFINITY,
-            Double.POSITIVE_INFINITY,
-            Double.POSITIVE_INFINITY,
-            directionX,
-            directionY,
-            directionZ
-        );
+                push,
+                Double.POSITIVE_INFINITY,
+                Double.POSITIVE_INFINITY,
+                Double.POSITIVE_INFINITY,
+                directionX,
+                directionY,
+                directionZ);
     }
 
     private static BubbleColumnState bubbleColumnState(List<BubbleColumnLayer> bubbleLayers, double playerHeight) {
-        int minY = bubbleLayers.stream().mapToInt(BubbleColumnLayer::blockY).min().orElse(0);
-        int maxY = bubbleLayers.stream().mapToInt(BubbleColumnLayer::blockY).max().orElse(-1);
-        return new BubbleColumnState(
-            minY,
-            maxY,
-            maxY,
-            maxY + 1.0D,
-            playerHeight,
-            bubbleLayers
-        );
+        int minY =
+                bubbleLayers.stream().mapToInt(BubbleColumnLayer::blockY).min().orElse(0);
+        int maxY =
+                bubbleLayers.stream().mapToInt(BubbleColumnLayer::blockY).max().orElse(-1);
+        return new BubbleColumnState(minY, maxY, maxY, maxY + 1.0D, playerHeight, bubbleLayers);
     }
 
     private static boolean isWaterloggedBlock(PlacedBlockCollision block) {
         return block.javaStateProperties().waterlogged();
     }
-
 }

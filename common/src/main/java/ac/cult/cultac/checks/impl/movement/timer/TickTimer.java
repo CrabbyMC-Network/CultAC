@@ -1,17 +1,20 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
-@CheckData(name = "TickTimer", stableKey = "cult.timer.tick", description = "Did not send client tick end packet", setback = 1)
+@CheckData(
+        name = "TickTimer",
+        stableKey = "cult.timer.tick",
+        description = "Did not send client tick end packet",
+        setback = 1)
 public final class TickTimer extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("type=[end|flying], packets={uint}");
 
@@ -28,12 +31,11 @@ public final class TickTimer extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!isApplicable() || player.packetStateData.lastPacketWasTeleport) return;
 
-        if (!receivedTickEnd
-                && flagWithSetback(V.write(verbose()).bool(false).uint(flyingPackets))) {
+        if (!receivedTickEnd && flagWithSetback(V.write(verbose()).bool(false).uint(flyingPackets))) {
             player.onPacketCancel();
         }
         receivedTickEnd = false;
@@ -45,8 +47,7 @@ public final class TickTimer extends Check implements CheckListener {
         if (!isApplicable()) return;
 
         receivedTickEnd = true;
-        if (flyingPackets > 1
-                && flagWithSetback(V.write(verbose()).bool(true).uint(flyingPackets))) {
+        if (flyingPackets > 1 && flagWithSetback(V.write(verbose()).bool(true).uint(flyingPackets))) {
             player.onPacketCancel();
         }
         flyingPackets = 0;

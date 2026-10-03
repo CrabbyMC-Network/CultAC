@@ -1,5 +1,7 @@
 package ac.cult.cultac.protocol.wire;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ac.cult.cultac.protocol.MalformedPacketException;
 import ac.cult.cultac.protocol.ProtocolResolutionException;
 import ac.cult.cultac.protocol.ProtocolVersion;
@@ -9,20 +11,21 @@ import ac.cult.cultac.protocol.value.Vec3d;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import org.junit.jupiter.api.Test;
-
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WireTest {
     @Test
     void packetIdPeekPreservesIndicesAndMatchesVanillasNonMinimalEncodings() {
         ByteBuf buffer = Unpooled.buffer();
         try {
-            for (String hex : new String[]{"00", "7f", "8001", "ffffffff07", "8080808008", "ffffffff0f", "8000", "ffffffff7f"}) {
-                buffer.clear().writeInt(123).writeBytes(ByteBufUtil.decodeHexDump(hex)).writeInt(456);
+            for (String hex :
+                    new String[] {"00", "7f", "8001", "ffffffff07", "8080808008", "ffffffff0f", "8000", "ffffffff7f"}) {
+                buffer.clear()
+                        .writeInt(123)
+                        .writeBytes(ByteBufUtil.decodeHexDump(hex))
+                        .writeInt(456);
                 buffer.readerIndex(4);
                 int end = buffer.writerIndex();
                 int id = Wire.peekVarInt(buffer);
@@ -32,7 +35,7 @@ class WireTest {
                 assertEquals(Wire.readVarInt(buffer), id);
                 assertEquals(456, buffer.readInt());
             }
-            for (String malformed : new String[]{"", "80", "808080808000"}) {
+            for (String malformed : new String[] {"", "80", "808080808000"}) {
                 buffer.clear().writeInt(123).writeBytes(ByteBufUtil.decodeHexDump(malformed));
                 buffer.readerIndex(4);
                 int end = buffer.writerIndex();
@@ -40,7 +43,9 @@ class WireTest {
                 assertEquals(4, buffer.readerIndex());
                 assertEquals(end, buffer.writerIndex());
             }
-        } finally { buffer.release(); }
+        } finally {
+            buffer.release();
+        }
     }
 
     @Test
@@ -54,16 +59,25 @@ class WireTest {
                 assertEquals(hex[i], ByteBufUtil.hexDump(buffer));
                 assertEquals(values[i], Wire.readVarInt(buffer));
             }
-            for (long value : new long[]{0, 1, 127, 128, Long.MAX_VALUE, Long.MIN_VALUE, -1}) {
+            for (long value : new long[] {0, 1, 127, 128, Long.MAX_VALUE, Long.MIN_VALUE, -1}) {
                 Wire.writeVarLong(buffer.clear(), value);
                 assertEquals(value, Wire.readVarLong(buffer));
             }
             assertEquals(0, Wire.readVarInt(buffer.clear().writeByte(0x80).writeByte(0)));
             assertEquals(-1, Wire.readVarInt(buffer.clear().writeBytes(ByteBufUtil.decodeHexDump("ffffffff7f"))));
-            assertThrows(MalformedPacketException.class, () -> Wire.readVarInt(buffer.clear().writeZero(0)));
-            assertThrows(MalformedPacketException.class, () -> Wire.readVarInt(buffer.clear().writeByte(0x80)));
-            assertThrows(MalformedPacketException.class, () -> Wire.readVarInt(buffer.clear().writeBytes(ByteBufUtil.decodeHexDump("808080808000"))));
-            assertThrows(MalformedPacketException.class, () -> Wire.readVarLong(buffer.clear().writeBytes(ByteBufUtil.decodeHexDump("8080808080808080808000"))));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readVarInt(buffer.clear().writeZero(0)));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readVarInt(buffer.clear().writeByte(0x80)));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readVarInt(buffer.clear().writeBytes(ByteBufUtil.decodeHexDump("808080808000"))));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readVarLong(
+                            buffer.clear().writeBytes(ByteBufUtil.decodeHexDump("8080808080808080808000"))));
         } finally {
             buffer.release();
         }
@@ -73,8 +87,12 @@ class WireTest {
     void packedPositionAndShortMotionRespectSignsAndQuantization() {
         ByteBuf buffer = Unpooled.buffer();
         try {
-            for (BlockPos value : new BlockPos[]{new BlockPos(0, 0, 0), new BlockPos(-1, -1, -1),
-                    new BlockPos(-33554432, -2048, 33554431), new BlockPos(33554431, 2047, -33554432)}) {
+            for (BlockPos value : new BlockPos[] {
+                new BlockPos(0, 0, 0),
+                new BlockPos(-1, -1, -1),
+                new BlockPos(-33554432, -2048, 33554431),
+                new BlockPos(33554431, 2047, -33554432)
+            }) {
                 Wire.writeBlockPos(buffer.clear(), value);
                 assertEquals(value, Wire.readBlockPos(buffer));
             }
@@ -82,9 +100,12 @@ class WireTest {
             assertEquals("ffffffffffffffff", ByteBufUtil.hexDump(buffer));
             Wire.writeShortVelocity(buffer.clear(), new Vec3d(-9, 0.00024999, 9));
             assertEquals(new Vec3d(-3.9, 0.000125, 3.9), Wire.readShortVelocity(buffer));
-            Wire.writeShortVelocity(buffer.clear(), new Vec3d(Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+            Wire.writeShortVelocity(
+                    buffer.clear(), new Vec3d(Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
             assertEquals(new Vec3d(0, -3.9, 3.9), Wire.readShortVelocity(buffer));
-            assertThrows(MalformedPacketException.class, () -> Wire.readShortVelocity(buffer.clear().writeZero(5)));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readShortVelocity(buffer.clear().writeZero(5)));
         } finally {
             buffer.release();
         }
@@ -94,13 +115,17 @@ class WireTest {
     void stringsUseUtf16LimitsAndRejectTruncationAndOversizedLengths() {
         ByteBuf buffer = Unpooled.buffer();
         try {
-            for (String value : new String[]{"", "a", "\u0000", "\u20ac", "\ud83d\ude80"}) {
+            for (String value : new String[] {"", "a", "\u0000", "\u20ac", "\ud83d\ude80"}) {
                 Wire.writeString(buffer.clear(), value, value.length());
                 assertEquals(value, Wire.readString(buffer, value.length()));
             }
             assertThrows(IllegalArgumentException.class, () -> Wire.writeString(buffer.clear(), "\ud83d\ude80", 1));
-            assertThrows(MalformedPacketException.class, () -> Wire.readString(buffer.clear().writeByte(1), 1));
-            assertThrows(MalformedPacketException.class, () -> Wire.readString(buffer.clear().writeByte(4), 1));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readString(buffer.clear().writeByte(1), 1));
+            assertThrows(
+                    MalformedPacketException.class,
+                    () -> Wire.readString(buffer.clear().writeByte(4), 1));
             Wire.writeVarInt(buffer.clear(), -1);
             assertThrows(MalformedPacketException.class, () -> Wire.readString(buffer, 3));
             Wire.writeString(buffer.clear(), "abc", 3);
@@ -126,7 +151,8 @@ class WireTest {
             Set<Relative> decoded = Wire.readRelatives(buffer);
             assertEquals(relatives, decoded);
             assertThrows(UnsupportedOperationException.class, () -> decoded.add(Relative.X));
-            assertEquals(Set.of(Relative.values()), Wire.readRelatives(buffer.clear().writeInt(-1)));
+            assertEquals(
+                    Set.of(Relative.values()), Wire.readRelatives(buffer.clear().writeInt(-1)));
             Wire.writeAngle(buffer.clear(), ProtocolVersion.V26_2, -0.5f);
             assertEquals(-360.0f / 256, Wire.readAngle(buffer));
         } finally {
@@ -159,7 +185,9 @@ class WireTest {
         }
         assertThrows(ProtocolResolutionException.class, () -> ProtocolVersion.of(1073742161));
         assertTrue(ProtocolVersion.V26_2.atLeast(ProtocolVersion.V1_21_11));
-        for (int unsupported : new int[]{-1, ProtocolVersion.V1_21_3.protocol() - 1, ProtocolVersion.V26_3.protocol() + 1, 1073742160}) {
+        for (int unsupported :
+                new int[] {-1, ProtocolVersion.V1_21_3.protocol() - 1, ProtocolVersion.V26_3.protocol() + 1, 1073742160
+                }) {
             assertThrows(ProtocolResolutionException.class, () -> ProtocolVersion.of(unsupported));
         }
     }

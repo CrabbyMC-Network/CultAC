@@ -21,22 +21,26 @@ import org.jetbrains.annotations.Nullable;
 final class ClientBlockPlacement {
     private static final TagKey<Block> CACTUS_SUPPORT = cactusSupport();
 
-    private ClientBlockPlacement() {
-    }
+    private ClientBlockPlacement() {}
 
     static @Nullable BlockState state(Block block, BlockPlaceContext context) {
         BlockPos pos = context.getClickedPos();
         if (block instanceof SculkShriekerBlock) {
             // MCP SculkShriekerBlock#getStateForPlacement: player placement never enables summoning.
-            return block.defaultBlockState().setValue(SculkShriekerBlock.WATERLOGGED,
-                    context.getLevel().getFluidState(pos).getType() == Fluids.WATER);
+            return block.defaultBlockState()
+                    .setValue(
+                            SculkShriekerBlock.WATERLOGGED,
+                            context.getLevel().getFluidState(pos).getType() == Fluids.WATER);
         }
         if (block instanceof CampfireBlock) {
             // MCP CampfireBlock#getStateForPlacement and isSmokeSource.
             boolean water = context.getLevel().getFluidState(pos).getType() == Fluids.WATER;
-            return block.defaultBlockState().setValue(CampfireBlock.WATERLOGGED, water)
+            return block.defaultBlockState()
+                    .setValue(CampfireBlock.WATERLOGGED, water)
                     .setValue(CampfireBlock.LIT, !water)
-                    .setValue(CampfireBlock.SIGNAL_FIRE, context.getLevel().getBlockState(pos.below()).getBlock() == Blocks.HAY_BLOCK)
+                    .setValue(
+                            CampfireBlock.SIGNAL_FIRE,
+                            context.getLevel().getBlockState(pos.below()).getBlock() == Blocks.HAY_BLOCK)
                     .setValue(CampfireBlock.FACING, context.getHorizontalDirection());
         }
         if (block instanceof CoralBlock) {
@@ -52,10 +56,12 @@ final class ClientBlockPlacement {
         // MCP CactusBlock#canSurvive. Leaf 1.21.3 adds a WorldBorder.world config read here.
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos neighbor = pos.relative(direction);
-            if (level.getBlockState(neighbor).isSolid() || level.getFluidState(neighbor).is(FluidTags.LAVA)) return false;
+            if (level.getBlockState(neighbor).isSolid()
+                    || level.getFluidState(neighbor).is(FluidTags.LAVA)) return false;
         }
         BlockState below = level.getBlockState(pos.below());
-        return (below.getBlock() == state.getBlock() || below.is(CACTUS_SUPPORT)) && !level.getBlockState(pos.above()).liquid();
+        return (below.getBlock() == state.getBlock() || below.is(CACTUS_SUPPORT))
+                && !level.getBlockState(pos.above()).liquid();
     }
 
     @SuppressWarnings("unchecked")

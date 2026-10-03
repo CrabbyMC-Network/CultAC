@@ -5,7 +5,6 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.lists.EvictingQueue;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.ScheduledFuture;
-
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -22,8 +21,13 @@ public class NettyScheduler {
 
     public NettyScheduler(CultPlayer player) {
         this.player = player;
-        watchdogTask = channel().eventLoop().scheduleAtFixedRate(
-                () -> player.runSafely(this::tick), WATCHDOG_PERIOD_MS, WATCHDOG_PERIOD_MS, TimeUnit.MILLISECONDS);
+        watchdogTask = channel()
+                .eventLoop()
+                .scheduleAtFixedRate(
+                        () -> player.runSafely(this::tick),
+                        WATCHDOG_PERIOD_MS,
+                        WATCHDOG_PERIOD_MS,
+                        TimeUnit.MILLISECONDS);
     }
 
     private Channel channel() {
@@ -44,7 +48,8 @@ public class NettyScheduler {
         if (player.checkManager.getKnockbackHandler().lastSent == null) return;
         if (player.inVehicle()) return;
 
-        EvictingQueue<Long> movementTimes = player.checkManager.getSimulationProcessor().getLastMovementTime();
+        EvictingQueue<Long> movementTimes =
+                player.checkManager.getSimulationProcessor().getLastMovementTime();
         if (movementTimes.isEmpty()) return;
 
         long mostRecentMovement = Collections.max(movementTimes);

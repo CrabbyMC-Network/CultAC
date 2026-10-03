@@ -1,10 +1,9 @@
 package ac.cult.cultac.manager.datastore;
 
 import ac.grim.grimac.api.storage.model.SettingScope;
+import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Persistence facade for the per-player toggle state behind {@code /cult alerts},
@@ -22,6 +21,7 @@ public interface PlayerToggleStore {
      * without a migration.
      */
     String KEY_ALERTS = "alerts";
+
     String KEY_VERBOSE = "verbose";
     String KEY_BRANDS = "brands";
 
@@ -37,7 +37,8 @@ public interface PlayerToggleStore {
      * source has won the slot yet (prefetch in flight + no permission-default
      * applied).
      */
-    @Nullable Boolean current(@NotNull UUID uuid, @NotNull String key);
+    @Nullable
+    Boolean current(@NotNull UUID uuid, @NotNull String key);
 
     /**
      * Apply a permission-default value to the slot. No-op if anything else has
@@ -70,11 +71,24 @@ public interface PlayerToggleStore {
      * when the v1 datastore is disabled or its init failed.
      */
     PlayerToggleStore NOOP = new PlayerToggleStore() {
-        @Override public void prefetch(@NotNull UUID uuid) {}
-        @Override public @Nullable Boolean current(@NotNull UUID uuid, @NotNull String key) { return null; }
-        @Override public void applyPermissionDefault(@NotNull UUID uuid, @NotNull String key, boolean value) {}
-        @Override public void applyUserToggle(@NotNull UUID uuid, @NotNull String key, boolean value) {}
-        @Override public void evict(@NotNull UUID uuid) {}
-        @Override public void shutdown() {}
+        @Override
+        public void prefetch(@NotNull UUID uuid) {}
+
+        @Override
+        public @Nullable Boolean current(@NotNull UUID uuid, @NotNull String key) {
+            return null;
+        }
+
+        @Override
+        public void applyPermissionDefault(@NotNull UUID uuid, @NotNull String key, boolean value) {}
+
+        @Override
+        public void applyUserToggle(@NotNull UUID uuid, @NotNull String key, boolean value) {}
+
+        @Override
+        public void evict(@NotNull UUID uuid) {}
+
+        @Override
+        public void shutdown() {}
     };
 }

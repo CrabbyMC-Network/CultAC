@@ -5,15 +5,10 @@ import ac.cult.cultac.bedrock.prediction.world.BubbleColumnLayerType;
 import ac.cult.cultac.bedrock.prediction.world.BubbleColumnState;
 
 final class BedrockBubbleColumnMovement {
-    private BedrockBubbleColumnMovement() {
-    }
+    private BedrockBubbleColumnMovement() {}
 
     static double velocityY(
-        BubbleColumnState bubbleColumn,
-        double currentVelocityY,
-        double feetY,
-        long simulationTick
-    ) {
+            BubbleColumnState bubbleColumn, double currentVelocityY, double feetY, long simulationTick) {
         if (!Double.isFinite(currentVelocityY)) {
             throw new IllegalArgumentException("bubble column vertical velocity must be finite");
         }
@@ -21,9 +16,7 @@ final class BedrockBubbleColumnMovement {
         int maxBlockY = (int) Math.floor(feetY + bubbleColumn.playerHeight() - 0.001D);
         double velocityY = currentVelocityY;
         for (BubbleColumnLayer layer : bubbleColumn.layers()) {
-            if (!layer.activeAt(simulationTick)
-                || layer.blockY() < minBlockY
-                || layer.blockY() > maxBlockY) {
+            if (!layer.activeAt(simulationTick) || layer.blockY() < minBlockY || layer.blockY() > maxBlockY) {
                 continue;
             }
             velocityY = applyLayer(velocityY, layer);

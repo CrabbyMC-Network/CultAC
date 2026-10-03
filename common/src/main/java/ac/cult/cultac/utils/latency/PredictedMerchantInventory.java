@@ -1,13 +1,11 @@
 package ac.cult.cultac.utils.latency;
 
 import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
-
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.slot.Slot;
-import org.bukkit.inventory.ItemStack;
-
 import java.util.List;
+import org.bukkit.inventory.ItemStack;
 
 final class PredictedMerchantInventory {
     private static final int PAYMENT_A_SLOT = 0;
@@ -16,8 +14,7 @@ final class PredictedMerchantInventory {
     private static final int PLAYER_SLOT_START = 3;
     private static final int PLAYER_SLOT_END = 39;
 
-    private PredictedMerchantInventory() {
-    }
+    private PredictedMerchantInventory() {}
 
     static void mirrorTrade(AbstractContainerMenu menu, List<MerchantOffer> offers, int selectedTrade) {
         if (menu == null || offers == null || menu.getSlots().size() < PLAYER_SLOT_END) {
@@ -42,7 +39,8 @@ final class PredictedMerchantInventory {
                 return;
             }
 
-            if (isEmpty(menu.getSlot(PAYMENT_A_SLOT).getItem()) && isEmpty(menu.getSlot(PAYMENT_B_SLOT).getItem())) {
+            if (isEmpty(menu.getSlot(PAYMENT_A_SLOT).getItem())
+                    && isEmpty(menu.getSlot(PAYMENT_B_SLOT).getItem())) {
                 MerchantOffer offer = offers.get(selectedTrade);
                 moveFromInventoryToPaymentSlot(menu, PAYMENT_A_SLOT, offer.costA());
                 if (!isEmpty(offer.costB())) {
@@ -55,20 +53,15 @@ final class PredictedMerchantInventory {
     }
 
     static boolean matchesResult(
-            List<ItemStack> slots,
-            List<MerchantOffer> offers,
-            int selectedTrade,
-            ItemStack result
-    ) {
+            List<ItemStack> slots, List<MerchantOffer> offers, int selectedTrade, ItemStack result) {
         if (slots == null || slots.size() < 3 || offers == null || isEmpty(result)) {
             return false;
         }
 
-        MerchantOffer offer = findSatisfiedOffer(
-                offers, slots.get(PAYMENT_A_SLOT), slots.get(PAYMENT_B_SLOT), selectedTrade);
+        MerchantOffer offer =
+                findSatisfiedOffer(offers, slots.get(PAYMENT_A_SLOT), slots.get(PAYMENT_B_SLOT), selectedTrade);
         if (offer == null) {
-            offer = findSatisfiedOffer(
-                    offers, slots.get(PAYMENT_B_SLOT), slots.get(PAYMENT_A_SLOT), selectedTrade);
+            offer = findSatisfiedOffer(offers, slots.get(PAYMENT_B_SLOT), slots.get(PAYMENT_A_SLOT), selectedTrade);
         }
         return offer != null
                 && offer.result().getType() == result.getType()
@@ -94,7 +87,8 @@ final class PredictedMerchantInventory {
         return true;
     }
 
-    private static boolean moveItemStackTo(AbstractContainerMenu menu, ItemStack stack, int startSlot, int endSlot, boolean backwards) {
+    private static boolean moveItemStackTo(
+            AbstractContainerMenu menu, ItemStack stack, int startSlot, int endSlot, boolean backwards) {
         boolean moved = false;
         int index = backwards ? endSlot - 1 : startSlot;
 
@@ -144,7 +138,8 @@ final class PredictedMerchantInventory {
         return backwards ? index >= startSlot : index < endSlot;
     }
 
-    private static void moveFromInventoryToPaymentSlot(AbstractContainerMenu menu, int paymentSlotIndex, ItemStack cost) {
+    private static void moveFromInventoryToPaymentSlot(
+            AbstractContainerMenu menu, int paymentSlotIndex, ItemStack cost) {
         Slot paymentSlot = menu.getSlot(paymentSlotIndex);
         if (paymentSlot == null || isEmpty(cost)) {
             return;
@@ -209,21 +204,13 @@ final class PredictedMerchantInventory {
     }
 
     private static MerchantOffer findSatisfiedOffer(
-            List<MerchantOffer> offers,
-            ItemStack buyA,
-            ItemStack buyB,
-            int selectedTrade
-    ) {
+            List<MerchantOffer> offers, ItemStack buyA, ItemStack buyB, int selectedTrade) {
         int index = findSatisfiedOfferIndex(offers, buyA, buyB, selectedTrade);
         return index < 0 ? null : offers.get(index);
     }
 
     private static int findSatisfiedOfferIndex(
-            List<MerchantOffer> offers,
-            ItemStack buyA,
-            ItemStack buyB,
-            int selectedTrade
-    ) {
+            List<MerchantOffer> offers, ItemStack buyA, ItemStack buyB, int selectedTrade) {
         // Vanilla treats hint 0 as "search all offers" and only pins positive hints.
         if (selectedTrade > 0 && selectedTrade < offers.size()) {
             MerchantOffer offer = offers.get(selectedTrade);
@@ -248,7 +235,7 @@ final class PredictedMerchantInventory {
         return isEmpty(offer.costB())
                 ? isEmpty(buyB)
                 : PredictedResultSlotValidator.costMatches(offer.costB(), buyB)
-                && buyB.getAmount() >= offer.costB().getAmount();
+                        && buyB.getAmount() >= offer.costB().getAmount();
     }
 
     private static boolean isEmpty(ItemStack stack) {

@@ -11,49 +11,61 @@ import ac.cult.cultac.bedrock.prediction.simulation.travel.BedrockTravelPlan;
 import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
 
 public final class BedrockMoveSystems {
-    private BedrockMoveSystems() {
-    }
+    private BedrockMoveSystems() {}
 
     public static BedrockCollisionOutput move(BedrockTravelPlan plan) {
         BedrockFrameState frame = plan.frame();
         if (!frame.input().options().travelActive()) {
             var previous = frame.input().previousState();
             // Travel is inactive on this tick, so no collision sweep is needed.
-            var unchanged = new BedrockEntityMove.Result(previous.physicalFeetPosition(), plan.travelVelocity(),
-                false, false, false, false, previous.collisionFlags(), previous.movementGrounded(),
-                false, false, false, false);
-            return new BedrockCollisionOutput(unchanged,
-                frame.input().worldSnapshot().climbableContactAt(previous.physicalFeetPosition(),
-                    frame.frameFacts().movementDimensions()), plan.moveRequest(), null);
+            var unchanged = new BedrockEntityMove.Result(
+                    previous.physicalFeetPosition(),
+                    plan.travelVelocity(),
+                    false,
+                    false,
+                    false,
+                    false,
+                    previous.collisionFlags(),
+                    previous.movementGrounded(),
+                    false,
+                    false,
+                    false,
+                    false);
+            return new BedrockCollisionOutput(
+                    unchanged,
+                    frame.input()
+                            .worldSnapshot()
+                            .climbableContactAt(
+                                    previous.physicalFeetPosition(),
+                                    frame.frameFacts().movementDimensions()),
+                    plan.moveRequest(),
+                    null);
         }
         BedrockMoveRequest request = applyBlockMovementSlowdown(plan);
         var previous = frame.input().previousState();
         // The client fetches shapes before sneak edge movement adjusts the request.
-        var fetchBox = BedrockCollisionFetchBox.of(previous.collisionBox(frame.frameFacts().movementDimensions()),
+        var fetchBox = BedrockCollisionFetchBox.of(
+                previous.collisionBox(frame.frameFacts().movementDimensions()),
                 request.requestedPosition().subtract(previous.physicalFeetPosition()),
                 frame.input().options().maxUpStep());
         if (!frame.branch().glidingTravel()) {
-            request = BedrockTravelMoveRequest.applySneakMovement(
-                frame.input(), frame.frameFacts(), request
-            );
+            request = BedrockTravelMoveRequest.applySneakMovement(frame.input(), frame.frameFacts(), request);
         }
 
         BedrockFrameFacts facts = frame.frameFacts();
         BedrockEntityMove.Result blockMove = BedrockEntityMove.move(
-            frame.input().previousState(),
-            frame.input().inputFrame(),
-            facts.blockCollisionWorld(),
-            facts.movementDimensions(),
-            request.requestedPosition(),
-            request.collisionInputVelocity(),
-            request.move().y(),
-            frame.input().options().canStep(),
-            frame.input().options().maxUpStep()
-        );
-        BedrockClimbableContact nextClimbableContact = frame.boat() != null ? BedrockClimbableContact.NONE
-                : frame.input().worldSnapshot().climbableContactAt(
-            blockMove.position(), facts.movementDimensions()
-        );
+                frame.input().previousState(),
+                frame.input().inputFrame(),
+                facts.blockCollisionWorld(),
+                facts.movementDimensions(),
+                request.requestedPosition(),
+                request.collisionInputVelocity(),
+                request.move().y(),
+                frame.input().options().canStep(),
+                frame.input().options().maxUpStep());
+        BedrockClimbableContact nextClimbableContact = frame.boat() != null
+                ? BedrockClimbableContact.NONE
+                : frame.input().worldSnapshot().climbableContactAt(blockMove.position(), facts.movementDimensions());
         return new BedrockCollisionOutput(blockMove, nextClimbableContact, request, fetchBox);
     }
 
@@ -64,12 +76,9 @@ public final class BedrockMoveSystems {
             return request;
         }
         Vec3d slowedMove = slowdown.applyToMoveRequest(request.move());
-        BedrockResolvedMove resolvedMove = new BedrockResolvedMove(
-            request.lavaSwimUpApplied(), slowedMove, slowedMove
-        );
+        BedrockResolvedMove resolvedMove = new BedrockResolvedMove(request.lavaSwimUpApplied(), slowedMove, slowedMove);
         return new BedrockMoveRequest(
-            resolvedMove,
-            BedrockTravelMoveRequest.requestedPosition(plan.frame().input().previousState(), slowedMove)
-        );
+                resolvedMove,
+                BedrockTravelMoveRequest.requestedPosition(plan.frame().input().previousState(), slowedMove));
     }
 }

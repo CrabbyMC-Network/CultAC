@@ -8,33 +8,18 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockSwimmingPoseProgress;
 import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 
 public final class BedrockSwimmingMovement {
-    private BedrockSwimmingMovement() {
-    }
+    private BedrockSwimmingMovement() {}
 
     static SwimmingState initial(
-        BedrockMovementState current,
-        BedrockMovementContext context,
-        BedrockInputFrame frame
-    ) {
+            BedrockMovementState current, BedrockMovementContext context, BedrockInputFrame frame) {
         boolean actorStateAtStart = context.actorSwimming() || current.swimming();
-        boolean swimPoseActive = actorStateAtStart
-            || BedrockPoseInputData.crawlingBeforeActions(frame, current.horizontalPose());
-        double swimAmount = BedrockSwimmingPoseProgress.nextSwimAmount(
-            current.swimAmount(),
-            swimPoseActive
-        );
-        return new SwimmingState(
-            actorStateAtStart,
-            actorStateAtStart,
-            swimAmount
-        );
+        boolean swimPoseActive =
+                actorStateAtStart || BedrockPoseInputData.crawlingBeforeActions(frame, current.horizontalPose());
+        double swimAmount = BedrockSwimmingPoseProgress.nextSwimAmount(current.swimAmount(), swimPoseActive);
+        return new SwimmingState(actorStateAtStart, actorStateAtStart, swimAmount);
     }
 
-    public record SwimmingState(
-        boolean actorStateAtStart,
-        boolean actorStateAfterActions,
-        double swimAmount
-    ) {
+    public record SwimmingState(boolean actorStateAtStart, boolean actorStateAfterActions, double swimAmount) {
         public boolean nextActorSwimming() {
             return actorStateAfterActions;
         }
@@ -48,11 +33,7 @@ public final class BedrockSwimmingMovement {
             if (intent.pose().stopSwimming()) {
                 actorSwimming = false;
             }
-            return new SwimmingState(
-                actorStateAtStart,
-                actorSwimming,
-                swimAmount
-            );
+            return new SwimmingState(actorStateAtStart, actorSwimming, swimAmount);
         }
     }
 }

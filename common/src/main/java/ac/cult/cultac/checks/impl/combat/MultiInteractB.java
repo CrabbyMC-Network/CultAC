@@ -1,8 +1,5 @@
 package ac.cult.cultac.checks.impl.combat;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.PostPredictionListener;
@@ -10,16 +7,21 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import net.minecraft.SharedConstants;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
-import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.Vec3d;
-
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import java.util.ArrayList;
+import net.minecraft.SharedConstants;
 
-@CheckData(name = "MultiInteractB", stableKey = "cult.multiinteract.interact_at_position_changed", description = "Sent multiple entity interaction packets with different hit positions in one tick", experimental = true)
+@CheckData(
+        name = "MultiInteractB",
+        stableKey = "cult.multiinteract.interact_at_position_changed",
+        description = "Sent multiple entity interaction packets with different hit positions in one tick",
+        experimental = true)
 public class MultiInteractB extends Check implements PostPredictionListener {
     private static final Verbose V = Verbose.of("pos={f64}, {f64}, {f64}, lastPos={f64}, {f64}, {f64}");
     private static final ClientVersion SERVER_VERSION =
@@ -34,7 +36,8 @@ public class MultiInteractB extends Check implements PostPredictionListener {
     }
 
     @CultPacketHandler
-    public void onInteractEntity(PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
+    public void onInteractEntity(
+            PacketReceiveEvent<ServerboundInteract> event, CultPlayer player, ServerboundInteract packet) {
         if (packet.action() != InteractAction.INTERACT_AT) return;
 
         Vec3d pos = packet.target().orElse(null);
@@ -46,7 +49,13 @@ public class MultiInteractB extends Check implements PostPredictionListener {
 
         if (hasInteracted && !pos.equals(lastPos)) {
             if (!canSkipTicks()) {
-                if (flag(V.write(verbose()).f64(pos.x()).f64(pos.y()).f64(pos.z()).f64(lastPos.x()).f64(lastPos.y()).f64(lastPos.z()))
+                if (flag(V.write(verbose())
+                                .f64(pos.x())
+                                .f64(pos.y())
+                                .f64(pos.z())
+                                .f64(lastPos.x())
+                                .f64(lastPos.y())
+                                .f64(lastPos.z()))
                         && shouldModifyPackets()) {
                     event.setCancelled(true);
                     player.onPacketCancel();
@@ -62,8 +71,8 @@ public class MultiInteractB extends Check implements PostPredictionListener {
 
     // isTickPacket: movement packets reset unless they answered a teleport
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (!player.cameraEntity.isSelf() || !player.packetStateData.lastPacketWasTeleport) {
             hasInteracted = false;
         }
@@ -74,7 +83,7 @@ public class MultiInteractB extends Check implements PostPredictionListener {
     public void onClientTickEnd(PacketReceiveEvent<Opaque> event, CultPlayer player, Opaque packet) {
         if (!player.cameraEntity.isSelf()
                 || (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && !player.packetStateData.receivedMovementThisClientTick)) {
+                        && !player.packetStateData.receivedMovementThisClientTick)) {
             hasInteracted = false;
         }
     }
@@ -86,8 +95,12 @@ public class MultiInteractB extends Check implements PostPredictionListener {
         if (player.isTickingReliablyFor(3)) {
             for (FlagData data : flags) {
                 flag(V.write(verbose())
-                        .f64(data.posX()).f64(data.posY()).f64(data.posZ())
-                        .f64(data.lastPosX()).f64(data.lastPosY()).f64(data.lastPosZ()));
+                        .f64(data.posX())
+                        .f64(data.posY())
+                        .f64(data.posZ())
+                        .f64(data.lastPosX())
+                        .f64(data.lastPosY())
+                        .f64(data.lastPosZ()));
             }
         }
 
@@ -97,14 +110,8 @@ public class MultiInteractB extends Check implements PostPredictionListener {
     private boolean canSkipTicks() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)
                 && !(player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
-                && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
+                        && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 
-    private record FlagData(
-            double posX,
-            double posY,
-            double posZ,
-            double lastPosX,
-            double lastPosY,
-            double lastPosZ) {}
+    private record FlagData(double posX, double posY, double posZ, double lastPosX, double lastPosY, double lastPosZ) {}
 }

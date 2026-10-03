@@ -6,8 +6,7 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.world.BlockCollisionWorld;
 
 public final class BedrockCollisionProbe {
-    private BedrockCollisionProbe() {
-    }
+    private BedrockCollisionProbe() {}
 
     public static Result probe(
             BedrockMovementState previousState,
@@ -15,14 +14,14 @@ public final class BedrockCollisionProbe {
             PlayerDimensionsState dimensions,
             Vec3d attemptedDelta,
             boolean canStep,
-            double maxUpStep
-    ) {
+            double maxUpStep) {
         Query query = query(previousState, blockWorld, dimensions, attemptedDelta, canStep, maxUpStep);
         if (query == null) {
             return Result.NONE;
         }
         if (canStep && query.move().steppedUp()) {
-            return fromStepClearedMove(previousState, attemptedDelta, query.move().baseMove());
+            return fromStepClearedMove(
+                    previousState, attemptedDelta, query.move().baseMove());
         }
         return fromMove(previousState, attemptedDelta, query.selectedMove());
     }
@@ -33,8 +32,7 @@ public final class BedrockCollisionProbe {
             PlayerDimensionsState dimensions,
             Vec3d attemptedDelta,
             boolean canStep,
-            double maxUpStep
-    ) {
+            double maxUpStep) {
         Query query = query(previousState, blockWorld, dimensions, attemptedDelta, canStep, maxUpStep);
         if (query == null) {
             return attemptedDelta == null ? Vec3d.ZERO : attemptedDelta;
@@ -43,44 +41,38 @@ public final class BedrockCollisionProbe {
     }
 
     private static Query query(
-        BedrockMovementState previousState,
-        BlockCollisionWorld blockWorld,
-        PlayerDimensionsState dimensions,
-        Vec3d attemptedDelta,
-        boolean canStep,
-        double maxUpStep
-    ) {
-        if (previousState == null || blockWorld == null || blockWorld.isEmpty() || dimensions == null || attemptedDelta == null) {
+            BedrockMovementState previousState,
+            BlockCollisionWorld blockWorld,
+            PlayerDimensionsState dimensions,
+            Vec3d attemptedDelta,
+            boolean canStep,
+            double maxUpStep) {
+        if (previousState == null
+                || blockWorld == null
+                || blockWorld.isEmpty()
+                || dimensions == null
+                || attemptedDelta == null) {
             return null;
         }
-        BedrockEntityMove.CollisionMove move = BedrockEntityMove.collide(
-            previousState, attemptedDelta, blockWorld, dimensions, canStep, maxUpStep
-        );
+        BedrockEntityMove.CollisionMove move =
+                BedrockEntityMove.collide(previousState, attemptedDelta, blockWorld, dimensions, canStep, maxUpStep);
         return new Query(move, canStep ? move.selectedMove() : move.baseMove());
     }
 
     public static HorizontalContactAxes horizontalContactAxes(
-            Vec3d feet,
-            BlockCollisionWorld blockWorld,
-            PlayerDimensionsState dimensions
-    ) {
+            Vec3d feet, BlockCollisionWorld blockWorld, PlayerDimensionsState dimensions) {
         if (feet == null || blockWorld == null || blockWorld.isEmpty() || dimensions == null) {
             return HorizontalContactAxes.NONE;
         }
-        BedrockBlockCollisionResolver.HorizontalContactAxes axes =
-                BedrockBlockCollisionResolver.horizontalContactAxes(
-                        feet,
-                        BedrockCollisionSweep.collisionObstacles(blockWorld),
-                        dimensions, blockWorld.coordinateFrame());
+        BedrockBlockCollisionResolver.HorizontalContactAxes axes = BedrockBlockCollisionResolver.horizontalContactAxes(
+                feet, BedrockCollisionSweep.collisionObstacles(blockWorld), dimensions, blockWorld.coordinateFrame());
         return new HorizontalContactAxes(axes.xContact(), axes.zContact());
     }
 
     private static Result fromStepClearedMove(
-            BedrockMovementState previousState,
-            Vec3d attemptedDelta,
-            BedrockCollisionSweep.MoveResult baseMove
-    ) {
-        double movedY = baseMove.position().y() - previousState.physicalFeetPosition().y();
+            BedrockMovementState previousState, Vec3d attemptedDelta, BedrockCollisionSweep.MoveResult baseMove) {
+        double movedY =
+                baseMove.position().y() - previousState.physicalFeetPosition().y();
         return new Result(
                 false,
                 attemptedDelta.x(),
@@ -92,11 +84,9 @@ public final class BedrockCollisionProbe {
     }
 
     private static Result fromMove(
-            BedrockMovementState previousState,
-            Vec3d attemptedDelta,
-            BedrockCollisionSweep.MoveResult move
-    ) {
-        double movedY = move.position().y() - previousState.physicalFeetPosition().y();
+            BedrockMovementState previousState, Vec3d attemptedDelta, BedrockCollisionSweep.MoveResult move) {
+        double movedY =
+                move.position().y() - previousState.physicalFeetPosition().y();
         return new Result(
                 move.xCollision(),
                 move.appliedDelta().x(),
@@ -114,8 +104,7 @@ public final class BedrockCollisionProbe {
             double zResult,
             boolean yPosCollision,
             boolean yNegCollision,
-            double yResult
-    ) {
+            double yResult) {
         private static final Result NONE = new Result(false, 0.0D, false, 0.0D, false, false, 0.0D);
     }
 
@@ -123,9 +112,5 @@ public final class BedrockCollisionProbe {
         private static final HorizontalContactAxes NONE = new HorizontalContactAxes(false, false);
     }
 
-    private record Query(
-        BedrockEntityMove.CollisionMove move,
-        BedrockCollisionSweep.MoveResult selectedMove
-    ) {
-    }
+    private record Query(BedrockEntityMove.CollisionMove move, BedrockCollisionSweep.MoveResult selectedMove) {}
 }

@@ -15,8 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 final class SpongeSchematicCompensatedWorldLoader {
-    private SpongeSchematicCompensatedWorldLoader() {
-    }
+    private SpongeSchematicCompensatedWorldLoader() {}
 
     static LoadedSchematic load(Path schematic, CompensatedWorld world) throws IOException {
         bootstrapMinecraft();
@@ -26,7 +25,7 @@ final class SpongeSchematicCompensatedWorldLoader {
         int width = schematicRoot.getShortOr("Width", (short) 0);
         int height = schematicRoot.getShortOr("Height", (short) 0);
         int length = schematicRoot.getShortOr("Length", (short) 0);
-        int[] offset = schematicRoot.getIntArray("Offset").orElse(new int[]{0, 0, 0});
+        int[] offset = schematicRoot.getIntArray("Offset").orElse(new int[] {0, 0, 0});
         int originX = offset.length > 0 ? offset[0] : 0;
         int originY = offset.length > 1 ? offset[1] : 0;
         int originZ = offset.length > 2 ? offset[2] : 0;
@@ -52,8 +51,8 @@ final class SpongeSchematicCompensatedWorldLoader {
             int originX,
             int originY,
             int originZ,
-            CompensatedWorld world
-    ) throws IOException {
+            CompensatedWorld world)
+            throws IOException {
         Map<Integer, BlockState> palette = palette(blocks.getCompoundOrEmpty("Palette"));
         byte[] data = blocks.getByteArray("Data").orElseThrow(() -> new IOException("schematic has no Blocks/Data"));
         VarIntReader reader = new VarIntReader(data);
@@ -107,8 +106,8 @@ final class SpongeSchematicCompensatedWorldLoader {
         Bootstrap.validate();
     }
 
-    record LoadedSchematic(int width, int height, int length, int originX, int originY, int originZ, int nonAirBlocks) {
-    }
+    record LoadedSchematic(
+            int width, int height, int length, int originX, int originY, int originZ, int nonAirBlocks) {}
 
     private static final class VarIntReader {
         private final byte[] data;

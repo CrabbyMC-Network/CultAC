@@ -11,7 +11,10 @@ import net.minecraft.core.BlockPos;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 
-@CheckData(name = "AirLiquidPlace", stableKey = "cult.scaffolding.air_liquid_place", description = "Placed a block against an invalid support")
+@CheckData(
+        name = "AirLiquidPlace",
+        stableKey = "cult.scaffolding.air_liquid_place",
+        description = "Placed a block against an invalid support")
 public class AirLiquidPlace extends BlockPlaceCheck {
     public AirLiquidPlace(CultPlayer player) {
         super(player);
@@ -58,14 +61,18 @@ public class AirLiquidPlace extends BlockPlaceCheck {
         if (player.gamemode == GameMode.CREATIVE) return;
 
         BlockPos blockPos = place.getPlacedAgainstBlockLocation();
-        Material placeAgainst = player.compensatedWorld.getMaterialAt(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+        Material placeAgainst =
+                player.compensatedWorld.getMaterialAt(blockPos.getX(), blockPos.getY(), blockPos.getZ());
 
         int currentTick = CultAPI.INSTANCE.getTickManager().currentTick;
-        // this is actual more lenient than we need to be, We can check up to 1 ticks for all changes at location sand up to 0 ticks for first change
+        // this is actual more lenient than we need to be, We can check up to 1 ticks for all changes at location sand
+        // up to 0 ticks for first change
         // But for such tiny differences in legitness it's not worth it.
-        Iterable<BlockModification> blockModifications = player.blockHistory.getRecentModifications((blockModification) -> currentTick - blockModification.tick() < 2
-                && blockPos.equals(blockModification.location())
-                && (blockModification.cause() == BlockModification.Cause.START_DIGGING || blockModification.cause() == BlockModification.Cause.HANDLE_NETTY_SYNC_TRANSACTION));
+        Iterable<BlockModification> blockModifications = player.blockHistory.getRecentModifications(
+                (blockModification) -> currentTick - blockModification.tick() < 2
+                        && blockPos.equals(blockModification.location())
+                        && (blockModification.cause() == BlockModification.Cause.START_DIGGING
+                                || blockModification.cause() == BlockModification.Cause.HANDLE_NETTY_SYNC_TRANSACTION));
 
         // Check if old block from instant breaking in same tick as the current placement was valid
         // There should only be one block here for legit clients
@@ -83,7 +90,6 @@ public class AirLiquidPlace extends BlockPlaceCheck {
         }
     }
 
-
     public void handleBlockBreak(BlockPos pos) {
         player.blockHistory.add(new BlockModification(
                 player.compensatedWorld.getBlockDataAt(pos.getX(), pos.getY(), pos.getZ()),
@@ -97,5 +103,4 @@ public class AirLiquidPlace extends BlockPlaceCheck {
     protected int getDefaultCancelVL() {
         return 0;
     }
-
 }

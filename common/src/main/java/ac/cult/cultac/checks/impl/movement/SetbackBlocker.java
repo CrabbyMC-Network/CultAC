@@ -5,9 +5,9 @@ import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMoveVehicle;
+import ac.cult.cultac.utils.anticheat.LogUtil;
 import net.minecraft.world.phys.Vec3;
 
 public class SetbackBlocker extends CultProcessor implements CheckListener {
@@ -15,8 +15,10 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
         super(playerData);
     }
 
-    private void handleMovePlayer(final PacketReceiveEvent<ServerboundMovePlayer> event, ServerboundMovePlayer movePacket,
-                                  boolean translatedBedrockMovement) {
+    private void handleMovePlayer(
+            final PacketReceiveEvent<ServerboundMovePlayer> event,
+            ServerboundMovePlayer movePacket,
+            boolean translatedBedrockMovement) {
         // This is transport integrity, not a check-level setback decision.
         // Real Geyser emits at most one MovePlayer projection for each
         // PlayerAuthInputPacket, followed by ClientTickEnd. Consume that one
@@ -50,14 +52,20 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
             event.setCancelled(true);
         }
 
-        if (player.isDisabled()) { return; } // Let's avoid letting people disable cult with cult.nomodifypackets
+        if (player.isDisabled()) {
+            return;
+        } // Let's avoid letting people disable cult with cult.nomodifypackets
         if (!player.shouldEnforceMovementSetbacks()) return;
 
         ServerboundMovePlayer wrapper = movePacket;
         // The player must obey setbacks
-        if (!teleport && wrapper.hasPosition()
+        if (!teleport
+                && wrapper.hasPosition()
                 && player.getSetbackTeleportUtil().shouldBlockMovement(translatedBedrockMovement)) {
-            if (player.getSetbackTeleportUtil().isDebug()) { LogUtil.info(player.getName() + " movement has been blocked! : " + player.getSetbackTeleportUtil().getDebugStrings()); }
+            if (player.getSetbackTeleportUtil().isDebug()) {
+                LogUtil.info(player.getName() + " movement has been blocked! : "
+                        + player.getSetbackTeleportUtil().getDebugStrings());
+            }
             event.setCancelled(true);
         }
 
@@ -77,7 +85,9 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
     }
 
     private void handleMoveVehicle(final PacketReceiveEvent event) {
-        if (player.isDisabled()) { return; } // Let's avoid letting people disable cult with cult.nomodifypackets
+        if (player.isDisabled()) {
+            return;
+        } // Let's avoid letting people disable cult with cult.nomodifypackets
 
         boolean teleport = player.packetStateData.lastPacketWasTeleport;
         Integer serverVehicle = player.compensatedEntities.vehicles.serverPlayerVehicle;
@@ -117,12 +127,11 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
         if (!teleport && player.compensatedEntities.getSelf().isDead) {
             event.setCancelled(true);
         }
-
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet, false);
     }
 
@@ -136,7 +145,8 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
     }
 
     @CultPacketHandler
-    public void onMoveVehicle(PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
+    public void onMoveVehicle(
+            PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         handleMoveVehicle(event);
     }
 }

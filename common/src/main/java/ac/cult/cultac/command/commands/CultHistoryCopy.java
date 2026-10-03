@@ -1,22 +1,21 @@
 package ac.cult.cultac.command.commands;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.storage.backend.Backend;
-import ac.grim.grimac.api.storage.backend.BackendException;
 import ac.cult.cultac.command.BuildableCommand;
-import ac.grim.grimac.internal.storage.copy.BackendToBackendCopier;
 import ac.cult.cultac.manager.datastore.DataStoreLifecycle;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
+import ac.grim.grimac.api.storage.backend.Backend;
+import ac.grim.grimac.api.storage.backend.BackendException;
+import ac.grim.grimac.internal.storage.copy.BackendToBackendCopier;
+import java.util.Map;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
-
-import java.util.Map;
 
 /**
  * {@code /cult history copy <src-backend-id> <dst-backend-id> [--delete]} —
@@ -40,18 +39,18 @@ public class CultHistoryCopy implements BuildableCommand {
 
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("history")
-                        .literal("copy")
-                        .permission("cult.history.copy")
-                        .required("src", StringParser.stringParser())
-                        .required("dst", StringParser.stringParser())
-                        .flag(commandManager.flagBuilder("delete")
-                                .withDescription(org.incendo.cloud.description.Description.of(
-                                        "Wipe the source backend after the copy completes")))
-                        .handler(this::handle)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("history")
+                .literal("copy")
+                .permission("cult.history.copy")
+                .required("src", StringParser.stringParser())
+                .required("dst", StringParser.stringParser())
+                .flag(commandManager
+                        .flagBuilder("delete")
+                        .withDescription(org.incendo.cloud.description.Description.of(
+                                "Wipe the source backend after the copy completes")))
+                .handler(this::handle));
     }
 
     private void handle(CommandContext<Sender> context) {
@@ -72,13 +71,15 @@ public class CultHistoryCopy implements BuildableCommand {
         Backend src = backends.get(srcId);
         Backend dst = backends.get(dstId);
         if (src == null) {
-            sender.sendMessage(Component.text("Unknown source backend: " + srcId
-                    + "  (configured: " + backends.keySet() + ")", NamedTextColor.RED));
+            sender.sendMessage(Component.text(
+                    "Unknown source backend: " + srcId + "  (configured: " + backends.keySet() + ")",
+                    NamedTextColor.RED));
             return;
         }
         if (dst == null) {
-            sender.sendMessage(Component.text("Unknown destination backend: " + dstId
-                    + "  (configured: " + backends.keySet() + ")", NamedTextColor.RED));
+            sender.sendMessage(Component.text(
+                    "Unknown destination backend: " + dstId + "  (configured: " + backends.keySet() + ")",
+                    NamedTextColor.RED));
             return;
         }
         if (src == dst) {
@@ -87,12 +88,14 @@ public class CultHistoryCopy implements BuildableCommand {
             return;
         }
 
-        logBoth(sender, Component.text()
-                .append(Component.text("Copying v1 history ", NamedTextColor.AQUA))
-                .append(Component.text(srcId, NamedTextColor.WHITE))
-                .append(Component.text(" → ", NamedTextColor.AQUA))
-                .append(Component.text(dstId, NamedTextColor.WHITE))
-                .asComponent());
+        logBoth(
+                sender,
+                Component.text()
+                        .append(Component.text("Copying v1 history ", NamedTextColor.AQUA))
+                        .append(Component.text(srcId, NamedTextColor.WHITE))
+                        .append(Component.text(" → ", NamedTextColor.AQUA))
+                        .append(Component.text(dstId, NamedTextColor.WHITE))
+                        .asComponent());
 
         try {
             BackendToBackendCopier copier = new BackendToBackendCopier(src, dst);
@@ -101,15 +104,19 @@ public class CultHistoryCopy implements BuildableCommand {
                     logBoth(sender, Component.text("… " + count + " violations copied so far", NamedTextColor.GRAY));
                 }
             });
-            logBoth(sender, Component.text()
-                    .append(Component.text("Copy complete: ", NamedTextColor.GREEN))
-                    .append(Component.text(result.players() + " players, "))
-                    .append(Component.text(result.sessions() + " sessions, "))
-                    .append(Component.text(result.violations() + " violations in "))
-                    .append(Component.text(result.elapsedMs() + "ms"))
-                    .asComponent());
+            logBoth(
+                    sender,
+                    Component.text()
+                            .append(Component.text("Copy complete: ", NamedTextColor.GREEN))
+                            .append(Component.text(result.players() + " players, "))
+                            .append(Component.text(result.sessions() + " sessions, "))
+                            .append(Component.text(result.violations() + " violations in "))
+                            .append(Component.text(result.elapsedMs() + "ms"))
+                            .asComponent());
             if (delete) {
-                logBoth(sender, Component.text("--delete requested — wiping source " + srcId + "…", NamedTextColor.YELLOW));
+                logBoth(
+                        sender,
+                        Component.text("--delete requested — wiping source " + srcId + "…", NamedTextColor.YELLOW));
                 copier.dropSource();
                 logBoth(sender, Component.text("Source " + srcId + " wiped.", NamedTextColor.GREEN));
             }

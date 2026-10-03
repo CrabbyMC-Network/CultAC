@@ -3,14 +3,13 @@ package ac.cult.cultac.utils.data.webhook.discord;
 import ac.cult.cultac.utils.data.json.JsonSerializable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -45,7 +44,8 @@ public class EmbedAuthor implements JsonSerializable {
     public @NotNull EmbedAuthor name(@NotNull String name) {
         Objects.requireNonNull(name, "Embed author name cannot be null!");
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Embed author name too long, " + name.length() + " > " + MAX_NAME_LENGTH);
+            throw new IllegalArgumentException(
+                    "Embed author name too long, " + name.length() + " > " + MAX_NAME_LENGTH);
         }
 
         this.name = name;

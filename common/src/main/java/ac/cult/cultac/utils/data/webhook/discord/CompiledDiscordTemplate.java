@@ -1,16 +1,15 @@
 package ac.cult.cultac.utils.data.webhook.discord;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.GrimUser;
 import ac.cult.cultac.player.CultPlayer;
-import org.jetbrains.annotations.NotNull;
-
+import ac.grim.grimac.api.GrimUser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
 
 public record CompiledDiscordTemplate(Segment[] segments) {
 
@@ -67,8 +66,7 @@ public record CompiledDiscordTemplate(Segment[] segments) {
 
             EscapeMode mode = switch (ctx) {
                 case NORMAL -> EscapeMode.FULL_MARKDOWN;
-                case INLINE_CODE,
-                     CODE_BLOCK -> EscapeMode.CODE_SPAN;
+                case INLINE_CODE, CODE_BLOCK -> EscapeMode.CODE_SPAN;
             };
             parts.add(new Placeholder(m.group(0), mode));
             lastEnd = m.end();
@@ -87,10 +85,11 @@ public record CompiledDiscordTemplate(Segment[] segments) {
      * @param dynamics            Dynamic replacements (lazy functions like %tps%)
      * @param backtickReplacement Char to substitute for backticks inside code spans (loaded from config)
      */
-    public String render(@NotNull CultPlayer player,
-                         @NotNull Map<String, String> statics,
-                         @NotNull Map<String, Function<GrimUser, String>> dynamics,
-                         char backtickReplacement) {
+    public String render(
+            @NotNull CultPlayer player,
+            @NotNull Map<String, String> statics,
+            @NotNull Map<String, Function<GrimUser, String>> dynamics,
+            char backtickReplacement) {
         StringBuilder sb = new StringBuilder(segments.length * 32);
         for (Segment seg : segments) {
             if (seg instanceof Literal l) {
@@ -105,7 +104,8 @@ public record CompiledDiscordTemplate(Segment[] segments) {
                 }
 
                 if (val == null) {
-                    String resolved = CultAPI.INSTANCE.getMessagePlaceHolderManager()
+                    String resolved = CultAPI.INSTANCE
+                            .getMessagePlaceHolderManager()
                             .replacePlaceholders(player.platformPlayer, p.key);
                     if (!resolved.equals(p.key)) val = resolved;
                 }
@@ -219,9 +219,7 @@ public record CompiledDiscordTemplate(Segment[] segments) {
                     continue;
                 }
                 if (c == '`') {
-                    if (i + 2 < text.length()
-                            && text.charAt(i + 1) == '`'
-                            && text.charAt(i + 2) == '`') {
+                    if (i + 2 < text.length() && text.charAt(i + 1) == '`' && text.charAt(i + 2) == '`') {
                         ctx = MarkdownContext.CODE_BLOCK;
                         i += 3;
                         continue;
@@ -231,10 +229,7 @@ public record CompiledDiscordTemplate(Segment[] segments) {
             } else if (ctx == MarkdownContext.INLINE_CODE) {
                 if (c == '`') ctx = MarkdownContext.NORMAL;
             } else { // CODE_BLOCK
-                if (c == '`'
-                        && i + 2 < text.length()
-                        && text.charAt(i + 1) == '`'
-                        && text.charAt(i + 2) == '`') {
+                if (c == '`' && i + 2 < text.length() && text.charAt(i + 1) == '`' && text.charAt(i + 2) == '`') {
                     ctx = MarkdownContext.NORMAL;
                     i += 3;
                     continue;

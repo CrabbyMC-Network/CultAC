@@ -1,26 +1,27 @@
 package ac.cult.cultac.bedrock.bridge;
 
+import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.*;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import org.geysermc.geyser.session.GeyserSession;
 
-import java.util.List;
-import java.util.Map;
-
 /** Converts item values by registry names; connection-specific wire IDs never enter NMS codecs. */
 final class GeyserItemStacks {
-    private GeyserItemStacks() { }
+    private GeyserItemStacks() {}
 
-    static ItemStack toServerItem(GeyserSession session, org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack source) {
+    static ItemStack toServerItem(
+            GeyserSession session, org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack source) {
         if (source == null || source.getAmount() <= 0) return ItemStack.EMPTY;
         var mapping = session.getItemMappings().getMapping(source.getId()).getJavaItem();
         if (mapping.javaId() != source.getId()) throw new IllegalArgumentException("Unknown item " + source.getId());
-        var item = NmsIdentifierUtil.registryOptional(BuiltInRegistries.ITEM, mapping.javaIdentifier()).orElseThrow();
+        var item = NmsIdentifierUtil.registryOptional(BuiltInRegistries.ITEM, mapping.javaIdentifier())
+                .orElseThrow();
         ItemStack result = new ItemStack(item, source.getAmount());
         if (source.getDataComponentsPatch() == null) return result;
         var registries = MinecraftServer.getServer().registryAccess();
@@ -34,8 +35,10 @@ final class GeyserItemStacks {
             } else if (targetType == DataComponents.ADDITIONAL_TRADE_COST) {
                 result.set(DataComponents.ADDITIONAL_TRADE_COST, (Integer) component.getValue());
             } else if (targetType == DataComponents.MAP_POST_PROCESSING) {
-                result.set(DataComponents.MAP_POST_PROCESSING,
-                        net.minecraft.world.item.component.MapPostProcessing.ID_MAP.apply((Integer) component.getValue()));
+                result.set(
+                        DataComponents.MAP_POST_PROCESSING,
+                        net.minecraft.world.item.component.MapPostProcessing.ID_MAP.apply(
+                                (Integer) component.getValue()));
             } else {
                 Object value = GeyserComponentValues.serialize(session.getRegistryCache(), component);
                 set(result, targetType, ops, tag(value));
@@ -44,8 +47,8 @@ final class GeyserItemStacks {
         return result;
     }
 
-    private static <T> void set(ItemStack stack, DataComponentType<T> type,
-                                com.mojang.serialization.DynamicOps<Tag> ops, Tag value) {
+    private static <T> void set(
+            ItemStack stack, DataComponentType<T> type, com.mojang.serialization.DynamicOps<Tag> ops, Tag value) {
         var codec = type.codec();
         if (codec == null) throw new IllegalArgumentException("Component has no named codec: " + type);
         stack.set(type, codec.parse(ops, value).getOrThrow());
@@ -78,7 +81,9 @@ final class GeyserItemStacks {
             default -> throw new IllegalArgumentException("Unknown component value " + value.getClass());
         };
     }
-    static net.minecraft.core.component.DataComponentType<?> component(org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType<?> type) {
+
+    static net.minecraft.core.component.DataComponentType<?> component(
+            org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType<?> type) {
         try {
             // Geyser-Spigot relocates Adventure; only the identifier string crosses that boundary.
             String key = type.getClass().getMethod("getKey").invoke(type).toString();

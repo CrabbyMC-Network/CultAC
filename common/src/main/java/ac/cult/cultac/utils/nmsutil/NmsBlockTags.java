@@ -1,25 +1,30 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.BigDripleafStemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChorusPlantBlock;
 import net.minecraft.world.level.block.ComposterBlock;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.BedBlock;
-import net.minecraft.world.level.block.WallBlock;
-import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -32,12 +37,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
 import org.bukkit.craftbukkit.util.CraftMagicNumbers;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class NmsBlockTags {
     private static final TagKey<Block> BARS = barsTag();
@@ -54,8 +53,7 @@ public final class NmsBlockTags {
         }
     }
 
-    private NmsBlockTags() {
-    }
+    private NmsBlockTags() {}
 
     public static BlockState toNmsState(BlockData data) {
         if (data instanceof CraftBlockData craftBlockData) {
@@ -141,7 +139,9 @@ public final class NmsBlockTags {
 
     public static boolean isReplaceable(Material material) {
         Block block = toNmsBlock(material);
-        return block == null || block.defaultBlockState().isAir() || block.defaultBlockState().canBeReplaced();
+        return block == null
+                || block.defaultBlockState().isAir()
+                || block.defaultBlockState().canBeReplaced();
     }
 
     public static boolean isShapeExceedsCube(Material material) {
@@ -233,7 +233,8 @@ public final class NmsBlockTags {
 
     public static boolean isShulkerBox(Material material) {
         Block block = toNmsBlock(material);
-        return block != null && (block.defaultBlockState().is(BlockTags.SHULKER_BOXES) || block instanceof ShulkerBoxBlock);
+        return block != null
+                && (block.defaultBlockState().is(BlockTags.SHULKER_BOXES) || block instanceof ShulkerBoxBlock);
     }
 
     public static boolean isShulkerBox(BlockState state) {
@@ -279,12 +280,16 @@ public final class NmsBlockTags {
         Item item = toNmsItem(material);
         if (item == null) return false;
         try {
-            Object component = net.minecraft.core.component.DataComponents.class.getField("COMPOSTABLE").get(null);
-            return new net.minecraft.world.item.ItemStack(item).has((net.minecraft.core.component.DataComponentType<?>) component);
+            Object component = net.minecraft.core.component.DataComponents.class
+                    .getField("COMPOSTABLE")
+                    .get(null);
+            return new net.minecraft.world.item.ItemStack(item)
+                    .has((net.minecraft.core.component.DataComponentType<?>) component);
         } catch (NoSuchFieldException legacy) {
             try {
-                return ((it.unimi.dsi.fastutil.objects.Object2FloatMap<?>) ComposterBlock.class
-                        .getField("COMPOSTABLES").get(null)).containsKey(item);
+                return ((it.unimi.dsi.fastutil.objects.Object2FloatMap<?>)
+                                ComposterBlock.class.getField("COMPOSTABLES").get(null))
+                        .containsKey(item);
             } catch (ReflectiveOperationException failure) {
                 throw new IllegalStateException("Unable to resolve compostable items", failure);
             }

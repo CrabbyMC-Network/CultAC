@@ -10,9 +10,9 @@ import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainerFactory;
-import net.minecraft.server.MinecraftServer;
 
 /** Pinned 26.3 section reader, using vanilla's palette implementation. */
 public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
@@ -31,9 +31,12 @@ public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
                 section.read(bytes);
                 chunks[i] = new CachedSection(section.getStates().copy());
             }
-        } finally { bytes.release(); }
+        } finally {
+            bytes.release();
+        }
         var tickers = packet.tickerCandidates().stream()
-                .filter(position -> hasGeyserTicker(chunks, dimension.minHeight(), position)).toList();
+                .filter(position -> hasGeyserTicker(chunks, dimension.minHeight(), position))
+                .toList();
         addChunkToCache(event, player, chunks, true, dimension.dimension(), packet.x(), packet.z(), tickers);
     }
 
@@ -55,5 +58,5 @@ public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
         return factory.palettes();
     }
 
-    private record SectionFactory(RegistryAccess access, PalettedContainerFactory palettes) { }
+    private record SectionFactory(RegistryAccess access, PalettedContainerFactory palettes) {}
 }

@@ -10,21 +10,17 @@ import java.util.List;
 import net.minecraft.world.phys.Vec3;
 
 final class BedrockStartingVelocityProfiles {
-    private BedrockStartingVelocityProfiles() {
-    }
+    private BedrockStartingVelocityProfiles() {}
 
     static List<BedrockProfileState.Entry> previousEntriesForJavaStartingVelocity(
-        SimulationContext context,
-        BedrockMovementInputFactory.Input input,
-        PredVector javaStartingVelocity
-    ) {
+            SimulationContext context, BedrockMovementInputFactory.Input input, PredVector javaStartingVelocity) {
         BedrockProfileState.Entry lineageEntry = BedrockProfileState.entryInLineage(javaStartingVelocity);
         if (lineageEntry != null) {
             Vec3d selectedVelocity = BedrockVectorAdapter.toBedrock(javaStartingVelocity);
             List<BedrockProfileState.Entry> matchingEntries = BedrockProfileState.profileEntries(context).stream()
-                .filter(entry -> entry.state().velocity().equals(selectedVelocity))
-                .map(entry -> entryWithSelectedStartingVelocity(entry, javaStartingVelocity))
-                .toList();
+                    .filter(entry -> entry.state().velocity().equals(selectedVelocity))
+                    .map(entry -> entryWithSelectedStartingVelocity(entry, javaStartingVelocity))
+                    .toList();
             if (!matchingEntries.isEmpty()) {
                 return matchingEntries;
             }
@@ -36,18 +32,16 @@ final class BedrockStartingVelocityProfiles {
         }
         if (javaStartingVelocity instanceof BedrockPredVector candidate) {
             return List.of(new BedrockProfileState.Entry(
-                candidate.input().previousState(),
-                candidate.input().mobJumpComponent()));
+                    candidate.input().previousState(), candidate.input().mobJumpComponent()));
         }
         BedrockMovementState previousState = input.previousState();
         if (javaStartingVelocity == null || javaStartingVelocity.lengthSqr() <= 1.0E-14D) {
             return List.of(new BedrockProfileState.Entry(previousState, input.mobJumpComponent()));
         }
         return List.of(new BedrockProfileState.Entry(
-            previousState.withVelocityAndCollisionFlags(
-                BedrockVectorAdapter.toBedrock(javaStartingVelocity),
-                previousState.collisionFlags()),
-            input.mobJumpComponent()));
+                previousState.withVelocityAndCollisionFlags(
+                        BedrockVectorAdapter.toBedrock(javaStartingVelocity), previousState.collisionFlags()),
+                input.mobJumpComponent()));
     }
 
     static List<PredVector> profileStateVelocities(List<PredVector> input) {
@@ -64,9 +58,7 @@ final class BedrockStartingVelocityProfiles {
     }
 
     private static BedrockProfileState.Entry entryWithSelectedStartingVelocity(
-        BedrockProfileState.Entry entry,
-        Vec3 javaStartingVelocity
-    ) {
+            BedrockProfileState.Entry entry, Vec3 javaStartingVelocity) {
         Vec3d velocity = BedrockVectorAdapter.toBedrock(javaStartingVelocity);
         BedrockMovementState state = entry.state();
         BedrockCollisionFlags flags = state.collisionFlags();
@@ -77,15 +69,10 @@ final class BedrockStartingVelocityProfiles {
     }
 
     private static BedrockStateVelocity profileStateVelocity(
-        BedrockProfileState.Entry profileEntry,
-        PredVector vector
-    ) {
+            BedrockProfileState.Entry profileEntry, PredVector vector) {
         BedrockMovementState profileState = profileEntry.state();
         BedrockMovementState nextState = profileState.withVelocityAndCollisionFlags(
-            BedrockVectorAdapter.toBedrock(vector),
-            profileState.collisionFlags());
-        return new BedrockStateVelocity(
-            profileEntry.withState(nextState),
-            vector);
+                BedrockVectorAdapter.toBedrock(vector), profileState.collisionFlags());
+        return new BedrockStateVelocity(profileEntry.withState(nextState), vector);
     }
 }

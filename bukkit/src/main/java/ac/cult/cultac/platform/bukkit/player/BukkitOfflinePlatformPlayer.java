@@ -1,12 +1,11 @@
 package ac.cult.cultac.platform.bukkit.player;
 
 import ac.cult.cultac.platform.api.player.OfflinePlatformPlayer;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
-import java.util.UUID;
 
 @RequiredArgsConstructor
 public class BukkitOfflinePlatformPlayer implements OfflinePlatformPlayer {

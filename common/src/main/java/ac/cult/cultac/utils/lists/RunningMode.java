@@ -3,11 +3,10 @@ package ac.cult.cultac.utils.lists;
 import ac.cult.cultac.utils.data.Pair;
 import it.unimi.dsi.fastutil.doubles.Double2IntMap;
 import it.unimi.dsi.fastutil.doubles.Double2IntOpenHashMap;
-import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 // This class is copyright DefineOutside licensed under MIT
 //
@@ -16,7 +15,9 @@ public class RunningMode {
     private static final double threshold = 1e-3;
     private final Queue<Double> addList;
     private final Double2IntMap popularityMap = new Double2IntOpenHashMap();
-    @Getter private final int maxSize;
+
+    @Getter
+    private final int maxSize;
 
     public RunningMode(int maxSize) {
         if (maxSize == 0) throw new IllegalArgumentException("There's no mode to a size 0 list!");
@@ -47,7 +48,7 @@ public class RunningMode {
     private void pop() {
         if (addList.size() >= maxSize) {
             double type = addList.remove();
-            int popularity = popularityMap.get(type);  // Being null isn't possible
+            int popularity = popularityMap.get(type); // Being null isn't possible
             if (popularity == 1) {
                 popularityMap.remove(type); // Make sure not to leak memory
             } else {

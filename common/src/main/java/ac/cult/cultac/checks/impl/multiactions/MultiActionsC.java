@@ -1,19 +1,22 @@
 package ac.cult.cultac.checks.impl.multiactions;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.SharedConstants;
 import ac.cult.cultac.utils.inventory.InventoryClick;
+import ac.grim.grimac.api.storage.verbose.Verbose;
+import net.minecraft.SharedConstants;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-@CheckData(name = "MultiActionsC", stableKey = "cult.multiactions.inventory_click_while_moving", description = "Clicked in inventory while moving")
+@CheckData(
+        name = "MultiActionsC",
+        stableKey = "cult.multiactions.inventory_click_while_moving",
+        description = "Clicked in inventory while moving")
 public class MultiActionsC extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("sprinting={bool}, sneaking={bool}, input={bool}");
     private static final ClientVersion SERVER_VERSION =
@@ -42,7 +45,6 @@ public class MultiActionsC extends Check implements CheckListener {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 && SERVER_VERSION.isNewerThanOrEquals(ClientVersion.V_1_21_2);
     }
-
 
     @CultPacketHandler
     public void onContainerClick(PacketReceiveEvent<InventoryClick> event, CultPlayer player, InventoryClick packet) {

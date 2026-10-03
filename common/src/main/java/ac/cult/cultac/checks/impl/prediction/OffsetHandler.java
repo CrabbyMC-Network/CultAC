@@ -1,8 +1,6 @@
 package ac.cult.cultac.checks.impl.prediction;
 
 import ac.cult.cultac.CultAPI;
-import ac.grim.grimac.api.event.events.CompletePredictionEvent;
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.impl.prediction.checks.psuedo.Speed;
@@ -12,10 +10,12 @@ import ac.cult.cultac.checks.impl.prediction.profile.MovementProfiles;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
+import ac.grim.grimac.api.event.events.CompletePredictionEvent;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 import lombok.Getter;
 import org.bukkit.ChatColor;
 
-//@CheckData(name = "Simulation", configName = "Simulation", decay = 0.02)
+// @CheckData(name = "Simulation", configName = "Simulation", decay = 0.02)
 public class OffsetHandler extends Check implements PostPredictionListener {
     private static final Verbose V = Verbose.of("{offset}");
     private static final CompletePredictionEvent.Channel COMPLETE_PREDICTION_CHANNEL =
@@ -28,14 +28,19 @@ public class OffsetHandler extends Check implements PostPredictionListener {
     double maxCeiling;
 
     // Current advantage gained
-    @Getter double advantageGained = 0;
+    @Getter
+    double advantageGained = 0;
 
-    public OffsetHandler(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder()
-            .name("Simulation")
-            .stableKey("cult.prediction.simulation")
-            .description("Moved differently than predicted movement simulation")
-            .decay(0.02)
-            .build()); }
+    public OffsetHandler(CultPlayer cultPlayer) {
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("Simulation")
+                        .stableKey("cult.prediction.simulation")
+                        .description("Moved differently than predicted movement simulation")
+                        .decay(0.02)
+                        .build());
+    }
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
@@ -59,8 +64,9 @@ public class OffsetHandler extends Check implements PostPredictionListener {
 
         // Short circuit out flag call
         if ((offset >= threshold || offset >= immediateSetbackThreshold)
-                && flag(V.write(verbose()).f64(offset),
-                () -> formatOffset(offset) + " " + ChatColor.DARK_GRAY + predictionResult.getIdentifier())) {
+                && flag(
+                        V.write(verbose()).f64(offset),
+                        () -> formatOffset(offset) + " " + ChatColor.DARK_GRAY + predictionResult.getIdentifier())) {
             advantageGained += offset;
 
             boolean isSetback = advantageGained >= maxAdvantage || offset >= immediateSetbackThreshold;

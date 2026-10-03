@@ -8,8 +8,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
 final class OfflineBlockStateParser {
-    private OfflineBlockStateParser() {
-    }
+    private OfflineBlockStateParser() {}
 
     static BlockState parse(String serialized) throws IOException {
         int propertiesStart = serialized.indexOf('[');

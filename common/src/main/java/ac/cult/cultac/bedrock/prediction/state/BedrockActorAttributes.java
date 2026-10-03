@@ -9,7 +9,9 @@ public record BedrockActorAttributes(Map<String, BedrockMovementAttributeState> 
     public static final String MOVEMENT = "minecraft:movement";
     public static final BedrockActorAttributes EMPTY = new BedrockActorAttributes(Map.of());
 
-    public BedrockActorAttributes { values = Map.copyOf(values); }
+    public BedrockActorAttributes {
+        values = Map.copyOf(values);
+    }
 
     public BedrockMovementAttributeState movement() {
         return values.getOrDefault(MOVEMENT, BedrockMovementAttributeState.DEFAULT);
@@ -35,9 +37,12 @@ public record BedrockActorAttributes(Map<String, BedrockMovementAttributeState> 
 
     public AttributeState apply(AttributeState defaults) {
         float speed = current(MOVEMENT, (float) defaults.baseMovementSpeed());
-        return new AttributeState(speed, speed,
+        return new AttributeState(
+                speed,
+                speed,
                 current("minecraft:underwater_movement", defaults.underwaterMovementSpeed()),
                 current("minecraft:lava_movement", defaults.lavaMovementSpeed()),
-                current("minecraft:horse.jump_strength", defaults.jumpStrength()), defaults.frictionModifier());
+                current("minecraft:horse.jump_strength", defaults.jumpStrength()),
+                defaults.frictionModifier());
     }
 }

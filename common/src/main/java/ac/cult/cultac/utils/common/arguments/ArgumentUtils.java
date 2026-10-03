@@ -1,7 +1,6 @@
 package ac.cult.cultac.utils.common.arguments;
 
 import ac.cult.cultac.platform.api.Platform;
-
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -9,7 +8,8 @@ import java.util.regex.Pattern;
 
 public class ArgumentUtils {
 
-    private static final Pattern WEBSITE_URL_PATTERN = Pattern.compile("^(https?://)?(localhost:[0-9]{1,4}|(([a-zA-Z0-9_-]+\\.)?[a-zA-Z0-9_-]+\\.[a-zA-Z]{2,3}))(/[a-zA-Z0-9_/-?=]*)?$");
+    private static final Pattern WEBSITE_URL_PATTERN = Pattern.compile(
+            "^(https?://)?(localhost:[0-9]{1,4}|(([a-zA-Z0-9_-]+\\.)?[a-zA-Z0-9_-]+\\.[a-zA-Z]{2,3}))(/[a-zA-Z0-9_/-?=]*)?$");
 
     public static <T extends Number> Predicate<T> validRange(T min, T max) {
         return number -> number.doubleValue() >= min.doubleValue() && number.doubleValue() <= max.doubleValue();
@@ -23,7 +23,7 @@ public class ArgumentUtils {
         return string -> {
             if (!string.endsWith("/")) string += "/";
             if (WEBSITE_URL_PATTERN.matcher(string).matches()) return string;
-            //LogUtil.warn("Invalid URL: " + string);
+            // LogUtil.warn("Invalid URL: " + string);
             return defaultValue.get();
         };
     }
@@ -57,5 +57,4 @@ public class ArgumentUtils {
     public static ArgumentOptions.Builder<Platform> platform(String key) {
         return ArgumentOptions.from(Platform.class, key);
     }
-
 }

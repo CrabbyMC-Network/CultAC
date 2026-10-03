@@ -12,8 +12,7 @@ public final class DecodedPacketReliability {
     private static final ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
-    private DecodedPacketReliability() {
-    }
+    private DecodedPacketReliability() {}
 
     public static boolean nativeInputFamilyReliable(ClientVersion clientVersion) {
         return nativeInputFamilyReliable(clientVersion, SERVER_VERSION);
@@ -32,10 +31,7 @@ public final class DecodedPacketReliability {
     }
 
     private static boolean onSameSide(
-            ClientVersion clientVersion,
-            ClientVersion serverVersion,
-            ClientVersion boundary
-    ) {
+            ClientVersion clientVersion, ClientVersion serverVersion, ClientVersion boundary) {
         return clientVersion.isOlderThan(boundary) == serverVersion.isOlderThan(boundary);
     }
 }

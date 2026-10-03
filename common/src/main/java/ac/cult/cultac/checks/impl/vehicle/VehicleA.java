@@ -1,17 +1,20 @@
 package ac.cult.cultac.checks.impl.vehicle;
 
-import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.DeadCheck;
+import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
+import ac.grim.grimac.api.storage.verbose.Verbose;
 
 @CheckData(name = "VehicleA", stableKey = "cult.vehicle.impossible_input", description = "Impossible input values")
-@DeadCheck(reason = DeadCheck.Reason.WIRE_UNTRIGGERABLE, detail = "The 26.2 wire carries the input key bitset only; the derived +/-0.98 analog values can never exceed the checked bound.")
+@DeadCheck(
+        reason = DeadCheck.Reason.WIRE_UNTRIGGERABLE,
+        detail =
+                "The 26.2 wire carries the input key bitset only; the derived +/-0.98 analog values can never exceed the checked bound.")
 public class VehicleA extends Check implements CheckListener {
     private static final Verbose V = Verbose.of("forwards={f32}, sideways={f32}");
 
@@ -19,9 +22,9 @@ public class VehicleA extends Check implements CheckListener {
         super(player);
     }
 
-
     @CultPacketHandler
-    public void onPlayerInput(PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
+    public void onPlayerInput(
+            PacketReceiveEvent<ServerboundPlayerInput> event, CultPlayer player, ServerboundPlayerInput packet) {
         final ServerboundPlayerInput input = packet;
         final float forwards = input.forward() ? 0.98f : input.backward() ? -0.98f : 0.0f;
         final float sideways = input.left() ? 0.98f : input.right() ? -0.98f : 0.0f;

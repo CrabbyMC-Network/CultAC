@@ -6,8 +6,8 @@
  */
 package ac.cult.cultac.protocol.codec.movement;
 
-import ac.cult.cultac.protocol.WritablePacketCodec;
 import ac.cult.cultac.protocol.ProtocolContext;
+import ac.cult.cultac.protocol.WritablePacketCodec;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPaddleBoat;
 import io.netty.buffer.ByteBuf;
 

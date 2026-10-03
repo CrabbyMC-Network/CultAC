@@ -4,6 +4,10 @@ import ac.cult.cultac.platform.api.command.PlayerSelector;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.platform.bukkit.command.BukkitPlayerSelectorAdapter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.bukkit.BukkitCommandContextKeys;
@@ -12,22 +16,18 @@ import org.incendo.cloud.parser.ParserDescriptor;
 import org.incendo.cloud.suggestion.Suggestion;
 import org.incendo.cloud.suggestion.SuggestionProvider;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 public class BukkitCloudPlatformCommandArguments implements CloudPlatformCommandArguments {
 
     @Override
     public ParserDescriptor<Sender, PlayerSelector> singlePlayerSelectorParser() {
         ParserDescriptor<Sender, ?> descriptor = SinglePlayerSelectorParser.singlePlayerSelectorParser();
         return ParserDescriptor.of(
-                descriptor.parser().mapSuccess((context, selector) -> CompletableFuture.completedFuture(
-                        new BukkitPlayerSelectorAdapter((org.incendo.cloud.bukkit.data.SinglePlayerSelector) selector)
-                )),
-                PlayerSelector.class
-        );
+                descriptor
+                        .parser()
+                        .mapSuccess((context, selector) ->
+                                CompletableFuture.completedFuture(new BukkitPlayerSelectorAdapter(
+                                        (org.incendo.cloud.bukkit.data.SinglePlayerSelector) selector))),
+                PlayerSelector.class);
     }
 
     @Override
@@ -36,7 +36,9 @@ public class BukkitCloudPlatformCommandArguments implements CloudPlatformCommand
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<Suggestion> suggestions = new ArrayList<>(players.size());
 
-            Player sender = context.get(BukkitCommandContextKeys.BUKKIT_COMMAND_SENDER) instanceof Player player ? player : null;
+            Player sender = context.get(BukkitCommandContextKeys.BUKKIT_COMMAND_SENDER) instanceof Player player
+                    ? player
+                    : null;
 
             for (Player player : players) {
                 if (sender == null || sender.canSee(player)) {

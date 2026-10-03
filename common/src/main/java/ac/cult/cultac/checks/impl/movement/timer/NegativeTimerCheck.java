@@ -1,20 +1,21 @@
 package ac.cult.cultac.checks.impl.movement.timer;
 
-import ac.cult.cultac.protocol.packet.Opaque;
-
 import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.DeadCheck;
 import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import org.bukkit.GameMode;
 
-//@CheckData(name = "NegativeTimer", configName = "NegativeTimer", setback = 10)
-@DeadCheck(reason = DeadCheck.Reason.DEAD_BY_CONSTRUCTION, detail = "Never constructed; its only flag call site is commented out.")
+// @CheckData(name = "NegativeTimer", configName = "NegativeTimer", setback = 10)
+@DeadCheck(
+        reason = DeadCheck.Reason.DEAD_BY_CONSTRUCTION,
+        detail = "Never constructed; its only flag call site is commented out.")
 public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredictionListener {
 
     int ticksWithoutNewTransactionOrLook = 0;
@@ -22,7 +23,8 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
     float lastXRot = 0;
     float lastYRot = 0;
 
-    public NegativeTimerCheck(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder().name("NegativeTimer").setback(10).build());
+    public NegativeTimerCheck(CultPlayer cultPlayer) {
+        super(cultPlayer, CheckInfo.builder().name("NegativeTimer").setback(10).build());
         this.timerBalanceRealTime = System.nanoTime() + this.clockDrift;
     }
 
@@ -43,7 +45,7 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
             // TODO: This check is broken in two ways. can't figure out how or reproduce it.
             // On 1.9+ we aren't good enough about detecting a missed idle packet
             // On 1.8 I think some weird client screwed a bit with the tick loop
-            //flag("-" + lostMS);
+            // flag("-" + lostMS);
 
             timerBalanceRealTime += 50e6;
         }
@@ -88,15 +90,15 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
             // The player MIGHT have experienced tick skipping here, reset
             // (PONGS aren't responded to or new inputs taken when the client is ticking multiple times per frame)
             if (this.ticksWithoutNewTransactionOrLook >= 9) {
-                //Bukkit.broadcastMessage("Resetting timer balance due to tick skipping");
+                // Bukkit.broadcastMessage("Resetting timer balance due to tick skipping");
                 timerBalanceRealTime = System.nanoTime() + clockDrift;
             }
         }
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (player.isBedrockMovement()) {
             return;
         }
@@ -142,6 +144,7 @@ public class NegativeTimerCheck extends AbstractTimerCheck implements PostPredic
 
     @Override
     public void reload() {
-        super.reload(); this.clockDrift = (long) (getConfig().getDoubleElse(getConfigName() + ".drift", 1200.0) * 1e6);
+        super.reload();
+        this.clockDrift = (long) (getConfig().getDoubleElse(getConfigName() + ".drift", 1200.0) * 1e6);
     }
 }

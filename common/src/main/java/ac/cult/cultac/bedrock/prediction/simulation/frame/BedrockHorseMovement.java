@@ -7,11 +7,16 @@ import ac.cult.cultac.bedrock.prediction.world.BedrockMovementContext;
 
 /** Horse control surrounds the shared living-entity travel stages. */
 public final class BedrockHorseMovement {
-    private BedrockHorseMovement() { }
+    private BedrockHorseMovement() {}
 
     public static float maxUpStep(BedrockMovementState state, BedrockMovementContext context) {
-        return BedrockJumpPreventionResolver.resolve(context, state.physicalFeetPosition(),
-                state.collisionFlags().onGround()).active() ? 0.5625F : 1.0625F;
+        return BedrockJumpPreventionResolver.resolve(
+                                context,
+                                state.physicalFeetPosition(),
+                                state.collisionFlags().onGround())
+                        .active()
+                ? 0.5625F
+                : 1.0625F;
     }
 
     public static float yawAfterControl(float previousYaw, float riderYaw) {
@@ -29,11 +34,12 @@ public final class BedrockHorseMovement {
 
     static Jump applyJump(BedrockTravelInput input, BedrockFrameFacts facts, Vec3d velocity) {
         BedrockHorseState horse = input.previousState().horse().requestJump();
-        if (!input.options().travelActive() || !horse.canLaunch(input.previousState().collisionFlags().onGround())) {
+        if (!input.options().travelActive()
+                || !horse.canLaunch(input.previousState().collisionFlags().onGround())) {
             return new Jump(horse, velocity, false);
         }
-        var prevention = BedrockJumpPreventionResolver.resolve(facts.context(),
-                input.previousState().physicalFeetPosition(), true);
+        var prevention = BedrockJumpPreventionResolver.resolve(
+                facts.context(), input.previousState().physicalFeetPosition(), true);
         float blockFactor = prevention.active() ? 0.6F : 1.0F;
         float scale = horse.pendingJump();
         float vertical = (facts.context().attributeState().jumpStrength() * scale) * blockFactor
@@ -48,5 +54,5 @@ public final class BedrockHorseMovement {
         return new Jump(horse.launched(), new Vec3d(x, vertical, z), true);
     }
 
-    record Jump(BedrockHorseState state, Vec3d velocity, boolean launched) { }
+    record Jump(BedrockHorseState state, Vec3d velocity, boolean launched) {}
 }

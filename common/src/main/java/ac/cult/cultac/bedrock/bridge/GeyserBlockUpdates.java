@@ -21,8 +21,13 @@ final class GeyserBlockUpdates {
     private final Map<BlockPos, BedrockBlockLayers> updates = new LinkedHashMap<>();
     private int depth;
 
-    void begin() { depth++; }
-    boolean active() { return depth != 0; }
+    void begin() {
+        depth++;
+    }
+
+    boolean active() {
+        return depth != 0;
+    }
 
     static boolean supports(BedrockPacket packet) {
         return packet instanceof UpdateBlockPacket || packet instanceof UpdateSubChunkBlocksPacket;
@@ -33,8 +38,10 @@ final class GeyserBlockUpdates {
         if (packet instanceof UpdateBlockPacket block) {
             update(block.getBlockPosition(), block.getDataLayer(), block.getDefinition(), coordinates, palette);
         } else if (packet instanceof UpdateSubChunkBlocksPacket blocks) {
-            for (var block : blocks.getStandardBlocks()) update(block.getPosition(), 0, block.getDefinition(), coordinates, palette);
-            for (var block : blocks.getExtraBlocks()) update(block.getPosition(), 1, block.getDefinition(), coordinates, palette);
+            for (var block : blocks.getStandardBlocks())
+                update(block.getPosition(), 0, block.getDefinition(), coordinates, palette);
+            for (var block : blocks.getExtraBlocks())
+                update(block.getPosition(), 1, block.getDefinition(), coordinates, palette);
         }
     }
 
@@ -44,27 +51,36 @@ final class GeyserBlockUpdates {
         // Geyser Block.sendBlockUpdatePacket emits both layers for each correction.
         // Keep them only for this acknowledgement; the shared world retains normal Java states.
         List<Update> snapshot = updates.entrySet().stream()
-                .map(entry -> new Update(entry.getKey(), entry.getValue().combined())).toList();
+                .map(entry -> new Update(entry.getKey(), entry.getValue().combined()))
+                .toList();
         updates.clear();
         if (player == null || snapshot.isEmpty()) return;
-        boolean near = snapshot.stream().anyMatch(update ->
-                Math.abs(update.position().getX() - player.x) < 16
-                && Math.abs(update.position().getY() - player.y) < 16
-                && Math.abs(update.position().getZ() - player.z) < 16);
-        Consumer<CultPlayer> apply = target -> snapshot.forEach(update -> target.compensatedWorld
-                .handleServerBlockUpdate(update.position(), update.state(), target.lastTransactionReceived.get()));
+        boolean near = snapshot.stream()
+                .anyMatch(update -> Math.abs(update.position().getX() - player.x) < 16
+                        && Math.abs(update.position().getY() - player.y) < 16
+                        && Math.abs(update.position().getZ() - player.z) < 16);
+        Consumer<CultPlayer> apply =
+                target -> snapshot.forEach(update -> target.compensatedWorld.handleServerBlockUpdate(
+                        update.position(), update.state(), target.lastTransactionReceived.get()));
         // Preserve BasePacketWorldReader's nearby trailing proof / distant existing proof policy.
         if (near) trailingBoundary.accept(apply);
-        else player.addBedrockTransactionTask(player.getLastClientboundBedrockTransaction(), () -> apply.accept(player));
+        else
+            player.addBedrockTransactionTask(player.getLastClientboundBedrockTransaction(), () -> apply.accept(player));
     }
 
-    private void update(Vector3i position, int layer, BlockDefinition definition,
-                        BedrockCoordinateFrame coordinates, Map<Integer, BlockState> palette) {
-        var world = new BlockPos(Math.addExact(position.getX(), coordinates.originX()), position.getY(),
+    private void update(
+            Vector3i position,
+            int layer,
+            BlockDefinition definition,
+            BedrockCoordinateFrame coordinates,
+            Map<Integer, BlockState> palette) {
+        var world = new BlockPos(
+                Math.addExact(position.getX(), coordinates.originX()),
+                position.getY(),
                 Math.addExact(position.getZ(), coordinates.originZ()));
         var previous = updates.getOrDefault(world, BedrockBlockLayers.fromJava(Blocks.AIR.defaultBlockState()));
         updates.put(world, previous.withLayer(layer, GeyserBlockStateMappings.resolve(palette, definition)));
     }
 
-    private record Update(BlockPos position, BlockState state) { }
+    private record Update(BlockPos position, BlockState state) {}
 }

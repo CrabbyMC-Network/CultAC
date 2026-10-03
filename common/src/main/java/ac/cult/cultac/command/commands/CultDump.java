@@ -3,25 +3,24 @@ package ac.cult.cultac.command.commands;
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.command.BuildableCommand;
 import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import ac.cult.cultac.platform.api.PlatformPlugin;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.common.PropertiesUtil;
 import ac.cult.cultac.utils.reflection.ReflectionUtils;
-import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.Map;
+import java.util.Properties;
 import net.minecraft.SharedConstants;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Map;
-import java.util.Properties;
 
 public class CultDump implements BuildableCommand {
 
@@ -34,19 +33,20 @@ public class CultDump implements BuildableCommand {
 
     @Override
     public void register(CommandManager<Sender> commandManager, CloudPlatformCommandArguments arguments) {
-        commandManager.command(
-                commandManager.commandBuilder("cult", "cultac", "grim", "grimac")
-                        .literal("dump", Description.of("Generate a debug dump"))
-                        .permission("cult.dump")
-                        .handler(this::handleDump)
-        );
+        commandManager.command(commandManager
+                .commandBuilder("cult", "cultac", "grim", "grimac")
+                .literal("dump", Description.of("Generate a debug dump"))
+                .permission("cult.dump")
+                .handler(this::handleDump));
     }
 
     private void handleDump(@NotNull CommandContext<Sender> context) {
         Sender sender = context.sender();
 
         if (link != null) {
-            sender.sendMessage(MessageUtil.miniMessage(CultAPI.INSTANCE.getConfigManager().getConfig()
+            sender.sendMessage(MessageUtil.miniMessage(CultAPI.INSTANCE
+                    .getConfigManager()
+                    .getConfig()
                     .getStringElse("upload-log", "%prefix% &fUploaded debug to: %url%")
                     .replace("%url%", link)));
             return;
@@ -64,17 +64,21 @@ public class CultDump implements BuildableCommand {
         base.add("versions", versions);
         versions.addProperty("cult", CultAPI.INSTANCE.getExternalAPI().getGrimVersion());
         versions.addProperty("server", SERVER_VERSION.getReleaseName());
-        versions.addProperty("implementation", CultAPI.INSTANCE.getPlatformServer().getPlatformImplementationString());
+        versions.addProperty(
+                "implementation", CultAPI.INSTANCE.getPlatformServer().getPlatformImplementationString());
         // state of different properties
         JsonObject states = new JsonObject();
         base.add("states", states);
-        if (CultAPI.INSTANCE.isInitialized()) states.addProperty("platform", CultAPI.INSTANCE.getPlatform().toString());
+        if (CultAPI.INSTANCE.isInitialized())
+            states.addProperty("platform", CultAPI.INSTANCE.getPlatform().toString());
         if (ViaVersionUtil.isAvailable()) states.addProperty("has_viaversion", true);
         if (PAPER) states.addProperty("has_paper", true);
         // include some relevant settings if not default
         JsonObject settings = new JsonObject();
-        if (CultAPI.INSTANCE.getAlertManager().hasConsoleVerboseEnabled()) settings.addProperty("console_verbose", true);
-        if (!CultAPI.INSTANCE.getAlertManager().hasConsoleAlertsEnabled()) settings.addProperty("console_alerts", false);
+        if (CultAPI.INSTANCE.getAlertManager().hasConsoleVerboseEnabled())
+            settings.addProperty("console_verbose", true);
+        if (!CultAPI.INSTANCE.getAlertManager().hasConsoleAlertsEnabled())
+            settings.addProperty("console_alerts", false);
         if (settings.size() > 0) states.add("settings", settings);
         // system
         JsonObject system = new JsonObject();
@@ -104,7 +108,8 @@ public class CultDump implements BuildableCommand {
             for (Map.Entry<Object, Object> entry : properties.entrySet()) {
                 object.addProperty(entry.getKey().toString(), entry.getValue().toString());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return object;
     }
 

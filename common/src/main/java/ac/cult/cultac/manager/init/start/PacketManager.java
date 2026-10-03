@@ -1,10 +1,10 @@
 package ac.cult.cultac.manager.init.start;
 
 import ac.cult.cultac.CultAPI;
-import ac.cult.cultac.events.packets.PlayerLoginHooks;
 import ac.cult.cultac.events.packets.PacketPluginMessage;
 import ac.cult.cultac.events.packets.PacketServerPlayerRotation;
 import ac.cult.cultac.events.packets.PacketServerRegistries;
+import ac.cult.cultac.events.packets.PlayerLoginHooks;
 import ac.cult.cultac.events.packets.listeners.CheckManagerListener;
 import ac.cult.cultac.events.packets.listeners.PacketBlockAction;
 import ac.cult.cultac.events.packets.listeners.PacketConfigurationListener;
@@ -86,11 +86,12 @@ public class PacketManager implements StartableInitable {
             registrar.registerSendListener(PacketListenerPriority.HIGHEST, playerInfoListener);
 
             // Proxy details may arrive before a CultPlayer exists.
-            registrar.receiveConnection(ac.cult.cultac.protocol.packet.ServerboundPackets.CUSTOM_PAYLOAD,
-                    PacketListenerPriority.NORMAL, new PacketPluginMessage()::handle);
+            registrar.receiveConnection(
+                    ac.cult.cultac.protocol.packet.ServerboundPackets.CUSTOM_PAYLOAD,
+                    PacketListenerPriority.NORMAL,
+                    new PacketPluginMessage()::handle);
             registrar.registerSendListener(PacketListenerPriority.LOW, new PacketServerPlayerRotation());
             registrar.registerSendListener(PacketListenerPriority.NORMAL, new PacketServerRegistries());
-
         });
         new ac.cult.cultac.events.packets.ProxyAlertMessenger();
     }

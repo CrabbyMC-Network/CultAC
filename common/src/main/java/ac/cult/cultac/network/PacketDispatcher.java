@@ -24,12 +24,29 @@ public class PacketDispatcher {
         snapshot = registrations.compile();
     }
 
-    public ProtocolRuntime runtime() { return runtime; }
-    public PacketRouteBuilder newRouteBuilder() { return new PacketRouteBuilder(scanner); }
-    public PacketHandlerScanner scanner() { return scanner; }
-    public synchronized void register(Consumer<PacketRouteBuilder> batch) { publish(batch, false); }
-    public synchronized void replace(Consumer<PacketRouteBuilder> batch) { publish(batch, true); }
-    public void clear() { replace(ignored -> { }); }
+    public ProtocolRuntime runtime() {
+        return runtime;
+    }
+
+    public PacketRouteBuilder newRouteBuilder() {
+        return new PacketRouteBuilder(scanner);
+    }
+
+    public PacketHandlerScanner scanner() {
+        return scanner;
+    }
+
+    public synchronized void register(Consumer<PacketRouteBuilder> batch) {
+        publish(batch, false);
+    }
+
+    public synchronized void replace(Consumer<PacketRouteBuilder> batch) {
+        publish(batch, true);
+    }
+
+    public void clear() {
+        replace(ignored -> {});
+    }
 
     private void publish(Consumer<PacketRouteBuilder> batch, boolean replace) {
         if (registering) throw new IllegalStateException("Nested packet registration batch");
@@ -41,15 +58,21 @@ public class PacketDispatcher {
             // Do not retain a mutable builder supplied to application code.
             registrations = next.copy();
             snapshot = routes;
-        } finally { registering = false; }
+        } finally {
+            registering = false;
+        }
     }
 
-    public Route get(PacketDirection direction, ConnectionPhase phase, int id) { return snapshot.get(direction, phase, id); }
+    public Route get(PacketDirection direction, ConnectionPhase phase, int id) {
+        return snapshot.get(direction, phase, id);
+    }
 
-    public record Route(PacketType<?> type, ReceiveRoute<ServerboundPacket> receive, PacketSendRoute<Object> send) { }
+    public record Route(PacketType<?> type, ReceiveRoute<ServerboundPacket> receive, PacketSendRoute<Object> send) {}
 
-    public record ReceiveRoute<R extends ServerboundPacket>(PacketReceiveRoute<? super R> early, PacketReceiveRoute<? super R> ordinary,
-                               PacketReceiveRoute<? super R> connection) {
+    public record ReceiveRoute<R extends ServerboundPacket>(
+            PacketReceiveRoute<? super R> early,
+            PacketReceiveRoute<? super R> ordinary,
+            PacketReceiveRoute<? super R> connection) {
         public <P extends R> void dispatch(PacketReceiveEvent<P> event, CultPlayer player) {
             var original = event.getOriginalPacket();
             early.dispatch(event, player, original);
@@ -65,14 +88,18 @@ public class PacketDispatcher {
         if (!user.getPacketExecutor().inEventLoop()) throw new IllegalStateException("Receive outside packet owner");
         try {
             // This is anticheat policy: Bedrock PLAY uses its own engine.
-            if (user.getBedrockBridgeConnection() != null && event.getPhase() == ConnectionPhase.PLAY
+            if (user.getBedrockBridgeConnection() != null
+                    && event.getPhase() == ConnectionPhase.PLAY
                     && event.getPacketType() != ServerboundPackets.CONFIGURATION_ACKNOWLEDGED
                     && event.getPacketType() != ServerboundPackets.CUSTOM_PAYLOAD) return;
             var player = user.getCultPlayer();
             if (player == null) routes.connection().dispatch(event, null, event.getOriginalPacket());
             else routes.dispatch(event, player);
-        } catch (Exception | LinkageError failure) { discardFailedDispatch(event, failure); }
+        } catch (Exception | LinkageError failure) {
+            discardFailedDispatch(event, failure);
+        }
     }
+
     public void send(PacketSendEvent<?> event, PacketSendRoute<Object> route) {
         User user = event.getUser();
         if (user == null || route.isEmpty()) return;
@@ -80,13 +107,15 @@ public class PacketDispatcher {
         try {
             var player = user.getCultPlayer();
             if (player != null) route.dispatch(event, player, event.getOriginalPacket());
-        } catch (Exception | LinkageError failure) { discardFailedDispatch(event, failure); }
+        } catch (Exception | LinkageError failure) {
+            discardFailedDispatch(event, failure);
+        }
     }
+
     void discardFailedDispatch(ac.cult.cultac.network.event.PacketEvent<?> event, Throwable failure) {
         event.discardChanges();
         String message = "Error handling packet " + event.getPacketType().key()
                 + "; forwarding it because packet-error kicks are disabled.";
         org.slf4j.LoggerFactory.getLogger(PacketDispatcher.class).error(message, failure);
     }
-
 }

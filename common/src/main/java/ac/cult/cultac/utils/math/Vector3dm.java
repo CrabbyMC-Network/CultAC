@@ -1,24 +1,27 @@
 package ac.cult.cultac.utils.math;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Random;
 import lombok.Getter;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.util.Random;
-
 public class Vector3dm implements Cloneable, Serializable {
     @Serial
     private static final long serialVersionUID = -2657651106777219169L;
+
     private static final Random random = new Random();
     public static final double epsilon = 1.0E-6;
+
     @Getter
     protected double x;
+
     @Getter
     protected double y;
+
     @Getter
     protected double z;
 
@@ -235,7 +238,8 @@ public class Vector3dm implements Cloneable, Serializable {
         return this.x == (double) 0.0F && this.y == (double) 0.0F && this.z == (double) 0.0F;
     }
 
-    @NotNull Vector3dm normalizeZeros() {
+    @NotNull
+    Vector3dm normalizeZeros() {
         if (this.x == (double) -0.0F) {
             this.x = 0.0F;
         }
@@ -252,11 +256,19 @@ public class Vector3dm implements Cloneable, Serializable {
     }
 
     public boolean isInAABB(@NotNull Vector3dm min, @NotNull Vector3dm max) {
-        return this.x >= min.x && this.x <= max.x && this.y >= min.y && this.y <= max.y && this.z >= min.z && this.z <= max.z;
+        return this.x >= min.x
+                && this.x <= max.x
+                && this.y >= min.y
+                && this.y <= max.y
+                && this.z >= min.z
+                && this.z <= max.z;
     }
 
     public boolean isInSphere(@NotNull Vector3dm origin, double radius) {
-        return CultMath.square(origin.x - this.x) + CultMath.square(origin.y - this.y) + CultMath.square(origin.z - this.z) <= CultMath.square(radius);
+        return CultMath.square(origin.x - this.x)
+                        + CultMath.square(origin.y - this.y)
+                        + CultMath.square(origin.z - this.z)
+                <= CultMath.square(radius);
     }
 
     public boolean isNormalized() {
@@ -347,7 +359,11 @@ public class Vector3dm implements Cloneable, Serializable {
     @Contract(value = "null -> false", pure = true)
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Vector3dm other && Math.abs(this.x - other.x) < 1.0E-6 && Math.abs(this.y - other.y) < 1.0E-6 && Math.abs(this.z - other.z) < 1.0E-6 && this.getClass().equals(obj.getClass());
+        return obj instanceof Vector3dm other
+                && Math.abs(this.x - other.x) < 1.0E-6
+                && Math.abs(this.y - other.y) < 1.0E-6
+                && Math.abs(this.z - other.z) < 1.0E-6
+                && this.getClass().equals(obj.getClass());
     }
 
     @Override

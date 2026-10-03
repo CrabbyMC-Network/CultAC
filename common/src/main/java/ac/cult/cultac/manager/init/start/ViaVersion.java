@@ -2,8 +2,8 @@ package ac.cult.cultac.manager.init.start;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.network.protocol.ClientVersion;
-import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
+import ac.cult.cultac.utils.anticheat.LogUtil;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import net.minecraft.SharedConstants;
@@ -20,9 +20,13 @@ public class ViaVersion implements StartableInitable {
         }
         if (!ViaVersionUtil.isAvailable()) return;
 
-        if (Via.getConfig().getValues().containsKey("fix-1_21-placement-rotation") && Via.getConfig().fix1_21PlacementRotation() && SERVER_VERSION.isOlderThan(ClientVersion.V_1_21)) {
-            LogUtil.error("CultAC has detected that you are using ViaVersion with the `fix-1_21-placement-rotation` option enabled.");
-            LogUtil.error("This option is known to cause issues with CultAC and may result in false positives and bypasses.");
+        if (Via.getConfig().getValues().containsKey("fix-1_21-placement-rotation")
+                && Via.getConfig().fix1_21PlacementRotation()
+                && SERVER_VERSION.isOlderThan(ClientVersion.V_1_21)) {
+            LogUtil.error(
+                    "CultAC has detected that you are using ViaVersion with the `fix-1_21-placement-rotation` option enabled.");
+            LogUtil.error(
+                    "This option is known to cause issues with CultAC and may result in false positives and bypasses.");
             LogUtil.error("Please disable this option in your ViaVersion configuration to prevent these issues.");
         }
 

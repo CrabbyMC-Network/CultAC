@@ -32,19 +32,26 @@ final class RecordConsumerServices implements AutoCloseable {
         originalMisc = global.misc;
         if (global.misc == null) global.misc = global.new Misc();
         ac.cult.cultac.platform.api.manager.MessagePlaceHolderManager placeholders = (player, text) -> text;
-        loader.set(CultAPI.INSTANCE, java.lang.reflect.Proxy.newProxyInstance(
-                getClass().getClassLoader(), new Class<?>[]{ac.cult.cultac.platform.api.PlatformLoader.class},
-                (proxy, method, args) -> method.getName().equals("getMessagePlaceHolderManager")
-                        ? placeholders : method.invoke(originalLoader, args)));
-        dataStore.set(CultAPI.INSTANCE, new ac.cult.cultac.manager.datastore.DataStoreLifecycle(
-                CultAPI.INSTANCE.getGrimPlugin(), CultAPI.INSTANCE.getBackendRegistry()));
+        loader.set(
+                CultAPI.INSTANCE,
+                java.lang.reflect.Proxy.newProxyInstance(
+                        getClass().getClassLoader(),
+                        new Class<?>[] {ac.cult.cultac.platform.api.PlatformLoader.class},
+                        (proxy, method, args) -> method.getName().equals("getMessagePlaceHolderManager")
+                                ? placeholders
+                                : method.invoke(originalLoader, args)));
+        dataStore.set(
+                CultAPI.INSTANCE,
+                new ac.cult.cultac.manager.datastore.DataStoreLifecycle(
+                        CultAPI.INSTANCE.getGrimPlugin(), CultAPI.INSTANCE.getBackendRegistry()));
     }
 
     RecordConsumerServices(ac.cult.cultac.protocol.ProtocolVersion version) throws Exception {
         this();
         var manager = new CultNetworkManager();
-        manager.configureTransport(TestProtocolRuntime.create(
-                ac.cult.cultac.protocol.data.ProtocolData.load(version)), () -> { },
+        manager.configureTransport(
+                TestProtocolRuntime.create(ac.cult.cultac.protocol.data.ProtocolData.load(version)),
+                () -> {},
                 () -> java.util.concurrent.CompletableFuture.completedFuture(null));
         network.set(CultAPI.INSTANCE, manager);
     }
@@ -54,7 +61,8 @@ final class RecordConsumerServices implements AutoCloseable {
         network.set(CultAPI.INSTANCE, manager);
     }
 
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         network.set(CultAPI.INSTANCE, originalNetwork);
         loader.set(CultAPI.INSTANCE, originalLoader);
         dataStore.set(CultAPI.INSTANCE, originalStore);

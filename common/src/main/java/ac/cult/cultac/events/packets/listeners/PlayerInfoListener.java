@@ -1,21 +1,24 @@
 package ac.cult.cultac.events.packets.listeners;
 
+import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.network.CultPacketHandler;
+import ac.cult.cultac.network.CultWrite;
+import ac.cult.cultac.network.event.PacketSendEvent;
+import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerInfoUpdate;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerInfoUpdate.Action;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerInfoUpdate.Entry;
-import ac.cult.cultac.network.CultWrite;
 import ac.cult.cultac.protocol.value.GameMode;
-import ac.cult.cultac.CultAPI;
-import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.network.event.PacketSendEvent;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
 public class PlayerInfoListener {
     @CultPacketHandler
-    public void onPlayerInfoUpdate(PacketSendEvent<ClientboundPlayerInfoUpdate> event, CultPlayer receiver, ClientboundPlayerInfoUpdate packet) {
+    public void onPlayerInfoUpdate(
+            PacketSendEvent<ClientboundPlayerInfoUpdate> event,
+            CultPlayer receiver,
+            ClientboundPlayerInfoUpdate packet) {
         if (!packet.actions().contains(Action.UPDATE_GAME_MODE)) return;
         List<Entry> visibleEntries = new ArrayList<>(packet.entries().size());
         for (Entry entry : packet.entries()) {
@@ -38,5 +41,4 @@ public class PlayerInfoListener {
             event.getTasksAfterSend().add(() -> event.getUser().write(new CultWrite(gameModeUpdate, false)));
         }
     }
-
 }

@@ -27,8 +27,7 @@ import net.minecraft.world.phys.Vec3;
 final class OfflineBedrockReplayEvents {
     static final double DEFAULT_SPEED_MULTIPLIER = 20.0D;
 
-    private OfflineBedrockReplayEvents() {
-    }
+    private OfflineBedrockReplayEvents() {}
 
     static ReplayScript load(OfflineBedrockReplayScenario scenario) throws IOException {
         List<TimedEvent> events = new ArrayList<>();
@@ -50,9 +49,7 @@ final class OfflineBedrockReplayEvents {
                 events.add(new TimedEvent(element.getAsJsonObject()));
             }
         }
-        events.sort(Comparator
-                .comparingLong(TimedEvent::tick)
-                .thenComparingLong(TimedEvent::sequence));
+        events.sort(Comparator.comparingLong(TimedEvent::tick).thenComparingLong(TimedEvent::sequence));
         return new ReplayScript(List.copyOf(events));
     }
 
@@ -75,13 +72,11 @@ final class OfflineBedrockReplayEvents {
             case "mount", "passengers" -> applyMount(player, event);
             case "shulker_block", "shulker_box" -> applyShulkerBlock(player, event);
             case "bounding_box_acknowledged", "bounding_box_ack" ->
-                    player.bedrockState.applyAcknowledgedBoundingBoxMetadata(
-                    (float) doubleValue(event, "width", 0.6D),
-                    (float) doubleValue(event, "height", 1.8D));
+                player.bedrockState.applyAcknowledgedBoundingBoxMetadata(
+                        (float) doubleValue(event, "width", 0.6D), (float) doubleValue(event, "height", 1.8D));
             default -> throw new IOException("unsupported offline replay event type: " + type);
         }
     }
-
 
     private static void applyVelocity(CultPlayer player, JsonObject event) {
         Vec3 velocity = vector(event, "velocity", "vector", "motion");
@@ -93,15 +88,13 @@ final class OfflineBedrockReplayEvents {
                 return;
             }
         }
-        int transaction = player.checkManager.getKnockbackHandler()
-                .handleDebugPseudoEvent(velocity, true, entityId);
+        int transaction = player.checkManager.getKnockbackHandler().handleDebugPseudoEvent(velocity, true, entityId);
         confirmTransaction(player, transaction);
     }
 
     private static void applyExplosion(CultPlayer player, JsonObject event) {
         Vec3 knockback = vector(event, "knockback", "velocity", "vector");
-        int transaction = player.checkManager.getExplosionHandler()
-                .handleDebugPseudoEvent(knockback, false, -1);
+        int transaction = player.checkManager.getExplosionHandler().handleDebugPseudoEvent(knockback, false, -1);
         confirmTransaction(player, transaction);
     }
 
@@ -214,7 +207,8 @@ final class OfflineBedrockReplayEvents {
         }
         CompensatedWorld.CachedSection section = chunk.getOrCreateSection(sectionIndex);
         if (section != null) {
-            section.setState(CompensatedWorld.CachedChunk.index(pos.getX() & 0xF, pos.getY() & 0xF, pos.getZ() & 0xF), state);
+            section.setState(
+                    CompensatedWorld.CachedChunk.index(pos.getX() & 0xF, pos.getY() & 0xF, pos.getZ() & 0xF), state);
         }
     }
 
@@ -258,8 +252,10 @@ final class OfflineBedrockReplayEvents {
         if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING)) {
             return state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING);
         }
-        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
-            return state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
+        if (state.hasProperty(
+                net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+            return state.getValue(
+                    net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
         }
         return Direction.NORTH;
     }
@@ -283,10 +279,7 @@ final class OfflineBedrockReplayEvents {
         if (object == null) {
             return fallback;
         }
-        return new Vec3(
-                doubleValue(object, "x", 0.0D),
-                doubleValue(object, "y", 0.0D),
-                doubleValue(object, "z", 0.0D));
+        return new Vec3(doubleValue(object, "x", 0.0D), doubleValue(object, "y", 0.0D), doubleValue(object, "z", 0.0D));
     }
 
     private static String string(JsonObject object, String key, String fallback) {

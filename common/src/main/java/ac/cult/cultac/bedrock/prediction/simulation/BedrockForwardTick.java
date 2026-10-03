@@ -8,7 +8,7 @@ import java.util.List;
 
 /** Pure movement execution shared by live prediction and historical replay. */
 public final class BedrockForwardTick {
-    private BedrockForwardTick() { }
+    private BedrockForwardTick() {}
 
     public static List<BedrockSimulation.Candidate> simulate(BedrockSimulation.Input input) {
         if (input.control() == null) throw new IllegalArgumentException("Forward movement requires controls");
@@ -19,10 +19,12 @@ public final class BedrockForwardTick {
         return finish(result, selected, null);
     }
 
-    public static List<BedrockMovementState> finish(BedrockMovementResult result, BedrockMovementState selected,
-            Vec3d reportedVelocity) {
+    public static List<BedrockMovementState> finish(
+            BedrockMovementResult result, BedrockMovementState selected, Vec3d reportedVelocity) {
         return BedrockNextTickStateDeriver.fromSimulated(result, selected).stream()
                 .map(BedrockNextTickStateDeriver.DerivedState::state)
-                .map(state -> BedrockEndTickBlockPush.apply(result, state, reportedVelocity)).distinct().toList();
+                .map(state -> BedrockEndTickBlockPush.apply(result, state, reportedVelocity))
+                .distinct()
+                .toList();
     }
 }

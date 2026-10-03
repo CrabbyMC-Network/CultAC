@@ -1,10 +1,9 @@
 package ac.cult.cultac.manager.config.update;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A typed, dotted-path view over a parsed YAML document. Migrations read from
@@ -23,14 +22,29 @@ import java.util.Map;
  */
 public interface YamlMap {
 
-    @Nullable Object get(@NotNull String dottedPath);
-    @Nullable String getString(@NotNull String dottedPath);
-    @Nullable Integer getInt(@NotNull String dottedPath);
-    @Nullable Long getLong(@NotNull String dottedPath);
-    @Nullable Double getDouble(@NotNull String dottedPath);
-    @Nullable Boolean getBool(@NotNull String dottedPath);
-    @Nullable List<?> getList(@NotNull String dottedPath);
-    @Nullable Map<String, Object> getMap(@NotNull String dottedPath);
+    @Nullable
+    Object get(@NotNull String dottedPath);
+
+    @Nullable
+    String getString(@NotNull String dottedPath);
+
+    @Nullable
+    Integer getInt(@NotNull String dottedPath);
+
+    @Nullable
+    Long getLong(@NotNull String dottedPath);
+
+    @Nullable
+    Double getDouble(@NotNull String dottedPath);
+
+    @Nullable
+    Boolean getBool(@NotNull String dottedPath);
+
+    @Nullable
+    List<?> getList(@NotNull String dottedPath);
+
+    @Nullable
+    Map<String, Object> getMap(@NotNull String dottedPath);
 
     boolean has(@NotNull String dottedPath);
 
@@ -39,15 +53,18 @@ public interface YamlMap {
      * updater will later apply via the line-mapped patcher (preserving the
      * bundled default's comments). Returns {@code this} for chaining.
      */
-    @NotNull YamlMap put(@NotNull String dottedPath, @NotNull Object value);
+    @NotNull
+    YamlMap put(@NotNull String dottedPath, @NotNull Object value);
 
     /** Remove a key. Records a write op. Returns {@code this} for chaining. */
-    @NotNull YamlMap remove(@NotNull String dottedPath);
+    @NotNull
+    YamlMap remove(@NotNull String dottedPath);
 
     /**
      * Convenience for the move case: copy the value at {@code oldPath} to
      * {@code newPath} and remove {@code oldPath}. No-op if {@code oldPath}
      * doesn't exist.
      */
-    @NotNull YamlMap rename(@NotNull String oldPath, @NotNull String newPath);
+    @NotNull
+    YamlMap rename(@NotNull String oldPath, @NotNull String newPath);
 }

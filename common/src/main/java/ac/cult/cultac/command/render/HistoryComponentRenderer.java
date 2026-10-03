@@ -1,6 +1,9 @@
 package ac.cult.cultac.command.render;
 
 import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.network.protocol.ClientVersion;
+import ac.cult.cultac.platform.api.sender.Sender;
+import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.grim.grimac.api.config.ConfigManager;
 import ac.grim.grimac.api.storage.history.CheckBucket;
 import ac.grim.grimac.api.storage.history.CheckCount;
@@ -8,18 +11,6 @@ import ac.grim.grimac.api.storage.history.SessionDetail;
 import ac.grim.grimac.api.storage.history.SessionSummary;
 import ac.grim.grimac.api.storage.history.ViolationEntry;
 import ac.grim.grimac.api.storage.query.Page;
-import ac.cult.cultac.platform.api.sender.Sender;
-import ac.cult.cultac.utils.anticheat.MessageUtil;
-import ac.cult.cultac.network.protocol.ClientVersion;
-import lombok.experimental.UtilityClass;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -31,6 +22,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import lombok.experimental.UtilityClass;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Renders history service records into command output components. */
 @UtilityClass
@@ -47,7 +46,8 @@ public final class HistoryComponentRenderer {
             + "&f%bucket_start%–%bucket_end%&b:%bucket_hover_entries%'>"
             + "&7- %checks_list% &8(&b%offset%&8)</hover>";
 
-    private record TemplateValue(@Nullable String raw, @Nullable Component component) {
+    private record TemplateValue(
+            @Nullable String raw, @Nullable Component component) {
         static TemplateValue raw(@Nullable String value) {
             return new TemplateValue(value == null ? "" : value, null);
         }
@@ -82,22 +82,30 @@ public final class HistoryComponentRenderer {
         ConfigManager cfg = CultAPI.INSTANCE.getConfigManager().getConfig();
         String safePlayer = mmSafe(playerDisplayName);
         if (result.items().isEmpty()) {
-            return List.of(parse(sender, cfg, "cult-history-no-sessions",
-                    "%prefix% &7No session history for &f%player%&7.",
-                    Map.of("player", TemplateValue.raw(safePlayer))).component());
+            return List.of(parse(
+                            sender,
+                            cfg,
+                            "cult-history-no-sessions",
+                            "%prefix% &7No session history for &f%player%&7.",
+                            Map.of("player", TemplateValue.raw(safePlayer)))
+                    .component());
         }
         List<Component> out = new ArrayList<>(result.items().size() + 1);
         // Emit both %max_pages% (new) and %maxPages% (pre-cutover spelling) so
         // operators upgrading from 1.x with a legacy cult-history-header that
         // still references %maxPages% see a correctly-rendered count.
         String maxPagesStr = Integer.toString(Math.max(1, maxPages));
-        out.add(parse(sender, cfg, "cult-history-header",
-                "%prefix% &bShowing session history for &f%player% &8[&f%page%&7/&f%max_pages%&8]",
-                Map.of(
-                        "player", TemplateValue.raw(safePlayer),
-                        "page", TemplateValue.raw(Integer.toString(page)),
-                        "max_pages", TemplateValue.raw(maxPagesStr),
-                        "maxPages", TemplateValue.raw(maxPagesStr))).component());
+        out.add(parse(
+                        sender,
+                        cfg,
+                        "cult-history-header",
+                        "%prefix% &bShowing session history for &f%player% &8[&f%page%&7/&f%max_pages%&8]",
+                        Map.of(
+                                "player", TemplateValue.raw(safePlayer),
+                                "page", TemplateValue.raw(Integer.toString(page)),
+                                "max_pages", TemplateValue.raw(maxPagesStr),
+                                "maxPages", TemplateValue.raw(maxPagesStr)))
+                .component());
         for (SessionSummary s : result.items()) {
             boolean ongoing = ongoingSessionId != null && ongoingSessionId.equals(s.sessionId());
             out.add(renderSummaryLine(sender, cfg, s, ongoing, playerDisplayName));
@@ -105,12 +113,10 @@ public final class HistoryComponentRenderer {
         return out;
     }
 
-    private static Component renderSummaryLine(Sender sender, ConfigManager cfg, SessionSummary s, boolean ongoing,
-                                               String playerDisplayName) {
+    private static Component renderSummaryLine(
+            Sender sender, ConfigManager cfg, SessionSummary s, boolean ongoing, String playerDisplayName) {
         long elapsedNow = Math.max(0, System.currentTimeMillis() - s.startedEpochMs());
-        String durationText = ongoing
-                ? "current"
-                : formatDuration(s.durationMs());
+        String durationText = ongoing ? "current" : formatDuration(s.durationMs());
         // Crashed-session marker: closed_at == last_activity means the
         // crash sweep stamped it (the disconnect path stamps closed_at =
         // now which is strictly later than the most recent heartbeat).
@@ -121,7 +127,11 @@ public final class HistoryComponentRenderer {
                 ? cfg.getStringElse("cult-history-crashed-marker", " &8(&ccrashed&8)")
                 : "";
         String detailCommand = "/cult history player " + playerDisplayName + " session " + s.sessionOrdinal();
-        RenderedTemplate rendered = parse(sender, cfg, "cult-history-session", SESSION_ROW_FALLBACK,
+        RenderedTemplate rendered = parse(
+                sender,
+                cfg,
+                "cult-history-session",
+                SESSION_ROW_FALLBACK,
                 Map.ofEntries(
                         // Only sanitize untrusted leaves; keep operator-configured fragments intact.
                         Map.entry("player", TemplateValue.raw(mmSafe(playerDisplayName))),
@@ -135,11 +145,13 @@ public final class HistoryComponentRenderer {
                         Map.entry("unique_checks", TemplateValue.raw(Integer.toString(s.uniqueCheckCount()))),
                         Map.entry("crashed_marker", TemplateValue.raw(crashedMarker)),
                         Map.entry("timeago", TemplateValue.raw(formatDuration(elapsedNow))),
-                        Map.entry("session_uuid", TemplateValue.text(s.sessionId().toString())),
+                        Map.entry(
+                                "session_uuid", TemplateValue.text(s.sessionId().toString())),
                         Map.entry("detail_command", TemplateValue.text(detailCommand))));
         Component line = rendered.component();
         if (!hasInlineHover(rendered.raw())) {
-            line = line.hoverEvent(HoverEvent.showText(sessionHover(sender, detailCommand, s.sessionId().toString())));
+            line = line.hoverEvent(HoverEvent.showText(
+                    sessionHover(sender, detailCommand, s.sessionId().toString())));
         }
         return line.clickEvent(ClickEvent.runCommand(detailCommand));
     }
@@ -171,9 +183,7 @@ public final class HistoryComponentRenderer {
         // already carries the elapsed time since start. Historical sessions show
         // the stored (lastActivity - started) span.
         long elapsedNow = Math.max(0, System.currentTimeMillis() - d.startedEpochMs());
-        String durationText = isOngoing
-                ? "current"
-                : formatDuration(d.durationMs());
+        String durationText = isOngoing ? "current" : formatDuration(d.durationMs());
 
         int totalRows = detailed ? d.violations().size() : d.buckets().size();
         int maxPages = Math.max(1, (totalRows + perPage - 1) / perPage);
@@ -189,56 +199,82 @@ public final class HistoryComponentRenderer {
                 Map.entry("client_brand", TemplateValue.raw(mmSafe(nullToUnknown(d.clientBrand())))),
                 Map.entry("duration", TemplateValue.raw(durationText)),
                 Map.entry("timeago", TemplateValue.raw(formatDuration(elapsedNow))),
-                Map.entry("violations", TemplateValue.raw(Integer.toString(d.violations().size()))),
+                Map.entry(
+                        "violations",
+                        TemplateValue.raw(Integer.toString(d.violations().size()))),
                 Map.entry("unique_checks", TemplateValue.raw(Integer.toString(d.uniqueCheckCount()))),
                 Map.entry("bucket_size", TemplateValue.raw(formatDuration(d.bucketSizeMs()))),
                 Map.entry("page", TemplateValue.raw(Integer.toString(page))),
                 Map.entry("max_pages", TemplateValue.raw(Integer.toString(maxPages))));
-        out.add(parse(sender, cfg, "cult-history-detail-header",
-                "%prefix% &bShowing &f%player%&b's session &f%ordinal%&b details:", metaVars).component());
-        out.add(parse(sender, cfg, "cult-history-detail-meta1",
-                "&bCult: &f%cult_version%&b, Server: &f%server_name%&b, Duration: &f%duration%&b, Date: &7%timeago% ago",
-                metaVars).component());
-        out.add(parse(sender, cfg, "cult-history-detail-meta2",
-                "&bClient: &f%client_version%&b, Brand: &f%client_brand%",
-                metaVars).component());
-        out.add(parse(sender, cfg, "cult-history-detail-violations-header",
-                "&bViolations: &8(%violations% total, %unique_checks% unique) &8[&f%page%&7/&f%max_pages%&8]",
-                metaVars).component());
+        out.add(parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-header",
+                        "%prefix% &bShowing &f%player%&b's session &f%ordinal%&b details:",
+                        metaVars)
+                .component());
+        out.add(parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-meta1",
+                        "&bCult: &f%cult_version%&b, Server: &f%server_name%&b, Duration: &f%duration%&b, Date: &7%timeago% ago",
+                        metaVars)
+                .component());
+        out.add(parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-meta2",
+                        "&bClient: &f%client_version%&b, Brand: &f%client_brand%",
+                        metaVars)
+                .component());
+        out.add(parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-violations-header",
+                        "&bViolations: &8(%violations% total, %unique_checks% unique) &8[&f%page%&7/&f%max_pages%&8]",
+                        metaVars)
+                .component());
 
         if (d.violations().isEmpty()) {
-            out.add(parse(sender, cfg, "cult-history-detail-empty", "&7- (none)", Map.of()).component());
+            out.add(parse(sender, cfg, "cult-history-detail-empty", "&7- (none)", Map.of())
+                    .component());
             return out;
         }
 
         int from = (page - 1) * perPage;
         int to = Math.min(from + perPage, totalRows);
         if (detailed) {
-            for (int i = from; i < to; i++) out.add(renderViolationLine(sender, cfg, d.violations().get(i), verbose));
+            for (int i = from; i < to; i++)
+                out.add(renderViolationLine(sender, cfg, d.violations().get(i), verbose));
         } else {
             // Group violations in the same bucket. The %checks_list% is built by
             // joining per-check entries rendered via cult-history-check-count.
-            for (int i = from; i < to; i++) out.add(renderBucketLine(sender, cfg, d.buckets().get(i), d, verbose));
+            for (int i = from; i < to; i++)
+                out.add(renderBucketLine(sender, cfg, d.buckets().get(i), d, verbose));
         }
         return out;
     }
 
-    private static Component renderBucketLine(Sender sender, ConfigManager cfg, CheckBucket bucket, SessionDetail d, boolean verbose) {
+    private static Component renderBucketLine(
+            Sender sender, ConfigManager cfg, CheckBucket bucket, SessionDetail d, boolean verbose) {
         StringBuilder checksList = new StringBuilder();
         boolean first = true;
         for (CheckCount c : bucket.checks()) {
             if (!first) checksList.append("&7, ");
             first = false;
             // Check names can be plugin-authored; render them as plain text.
-            checksList.append(cfg.getStringElse("cult-history-check-count",
-                            "&f%check_name%&7 x&c%count%")
+            checksList.append(cfg.getStringElse("cult-history-check-count", "&f%check_name%&7 x&c%count%")
                     .replace("%check_name%", mmSafe(c.displayName()))
                     .replace("%count%", Integer.toString(c.count())));
         }
         Component bucketHoverEntries = buildBucketHoverEntries(sender, cfg, d, bucket, verbose);
         String bucketStart = formatDuration(bucket.bucketStartOffsetMs());
         String bucketEnd = formatDuration(bucket.bucketStartOffsetMs() + d.bucketSizeMs());
-        RenderedTemplate rendered = parse(sender, cfg, "cult-history-detail-group", GROUP_ROW_FALLBACK,
+        RenderedTemplate rendered = parse(
+                sender,
+                cfg,
+                "cult-history-detail-group",
+                GROUP_ROW_FALLBACK,
                 Map.of(
                         "checks_list", TemplateValue.raw(checksList.toString()),
                         "offset", TemplateValue.raw(bucketStart),
@@ -247,12 +283,14 @@ public final class HistoryComponentRenderer {
                         "bucket_hover_entries", TemplateValue.component(bucketHoverEntries)));
         Component line = rendered.component();
         if (!hasInlineHover(rendered.raw())) {
-            line = line.hoverEvent(HoverEvent.showText(bucketHover(sender, cfg, bucketStart, bucketEnd, bucketHoverEntries)));
+            line = line.hoverEvent(
+                    HoverEvent.showText(bucketHover(sender, cfg, bucketStart, bucketEnd, bucketHoverEntries)));
         }
         return line;
     }
 
-    private static Component buildBucketHoverEntries(Sender sender, ConfigManager cfg, SessionDetail d, CheckBucket bucket, boolean verbose) {
+    private static Component buildBucketHoverEntries(
+            Sender sender, ConfigManager cfg, SessionDetail d, CheckBucket bucket, boolean verbose) {
         long bucketStart = bucket.bucketStartOffsetMs();
         long bucketEnd = bucketStart + d.bucketSizeMs();
         Component body = Component.empty();
@@ -260,38 +298,59 @@ public final class HistoryComponentRenderer {
             if (v.offsetFromSessionStartMs() < bucketStart || v.offsetFromSessionStartMs() >= bucketEnd) continue;
             Component description = v.description().isBlank()
                     ? Component.empty()
-                    : parse(sender, cfg, "cult-history-hover-description", " — &f%description%",
-                            Map.of("description", TemplateValue.text(v.description()))).component();
+                    : parse(
+                                    sender,
+                                    cfg,
+                                    "cult-history-hover-description",
+                                    " — &f%description%",
+                                    Map.of("description", TemplateValue.text(v.description())))
+                            .component();
             String verboseText = v.verbose() == null ? "" : v.verbose();
             Component verboseComponent = verbose && !verboseText.isBlank()
-                    ? parse(sender, cfg, "cult-history-detail-group-hover-verbose", " — &7%verbose%",
-                            Map.of("verbose", TemplateValue.text(verboseText))).component()
+                    ? parse(
+                                    sender,
+                                    cfg,
+                                    "cult-history-detail-group-hover-verbose",
+                                    " — &7%verbose%",
+                                    Map.of("verbose", TemplateValue.text(verboseText)))
+                            .component()
                     : Component.empty();
-            body = body.append(parse(sender, cfg, "cult-history-detail-group-hover-entry",
-                    "<newline>&8  %offset% &b%check%%description%%verbose%",
-                    Map.of(
-                            "offset", TemplateValue.text(formatDuration(v.offsetFromSessionStartMs())),
-                            "check", TemplateValue.text(v.displayName()),
-                            "description", TemplateValue.component(description),
-                            "verbose", TemplateValue.component(verboseComponent))).component());
+            body = body.append(parse(
+                            sender,
+                            cfg,
+                            "cult-history-detail-group-hover-entry",
+                            "<newline>&8  %offset% &b%check%%description%%verbose%",
+                            Map.of(
+                                    "offset", TemplateValue.text(formatDuration(v.offsetFromSessionStartMs())),
+                                    "check", TemplateValue.text(v.displayName()),
+                                    "description", TemplateValue.component(description),
+                                    "verbose", TemplateValue.component(verboseComponent)))
+                    .component());
         }
         return body;
     }
 
-    private static Component bucketHover(Sender sender, ConfigManager cfg, String bucketStart, String bucketEnd,
-                                         Component bucketHoverEntries) {
-        return parse(sender, cfg, "cult-history-detail-group-hover",
-                "&bViolations in &f%bucket_start%–%bucket_end%&b:%bucket_hover_entries%",
-                Map.of(
-                        "bucket_start", TemplateValue.text(bucketStart),
-                        "bucket_end", TemplateValue.text(bucketEnd),
-                        "bucket_hover_entries", TemplateValue.component(bucketHoverEntries))).component();
+    private static Component bucketHover(
+            Sender sender, ConfigManager cfg, String bucketStart, String bucketEnd, Component bucketHoverEntries) {
+        return parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-group-hover",
+                        "&bViolations in &f%bucket_start%–%bucket_end%&b:%bucket_hover_entries%",
+                        Map.of(
+                                "bucket_start", TemplateValue.text(bucketStart),
+                                "bucket_end", TemplateValue.text(bucketEnd),
+                                "bucket_hover_entries", TemplateValue.component(bucketHoverEntries)))
+                .component();
     }
 
     private static Component renderViolationLine(Sender sender, ConfigManager cfg, ViolationEntry v, boolean verbose) {
         String verboseText = v.verbose() == null ? "" : v.verbose();
         // Verbose/check metadata can include user or plugin text; render substitutions as plain text.
-        RenderedTemplate rendered = parse(sender, cfg, "cult-history-detail-entry",
+        RenderedTemplate rendered = parse(
+                sender,
+                cfg,
+                "cult-history-detail-entry",
                 "&7- &f%check% &8(&b%offset%&8)&7 %verbose%",
                 Map.of(
                         "check", TemplateValue.raw(mmSafe(v.displayName())),
@@ -311,28 +370,43 @@ public final class HistoryComponentRenderer {
         return line;
     }
 
-    private static Component violationHover(Sender sender, ConfigManager cfg, ViolationEntry v,
-                                            String verboseText, boolean hasDescription) {
+    private static Component violationHover(
+            Sender sender, ConfigManager cfg, ViolationEntry v, String verboseText, boolean hasDescription) {
         Component description = hasDescription
-                ? parse(sender, cfg, "cult-history-hover-description", " — &f%description%",
-                        Map.of("description", TemplateValue.text(v.description()))).component()
+                ? parse(
+                                sender,
+                                cfg,
+                                "cult-history-hover-description",
+                                " — &f%description%",
+                                Map.of("description", TemplateValue.text(v.description())))
+                        .component()
                 : Component.empty();
         Component verbose = !verboseText.isBlank()
-                ? parse(sender, cfg, "cult-history-detail-entry-hover-verbose", "<newline>&7%verbose%",
-                        Map.of("verbose", TemplateValue.text(verboseText))).component()
+                ? parse(
+                                sender,
+                                cfg,
+                                "cult-history-detail-entry-hover-verbose",
+                                "<newline>&7%verbose%",
+                                Map.of("verbose", TemplateValue.text(verboseText)))
+                        .component()
                 : Component.empty();
-        return parse(sender, cfg, "cult-history-detail-entry-hover",
-                "&b%check%%description%<newline>&8@ %offset% — vl %vl%%verbose%",
-                Map.of(
-                        "check", TemplateValue.text(v.displayName()),
-                        "description", TemplateValue.component(description),
-                        "offset", TemplateValue.text(formatDuration(v.offsetFromSessionStartMs())),
-                        "vl", TemplateValue.text(Double.toString(v.vl())),
-                        "verbose", TemplateValue.component(verbose))).component();
+        return parse(
+                        sender,
+                        cfg,
+                        "cult-history-detail-entry-hover",
+                        "&b%check%%description%<newline>&8@ %offset% — vl %vl%%verbose%",
+                        Map.of(
+                                "check", TemplateValue.text(v.displayName()),
+                                "description", TemplateValue.component(description),
+                                "offset", TemplateValue.text(formatDuration(v.offsetFromSessionStartMs())),
+                                "vl", TemplateValue.text(Double.toString(v.vl())),
+                                "verbose", TemplateValue.component(verbose)))
+                .component();
     }
 
     private static Component sessionHover(Sender sender, String detailCommand, String sessionId) {
-        return parseRaw(sender,
+        return parseRaw(
+                sender,
                 "&bSession &7%session_uuid%"
                         + "<newline>&7Click or run &e%detail_command%"
                         + "<newline>&7to view session details.",
@@ -352,8 +426,8 @@ public final class HistoryComponentRenderer {
      * <regex>} / {@code --grep <regex>} flag handling — pre-filtering at
      * the renderer keeps the rest of the rendering pipeline filter-agnostic.
      */
-    public static @NotNull SessionDetail applyFilter(@NotNull SessionDetail d,
-                                                     @NotNull Predicate<ViolationEntry> filter) {
+    public static @NotNull SessionDetail applyFilter(
+            @NotNull SessionDetail d, @NotNull Predicate<ViolationEntry> filter) {
         List<ViolationEntry> survivors = new ArrayList<>();
         for (ViolationEntry v : d.violations()) if (filter.test(v)) survivors.add(v);
         // Re-aggregate buckets keyed (bucketStart) → (displayName → count).
@@ -369,7 +443,7 @@ public final class HistoryComponentRenderer {
         for (ViolationEntry v : survivors) {
             long bucketStart = (v.offsetFromSessionStartMs() / bucketSize) * bucketSize;
             agg.computeIfAbsent(bucketStart, k -> new LinkedHashMap<>())
-                    .computeIfAbsent(v.displayName(), k -> new int[]{0})[0]++;
+                    .computeIfAbsent(v.displayName(), k -> new int[] {0})[0]++;
             checkMeta.putIfAbsent(v.displayName(), v);
         }
         List<CheckBucket> newBuckets = new ArrayList<>(agg.size());
@@ -377,23 +451,32 @@ public final class HistoryComponentRenderer {
             List<CheckCount> ccs = new ArrayList<>(e.getValue().size());
             for (Map.Entry<String, int[]> ce : e.getValue().entrySet()) {
                 ViolationEntry meta = checkMeta.get(ce.getKey());
-                ccs.add(new CheckCount(meta.checkId(), meta.stableKey(),
-                        meta.displayName(), meta.description(), ce.getValue()[0]));
+                ccs.add(new CheckCount(
+                        meta.checkId(), meta.stableKey(), meta.displayName(), meta.description(), ce.getValue()[0]));
             }
             newBuckets.add(new CheckBucket(e.getKey(), ccs));
         }
         int uniqueChecks = checkMeta.size();
         return new SessionDetail(
-                d.sessionId(), d.playerUuid(), d.sessionOrdinal(),
-                d.startedEpochMs(), d.lastActivityEpochMs(),
-                d.grimVersion(), d.serverName(), d.clientVersion(), d.clientBrand(),
-                d.bucketSizeMs(), uniqueChecks, newBuckets, survivors);
+                d.sessionId(),
+                d.playerUuid(),
+                d.sessionOrdinal(),
+                d.startedEpochMs(),
+                d.lastActivityEpochMs(),
+                d.grimVersion(),
+                d.serverName(),
+                d.clientVersion(),
+                d.clientBrand(),
+                d.bucketSizeMs(),
+                uniqueChecks,
+                newBuckets,
+                survivors);
     }
 
     // ---- helpers ----
 
-    private static RenderedTemplate parse(Sender sender, ConfigManager cfg, String key, String fallback,
-                                          Map<String, TemplateValue> vars) {
+    private static RenderedTemplate parse(
+            Sender sender, ConfigManager cfg, String key, String fallback, Map<String, TemplateValue> vars) {
         String raw = cfg.getStringElse(key, fallback);
         return new RenderedTemplate(parseRaw(sender, raw, vars), raw);
     }
@@ -421,24 +504,24 @@ public final class HistoryComponentRenderer {
     private static String mmSafe(@Nullable String raw) {
         if (raw == null || raw.isEmpty()) return "";
         // Strip '%' first so '&%c' cannot become '&c' after placeholder removal.
-        String stripped = LEGACY_FORMAT_PATTERN.matcher(
-                raw.replace("%", "")).replaceAll("");
+        String stripped = LEGACY_FORMAT_PATTERN.matcher(raw.replace("%", "")).replaceAll("");
         // Escape backslash before '<' so the added escape isn't itself escaped.
-        return stripped
-                .replace("\\", "\\\\")
-                .replace("<", "\\<");
+        return stripped.replace("\\", "\\\\").replace("<", "\\<");
     }
 
     // Canonical legacy alphabet only — leaves AT&T / R&D alone.
     // Covers §/& sigils, &#RRGGBB hex, and the Bedrock &x&R&R… interleave.
-    private static final Pattern LEGACY_FORMAT_PATTERN = Pattern.compile(
-            "[§&](?:[0-9a-fk-orxA-FK-ORX]|#[A-Fa-f0-9]{6}|x(?:[§&][A-Fa-f0-9]){6})");
+    private static final Pattern LEGACY_FORMAT_PATTERN =
+            Pattern.compile("[§&](?:[0-9a-fk-orxA-FK-ORX]|#[A-Fa-f0-9]{6}|x(?:[§&][A-Fa-f0-9]){6})");
 
     public static @NotNull String formatDuration(long ms) {
         if (ms < 0) ms = 0;
-        long days = TimeUnit.MILLISECONDS.toDays(ms); ms -= TimeUnit.DAYS.toMillis(days);
-        long hours = TimeUnit.MILLISECONDS.toHours(ms); ms -= TimeUnit.HOURS.toMillis(hours);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(ms); ms -= TimeUnit.MINUTES.toMillis(minutes);
+        long days = TimeUnit.MILLISECONDS.toDays(ms);
+        ms -= TimeUnit.DAYS.toMillis(days);
+        long hours = TimeUnit.MILLISECONDS.toHours(ms);
+        ms -= TimeUnit.HOURS.toMillis(hours);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(ms);
+        ms -= TimeUnit.MINUTES.toMillis(minutes);
         long seconds = TimeUnit.MILLISECONDS.toSeconds(ms);
         StringBuilder sb = new StringBuilder();
         if (days > 0) sb.append(days).append("d ");
@@ -466,5 +549,4 @@ public final class HistoryComponentRenderer {
         }
         return "unknown";
     }
-
 }

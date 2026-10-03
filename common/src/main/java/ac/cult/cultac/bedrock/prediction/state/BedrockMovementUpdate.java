@@ -2,26 +2,25 @@ package ac.cult.cultac.bedrock.prediction.state;
 
 import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
-import ac.cult.cultac.bedrock.prediction.model.BedrockCollisionFlags;
 import ac.cult.cultac.bedrock.prediction.model.BedrockBoundingBoxMode;
+import ac.cult.cultac.bedrock.prediction.model.BedrockCollisionFlags;
 import ac.cult.cultac.bedrock.prediction.model.PlayerDimensionsState;
 import java.util.Objects;
 
 public record BedrockMovementUpdate(
-    Vec3d physicalFeetPosition,
-    Vec3d velocity,
-    BedrockInputFrame frame,
-    BedrockCollisionFlags collisionFlags,
-    BedrockBoundingBoxMode boundingBoxMode,
-    PlayerDimensionsState playerDimensions,
-    float fallDistance,
-    long powderSnowTicks,
-    Glide glide,
-    boolean swimming,
-    double swimAmount,
-    Riptide riptide,
-    ItemUse itemUse
-) {
+        Vec3d physicalFeetPosition,
+        Vec3d velocity,
+        BedrockInputFrame frame,
+        BedrockCollisionFlags collisionFlags,
+        BedrockBoundingBoxMode boundingBoxMode,
+        PlayerDimensionsState playerDimensions,
+        float fallDistance,
+        long powderSnowTicks,
+        Glide glide,
+        boolean swimming,
+        double swimAmount,
+        Riptide riptide,
+        ItemUse itemUse) {
     public BedrockMovementUpdate {
         Objects.requireNonNull(physicalFeetPosition, "physicalFeetPosition");
         Objects.requireNonNull(velocity, "velocity");
@@ -43,8 +42,7 @@ public record BedrockMovementUpdate(
         }
     }
 
-    public record Glide(boolean active, boolean requested) {
-    }
+    public record Glide(boolean active, boolean requested) {}
 
     public record Riptide(long chargeTicks, boolean spinActive, long spinTicks) {
         public Riptide {

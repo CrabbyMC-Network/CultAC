@@ -1,21 +1,21 @@
 package ac.cult.cultac.events.packets.listeners;
 
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.network.CultPacketHandler;
-import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
+import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.nmsutil.RiptideUtil;
 import net.minecraft.core.BlockPos;
-import org.bukkit.inventory.ItemStack;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
-import ac.cult.cultac.protocol.value.PlayerAction;
-import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import net.minecraft.world.InteractionHand;
+import org.bukkit.inventory.ItemStack;
 
 public class PacketPlayerDigging {
-    //LOW
+    // LOW
     @CultPacketHandler
     public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
         InteractionHand hand = SpigotConversionUtil.toNmsHand(packet.hand());
@@ -29,7 +29,8 @@ public class PacketPlayerDigging {
     }
 
     @CultPacketHandler
-    public void onPlayerAction(PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+    public void onPlayerAction(
+            PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
         if (packet.action() == PlayerAction.RELEASE_USE_ITEM) {
             InteractionHand hand = player.packetStateData.riptideUseHand;
             ItemStack item = hand == null ? null : player.getInventory().getHandItem(hand);
@@ -47,10 +48,17 @@ public class PacketPlayerDigging {
 
         // Cancellation prevents post-flying checks but not movement prediction or resync.
         PlayerAction action = packet.action();
-        if (action == PlayerAction.START_DESTROY_BLOCK || action == PlayerAction.STOP_DESTROY_BLOCK || action == PlayerAction.ABORT_DESTROY_BLOCK) {
+        if (action == PlayerAction.START_DESTROY_BLOCK
+                || action == PlayerAction.STOP_DESTROY_BLOCK
+                || action == PlayerAction.ABORT_DESTROY_BLOCK) {
             BlockPos blockPosition = SpigotConversionUtil.toNmsBlockPos(packet.position());
-            BlockBreak blockBreak = new BlockBreak(player, blockPosition, SpigotConversionUtil.toBukkitFace(packet.direction()),
-                    packet.direction().ordinal(), action, packet.sequence(),
+            BlockBreak blockBreak = new BlockBreak(
+                    player,
+                    blockPosition,
+                    SpigotConversionUtil.toBukkitFace(packet.direction()),
+                    packet.direction().ordinal(),
+                    action,
+                    packet.sequence(),
                     player.compensatedWorld.getBlockStateAt(blockPosition));
 
             player.checkManager.onBlockBreak(blockBreak);
@@ -58,7 +66,9 @@ public class PacketPlayerDigging {
             if (blockBreak.isCancelled()) {
                 event.setCancelled(true);
                 player.onPacketCancel();
-                player.getResyncHandler().resyncPosition(blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), packet.sequence());
+                player.getResyncHandler()
+                        .resyncPosition(
+                                blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), packet.sequence());
                 return;
             }
 
@@ -67,13 +77,14 @@ public class PacketPlayerDigging {
     }
 
     @CultPacketHandler
-    public void onSetCarriedItem(PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+    public void onSetCarriedItem(
+            PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         selectHotbarSlot(player, packet.slot());
     }
 
     public static void selectHotbarSlot(CultPlayer player, int slotId) {
         // Stop people from spamming the server with out of bounds exceptions
-        if (slotId > 8 || slotId < 0) return; //TODO: flag?
+        if (slotId > 8 || slotId < 0) return; // TODO: flag?
 
         player.packetStateData.lastSlotSelected = slotId;
         if (player.packetStateData.riptideUseHand != InteractionHand.OFF_HAND) {

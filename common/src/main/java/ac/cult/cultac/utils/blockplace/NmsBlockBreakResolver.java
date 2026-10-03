@@ -1,6 +1,7 @@
 package ac.cult.cultac.utils.blockplace;
 
 import ac.cult.cultac.player.CultPlayer;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -9,23 +10,17 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import org.bukkit.block.data.BlockData;
 
-import java.util.List;
-
 // Netty-thread-only break simulator. This path must never read live world state.
 public final class NmsBlockBreakResolver {
     private static final int BREAK_FLAGS = Block.UPDATE_ALL;
     private static final int MAX_UPDATE_DEPTH = 512;
 
-    private NmsBlockBreakResolver() {
-    }
+    private NmsBlockBreakResolver() {}
 
     public static boolean applyBlockBreak(CultPlayer player, BlockPos blockPosition) {
         PlacementSnapshot snapshot = PlacementSnapshot.captureBreak(player, blockPosition);
         PlacementResult result = simulateBreak(
-                PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld),
-                snapshot,
-                blockPosition
-        );
+                PlacementBlockAccess.fromCompensatedWorld(player.compensatedWorld), snapshot, blockPosition);
         if (!result.isSuccess()) {
             if (player.debugBreaks && result.getResyncReason() != null) {
                 player.sendMessage("Resolved break failed: " + result.getResyncReason());
@@ -38,13 +33,15 @@ public final class NmsBlockBreakResolver {
         }
 
         for (PlacementResult.ChangedBlock changedBlock : result.getChangedBlocks()) {
-            BlockData data = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(changedBlock.state());
+            BlockData data =
+                    ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(changedBlock.state());
             player.compensatedWorld.updateBlock(changedBlock.position(), data);
         }
         return true;
     }
 
-    static PlacementResult simulateBreak(PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, BlockPos blockPosition) {
+    static PlacementResult simulateBreak(
+            PlacementBlockAccess blockAccess, PlacementSnapshot snapshot, BlockPos blockPosition) {
         PlacementWorldAdapter world = PlacementWorldFactory.create(blockAccess, snapshot);
         BlockPos pos = blockPosition.immutable();
         if (snapshot.isOutsideBuildHeight(pos)) {
@@ -60,7 +57,9 @@ public final class NmsBlockBreakResolver {
 
     private static BlockState replacementAfterBreak(BlockState oldState) {
         FluidState fluidState = oldState.getFluidState();
-        return fluidState.isSourceOfType(Fluids.WATER) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+        return fluidState.isSourceOfType(Fluids.WATER)
+                ? Blocks.WATER.defaultBlockState()
+                : Blocks.AIR.defaultBlockState();
     }
 
     private static void logResolvedChangeSet(CultPlayer player, List<PlacementResult.ChangedBlock> changedBlocks) {
@@ -71,8 +70,10 @@ public final class NmsBlockBreakResolver {
 
         int index = 0;
         for (PlacementResult.ChangedBlock changedBlock : changedBlocks) {
-            BlockData data = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(changedBlock.state());
-            player.sendMessage("Break resolved[" + index + "] " + data.getAsString(false) + " at " + changedBlock.position());
+            BlockData data =
+                    ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(changedBlock.state());
+            player.sendMessage(
+                    "Break resolved[" + index + "] " + data.getAsString(false) + " at " + changedBlock.position());
             index++;
         }
     }

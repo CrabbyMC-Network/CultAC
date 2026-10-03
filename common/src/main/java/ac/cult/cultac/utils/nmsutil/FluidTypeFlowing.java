@@ -1,8 +1,8 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
-import ac.cult.cultac.network.protocol.ClientVersion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -22,8 +22,8 @@ import net.minecraft.world.phys.Vec3;
 import org.bukkit.util.Vector;
 
 public class FluidTypeFlowing {
-    private static final TagKey<Block> BLOCKS_FLUID_FLOW = NmsIdentifierUtil.tagKey(
-            Registries.BLOCK, "minecraft:blocks_fluid_flow");
+    private static final TagKey<Block> BLOCKS_FLUID_FLOW =
+            NmsIdentifierUtil.tagKey(Registries.BLOCK, "minecraft:blocks_fluid_flow");
 
     public static Vector getFlow(CultPlayer player, int originalX, int originalY, int originalZ) {
         BlockPos pos = new BlockPos(originalX, originalY, originalZ);
@@ -52,7 +52,10 @@ public class FluidTypeFlowing {
             float height = other.getOwnHeight();
             float distance = 0;
             if (height == 0) {
-                if (!world.getBlockState(neighbor).getBlock().builtInRegistryHolder().is(BLOCKS_FLUID_FLOW)) {
+                if (!world.getBlockState(neighbor)
+                        .getBlock()
+                        .builtInRegistryHolder()
+                        .is(BLOCKS_FLUID_FLOW)) {
                     other = world.getFluidState(neighbor.below());
                     if (other.isEmpty() || other.getType().isSame(state.getType())) {
                         height = other.getOwnHeight();
@@ -71,7 +74,8 @@ public class FluidTypeFlowing {
         if (state.getValue(FlowingFluid.FALLING)) {
             for (Direction direction : Direction.Plane.HORIZONTAL) {
                 BlockPos neighbor = pos.relative(direction);
-                if (solidFace(player, neighbor, direction, state) || solidFace(player, neighbor.above(), direction, state)) {
+                if (solidFace(player, neighbor, direction, state)
+                        || solidFace(player, neighbor.above(), direction, state)) {
                     flow = flow.normalize().add(0, -6, 0);
                     break;
                 }
@@ -91,7 +95,8 @@ public class FluidTypeFlowing {
             int distance = 0;
             if (other < 0) {
                 var block = player.compensatedWorld.getBlockState(neighbor);
-                if ((block.getBlock() == net.minecraft.world.level.block.Blocks.COBWEB || !ViaClientBlockShapeMappings.legacyMaterialIsSolid(player, block))) {
+                if ((block.getBlock() == net.minecraft.world.level.block.Blocks.COBWEB
+                        || !ViaClientBlockShapeMappings.legacyMaterialIsSolid(player, block))) {
                     other = legacyLevel(player.compensatedWorld.getFluidState(neighbor.below()), state);
                     if (other >= 0) distance = other - (level - 8);
                 }
@@ -118,7 +123,8 @@ public class FluidTypeFlowing {
     private static boolean legacySolid(CultPlayer player, BlockPos pos, FluidState source) {
         var state = player.compensatedWorld.getBlockState(pos);
         Block block = state.getBlock();
-        if (player.compensatedWorld.getFluidState(pos).getType().isSame(source.getType()) || block instanceof IceBlock) {
+        if (player.compensatedWorld.getFluidState(pos).getType().isSame(source.getType())
+                || block instanceof IceBlock) {
             return false;
         }
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_12)) {
@@ -127,23 +133,32 @@ public class FluidTypeFlowing {
 
         // 1.12 BlockLiquid#causesDownwardCurrent excludes stairs and every
         // Block#isExceptBlockForAttachWithPiston entry before testing face shape.
-        if (block instanceof StairBlock || block instanceof LeavesBlock || block instanceof ShulkerBoxBlock
-                || block instanceof TrapDoorBlock || block instanceof StainedGlassBlock
-                || block == Blocks.BEACON || block == Blocks.CAULDRON || block == Blocks.GLASS
-                || block == Blocks.GLOWSTONE || block == Blocks.SEA_LANTERN
-                || block == Blocks.PISTON || block == Blocks.STICKY_PISTON || block == Blocks.PISTON_HEAD) {
+        if (block instanceof StairBlock
+                || block instanceof LeavesBlock
+                || block instanceof ShulkerBoxBlock
+                || block instanceof TrapDoorBlock
+                || block instanceof StainedGlassBlock
+                || block == Blocks.BEACON
+                || block == Blocks.CAULDRON
+                || block == Blocks.GLASS
+                || block == Blocks.GLOWSTONE
+                || block == Blocks.SEA_LANTERN
+                || block == Blocks.PISTON
+                || block == Blocks.STICKY_PISTON
+                || block == Blocks.PISTON_HEAD) {
             return false;
         }
         // Only horizontal faces are queried here. In 1.12 those are SOLID for
         // full cubes (including double slabs) and soul sand. Snow layers remain
         // UNDEFINED horizontally even at eight layers; their modern box differs.
-        return block == Blocks.SOUL_SAND || !(block instanceof SnowLayerBlock)
-                && state.isCollisionShapeFullBlock(player.compensatedWorld, pos);
+        return block == Blocks.SOUL_SAND
+                || !(block instanceof SnowLayerBlock) && state.isCollisionShapeFullBlock(player.compensatedWorld, pos);
     }
 
     private static boolean solidFace(CultPlayer player, BlockPos pos, Direction direction, FluidState source) {
         var state = player.compensatedWorld.getBlockState(pos);
-        return !state.getFluidState().getType().isSame(source.getType()) && !(state.getBlock() instanceof IceBlock)
+        return !state.getFluidState().getType().isSame(source.getType())
+                && !(state.getBlock() instanceof IceBlock)
                 && state.isFaceSturdy(player.compensatedWorld, pos, direction);
     }
 }

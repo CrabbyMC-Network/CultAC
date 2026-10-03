@@ -3,7 +3,8 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.player.CultPlayer;
 
 public class CheckIfChunksLoaded {
-    public static boolean isChunksUnloadedAt(CultPlayer player, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    public static boolean isChunksUnloadedAt(
+            CultPlayer player, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         if (maxY >= player.compensatedWorld.getMinHeight() && minY < player.compensatedWorld.getMaxHeight()) {
             minX = minX >> 4;
             minZ = minZ >> 4;

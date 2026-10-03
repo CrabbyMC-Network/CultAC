@@ -16,22 +16,45 @@ public record BedrockTravelInput(
         Vec3d startingVelocity,
         BedrockTravelOptions options,
         Vec3d control,
-        boolean glideBoost
-) {
-    public BedrockTravelInput(BedrockMovementState previousState, BedrockInputFrame inputFrame,
-            BedrockInputIntent inputIntent, BedrockWorldSnapshot worldSnapshot,
-            ScaffoldingVerticalBranch scaffoldingVerticalBranch, Vec3d startingVelocity,
-            BedrockTravelOptions options, Vec3d control) {
-        this(previousState, inputFrame, inputIntent, worldSnapshot, scaffoldingVerticalBranch,
-                startingVelocity, options, control, false);
+        boolean glideBoost) {
+    public BedrockTravelInput(
+            BedrockMovementState previousState,
+            BedrockInputFrame inputFrame,
+            BedrockInputIntent inputIntent,
+            BedrockWorldSnapshot worldSnapshot,
+            ScaffoldingVerticalBranch scaffoldingVerticalBranch,
+            Vec3d startingVelocity,
+            BedrockTravelOptions options,
+            Vec3d control) {
+        this(
+                previousState,
+                inputFrame,
+                inputIntent,
+                worldSnapshot,
+                scaffoldingVerticalBranch,
+                startingVelocity,
+                options,
+                control,
+                false);
     }
 
-    public BedrockTravelInput(BedrockMovementState previousState, BedrockInputFrame inputFrame,
-            BedrockInputIntent inputIntent, BedrockWorldSnapshot worldSnapshot,
-            ScaffoldingVerticalBranch scaffoldingVerticalBranch, Vec3d startingVelocity,
+    public BedrockTravelInput(
+            BedrockMovementState previousState,
+            BedrockInputFrame inputFrame,
+            BedrockInputIntent inputIntent,
+            BedrockWorldSnapshot worldSnapshot,
+            ScaffoldingVerticalBranch scaffoldingVerticalBranch,
+            Vec3d startingVelocity,
             BedrockTravelOptions options) {
-        this(previousState, inputFrame, inputIntent, worldSnapshot, scaffoldingVerticalBranch,
-                startingVelocity, options, null);
+        this(
+                previousState,
+                inputFrame,
+                inputIntent,
+                worldSnapshot,
+                scaffoldingVerticalBranch,
+                startingVelocity,
+                options,
+                null);
     }
 
     public BedrockTravelInput {

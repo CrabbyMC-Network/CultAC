@@ -4,5 +4,7 @@ import ac.cult.cultac.protocol.value.ClientInformation;
 import java.util.Objects;
 
 public record ServerboundClientInformation(ClientInformation information) implements ServerboundPacket {
-    public ServerboundClientInformation { Objects.requireNonNull(information); }
+    public ServerboundClientInformation {
+        Objects.requireNonNull(information);
+    }
 }

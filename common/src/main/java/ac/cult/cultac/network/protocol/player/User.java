@@ -3,21 +3,22 @@ package ac.cult.cultac.network.protocol.player;
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import io.netty.util.concurrent.EventExecutor;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
 import net.minecraft.network.Connection;
 import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.CompletionStage;
-
 public final class User {
     @Nullable
     private Player player;
+
     @Nullable
     private ServerPlayer handle;
+
     private final Profile profile;
     private final AtomicBoolean closeRequested = new AtomicBoolean();
     // Kept untyped so Java connections do not require the optional Geyser classes.
@@ -29,8 +30,14 @@ public final class User {
         this.cultConnection = java.util.Objects.requireNonNull(connection);
         connection.bind(this);
     }
-    public ac.cult.cultac.network.CultConnection getCultConnection() { return cultConnection; }
-    public ac.cult.cultac.player.CultPlayer getCultPlayer() { return cultConnection.player(); }
+
+    public ac.cult.cultac.network.CultConnection getCultConnection() {
+        return cultConnection;
+    }
+
+    public ac.cult.cultac.player.CultPlayer getCultPlayer() {
+        return cultConnection.player();
+    }
 
     public UUID getUUID() {
         return profile.getUUID();
@@ -62,9 +69,18 @@ public final class User {
         return cultConnection.channel();
     }
 
-    public EventExecutor getPacketExecutor() { return cultConnection.owner(); }
-    public void execute(Runnable task) { if (getPacketExecutor().inEventLoop()) task.run(); else executeLater(task); }
-    public void executeLater(Runnable task) { getPacketExecutor().execute(task); }
+    public EventExecutor getPacketExecutor() {
+        return cultConnection.owner();
+    }
+
+    public void execute(Runnable task) {
+        if (getPacketExecutor().inEventLoop()) task.run();
+        else executeLater(task);
+    }
+
+    public void executeLater(Runnable task) {
+        getPacketExecutor().execute(task);
+    }
 
     @Nullable
     public Object getBedrockBridgeConnection() {
@@ -78,21 +94,33 @@ public final class User {
     public ac.cult.cultac.protocol.ConnectionPhase getConnectionState() {
         return cultConnection.phase(ac.cult.cultac.protocol.PacketDirection.SERVERBOUND);
     }
+
     public ac.cult.cultac.protocol.ConnectionPhase getEncoderState() {
         return cultConnection.phase(ac.cult.cultac.protocol.PacketDirection.CLIENTBOUND);
     }
+
     public CompletionStage<Void> write(Object packet) {
-        return completion(getCultConnection().write(packet instanceof ac.cult.cultac.network.CultWrite write ? write : new ac.cult.cultac.network.CultWrite(packet, false)));
+        return completion(getCultConnection()
+                .write(
+                        packet instanceof ac.cult.cultac.network.CultWrite write
+                                ? write
+                                : new ac.cult.cultac.network.CultWrite(packet, false)));
     }
+
     public CompletionStage<Void> writeSilently(Object packet) {
         return completion(getCultConnection().write(new ac.cult.cultac.network.CultWrite(packet, true)));
     }
+
     public CompletionStage<Void> write(java.util.List<ac.cult.cultac.network.CultWrite> packets, boolean bundle) {
         return completion(getCultConnection().write(packets, bundle));
     }
+
     private static CompletionStage<Void> completion(io.netty.channel.ChannelFuture future) {
         var result = new java.util.concurrent.CompletableFuture<Void>();
-        future.addListener(done -> { if (done.isSuccess()) result.complete(null); else result.completeExceptionally(done.cause()); });
+        future.addListener(done -> {
+            if (done.isSuccess()) result.complete(null);
+            else result.completeExceptionally(done.cause());
+        });
         return result.minimalCompletionStage();
     }
 
@@ -102,7 +130,8 @@ public final class User {
         }
 
         if (player != null) {
-            FoliaCompatUtil.runTaskForEntity(player, CultAPI.INSTANCE.getPlugin(), () -> player.kick(Component.text("Disconnected")), null, 0);
+            FoliaCompatUtil.runTaskForEntity(
+                    player, CultAPI.INSTANCE.getPlugin(), () -> player.kick(Component.text("Disconnected")), null, 0);
         } else {
             getConnection().disconnect(net.minecraft.network.chat.Component.literal("Disconnected"));
         }

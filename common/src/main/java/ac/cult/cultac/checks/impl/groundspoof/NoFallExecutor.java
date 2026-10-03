@@ -9,15 +9,19 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 
-//@CheckData(name="NoFall")
+// @CheckData(name="NoFall")
 @BedrockSupported
 public class NoFallExecutor extends Check implements CheckListener {
-    public NoFallExecutor(CultPlayer cultPlayer) { super(cultPlayer, CheckInfo.builder()
-            .name("NoFall")
-            .stableKey("cult.groundspoof.no_fall")
-            .description("Sent an on-ground packet while not colliding with the ground")
-            .setback(10)
-            .build()); }
+    public NoFallExecutor(CultPlayer cultPlayer) {
+        super(
+                cultPlayer,
+                CheckInfo.builder()
+                        .name("NoFall")
+                        .stableKey("cult.groundspoof.no_fall")
+                        .description("Sent an on-ground packet while not colliding with the ground")
+                        .setback(10)
+                        .build());
+    }
 
     private void handleMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, ServerboundMovePlayer packet) {
         boolean forceGroundFalse = player.packetStateData.lastPacketWasTeleport;
@@ -38,8 +42,8 @@ public class NoFallExecutor extends Check implements CheckListener {
     }
 
     @CultPacketHandler
-
-    public void onMovePlayer(PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
+    public void onMovePlayer(
+            PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         handleMovePlayer(event, packet);
     }
 }

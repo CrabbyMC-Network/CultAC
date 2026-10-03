@@ -14,7 +14,8 @@ public final class EntityMotionCodec implements WritablePacketCodec<ClientboundE
         int id = Wire.readVarInt(input);
         // LpVec3 replaced short motion in V1_21_9.
         Vec3d velocity = context.version().atLeast(ProtocolVersion.V1_21_9)
-                ? Wire.readLpVec3(input) : Wire.readShortVelocity(input);
+                ? Wire.readLpVec3(input)
+                : Wire.readShortVelocity(input);
         return new ClientboundEntityMotion(id, velocity);
     }
 

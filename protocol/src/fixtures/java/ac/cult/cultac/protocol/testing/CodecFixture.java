@@ -1,7 +1,6 @@
 package ac.cult.cultac.protocol.testing;
 
 import ac.cult.cultac.protocol.*;
-
 import io.netty.buffer.ByteBuf;
 
 /** Test-only phase selection and index-preserving access to production codecs. */
@@ -62,5 +61,4 @@ public final class CodecFixture {
     public <R> PacketType<R> writableType(R packet) {
         return runtime.writableType(packet);
     }
-
 }

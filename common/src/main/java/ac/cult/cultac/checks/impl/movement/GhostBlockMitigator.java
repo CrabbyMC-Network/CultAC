@@ -11,25 +11,22 @@ import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.blockplace.GhostBlock;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import org.bukkit.block.data.BlockData;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
-import org.bukkit.Material;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.BlockPos;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.bukkit.block.BlockState;
-import org.bukkit.event.block.BlockMultiPlaceEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerBucketEvent;
-
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import org.bukkit.Material;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.event.block.BlockMultiPlaceEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerBucketEvent;
 
 // Agreement with bukkit is more important than agreement with the client (for buckets)
 //
@@ -60,14 +57,14 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
     private final Set<BlockPos> bucketUseLocations = new HashSet<>();
     private final Set<GhostBlock> pseudoPlaces = new HashSet<>();
 
-
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
         if (predictionComplete.isTeleport()) return;
 
         PredictionResult result = predictionComplete.getPredictionResult();
 
-        if (result.getFlagSeverity() > 0 && (!unknownStuff.isEmpty() || !bucketUseLocations.isEmpty() || !pseudoPlaces.isEmpty())) {
+        if (result.getFlagSeverity() > 0
+                && (!unknownStuff.isEmpty() || !bucketUseLocations.isEmpty() || !pseudoPlaces.isEmpty())) {
             // Check if intersecting with one of the player's ghost blocks
             Vec3 from = result.getSimulationContext().getStart();
             Vec3 to = result.getSimulationContext().getEnd();
@@ -89,7 +86,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
 
             for (GhostBlock ghostBlock : pseudoPlaces) {
                 // ignore end crystals
-                if (ghostBlock.getItemUsed() != null && ghostBlock.getItemUsed().getType() == Material.END_CRYSTAL) continue;
+                if (ghostBlock.getItemUsed() != null && ghostBlock.getItemUsed().getType() == Material.END_CRYSTAL)
+                    continue;
 
                 final SimpleCollisionBox place = new SimpleCollisionBox(ghostBlock.getPosition()).expandMax(0, 0.5, 0);
                 if (place.isIntersected(movement)) {
@@ -110,9 +108,16 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         }
 
         // Remove illegal blocks if they are in unloaded chunks
-        unknownStuff.entrySet().removeIf(entry -> player.compensatedWorld.getChunk(entry.getKey().getX() >> 4, entry.getKey().getZ() >> 4) == null);
-        pseudoPlaces.removeIf(ghost -> player.compensatedWorld.getChunk(ghost.getPosition().getX() >> 4, ghost.getPosition().getZ() >> 4) == null);
-        bucketUseLocations.removeIf(location -> player.compensatedWorld.getChunk(location.getX() >> 4, location.getZ() >> 4) == null);
+        unknownStuff
+                .entrySet()
+                .removeIf(entry -> player.compensatedWorld.getChunk(
+                                entry.getKey().getX() >> 4, entry.getKey().getZ() >> 4)
+                        == null);
+        pseudoPlaces.removeIf(ghost -> player.compensatedWorld.getChunk(
+                        ghost.getPosition().getX() >> 4, ghost.getPosition().getZ() >> 4)
+                == null);
+        bucketUseLocations.removeIf(
+                location -> player.compensatedWorld.getChunk(location.getX() >> 4, location.getZ() >> 4) == null);
     }
 
     @Override
@@ -135,12 +140,12 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
                 }
                 ghostData.revert();
 
-            // No predictions, ensure no ghost block. Special case when bukkit fails to confirm block place.
-            if (player.bukkitPlayer != null && ghostData.isReverted()) {
-                ResyncWorldUtil.resyncPositions(player, new SimpleCollisionBox(data.getKey()).expand(1));
+                // No predictions, ensure no ghost block. Special case when bukkit fails to confirm block place.
+                if (player.bukkitPlayer != null && ghostData.isReverted()) {
+                    ResyncWorldUtil.resyncPositions(player, new SimpleCollisionBox(data.getKey()).expand(1));
+                }
             }
         }
-    }
     }
 
     public boolean isDesyncPos(BlockPos pos) {
@@ -182,7 +187,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         }
 
         Material type = newState.getMaterial();
-        double height = NmsBlockTags.isFence(type) || NmsBlockTags.isWall(type) || NmsBlockTags.isFenceGate(type) ? 1.5 : 1;
+        double height =
+                NmsBlockTags.isFence(type) || NmsBlockTags.isWall(type) || NmsBlockTags.isFenceGate(type) ? 1.5 : 1;
 
         GhostData ghostData = new GhostData(
                 placeBox,
@@ -192,12 +198,10 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
                         placeBox.getZ(),
                         placeBox.getX() + 1,
                         placeBox.getY() + height,
-                        placeBox.getZ() + 1
-                ),
+                        placeBox.getZ() + 1),
                 original,
                 newState,
-                place
-        );
+                place);
         unknownStuff.put(placeBox, ghostData);
 
         // Placing against own valid means the player can't extend their ghost blocks?
@@ -211,7 +215,10 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
     }
 
     public void onServerValidBucketUse(PlayerBucketEvent bucketEvent) {
-        BlockPos blockPos = new BlockPos(bucketEvent.getBlock().getX(), bucketEvent.getBlock().getY(), bucketEvent.getBlock().getZ());
+        BlockPos blockPos = new BlockPos(
+                bucketEvent.getBlock().getX(),
+                bucketEvent.getBlock().getY(),
+                bucketEvent.getBlock().getZ());
 
         onPlace(blockPos, bucketEvent.isCancelled());
     }
@@ -224,7 +231,10 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
                 onPlace(placeBox, event.isCancelled());
             }
         } else {
-            BlockPos placeBox = new BlockPos(event.getBlock().getX(), event.getBlock().getY(), event.getBlock().getZ());
+            BlockPos placeBox = new BlockPos(
+                    event.getBlock().getX(),
+                    event.getBlock().getY(),
+                    event.getBlock().getZ());
             onPlace(placeBox, event.isCancelled());
         }
     }
@@ -256,7 +266,12 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         boolean isReverted;
         int ticks;
 
-        public GhostData(BlockPos placedPos, SimpleCollisionBox placedBox, BlockData serverState, BlockData clientState, BlockPlace place) {
+        public GhostData(
+                BlockPos placedPos,
+                SimpleCollisionBox placedBox,
+                BlockData serverState,
+                BlockData clientState,
+                BlockPlace place) {
             this.placedPos = placedPos;
             this.placedBox = placedBox;
             this.serverState = serverState;
@@ -272,7 +287,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         private void revert() {
             if (isReverted) return;
             if (player.compensatedWorld.hasPendingBlockPrediction(placedPos)) return;
-            player.compensatedWorld.applyBlockChangeRawDANGER(placedPos.getX(), placedPos.getY(), placedPos.getZ(), NmsBlockTags.toNmsState(getServerState()));
+            player.compensatedWorld.applyBlockChangeRawDANGER(
+                    placedPos.getX(), placedPos.getY(), placedPos.getZ(), NmsBlockTags.toNmsState(getServerState()));
             setReverted(true);
             // We must also revert all blocks that were placed on this reverted block
             if (revertIfReverted != null) {

@@ -1,6 +1,7 @@
 package ac.cult.cultac.bedrock.prediction.simulation;
 
 import ac.cult.cultac.bedrock.prediction.api.BedrockMovementResult;
+import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.input.BedrockInputFrame;
 import ac.cult.cultac.bedrock.prediction.model.BlockMovementSlowdownState;
 import ac.cult.cultac.bedrock.prediction.simulation.collision.BedrockCollisionOutput;
@@ -15,52 +16,46 @@ import ac.cult.cultac.bedrock.prediction.state.BedrockMovementState;
 import ac.cult.cultac.bedrock.prediction.state.BedrockMovementUpdate;
 import ac.cult.cultac.bedrock.prediction.world.BedrockClimbableContact;
 import ac.cult.cultac.bedrock.prediction.world.BedrockWorldSnapshot;
-import ac.cult.cultac.bedrock.prediction.geometry.Vec3d;
 import ac.cult.cultac.bedrock.prediction.world.HoneySlideState;
 
 final class BedrockMovementResultBuilder {
-    private BedrockMovementResultBuilder() {
-    }
+    private BedrockMovementResultBuilder() {}
 
     static BedrockMovementResult withoutActorMovementTick(
-        BedrockMovementState current,
-        BedrockInputFrame frame,
-        BedrockWorldSnapshot snapshot,
-        boolean canStep,
-        double maxUpStep
-    ) {
+            BedrockMovementState current,
+            BedrockInputFrame frame,
+            BedrockWorldSnapshot snapshot,
+            boolean canStep,
+            double maxUpStep) {
         BedrockMovementState next = current.withoutActorMovementTick(frame);
         return new BedrockMovementResult(
-            current,
-            snapshot.movementContext(),
-            snapshot.movementContext(),
-            next,
-            current.physicalFeetPosition(),
-            Vec3d.ZERO,
-            false,
-            false,
-            false,
-            false,
-            BlockMovementSlowdownState.NONE,
-            HoneySlideState.NONE,
-            current.gliding(),
-            current.waterTravelFlag(),
-            0.0D,
-            1.0D,
-            false,
-            false,
-            canStep,
-            maxUpStep,
-            false,
-            false,
-            null);
+                current,
+                snapshot.movementContext(),
+                snapshot.movementContext(),
+                next,
+                current.physicalFeetPosition(),
+                Vec3d.ZERO,
+                false,
+                false,
+                false,
+                false,
+                BlockMovementSlowdownState.NONE,
+                HoneySlideState.NONE,
+                current.gliding(),
+                current.waterTravelFlag(),
+                0.0D,
+                1.0D,
+                false,
+                false,
+                canStep,
+                maxUpStep,
+                false,
+                false,
+                null);
     }
 
     static BedrockMovementResult build(
-        BedrockTravelPlan plan,
-        BedrockCollisionOutput collision,
-        BedrockPostMoveResult postMoveEffects
-    ) {
+            BedrockTravelPlan plan, BedrockCollisionOutput collision, BedrockPostMoveResult postMoveEffects) {
         BedrockFrameState state = plan.frame();
         BedrockMovementState current = state.input().previousState();
         BedrockInputFrame frame = state.input().inputFrame();
@@ -70,67 +65,67 @@ final class BedrockMovementResultBuilder {
         BedrockClimbableContact nextClimbableContact = collision.nextClimbableContact();
         BedrockTravelInputControl.InputControlState control = state.control();
         BedrockMovementState next = current.advance(new BedrockMovementUpdate(
-            blockMove.position(),
-            postMoveEffects.velocity(),
-            frame,
-            postMoveEffects.flags(),
-            frameFacts.boundingBoxMode(),
-            frameFacts.movementDimensions(),
-            BedrockFallDistance.afterMove(plan, collision, postMoveEffects),
-            frameFacts.powderSnowTicks(),
-            new BedrockMovementUpdate.Glide(
-                postMoveEffects.gliding(),
-                state.gliding().requestAfterActions()),
-            frameFacts.swimming().nextActorSwimming(),
-            frameFacts.swimming().swimAmount(),
-            new BedrockMovementUpdate.Riptide(
-                state.riptide().nextChargeTicks(),
-                state.riptide().spinActive(),
-                state.riptide().spinTicks()),
-            new BedrockMovementUpdate.ItemUse(
-                control.itemUseSlowdownActive(), control.itemUseSlowdownTicks())
-        )).withClimbableContact(nextClimbableContact)
-            .withAutoClimbTravel(postMoveEffects.climbVelocityApplied())
-            .withPendingBlockMovementSlowdownState(postMoveEffects.pendingBlockMovementSlowdownState())
-            .withWasInWaterFlag(BedrockFallDistance.wasInWaterAfterMove(plan, collision))
-            .withWaterTravelFlag(postMoveEffects.waterTravelActive())
-            .withMovementBranch(postMoveEffects.movementBranch())
-            .withCameraWater(BedrockFallDistance.cameraWaterAfterMove(plan, collision))
-            .withDolphinBoost(state.dolphinBoost().endTick());
+                        blockMove.position(),
+                        postMoveEffects.velocity(),
+                        frame,
+                        postMoveEffects.flags(),
+                        frameFacts.boundingBoxMode(),
+                        frameFacts.movementDimensions(),
+                        BedrockFallDistance.afterMove(plan, collision, postMoveEffects),
+                        frameFacts.powderSnowTicks(),
+                        new BedrockMovementUpdate.Glide(
+                                postMoveEffects.gliding(), state.gliding().requestAfterActions()),
+                        frameFacts.swimming().nextActorSwimming(),
+                        frameFacts.swimming().swimAmount(),
+                        new BedrockMovementUpdate.Riptide(
+                                state.riptide().nextChargeTicks(),
+                                state.riptide().spinActive(),
+                                state.riptide().spinTicks()),
+                        new BedrockMovementUpdate.ItemUse(
+                                control.itemUseSlowdownActive(), control.itemUseSlowdownTicks())))
+                .withClimbableContact(nextClimbableContact)
+                .withAutoClimbTravel(postMoveEffects.climbVelocityApplied())
+                .withPendingBlockMovementSlowdownState(postMoveEffects.pendingBlockMovementSlowdownState())
+                .withWasInWaterFlag(BedrockFallDistance.wasInWaterAfterMove(plan, collision))
+                .withWaterTravelFlag(postMoveEffects.waterTravelActive())
+                .withMovementBranch(postMoveEffects.movementBranch())
+                .withCameraWater(BedrockFallDistance.cameraWaterAfterMove(plan, collision))
+                .withDolphinBoost(state.dolphinBoost().endTick());
         if (blockMove.collisionBox() != null) next = next.withCollisionBox(blockMove.collisionBox());
         if (state.boat() != null) {
             next = next.withBoat(state.boat().state());
         }
         if (state.horse() != null) {
-            next = next.withHorse(state.horse().afterTravel(
-                    current.collisionFlags().onGround(), next.collisionFlags().onGround()));
+            next = next.withHorse(state.horse()
+                    .afterTravel(
+                            current.collisionFlags().onGround(),
+                            next.collisionFlags().onGround()));
         }
         return new BedrockMovementResult(
-            current,
-            frameFacts.context(),
-            postMoveEffects.postMoveContext(),
-            next,
-            moveRequest.requestedPosition(),
-            moveRequest.collisionInputVelocity(),
-            postMoveEffects.orderedPostMoveOwnsHorizontalVelocity(),
-            postMoveEffects.orderedPostMoveOwnsVerticalVelocity(),
-            postMoveEffects.standingBounceBounced(),
-            postMoveEffects.standingSurfaceHorizontalSlowdownApplied(),
-            frameFacts.blockMovementSlowdownState(),
-            frameFacts.honeySlideState(),
-            state.branch().glidingTravel(),
-            state.branch().waterTravel(),
-            horizontalInputLimit(plan),
-            postMoveEffects.horizontalFriction(),
-            blockMove.steppedUp(),
-            blockMove.stepRetryAllowed(),
-            state.input().options().canStep(),
-            state.input().options().maxUpStep(),
-            state.input().options().travelActive(),
-            state.groundJumpApplied(),
-            postMoveEffects.nonHopVelocity(),
-            collision.collisionFetchBox()
-        );
+                current,
+                frameFacts.context(),
+                postMoveEffects.postMoveContext(),
+                next,
+                moveRequest.requestedPosition(),
+                moveRequest.collisionInputVelocity(),
+                postMoveEffects.orderedPostMoveOwnsHorizontalVelocity(),
+                postMoveEffects.orderedPostMoveOwnsVerticalVelocity(),
+                postMoveEffects.standingBounceBounced(),
+                postMoveEffects.standingSurfaceHorizontalSlowdownApplied(),
+                frameFacts.blockMovementSlowdownState(),
+                frameFacts.honeySlideState(),
+                state.branch().glidingTravel(),
+                state.branch().waterTravel(),
+                horizontalInputLimit(plan),
+                postMoveEffects.horizontalFriction(),
+                blockMove.steppedUp(),
+                blockMove.stepRetryAllowed(),
+                state.input().options().canStep(),
+                state.input().options().maxUpStep(),
+                state.input().options().travelActive(),
+                state.groundJumpApplied(),
+                postMoveEffects.nonHopVelocity(),
+                collision.collisionFetchBox());
     }
 
     private static double horizontalInputLimit(BedrockTravelPlan plan) {
@@ -141,7 +136,8 @@ final class BedrockMovementResultBuilder {
         if (moveInputScale > 0.0D) {
             limit /= moveInputScale;
         }
-        BlockMovementSlowdownState blockMovementSlowdown = plan.frame().frameFacts().blockMovementSlowdownState();
+        BlockMovementSlowdownState blockMovementSlowdown =
+                plan.frame().frameFacts().blockMovementSlowdownState();
         if (!blockMovementSlowdown.active()) {
             return limit;
         }
