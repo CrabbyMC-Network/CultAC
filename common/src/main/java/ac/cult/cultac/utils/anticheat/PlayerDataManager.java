@@ -196,16 +196,17 @@ public class PlayerDataManager {
     }
 
     private CultPlayer createPlayer(User user) {
-        BedrockPlayerState bedrockState = initialBedrockState(user.getUUID());
+        BedrockPlayerState bedrockState = initialBedrockState(user);
         if (bedrockState != null) {
             return new CultPlayer(user, MovementPlatform.BEDROCK, bedrockState);
         }
         return new CultPlayer(user);
     }
 
-    private BedrockPlayerState initialBedrockState(UUID uuid) {
-        if (isKnownBedrockPlayer(uuid)) {
-            return createBedrockState(uuid);
+    private BedrockPlayerState initialBedrockState(User user) {
+        // A bridge matched to this socket is authoritative even before Geyser registers its UUID.
+        if (user.getCultConnection().bedrockBridge() != null || isKnownBedrockPlayer(user.getUUID())) {
+            return createBedrockState(user.getUUID());
         }
         return null;
     }

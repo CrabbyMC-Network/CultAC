@@ -1,5 +1,8 @@
 package ac.cult.cultac.bedrock.prediction.geometry;
 
+import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
+import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.data.ModelIdMappings;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.data.MappingData;
 import com.viaversion.viaversion.api.protocol.ProtocolPathEntry;
@@ -18,6 +21,17 @@ public final class BedrockServerStateMappings {
                         "Server and collision catalog registry sizes differ for protocol " + serverProtocol);
             }
             return translate(serverStateCount, catalogStateCount, List.of());
+        }
+        // TODO: Does this exist just for geyser?
+        if (!ViaVersionUtil.isAvailable()) {
+            // A proxy has no server ViaVersion; use the pinned ViaBackwards table this build ships.
+            var mappings =
+                    ModelIdMappings.project(ProtocolVersion.of(serverProtocol), ProtocolVersion.of(catalogProtocol));
+            if (mappings.blockStateCount() != serverStateCount) {
+                throw new IllegalStateException(
+                        "Bundled block state mappings do not match server protocol " + serverProtocol);
+            }
+            return translate(serverStateCount, catalogStateCount, List.of(mappings::blockState));
         }
         return ViaMappings.create(serverProtocol, serverStateCount, catalogProtocol, catalogStateCount);
     }

@@ -12,7 +12,6 @@ public class ChannelManager implements StartableInitable, PluginMessageListener 
     private final Set<String> CHANNELS = ImmutableSet.of(
             "lunarclient:pm", "fml:handshake", "fml:play", "feather:client", "ac:handshake", "badlion:modapi");
 
-
     @Override
     public void start() {
         for (String channel : CHANNELS) {

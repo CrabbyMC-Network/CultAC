@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * This platform currently has a Java model; translated Bedrock sessions need the separate bridge.
+ * Identifies translated Bedrock sessions; they are admitted only with a Geyser bridge tap on this proxy.
  */
 final class VelocityClientSupport {
     private record Lookup(Method singleton, Method lookup, boolean booleanResult) {

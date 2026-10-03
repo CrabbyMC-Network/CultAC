@@ -27,6 +27,14 @@ public interface PlatformConnection {
         return null;
     }
 
+    /**
+     * Runs connection work that started on a bridge's own thread, such as Geyser's tick loop.
+     * Platforms that bind Minecraft's registries per connection activate them here.
+     */
+    default void runInModel(Runnable task) {
+        task.run();
+    }
+
     void disconnect(Component reason);
 
     /** Direct platform delivery; must not call back through User.sendMessage. */

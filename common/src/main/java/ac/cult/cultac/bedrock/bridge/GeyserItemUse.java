@@ -74,9 +74,16 @@ final class GeyserItemUse {
                 if (packet.getActionType() == 1 || sequence - previousSequence > 1) {
                     float yaw = session.getPlayerEntity().getJavaYaw();
                     float pitch = session.getPlayerEntity().getPitch();
-                    player.compensatedWorld.advanceClientPredictionSequence();
-                    PlaceHandler.handleQueuedUseItem(
-                            player, new ServerboundUseItem(Hand.MAIN_HAND, sequence, yaw, pitch));
+                    // Native equipment and active item use have their own observers below.
+                    // Only the raycast block actions formerly handled by UseItemHandler
+                    // belong in the host block-action runtime (buckets and water plants).
+                    var held = player.getInventory().getHandItem(InteractionHand.MAIN_HAND);
+                    if (held.getItem() instanceof net.minecraft.world.item.BucketItem
+                            || held.getItem() instanceof net.minecraft.world.item.PlaceOnWaterBlockItem) {
+                        player.compensatedWorld.advanceClientPredictionSequence();
+                        PlaceHandler.handleQueuedUseItem(
+                                player, new ServerboundUseItem(Hand.MAIN_HAND, sequence, yaw, pitch));
+                    }
                     player.actionManager.useItem(InteractionHand.MAIN_HAND);
                     player.getInventory().useItem(InteractionHand.MAIN_HAND, yaw, pitch);
                 }

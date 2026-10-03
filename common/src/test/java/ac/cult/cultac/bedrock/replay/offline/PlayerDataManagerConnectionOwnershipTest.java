@@ -68,6 +68,29 @@ public final class PlayerDataManagerConnectionOwnershipTest {
         }
     }
 
+    @Test
+    public void matchedBridgeSelectsBedrockBeforeUuidRegistrationWithoutChangingAnotherConnection() {
+        OfflineCultTestBootstrap.installConfig();
+        PlayerDataManager manager = new PlayerDataManager();
+        Object bridge = new Object();
+        User bedrock = OfflineCultTestBootstrap.wireUser(new User.Profile(SHARED_UUID, "bedrock"), bridge);
+        User java = user("java");
+        try {
+            // This UUID has no Floodgate prefix or Geyser API registration.
+            manager.addUser(bedrock);
+            manager.addUser(java);
+
+            assertSame(bridge, bedrock.getCultConnection().bedrockBridge());
+            assertTrue(manager.getPlayer(bedrock).isBedrockMovement());
+            assertFalse(manager.getPlayer(java).isBedrockMovement());
+        } finally {
+            manager.remove(bedrock);
+            manager.remove(java);
+            ((EmbeddedChannel) bedrock.getChannel()).finishAndReleaseAll();
+            ((EmbeddedChannel) java.getChannel()).finishAndReleaseAll();
+        }
+    }
+
     private static User user(String name) {
         return ac.cult.cultac.network.TestUsers.create(new User.Profile(SHARED_UUID, name), new EmbeddedChannel());
     }

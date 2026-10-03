@@ -1,6 +1,8 @@
 package ac.cult.cultac.platform.velocity;
 
 import ac.cult.cultac.CultAPI;
+import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
+import ac.cult.cultac.manager.init.start.StartableInitable;
 import ac.cult.cultac.network.PacketOwner;
 import ac.cult.cultac.network.codec.NativePacketCodecs;
 import ac.cult.cultac.network.event.PacketListenerPriority;
@@ -18,10 +20,12 @@ import ac.cult.cultac.platform.api.sender.SenderFactory;
 import ac.cult.cultac.protocol.ProtocolRuntime;
 import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.data.ProtocolData;
+import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.vanilla.VanillaBootstrap;
 import ac.grim.grimac.api.GrimAPIProvider;
 import ac.grim.grimac.api.plugin.GrimPlugin;
 import com.velocitypowered.api.proxy.ProxyServer;
+import io.netty.channel.Channel;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -46,6 +50,7 @@ public final class VelocityPlatform implements PlatformLoader, AutoCloseable {
     private final CommandService commands;
     private final VelocityTransport transport;
     private final VelocityServer server;
+    private volatile boolean bedrockBridge;
     private boolean loaded;
     private boolean closed;
 
@@ -77,19 +82,21 @@ public final class VelocityPlatform implements PlatformLoader, AutoCloseable {
                     proxy,
                     nativePlugin,
                     manager,
-                    player -> new VelocityConnectionAdapter(
+                    (player, bedrock) -> new VelocityConnectionAdapter(
                             proxy,
                             player,
                             (VelocityPlayer) players.getFromNativePlayerType(player),
                             model.newConnection(),
                             worker,
-                            codecs.service()));
+                            codecs.service(),
+                            bedrock),
+                    this::bedrockOwner);
             this.server = new VelocityServer(proxy, senders);
             manager.setPacketOwnerResolver(channel -> {
                 var connection = manager.connection(channel);
-                return connection == null
-                        ? null
-                        : new PacketOwner(((VelocityConnectionAdapter) connection.platform()).owner(), null);
+                if (connection == null) return null;
+                var adapter = (VelocityConnectionAdapter) connection.platform();
+                return new PacketOwner(adapter.owner(), adapter.bedrockBridge());
             });
             // Vanilla's command packet uses FriendlyByteBuf.readUtf() (32767 characters).
             var runtime = ProtocolRuntime.create(
@@ -109,7 +116,7 @@ public final class VelocityPlatform implements PlatformLoader, AutoCloseable {
     }
 
     public void start() {
-        CultAPI.INSTANCE.load(this);
+        CultAPI.INSTANCE.load(this, (StartableInitable) this::startBedrockBridge);
         loaded = true;
         CultAPI.INSTANCE
                 .getNetworkManager()
@@ -122,6 +129,21 @@ public final class VelocityPlatform implements PlatformLoader, AutoCloseable {
                 .info(
                         "Proxy-only mode: server item-use verification, authoritative resends, pose resets, "
                                 + "and administrative teleports/spectating are unavailable; packet prediction and setbacks remain active.");
+    }
+
+    // Geyser loads first (a declared dependency); the bridge taps the Bedrock sessions it hosts here.
+    private void startBedrockBridge() {
+        if (proxy.getPluginManager().getPlugin("geyser").isEmpty()) return;
+        try {
+            GeyserBedrockBridgeRuntime.start();
+            bedrockBridge = GeyserBedrockBridgeRuntime.isRunning();
+        } catch (RuntimeException | LinkageError failure) {
+            LogUtil.error("Unable to start the Geyser Bedrock bridge; Bedrock players cannot join", failure);
+        }
+    }
+
+    private PacketOwner bedrockOwner(Channel channel) {
+        return bedrockBridge ? GeyserBedrockBridgeRuntime.packetOwner(channel) : null;
     }
 
     @Override

@@ -9,10 +9,12 @@ import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.value.GameMode;
+import ac.cult.cultac.utils.minecraft.IsolatedMinecraft;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -29,10 +31,19 @@ import org.junit.Test;
 
 public class GeyserItemUseTest {
     private static Object previousGeyser;
+    private static AutoCloseable serverRegistries;
 
     @BeforeClass
     public static void bootstrap() throws Exception {
         OfflineCultTestBootstrap.installConfig();
+        var base = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(
+                net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+        var registries = new net.minecraft.core.RegistryAccess.ImmutableRegistryAccess(java.util.stream.Stream.concat(
+                        base.registries(),
+                        OfflineCultTestBootstrap.vanillaRegistries().registries()))
+                .freeze();
+        serverRegistries = OfflineCultTestBootstrap.withServerRegistries(registries);
+        IsolatedMinecraft.start();
         var field = org.geysermc.geyser.GeyserImpl.class.getDeclaredField("instance");
         field.setAccessible(true);
         previousGeyser = field.get(null);
@@ -44,6 +55,54 @@ public class GeyserItemUseTest {
         var field = org.geysermc.geyser.GeyserImpl.class.getDeclaredField("instance");
         field.setAccessible(true);
         field.set(null, previousGeyser);
+        try {
+            IsolatedMinecraft.stop();
+        } finally {
+            serverRegistries.close();
+        }
+    }
+
+    @Test
+    public void nativeAirUseCompletesWithoutSelectingJavaMovementGeometry() {
+        try (var h = new Harness()) {
+            assertNull(IsolatedMinecraft.forPlayer(h.player));
+            assertEquals(
+                    ac.cult.runtime.RuntimeModel.JAVA_26_3,
+                    IsolatedMinecraft.actionsFor(h.player).runtime().model());
+            h.player
+                    .getInventory()
+                    .inventory
+                    .setHeldItem(
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FIREWORK_ROCKET, 3));
+            h.session.getWorldCache().nextPredictionSequence();
+            var packet = new InventoryTransactionPacket();
+            packet.setTransactionType(InventoryTransactionType.ITEM_USE);
+            packet.setActionType(1);
+            GeyserItemUse.observe(h.session, h.player, packet, 0);
+            assertEquals(InteractionHand.MAIN_HAND, h.player.actionManager.getHand());
+            assertEquals(3, h.player.getInventory().getHeldItem().getCount());
+            assertFalse(h.player.packetStateData.isSlowedByUsingItem());
+        }
+    }
+
+    @Test
+    public void nativeEquipmentUseSwapsTheChestSlotExactlyOnce() {
+        try (var h = new Harness()) {
+            var inventory = h.player.getInventory().inventory;
+            inventory.setHeldItem(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ELYTRA));
+            inventory
+                    .getInventoryStorage()
+                    .setItem(
+                            ac.cult.cultac.utils.inventory.Inventory.SLOT_CHESTPLATE,
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_CHESTPLATE));
+            h.session.getWorldCache().nextPredictionSequence();
+            var packet = new InventoryTransactionPacket();
+            packet.setTransactionType(InventoryTransactionType.ITEM_USE);
+            packet.setActionType(1);
+            GeyserItemUse.observe(h.session, h.player, packet, 0);
+            assertTrue(inventory.getChestplate().is(net.minecraft.world.item.Items.ELYTRA));
+            assertTrue(inventory.getHeldItem().is(net.minecraft.world.item.Items.IRON_CHESTPLATE));
+        }
     }
 
     @Test
@@ -160,13 +219,21 @@ public class GeyserItemUseTest {
 
     private static final class Harness implements AutoCloseable {
         final EmbeddedChannel channel = new EmbeddedChannel();
-        final GeyserSession session = mock(GeyserSession.class);
+        final GeyserSession session = mock(GeyserSession.class, RETURNS_DEEP_STUBS);
         final CultPlayer player;
 
         Harness() {
             UUID uuid = UUID.randomUUID();
+            var connection = new ac.cult.cultac.network.CultConnection(
+                    OfflineCultTestBootstrap.platformConnection(),
+                    channel,
+                    ac.cult.cultac.CultAPI.INSTANCE.getNetworkManager().dispatcher(),
+                    ignored -> null);
+            for (var direction : ac.cult.cultac.protocol.PacketDirection.values()) {
+                connection.phase(direction, ac.cult.cultac.protocol.ConnectionPhase.PLAY);
+            }
             player = new CultPlayer(
-                    ac.cult.cultac.network.TestUsers.create(new User.Profile(uuid, ".Placement_Replay"), channel),
+                    new User(new User.Profile(uuid, ".Placement_Replay"), connection),
                     MovementPlatform.BEDROCK,
                     new BedrockPlayerState(uuid));
             player.gamemode = GameMode.SURVIVAL;

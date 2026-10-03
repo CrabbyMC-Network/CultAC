@@ -17,6 +17,7 @@ final class VelocityConnectionAdapter implements PlatformConnection {
     private final VelocityPlayer player;
     private final VanillaRegistryState state;
     private final ModelExecutor owner;
+    private final Object bedrockBridge;
     private final ac.cult.cultac.protocol.PacketProjectionService codecs;
 
     VelocityConnectionAdapter(
@@ -25,7 +26,7 @@ final class VelocityConnectionAdapter implements PlatformConnection {
             VelocityPlayer player,
             VanillaRegistryState state,
             EventExecutor worker) {
-        this(proxy, nativePlayer, player, state, worker, null);
+        this(proxy, nativePlayer, player, state, worker, null, null);
     }
 
     VelocityConnectionAdapter(
@@ -34,17 +35,29 @@ final class VelocityConnectionAdapter implements PlatformConnection {
             VelocityPlayer player,
             VanillaRegistryState state,
             EventExecutor worker,
-            ac.cult.cultac.protocol.PacketProjectionService codecs) {
+            ac.cult.cultac.protocol.PacketProjectionService codecs,
+            ac.cult.cultac.network.PacketOwner bedrock) {
         this.proxy = proxy;
         this.nativePlayer = nativePlayer;
         this.player = player;
         this.state = state;
-        this.owner = new ModelExecutor(worker, state);
+        // A Bedrock session stays on Geyser's tick loop, which orders its Bedrock and Java packets.
+        this.owner = new ModelExecutor(bedrock == null ? worker : bedrock.executor(), state);
+        this.bedrockBridge = bedrock == null ? null : bedrock.bedrockBridge();
         this.codecs = codecs;
     }
 
     EventExecutor owner() {
         return owner;
+    }
+
+    Object bedrockBridge() {
+        return bedrockBridge;
+    }
+
+    @Override
+    public void runInModel(Runnable task) {
+        state.execute(task);
     }
 
     VanillaRegistryState state() {

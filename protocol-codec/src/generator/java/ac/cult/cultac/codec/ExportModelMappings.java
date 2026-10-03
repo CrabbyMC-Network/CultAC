@@ -22,8 +22,9 @@ public final class ExportModelMappings {
         var manager = ModernProtocols.open(
                 Files.createTempDirectory("cult-mapping-export-").toFile());
         try {
-            for (int source : List.of(776, 777)) {
-                int target = 774;
+            // 777 -> 776 maps the 26.3 model to the 26.2 Java client Geyser speaks on a proxy.
+            for (int[] pair : List.of(new int[] {776, 774}, new int[] {777, 774}, new int[] {777, 776})) {
+                int source = pair[0], target = pair[1];
                 var path = manager.getProtocolManager()
                         .getProtocolPath(ProtocolVersion.getProtocol(target), ProtocolVersion.getProtocol(source));
                 if (path == null || path.isEmpty()) throw new IllegalStateException("Missing backward path");

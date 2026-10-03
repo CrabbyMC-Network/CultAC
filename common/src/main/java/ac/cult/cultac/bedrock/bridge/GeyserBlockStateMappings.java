@@ -2,9 +2,13 @@ package ac.cult.cultac.bedrock.bridge;
 
 import ac.cult.cultac.bedrock.player.BedrockBlockLayers;
 import ac.cult.cultac.bedrock.prediction.geometry.BedrockServerStateMappings;
+import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
+import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.data.ModelBlockStates;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.IntUnaryOperator;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
@@ -12,7 +16,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
-import org.geysermc.geyser.network.GameProtocol;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.type.BlockMappings;
 
@@ -27,23 +30,36 @@ final class GeyserBlockStateMappings {
     }
 
     private static Map<Integer, BlockState> create(BlockMappings mappings) {
+        int server = SharedConstants.getProtocolVersion();
+        int geyser = GeyserBlockMappingsAccess.javaProtocolVersion();
+        if (server != geyser && !ViaVersionUtil.isAvailable()) {
+            // A proxy models Geyser's Java view through the forward table, as for any older client,
+            // so each Bedrock block resolves to the state the compensated world holds for it.
+            var states = ModelBlockStates.load(ProtocolVersion.of(geyser), ProtocolVersion.of(server));
+            if (states.sourceCount() != mappings.getJavaToBedrockBlocks().length) {
+                throw new IllegalStateException("Geyser's Java block states do not match protocol " + geyser);
+            }
+            return invert(mappings, states.sourceCount(), javaId -> javaId, states::toModel);
+        }
         int[] javaIds = BedrockServerStateMappings.create(
-                SharedConstants.getProtocolVersion(),
-                Block.BLOCK_STATE_REGISTRY.size(),
-                GameProtocol.getJavaProtocolVersion(),
-                mappings.getJavaToBedrockBlocks().length);
+                server, Block.BLOCK_STATE_REGISTRY.size(), geyser, mappings.getJavaToBedrockBlocks().length);
         return invert(mappings, javaIds);
     }
 
     static Map<Integer, BlockState> invert(BlockMappings mappings, int[] javaIds) {
+        return invert(mappings, javaIds.length, serverId -> javaIds[serverId], serverId -> serverId);
+    }
+
+    private static Map<Integer, BlockState> invert(
+            BlockMappings mappings, int count, IntUnaryOperator javaIdOf, IntUnaryOperator serverIdOf) {
         var states = new HashMap<Integer, BlockState>();
-        for (int serverId = 0; serverId < javaIds.length; serverId++) {
-            var definition = mappings.getBedrockBlock(javaIds[serverId]);
-            BlockState state = BedrockBlockLayers.dry(Block.stateById(serverId));
+        for (int index = 0; index < count; index++) {
+            int javaId = javaIdOf.applyAsInt(index);
+            var definition = mappings.getBedrockBlock(javaId);
+            BlockState state = BedrockBlockLayers.dry(Block.stateById(serverIdOf.applyAsInt(index)));
             states.putIfAbsent(definition.getRuntimeId(), state);
             // Inventory holders deliberately send vanilla definitions even with custom overrides.
-            states.putIfAbsent(
-                    mappings.getVanillaBedrockBlock(javaIds[serverId]).getRuntimeId(), state);
+            states.putIfAbsent(mappings.getVanillaBedrockBlock(javaId).getRuntimeId(), state);
         }
         states.put(mappings.getBedrockAir().getRuntimeId(), Blocks.AIR.defaultBlockState());
         // Bedrock item frames replace an otherwise empty block; their Java entity is tracked separately.
@@ -54,9 +70,10 @@ final class GeyserBlockStateMappings {
                             states.putIfAbsent(definition.getRuntimeId(), Blocks.AIR.defaultBlockState()));
         }
         // SkullCache sends these directly; they are not in javaToBedrockBlocks.
+        var customStates = GeyserBlockMappingsAccess.customBlockStates(mappings);
         for (var skull : BlockRegistries.CUSTOM_SKULLS.get().values()) {
             for (int rotation = 0; rotation < 16; rotation++) {
-                var definition = mappings.getCustomBlockStateDefinitions().get(skull.getFloorBlockState(rotation));
+                var definition = customStates.get(skull.getFloorBlockState(rotation));
                 if (definition != null)
                     states.put(
                             definition.getRuntimeId(),
@@ -65,15 +82,14 @@ final class GeyserBlockStateMappings {
                                     .setValue(BlockStateProperties.ROTATION_16, rotation));
             }
             for (Direction direction : Direction.Plane.HORIZONTAL) {
-                var definition = mappings.getCustomBlockStateDefinitions()
-                        .get(skull.getWallBlockState(
-                                switch (direction) {
-                                    case SOUTH -> 0;
-                                    case WEST -> 90;
-                                    case NORTH -> 180;
-                                    case EAST -> 270;
-                                    default -> throw new IllegalArgumentException("Non-horizontal skull facing");
-                                }));
+                var definition = customStates.get(skull.getWallBlockState(
+                        switch (direction) {
+                            case SOUTH -> 0;
+                            case WEST -> 90;
+                            case NORTH -> 180;
+                            case EAST -> 270;
+                            default -> throw new IllegalArgumentException("Non-horizontal skull facing");
+                        }));
                 if (definition != null)
                     states.put(
                             definition.getRuntimeId(),

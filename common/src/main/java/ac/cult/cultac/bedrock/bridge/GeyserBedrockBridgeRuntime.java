@@ -114,6 +114,10 @@ public final class GeyserBedrockBridgeRuntime {
         }
     }
 
+    public static synchronized boolean isRunning() {
+        return started;
+    }
+
     private static String geyserVersion() {
         var manager = CultAPI.INSTANCE.getPluginManager();
         var plugin = manager.getPlugin("Geyser-Spigot");
@@ -166,7 +170,6 @@ public final class GeyserBedrockBridgeRuntime {
                 logger.onInitialize(session, session.bedrockUsername(), session.protocolVersion());
             }
         });
-        CultAPI.INSTANCE.getNetworkManager().setPacketOwnerResolver(GeyserBedrockBridgeRuntime::packetOwner);
         subscriptions.subscribeLast(SessionLoginEvent.class, event -> {
             if (event.connection() instanceof GeyserSession session) {
                 // GFP installs its upstream wrapper at NORMAL priority. Geyser creates and
@@ -207,12 +210,14 @@ public final class GeyserBedrockBridgeRuntime {
                 (session, attribute) -> {
                     var tap = PACKET_TAPS.get(session);
                     if (tap == null) throw new IllegalStateException("Missing Cult movement tap");
-                    tap.initializeActor(tap.currentPlayer());
-                    tap.sprintAttributes.source(
-                            attribute,
-                            tap.sprintBoundary(),
-                            session.getPlayerEntity().geyserId(),
-                            tap::sendSprintAttribute);
+                    inModel(tap.currentPlayer(), () -> {
+                        tap.initializeActor(tap.currentPlayer());
+                        tap.sprintAttributes.source(
+                                attribute,
+                                tap.sprintBoundary(),
+                                session.getPlayerEntity().geyserId(),
+                                tap::sendSprintAttribute);
+                    });
                 },
                 (session, entity, attribute) -> {
                     var tap = PACKET_TAPS.get(session);
@@ -227,7 +232,6 @@ public final class GeyserBedrockBridgeRuntime {
 
     public static synchronized void stop() {
         started = false;
-        CultAPI.INSTANCE.getNetworkManager().setPacketOwnerResolver(channel -> null);
         if (sprintTranslator != null) {
             sprintTranslator.close();
             sprintTranslator = null;
@@ -415,6 +419,12 @@ public final class GeyserBedrockBridgeRuntime {
         return () -> session.ensureInEventLoop(() -> acceptTransaction(session, id));
     }
 
+    /** Engine work on Geyser's threads runs in the player's model context; see PlatformConnection#runInModel. */
+    private static void inModel(CultPlayer player, Runnable task) {
+        if (player == null) task.run();
+        else player.user.getCultConnection().platform().runInModel(task);
+    }
+
     private static CultPlayer playerForSession(GeyserSession session) {
         var tap = PACKET_TAPS.get(session);
         return tap == null ? null : tap.currentPlayer();
@@ -422,16 +432,23 @@ public final class GeyserBedrockBridgeRuntime {
 
     static boolean acceptTransaction(GeyserSession session, int id) {
         CultPlayer player = playerForSession(session);
-        return player != null
-                && ac.cult.cultac.events.packets.listeners.PacketPingListener.acceptBedrockResponse(player, id);
+        if (player == null) return false;
+        boolean[] accepted = new boolean[1];
+        inModel(
+                player,
+                () -> accepted[0] =
+                        ac.cult.cultac.events.packets.listeners.PacketPingListener.acceptBedrockResponse(player, id));
+        return accepted[0];
     }
 
     static void acceptKeepAlive(GeyserSession session, long id) {
         CultPlayer player = playerForSession(session);
         if (player != null)
-            player.checkManager
-                    .getListener(ac.cult.cultac.utils.latency.KeepAliveProcessor.class)
-                    .acceptResponse(id);
+            inModel(
+                    player,
+                    () -> player.checkManager
+                            .getListener(ac.cult.cultac.utils.latency.KeepAliveProcessor.class)
+                            .acceptResponse(id));
     }
 
     static void correctCollisions(
@@ -556,7 +573,7 @@ public final class GeyserBedrockBridgeRuntime {
             }
             logPacket("C->S", packet);
             io.netty.util.ReferenceCountUtil.retain(packet);
-            connection.ensureInEventLoop(() -> {
+            connection.ensureInEventLoop(() -> inModel(currentPlayer(), () -> {
                 try {
                     if (detached.get()) return;
                     if (packet
@@ -572,7 +589,7 @@ public final class GeyserBedrockBridgeRuntime {
                 } finally {
                     io.netty.util.ReferenceCountUtil.release(packet);
                 }
-            });
+            }));
             return PacketSignal.HANDLED;
         }
 
@@ -883,11 +900,11 @@ public final class GeyserBedrockBridgeRuntime {
             marker.setFromServer(true);
             marker.setTimestamp(System.nanoTime() & Long.MAX_VALUE);
             latencyQueue.insert(
-                    () -> connection.ensureInEventLoop(() -> {
+                    () -> connection.ensureInEventLoop(() -> inModel(currentPlayer(), () -> {
                         if (detached.get() || creation != actorCreationSequence) return;
                         collisionDefinition = definition;
                         initializeActor(currentPlayer());
-                    }),
+                    })),
                     () -> context.write(
                             BedrockPacketWrapper.create(
                                     0, source.getSenderSubClientId(), source.getTargetSubClientId(), marker, null),
@@ -1078,7 +1095,8 @@ public final class GeyserBedrockBridgeRuntime {
         }
     }
 
-    private static ac.cult.cultac.network.PacketOwner packetOwner(io.netty.channel.Channel channel) {
+    /** The Geyser session that owns this Java connection, for the platform's packet owner resolver. */
+    public static ac.cult.cultac.network.PacketOwner packetOwner(io.netty.channel.Channel channel) {
         for (PacketTapHandler tap : PACKET_TAPS.values()) {
             var downstream = tap.connection.getDownstream();
             if (downstream != null && sameJavaConnection(downstream.getSession().getChannel(), channel)) {
@@ -1096,7 +1114,7 @@ public final class GeyserBedrockBridgeRuntime {
             User user, Vec3 position, float yaw, float pitch, boolean onGround, int setbackTransaction) {
         PacketTapHandler tap = packetTapForUser(user);
         if (tap == null) return false;
-        tap.connection.ensureInEventLoop(() -> {
+        tap.connection.ensureInEventLoop(() -> inModel(tap.currentPlayer(), () -> {
             if (!tap.matchesJavaUser(user)) return;
             sendPlayerTeleport(
                     tap,
@@ -1107,7 +1125,7 @@ public final class GeyserBedrockBridgeRuntime {
                     new BedrockTeleportOperation(
                             ++tap.playerTeleportSequence, BedrockTeleportProvenance.CULT_SETBACK, setbackTransaction),
                     null);
-        });
+        }));
         return true;
     }
 
@@ -1237,12 +1255,16 @@ public final class GeyserBedrockBridgeRuntime {
         }
 
         @Override
-        public void write(ChannelHandlerContext context, Object message, ChannelPromise promise) throws Exception {
+        public void write(ChannelHandlerContext context, Object message, ChannelPromise promise) {
             if (owner.detached.get() || !(message instanceof BedrockPacketWrapper wrapper)) {
                 context.write(message, promise);
                 return;
             }
+            inModel(owner.currentPlayer(), () -> writeTapped(context, message, wrapper, promise));
+        }
 
+        private void writeTapped(
+                ChannelHandlerContext context, Object message, BedrockPacketWrapper wrapper, ChannelPromise promise) {
             BedrockPacket packet = wrapper.getPacket();
             owner.initializeActor(owner.currentPlayer());
             boolean normalizedVehicleEffect = false;

@@ -1,5 +1,6 @@
 package ac.cult.cultac.manager.init.start;
 
+import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import org.bukkit.Bukkit;
@@ -29,6 +30,7 @@ public class GeyserBedrockBridgeInit implements StartableInitable, Listener {
         if ("Geyser-Spigot".equals(event.getPlugin().getName())) {
             try {
                 GeyserBedrockBridgeRuntime.stop();
+                CultAPI.INSTANCE.getNetworkManager().setPacketOwnerResolver(channel -> null);
             } catch (LinkageError error) {
                 LogUtil.warn("Unable to stop the Geyser Bedrock bridge: "
                         + error.getClass().getSimpleName());
@@ -39,6 +41,10 @@ public class GeyserBedrockBridgeInit implements StartableInitable, Listener {
     private void startBridge() {
         try {
             GeyserBedrockBridgeRuntime.start();
+            // Paper's packets are owned by I/O, except Bedrock sessions on Geyser's tick loop.
+            if (GeyserBedrockBridgeRuntime.isRunning()) {
+                CultAPI.INSTANCE.getNetworkManager().setPacketOwnerResolver(GeyserBedrockBridgeRuntime::packetOwner);
+            }
         } catch (LinkageError error) {
             LogUtil.warn("Unable to start the Geyser Bedrock movement bridge: "
                     + error.getClass().getSimpleName());

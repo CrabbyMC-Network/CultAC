@@ -2,6 +2,7 @@ package ac.cult.cultac.platform.velocity;
 
 import ac.cult.cultac.network.CultConnection;
 import ac.cult.cultac.network.CultNetworkManager;
+import ac.cult.cultac.network.PacketOwner;
 import ac.cult.cultac.network.PlatformConnection;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
@@ -17,6 +18,7 @@ import io.netty.channel.Channel;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 
@@ -25,7 +27,8 @@ final class VelocityTransport {
     private final ProxyServer proxy;
     private final Object plugin;
     private final CultNetworkManager manager;
-    private final Function<Player, PlatformConnection> platform;
+    private final BiFunction<Player, PacketOwner, PlatformConnection> platform;
+    private final Function<Channel, PacketOwner> bedrockOwners;
     private final Method connectionMethod;
     private final Method channelMethod;
     private final VelocityClientSupport clients;
@@ -35,11 +38,13 @@ final class VelocityTransport {
             ProxyServer proxy,
             Object plugin,
             CultNetworkManager manager,
-            Function<Player, PlatformConnection> platform) {
+            BiFunction<Player, PacketOwner, PlatformConnection> platform,
+            Function<Channel, PacketOwner> bedrockOwners) {
         this.proxy = proxy;
         this.plugin = plugin;
         this.manager = manager;
         this.platform = platform;
+        this.bedrockOwners = bedrockOwners;
         this.clients = new VelocityClientSupport(proxy);
         try {
             // Velocity has no public packet API. Resolve this narrow, checked boundary once.
@@ -75,13 +80,19 @@ final class VelocityTransport {
             return null;
         }
         final Channel channel;
+        final PacketOwner bedrock;
         try {
-            if (clients.isBedrock(player.getUniqueId())) {
-                player.disconnect(
-                        Component.text("CultAC on this proxy currently supports Minecraft Java clients only."));
+            channel = channel(player);
+            // Geyser sends login acknowledgement before its translator registers the Java UUID.
+            // The downstream channel already exists, so its bridge tap is the connection's identity.
+            bedrock = bedrockOwners.apply(channel);
+            boolean translated = bedrock != null || clients.isBedrock(player.getUniqueId());
+            // A Bedrock session needs the Geyser bridge's tap; never inspect it as a Java client.
+            if (translated && bedrock == null) {
+                player.disconnect(Component.text(
+                        "CultAC on this proxy inspects Bedrock players only through Geyser on this proxy."));
                 return null;
             }
-            channel = channel(player);
         } catch (RuntimeException failure) {
             return EventTask.resumeWhenComplete(CompletableFuture.failedFuture(failure));
         }
@@ -90,7 +101,7 @@ final class VelocityTransport {
             attached = CompletableFuture.runAsync(
                     () -> {
                         if (running && channel.isActive()) {
-                            attach(player, channel);
+                            attach(player, channel, bedrock);
                         }
                     },
                     channel.eventLoop());
@@ -113,7 +124,7 @@ final class VelocityTransport {
         }
     }
 
-    private synchronized void attach(Player player, Channel channel) {
+    private synchronized void attach(Player player, Channel channel, PacketOwner bedrock) {
         if (!running) {
             return;
         }
@@ -124,7 +135,7 @@ final class VelocityTransport {
         if (manager.connection(channel) != null) {
             throw new IllegalStateException("Velocity connection already attached");
         }
-        var connection = manager.createConnection(platform.apply(player), channel);
+        var connection = manager.createConnection(platform.apply(player, bedrock), channel);
         ((VelocityConnectionAdapter) connection.platform()).attach(connection);
         connection.phase(PacketDirection.SERVERBOUND, ConnectionPhase.CONFIGURATION);
         connection.phase(PacketDirection.CLIENTBOUND, ConnectionPhase.CONFIGURATION);

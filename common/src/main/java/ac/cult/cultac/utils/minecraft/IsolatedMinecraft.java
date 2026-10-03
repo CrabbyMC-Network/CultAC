@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import net.minecraft.world.level.block.Block;
 
 /** Owns the acquired model services and each service's directed native-value boundary. */
+// TODO: What the fuck is codex doing with the if (bedrock) return; hacks
 public final class IsolatedMinecraft {
     private static volatile Binding primary;
     private static volatile Binding earlierActions;
@@ -169,6 +170,10 @@ public final class IsolatedMinecraft {
     }
 
     public static Binding actionsFor(CultPlayer player) {
+        // Geyser's native action observer used the host block-action implementation
+        // before it moved into the isolated runtime. Keep that action binding separate
+        // from Java movement geometry and Java client-version projections.
+        if (player != null && player.isBedrockMovement()) return primary;
         var current = compatible(player);
         var earlier = earlierActions;
         return current != null
