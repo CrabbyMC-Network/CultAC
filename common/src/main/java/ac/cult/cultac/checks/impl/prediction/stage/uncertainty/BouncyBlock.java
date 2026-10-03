@@ -9,8 +9,9 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.math.VectorUtils;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 public class BouncyBlock implements UncertaintyHandler {
     @Override
@@ -24,13 +25,13 @@ public class BouncyBlock implements UncertaintyHandler {
             Vec3 end) {
         if (lastContext == null || start.isKnockback()) return start;
 
-        Material onBlock = lastContext.getSimulationContext().getWorldData().getOnBlock();
+        Block onBlock = lastContext.getSimulationContext().getWorldData().getOnBlock();
 
         // This could be improved...
         //
         // Player velocity can multiply 0.4-0.45 (guess on max) when the player is on slime with
         // a Y velocity of 0 to 0.1.  Because 0.03 we don't know this so just give lenience here
-        if (onBlock == Material.SLIME_BLOCK) {
+        if (onBlock == Blocks.SLIME_BLOCK) {
             SimpleCollisionBox expandToZero = new SimpleCollisionBox(start, start);
             expandToZero.unionX(0);
             expandToZero.unionZ(0);
@@ -75,8 +76,8 @@ public class BouncyBlock implements UncertaintyHandler {
         return start.withY(bounceY, "bounce");
     }
 
-    private float getBouncyBlockLevel(Material onBlock) {
-        if (onBlock == Material.SLIME_BLOCK) {
+    private float getBouncyBlockLevel(Block onBlock) {
+        if (onBlock == Blocks.SLIME_BLOCK) {
             return 1;
         } else if (NmsBlockTags.isBed(onBlock)) {
             return 0.66F;

@@ -107,6 +107,7 @@ tasks.processResources {
 }
 
 dependencies {
+    implementation(project(":placement-runtime"))
     api(project(":protocol"))
     paperweight.paperDevBundle(providers.gradleProperty("paperDevBundleVersion").get())
 
@@ -143,7 +144,7 @@ dependencies {
     compileOnly(libs.luckperms)
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
-    testImplementation(project(":protocol-paper"))
+    testImplementation(project(":protocol-netty"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly(libs.fastutil)
 
@@ -173,6 +174,8 @@ tasks.withType<Test>().configureEach {
 }
 
 tasks.test {
+    dependsOn(":placement-runtime:jar")
+    systemProperty("placementRuntimeJar", project(":placement-runtime").layout.buildDirectory.file("libs/placement-runtime.jar").get().asFile.absolutePath)
     useJUnitPlatform()
     // Native registry bootstrap plus the combined transport/replay fixtures exceed
     // Gradle's default 512 MiB worker heap. Match the offline replay test worker.
@@ -211,8 +214,7 @@ publishing.publications.create<MavenPublication>("maven") {
 
 // Exercise actual Bukkit server-position delivery on this module's pinned Paper runtime.
 tasks.named<JavaCompile>("compileTestJava") {
-    source(rootProject.file("bukkit/src/main/java/ac/cult/cultac/platform/bukkit/BukkitNativeCodecFactory.java"))
-    source(rootProject.file("bukkit/src/main/java/ac/cult/cultac/platform/bukkit/BukkitPacketCodecs.java"))
+    source(rootProject.file("bukkit/src/main/java/ac/cult/cultac/utils/blockplace/CompensatedPlacementWorld.java"))
 }
 
 sourceSets.test { java.srcDir(rootProject.file("protocol/src/fixtures/java")) }
@@ -224,3 +226,21 @@ for (variant in listOf("apiElements", "runtimeElements")) {
         attributes.attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
     }
 }
+
+// Keep the shared engine compilable against Mojang's vanilla API. Paper-only
+// methods otherwise compile here but fail when the same class runs on Velocity.
+val compileVanillaAudit by tasks.registering(JavaCompile::class) {
+    group = "verification"
+    description = "Compiles shared sources against the pinned vanilla model without Paper APIs."
+    dependsOn(":vanilla-runtime:prepareVanilla", tasks.named("generateEffectiveLombokConfig"))
+    source(sourceSets.main.get().allJava)
+    javaCompiler.set(javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(25)) })
+    destinationDirectory.set(layout.buildDirectory.dir("vanilla-audit/classes"))
+    val runtime = project(":vanilla-runtime").layout.buildDirectory.dir("runtime")
+    classpath = sourceSets.main.get().compileClasspath.filter {
+        !it.path.contains("/paperweight/") && !it.name.startsWith("paper-api-") && !it.name.startsWith("paper-26")
+    } + files(runtime.map { it.file("client.jar") }) + fileTree(runtime.map { it.dir("lib") }) { include("**/*.jar") }
+    options.annotationProcessorPath = configurations.annotationProcessor.get()
+    options.release.set(21)
+}
+tasks.check { dependsOn(compileVanillaAudit) }

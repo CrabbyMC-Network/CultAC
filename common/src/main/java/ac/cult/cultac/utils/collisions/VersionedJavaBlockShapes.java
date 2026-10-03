@@ -5,28 +5,26 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.NoCollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import org.bukkit.Material;
-import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.BlockData;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 final class VersionedJavaBlockShapes {
     private static final List<ShapeOverride> MOVEMENT_OVERRIDES = List.of(
             movement(
-                    state -> state.getMaterial().name().equals("PALE_MOSS_CARPET"),
+                    state -> ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(state.getBlock())
+                            .equals("PALE_MOSS_CARPET"),
                     VersionedJavaBlockShapes::paleMossCarpetMovement),
-            movement(Material.PITCHER_CROP, VersionedJavaBlockShapes::pitcherCropMovement));
+            movement(Blocks.PITCHER_CROP, VersionedJavaBlockShapes::pitcherCropMovement));
 
     private static final List<ShapeOverride> VISUAL_OVERRIDES = List.of();
 
     private VersionedJavaBlockShapes() {}
 
-    static Optional<CollisionBox> movement(CultPlayer player, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> movement(CultPlayer player, BlockState state, int x, int y, int z) {
         Optional<CollisionBox> legacy = LegacyJavaBlockShapes.movement(player, state, x, y, z);
         if (legacy.isPresent()) return legacy;
         if (!canUseVersionedJavaShape(player, state)) {
@@ -35,7 +33,7 @@ final class VersionedJavaBlockShapes {
         return movement(player.getClientVersion(), state, x, y, z);
     }
 
-    static Optional<CollisionBox> visual(CultPlayer player, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> visual(CultPlayer player, BlockState state, int x, int y, int z) {
         if (!canUseVersionedJavaShape(player, state)) {
             return Optional.empty();
         }
@@ -44,14 +42,14 @@ final class VersionedJavaBlockShapes {
 
     // The same Java geometry rules serve Java clients and the sparse Bedrock catalog's baseline.
     // State remains in the server registry; only the requested shape version changes.
-    static Optional<CollisionBox> movement(ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> movement(ClientVersion shapeVersion, BlockState state, int x, int y, int z) {
         if (state == null || shapeVersion == null || shapeVersion.isOlderThan(ClientVersion.V_1_21_2)) {
             return Optional.empty();
         }
         return firstMatch(MOVEMENT_OVERRIDES, shapeVersion, state, x, y, z);
     }
 
-    private static boolean canUseVersionedJavaShape(CultPlayer player, BlockData state) {
+    private static boolean canUseVersionedJavaShape(CultPlayer player, BlockState state) {
         return player != null
                 && player.bedrockState == null
                 && state != null
@@ -60,7 +58,7 @@ final class VersionedJavaBlockShapes {
     }
 
     private static Optional<CollisionBox> firstMatch(
-            List<ShapeOverride> overrides, ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+            List<ShapeOverride> overrides, ClientVersion shapeVersion, BlockState state, int x, int y, int z) {
         for (ShapeOverride override : overrides) {
             if (override.matches(state)) {
                 return override.create(shapeVersion, state, x, y, z);
@@ -70,7 +68,7 @@ final class VersionedJavaBlockShapes {
     }
 
     private static Optional<CollisionBox> paleMossCarpetMovement(
-            ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+            ClientVersion shapeVersion, BlockState state, int x, int y, int z) {
         if (shapeVersion.isNewerThanOrEquals(ClientVersion.V_26_2)) {
             return Optional.empty();
         }
@@ -84,11 +82,12 @@ final class VersionedJavaBlockShapes {
     }
 
     private static Optional<CollisionBox> pitcherCropMovement(
-            ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
-        if (!(state instanceof Ageable crop)
-                || crop.getAge() != 0
-                || !(state instanceof Bisected bisected)
-                || bisected.getHalf() != Bisected.Half.TOP) {
+            ClientVersion shapeVersion, BlockState state, int x, int y, int z) {
+        if (!state.hasProperty(net.minecraft.world.level.block.PitcherCropBlock.AGE)
+                || state.getValue(net.minecraft.world.level.block.PitcherCropBlock.AGE) != 0
+                || !state.hasProperty(net.minecraft.world.level.block.PitcherCropBlock.HALF)
+                || state.getValue(net.minecraft.world.level.block.PitcherCropBlock.HALF)
+                        != net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER) {
             return Optional.empty();
         }
         // Vanilla PitcherCropBlock#getCollisionShape checks AGE first through 1.21.4;
@@ -99,28 +98,17 @@ final class VersionedJavaBlockShapes {
                         : NoCollisionBox.INSTANCE);
     }
 
-    private static boolean isRaisedMossyCarpet(BlockData state) {
-        try {
-            Method isBottom = state.getClass().getMethod("isBottom");
-            Object value = isBottom.invoke(state);
-            if (value instanceof Boolean bottom) {
-                return !bottom;
-            }
-        } catch (NoSuchMethodException ignored) {
-            // Older Bukkit APIs do not expose the typed MossyCarpet interface.
-        } catch (IllegalAccessException | InvocationTargetException exception) {
-            throw new IllegalStateException("Unable to read pale moss carpet bottom state", exception);
-        }
-
-        String serialized = state.getAsString(false);
-        return serialized != null && serialized.contains("bottom=false");
+    private static boolean isRaisedMossyCarpet(BlockState state) {
+        // Vanilla MossyCarpetBlock.BASE is the shared "bottom" property.
+        var bottom = net.minecraft.world.level.block.state.properties.BlockStateProperties.BOTTOM;
+        return state.hasProperty(bottom) && !state.getValue(bottom);
     }
 
-    private static ShapeOverride movement(Material material, ShapeFactory factory) {
-        return movement(state -> state.getMaterial() == material, factory);
+    private static ShapeOverride movement(Block material, ShapeFactory factory) {
+        return movement(state -> state.getBlock() == material, factory);
     }
 
-    private static ShapeOverride movement(Predicate<BlockData> matcher, ShapeFactory factory) {
+    private static ShapeOverride movement(Predicate<BlockState> matcher, ShapeFactory factory) {
         return new ShapeOverride(matcher, factory);
     }
 
@@ -135,18 +123,18 @@ final class VersionedJavaBlockShapes {
                 z + maxZ / 16.0D);
     }
 
-    private record ShapeOverride(Predicate<BlockData> matcher, ShapeFactory factory) {
-        boolean matches(BlockData state) {
+    private record ShapeOverride(Predicate<BlockState> matcher, ShapeFactory factory) {
+        boolean matches(BlockState state) {
             return matcher.test(state);
         }
 
-        Optional<CollisionBox> create(ClientVersion shapeVersion, BlockData state, int x, int y, int z) {
+        Optional<CollisionBox> create(ClientVersion shapeVersion, BlockState state, int x, int y, int z) {
             return factory.create(shapeVersion, state, x, y, z);
         }
     }
 
     @FunctionalInterface
     private interface ShapeFactory {
-        Optional<CollisionBox> create(ClientVersion shapeVersion, BlockData state, int x, int y, int z);
+        Optional<CollisionBox> create(ClientVersion shapeVersion, BlockState state, int x, int y, int z);
     }
 }

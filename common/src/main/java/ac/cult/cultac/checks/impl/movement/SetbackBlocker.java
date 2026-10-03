@@ -29,6 +29,9 @@ public class SetbackBlocker extends CultProcessor implements CheckListener {
             if (authorization == null || player.getSetbackTeleportUtil().blocksBedrockTranslatedMovement()) {
                 event.setCancelled(true);
             } else {
+                // A frame that acknowledged a teleport projects as the teleport response,
+                // which the Java client sends with onGround=false.
+                player.packetStateData.lastPacketWasTeleport = authorization.teleport();
                 // Bedrock authored collision flags, not this Java ground bit. Normalize
                 // Geyser's velocity-based projection from the already simulated frame here.
                 boolean onGround = !player.packetStateData.lastPacketWasTeleport && authorization.canonicalGround();

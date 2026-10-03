@@ -3,6 +3,7 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
+import ac.cult.cultac.utils.math.Vector3dm;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -19,19 +20,18 @@ import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.util.Vector;
 
 public class FluidTypeFlowing {
     private static final TagKey<Block> BLOCKS_FLUID_FLOW =
             NmsIdentifierUtil.tagKey(Registries.BLOCK, "minecraft:blocks_fluid_flow");
 
-    public static Vector getFlow(CultPlayer player, int originalX, int originalY, int originalZ) {
+    public static Vector3dm getFlow(CultPlayer player, int originalX, int originalY, int originalZ) {
         BlockPos pos = new BlockPos(originalX, originalY, originalZ);
         FluidState fluidState = player.compensatedWorld.getFluidState(pos);
-        if (fluidState.isEmpty()) return new Vector();
+        if (fluidState.isEmpty()) return new Vector3dm();
 
         Vec3 flow = flow(player, pos, fluidState);
-        return new Vector(flow.x, flow.y, flow.z);
+        return new Vector3dm(flow.x, flow.y, flow.z);
     }
 
     public static Vec3 flow(CultPlayer player, BlockPos pos, FluidState state) {

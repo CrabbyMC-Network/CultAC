@@ -13,13 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public class BlockPlaceCheck extends Check implements CheckListener {
-    private static final List<Material> weirdBoxes = new ArrayList<>();
-    private static final List<Material> buggyBoxes = new ArrayList<>();
+    private static final List<Block> weirdBoxes = new ArrayList<>();
+    private static final List<Block> buggyBoxes = new ArrayList<>();
     protected int cancelVL;
 
     public BlockPlaceCheck(CultPlayer player) {
@@ -59,22 +60,22 @@ public class BlockPlaceCheck extends Check implements CheckListener {
         // TODO: What do we do about blocks dependent upon lighting levels?
         weirdBoxes.addAll(new ArrayList<>(NmsBlockTags.blockValues(BlockTags.FENCES)));
         weirdBoxes.addAll(new ArrayList<>(NmsBlockTags.blockValues(BlockTags.WALLS)));
-        weirdBoxes.add(Material.LECTERN);
+        weirdBoxes.add(Blocks.LECTERN);
 
         buggyBoxes.addAll(new ArrayList<>(NmsBlockTags.blockValues(BlockTags.DOORS)));
         buggyBoxes.addAll(new ArrayList<>(NmsBlockTags.blockValues(BlockTags.STAIRS)));
-        buggyBoxes.add(Material.CHEST);
-        buggyBoxes.add(Material.TRAPPED_CHEST);
-        buggyBoxes.add(Material.CHORUS_PLANT);
+        buggyBoxes.add(Blocks.CHEST);
+        buggyBoxes.add(Blocks.TRAPPED_CHEST);
+        buggyBoxes.add(Blocks.CHORUS_PLANT);
 
         // The client changes these block states around when placing blocks, temporary desync
-        buggyBoxes.add(Material.KELP);
-        buggyBoxes.add(Material.KELP_PLANT);
-        buggyBoxes.add(Material.TWISTING_VINES);
-        buggyBoxes.add(Material.TWISTING_VINES_PLANT);
-        buggyBoxes.add(Material.WEEPING_VINES);
-        buggyBoxes.add(Material.WEEPING_VINES_PLANT);
-        buggyBoxes.add(Material.REDSTONE_WIRE);
+        buggyBoxes.add(Blocks.KELP);
+        buggyBoxes.add(Blocks.KELP_PLANT);
+        buggyBoxes.add(Blocks.TWISTING_VINES);
+        buggyBoxes.add(Blocks.TWISTING_VINES_PLANT);
+        buggyBoxes.add(Blocks.WEEPING_VINES);
+        buggyBoxes.add(Blocks.WEEPING_VINES_PLANT);
+        buggyBoxes.add(Blocks.REDSTONE_WIRE);
     }
 
     protected SimpleCollisionBox getCombinedBox(final BlockPlace place) {
@@ -93,7 +94,6 @@ public class BlockPlaceCheck extends Check implements CheckListener {
 
         CollisionBox placedOn = HitboxData.getBlockHitbox(
                 player,
-                place.getMaterial(),
                 player.compensatedWorld.getBlockDataAt(clicked),
                 clicked.getX(),
                 clicked.getY(),

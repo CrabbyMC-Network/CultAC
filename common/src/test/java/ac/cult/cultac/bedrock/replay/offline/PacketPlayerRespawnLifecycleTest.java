@@ -125,8 +125,19 @@ public final class PacketPlayerRespawnLifecycleTest {
 
     private static CultPlayer offlineJavaPlayer() {
         UUID playerId = UUID.fromString("9c5e440b-265d-435f-98f1-1f539659c002");
-        User user = ac.cult.cultac.network.TestUsers.create(
-                new User.Profile(playerId, ".Respawn_Test"), new EmbeddedChannel());
+        var platform = mock(ac.cult.cultac.network.PlatformConnection.class);
+        when(platform.registries())
+                .thenReturn(new ac.cult.cultac.utils.minecraft.MinecraftRegistries(
+                        OfflineCultTestBootstrap::vanillaRegistries,
+                        () -> net.minecraft.server.packs.resources.ResourceProvider.EMPTY));
+        var connection = new ac.cult.cultac.network.CultConnection(
+                platform,
+                new EmbeddedChannel(),
+                ac.cult.cultac.CultAPI.INSTANCE.getNetworkManager().dispatcher(),
+                ignored -> null);
+        for (var direction : ac.cult.cultac.protocol.PacketDirection.values())
+            connection.phase(direction, ConnectionPhase.PLAY);
+        User user = new User(new User.Profile(playerId, ".Respawn_Test"), connection);
         return new CultPlayer(user);
     }
 }

@@ -8,9 +8,9 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import org.bukkit.potion.PotionEffectType;
 
 @CheckData(
         name = "ElytraG",
@@ -34,7 +34,7 @@ public class ElytraG extends Check implements PostPredictionListener {
             PacketReceiveEvent<ServerboundPlayerCommand> event, CultPlayer player, ServerboundPlayerCommand packet) {
         if (!isApplicable()) return;
         if (packet.action() == PlayerCommandAction.START_FLYING_WITH_ELYTRA
-                && player.compensatedEntities.hasPotionEffect(PotionEffectType.LEVITATION)
+                && player.compensatedEntities.hasPotionEffect(MovementEffect.LEVITATION)
                 && flag()) {
             setback = true;
             if (shouldModifyPackets()) {

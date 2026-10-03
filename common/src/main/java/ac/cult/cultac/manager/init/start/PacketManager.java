@@ -93,6 +93,5 @@ public class PacketManager implements StartableInitable {
             registrar.registerSendListener(PacketListenerPriority.LOW, new PacketServerPlayerRotation());
             registrar.registerSendListener(PacketListenerPriority.NORMAL, new PacketServerRegistries());
         });
-        new ac.cult.cultac.events.packets.ProxyAlertMessenger();
     }
 }

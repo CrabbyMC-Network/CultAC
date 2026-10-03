@@ -110,33 +110,33 @@ public class PacketSelfMetadataListener {
                 Optional<BlockPos> bed = (Optional<BlockPos>) bedObject.value();
                 // The Bedrock actor's sleep flag is delivered separately by
                 // the bridge after the client acknowledges its own metadata.
-                Runnable applyBedMetadata =
-                        () -> {
-                            if (bed.isPresent()) {
-                                player.isInBed = true;
-                                BlockPos bedPos = bed.get();
-                                player.bedPosition = new Vec3(
-                                        bedPos.getX() + 0.5,
-                                        bedPos.getY()
-                                                + (player.getClientVersion()
-                                                                        .isNewerThanOrEquals(
-                                                                                ac.cult.cultac.network.protocol
-                                                                                        .ClientVersion.V_26_3)
-                                                                && "straw_bed"
-                                                                        .equals(net.minecraft.core.registries
-                                                                                .BuiltInRegistries.BLOCK
-                                                                                .getKey(player.compensatedWorld
+                Runnable applyBedMetadata = () -> {
+                    if (bed.isPresent()) {
+                        player.isInBed = true;
+                        BlockPos bedPos = bed.get();
+                        player.bedPosition = new Vec3(
+                                bedPos.getX() + 0.5,
+                                bedPos.getY()
+                                        + (player.getClientVersion()
+                                                                .isNewerThanOrEquals(
+                                                                        ac.cult.cultac.network.protocol.ClientVersion
+                                                                                .V_26_3)
+                                                        && "straw_bed"
+                                                                .equals(ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil
+                                                                        .registryPath(
+                                                                                net.minecraft.core.registries
+                                                                                        .BuiltInRegistries.BLOCK,
+                                                                                player.compensatedWorld
                                                                                         .getBlockState(bedPos)
-                                                                                        .getBlock())
-                                                                                .getPath())
-                                                        ? 0.375
-                                                        : 0.6875),
-                                        bedPos.getZ() + 0.5);
-                            } else {
-                                player.isInBed = false;
-                            }
-                            player.refreshPlayerPose();
-                        };
+                                                                                        .getBlock()))
+                                                ? 0.375
+                                                : 0.6875),
+                                bedPos.getZ() + 0.5);
+                    } else {
+                        player.isInBed = false;
+                    }
+                    player.refreshPlayerPose();
+                };
                 addTaskAfterPacketProof(event, player, applyBedMetadata);
             }
 

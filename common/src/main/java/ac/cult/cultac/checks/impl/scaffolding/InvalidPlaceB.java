@@ -5,10 +5,10 @@ import ac.cult.cultac.checks.DeadCheck;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import net.minecraft.SharedConstants;
-import org.bukkit.block.BlockFace;
 
 @CheckData(
         name = "InvalidPlaceB",
@@ -45,7 +45,7 @@ public class InvalidPlaceB extends BlockPlaceCheck {
         }
     }
 
-    private static int getFaceId(BlockFace face) {
+    private static int getFaceId(Direction face) {
         return switch (face) {
             case DOWN -> 0;
             case UP -> 1;

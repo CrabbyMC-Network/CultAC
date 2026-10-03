@@ -1,6 +1,6 @@
 package ac.cult.cultac.utils.inventory;
 
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class InventoryStorage {
     protected ItemStack[] items;
@@ -11,7 +11,7 @@ public class InventoryStorage {
         this.size = size;
 
         for (int i = 0; i < size; i++) {
-            items[i] = ItemStack.empty();
+            items[i] = ItemStack.EMPTY;
         }
     }
 
@@ -20,7 +20,7 @@ public class InventoryStorage {
     }
 
     public void setItem(int item, ItemStack stack) {
-        items[item] = stack == null ? ItemStack.empty() : stack;
+        items[item] = stack == null ? ItemStack.EMPTY : stack;
     }
 
     public ItemStack getItem(int index) {
@@ -30,7 +30,7 @@ public class InventoryStorage {
     public ItemStack removeItem(int slot, int amount) {
         return slot >= 0 && slot < items.length && !items[slot].isEmpty() && amount > 0
                 ? ItemUtil.split(items[slot], amount)
-                : ItemStack.empty();
+                : ItemStack.EMPTY;
     }
 
     public int getMaxStackSize() {

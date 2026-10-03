@@ -8,9 +8,9 @@ import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.*;
 import ac.cult.cultac.protocol.data.ProtocolData;
+import ac.cult.cultac.protocol.netty.CultDecoder;
+import ac.cult.cultac.protocol.netty.CultEncoder;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
-import ac.cult.cultac.protocol.paper.CultDecoder;
-import ac.cult.cultac.protocol.paper.CultEncoder;
 import ac.cult.cultac.protocol.testing.CodecFixture;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
@@ -49,7 +49,10 @@ final class RecordReceiveFixture implements AutoCloseable {
         channel.pipeline().addLast("prepender", new ChannelOutboundHandlerAdapter());
         channel.pipeline().addLast("encoder", new ChannelOutboundHandlerAdapter());
         connection = new CultConnection(
-                org.mockito.Mockito.mock(net.minecraft.network.Connection.class), channel, routes, ignored -> null);
+                ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.platformConnection(),
+                channel,
+                routes,
+                ignored -> null);
         CultDecoder.install(connection);
         CultEncoder.install(connection);
         phase(ConnectionPhase.PLAY);

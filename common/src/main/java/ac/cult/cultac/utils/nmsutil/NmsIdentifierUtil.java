@@ -9,6 +9,17 @@ import net.minecraft.tags.TagKey;
 
 /** Bridges Mojang's ResourceLocation-to-Identifier rename without leaking either type internally. */
 public final class NmsIdentifierUtil {
+    private static final ClassValue<Method> REGISTRY_KEYS = new ClassValue<>() {
+        @Override
+        protected Method computeValue(Class<?> type) {
+            try {
+                return type.getMethod("getKey", Object.class);
+            } catch (NoSuchMethodException failure) {
+                throw new IllegalStateException("Registry key is unavailable", failure);
+            }
+        }
+    };
+
     private NmsIdentifierUtil() {}
 
     public static String asString(Object identifier) {
@@ -20,6 +31,10 @@ public final class NmsIdentifierUtil {
 
     public static String resourceKey(Object resourceKey) {
         return asString(invokeNoArg(resourceKey, "identifier", "location"));
+    }
+
+    public static String tagKey(Object tagKey) {
+        return asString(invokeNoArg(tagKey, "location"));
     }
 
     public static String payloadId(Object payloadOrType) {
@@ -35,13 +50,18 @@ public final class NmsIdentifierUtil {
             return null;
         }
         try {
-            Method method = registry.getClass().getMethod("getKey", Object.class);
+            Method method = REGISTRY_KEYS.get(registry.getClass());
             return asString(method.invoke(registry, value));
-        } catch (NoSuchMethodException | IllegalAccessException exception) {
+        } catch (IllegalAccessException exception) {
             throw new IllegalStateException("Unable to access registry key", exception);
         } catch (InvocationTargetException exception) {
             throw new IllegalStateException("Registry key lookup failed", exception.getCause());
         }
+    }
+
+    public static String registryPath(Object registry, Object value) {
+        String key = registryKey(registry, value);
+        return key == null ? null : key.substring(key.indexOf(':') + 1);
     }
 
     public static <T> T registryValue(Registry<T> registry, String identifier) {

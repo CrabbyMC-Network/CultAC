@@ -4,7 +4,6 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.LongAdder;
-import org.bukkit.event.Event;
 
 public final class SmoketestPredictionSafety {
     private static final boolean ENABLED = Boolean.getBoolean("cult.validation.smoketestControl");
@@ -24,10 +23,10 @@ public final class SmoketestPredictionSafety {
         return Scope.ACTIVE;
     }
 
-    public static void event(Event event) {
+    public static void event(String eventName) {
         if (!ENABLED || PHASE.get() == null) return;
         EVENTS.increment();
-        violation("bukkit-event", event.getEventName());
+        violation("bukkit-event", eventName);
     }
 
     public static void forbiddenAccess(String capability) {

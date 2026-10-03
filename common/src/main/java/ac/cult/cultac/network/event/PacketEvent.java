@@ -1,12 +1,12 @@
 package ac.cult.cultac.network.event;
 
 import ac.cult.cultac.network.protocol.player.User;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.protocol.ConnectionLifecycle;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketType;
 import ac.cult.cultac.protocol.packet.Opaque;
 import java.util.Objects;
-import org.bukkit.entity.Player;
 
 public abstract class PacketEvent<R> {
     private final User user;
@@ -28,7 +28,7 @@ public abstract class PacketEvent<R> {
         return user;
     }
 
-    public Player getPlayer() {
+    public PlatformPlayer getPlayer() {
         return user == null ? null : user.getPlayer();
     }
 

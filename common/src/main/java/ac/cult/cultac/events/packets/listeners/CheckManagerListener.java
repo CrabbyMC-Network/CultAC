@@ -53,6 +53,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundTeleportToEntity;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.protocol.value.Vec3d;
@@ -62,7 +63,7 @@ import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.anticheat.update.RotationUpdate;
 import ac.cult.cultac.utils.anticheat.update.VehiclePositionUpdate;
 import ac.cult.cultac.utils.blockplace.GhostBlock;
-import ac.cult.cultac.utils.blockplace.NmsBlockBreakResolver;
+import ac.cult.cultac.utils.blockplace.VanillaBlockActions;
 import ac.cult.cultac.utils.data.BedrockTranslatedMovementGate;
 import ac.cult.cultac.utils.data.HeadRotation;
 import ac.cult.cultac.utils.data.TeleportAcceptData;
@@ -79,11 +80,9 @@ import ac.cult.cultac.utils.nmsutil.TraverseBlocks;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 // TODO: All this stupid one line listeners don't belong here
@@ -186,8 +185,13 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
             PacketReceiveEvent<ServerboundAcceptTeleportation> event,
             CultPlayer player,
             ServerboundAcceptTeleportation packet) {
-        if (player.isBedrockMovement()) return;
         if (event.getPhase() != ConnectionPhase.PLAY) return;
+        if (player.isBedrockMovement()) {
+            // Geyser confirms each Java teleport on receipt like the Java client: this ID, then
+            // PosRot(onGround=false). Bedrock's own acknowledgement is its HANDLE_TELEPORT frame.
+            player.packetStateData.bedrockServerResponse = true;
+            return;
+        }
         // The teleport ID acknowledgement interrupts a Rot -> MoveVehicle pair.
         player.packetStateData.clearPendingVehicleMoveAfterPassengerRotation();
         player.checkManager.dispatchDecodedReceiveObservers(event);
@@ -407,11 +411,16 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
             PacketReceiveEvent<ServerboundMovePlayer> event, CultPlayer player, ServerboundMovePlayer packet) {
         if (event.getPhase() != ConnectionPhase.PLAY) return;
         if (player.isBedrockMovement() && player.packetStateData.bedrockServerResponse) {
-            if (packet.hasPosition())
+            player.packetStateData.bedrockServerResponse = false;
+            if (packet.hasPosition() && packet.hasRotation()) {
+                // Geyser's teleport PosRot answers the server, not a Bedrock auth frame.
+                if (packet.onGround() && !player.isDisabled() && !player.noModifyPacketPermission) {
+                    event.replace(packet.withOnGround(false));
+                }
                 player.getSetbackTeleportUtil()
-                        .setBedrockPaperVisiblePosition(
-                                new Vec3(packet.xOr(player.x), packet.yOr(player.y), packet.zOr(player.z)));
-            return;
+                        .setBedrockPaperVisiblePosition(new Vec3(packet.x(), packet.y(), packet.z()));
+                return;
+            }
         }
 
         if (player.isBedrockMovement()
@@ -457,11 +466,17 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
         Vec3 movementPosition = position;
         TeleportAcceptData teleportData;
         if (packet.hasPosition()) {
-            boolean legacyJavaServer = !player.isBedrockMovement()
-                    && ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion())
-                            .isOlderThan(ClientVersion.V_26_3);
+            // Through 26.2 the intercepted wire carries an ID acknowledgment
+            // followed by PosRot; 26.3 carries coordinates in the acknowledgment.
+            boolean legacyJavaWire = !player.isBedrockMovement()
+                    && !player.user
+                            .getCultConnection()
+                            .runtime()
+                            .data()
+                            .version()
+                            .atLeast(ac.cult.cultac.protocol.ProtocolVersion.V26_3);
             teleportData = player.isBedrockMovement()
-                            || legacyJavaServer
+                            || legacyJavaWire
                             || player.getSetbackTeleportUtil().hasIdlessJavaPositionTeleport()
                     ? player.getSetbackTeleportUtil()
                             .checkTeleportQueue(movementPosition.x, movementPosition.y, movementPosition.z)
@@ -594,7 +609,6 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
     private void processMoveVehicleReceive(
             PacketReceiveEvent<ServerboundMoveVehicle> event, CultPlayer player, ServerboundMoveVehicle packet) {
         if (event.getPhase() != ConnectionPhase.PLAY) return;
-        if (player.isBedrockMovement() && player.packetStateData.bedrockServerResponse) return;
 
         ServerboundMoveVehicle vehiclePacket = packet;
         Vec3d position = vehiclePacket.position();
@@ -919,11 +933,12 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
         dispatchPrePredictionReceive(event, player);
 
         BlockPos blockPosition = SpigotConversionUtil.toNmsBlockPos(packet.position());
-        BlockData block = player.compensatedWorld.getBlockDataAt(blockPosition);
+        BlockState block = player.compensatedWorld.getBlockDataAt(blockPosition);
 
         if (player.debugBreaks && isBlockBreakAction(action)) {
-            player.sendMessage(
-                    "Break: action=" + action + " state=" + block.getAsString(false) + " at " + blockPosition);
+            player.sendMessage("Break: action=" + action + " state="
+                    + net.minecraft.commands.arguments.blocks.BlockStateParser.serialize(block) + " at "
+                    + blockPosition);
         }
 
         if (action == PlayerAction.STOP_DESTROY_BLOCK) {
@@ -963,7 +978,7 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
 
         BlockPos clickedBlock = SpigotConversionUtil.toNmsBlockPos(packet.blockPosition());
         Vec3 cursor = SpigotConversionUtil.toNmsVec(packet.cursor());
-        BlockFace blockFace = SpigotConversionUtil.toBukkitFace(packet.blockFace());
+        Direction blockFace = SpigotConversionUtil.toBukkitFace(packet.blockFace());
         InteractionHand hand = SpigotConversionUtil.toNmsHand(packet.hand());
         player.lastBlockPlaceUseItem = System.currentTimeMillis();
 
@@ -991,8 +1006,8 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
         // Should we call the anticheat placing checks?
         if (!desyncPos
                 && (blockPlace.isBlock()
-                        || placedWith.getType() == Material.FIRE_CHARGE
-                        || placedWith.getType() == Material.END_CRYSTAL)
+                        || placedWith.getItem() == net.minecraft.world.item.Items.FIRE_CHARGE
+                        || placedWith.getItem() == net.minecraft.world.item.Items.END_CRYSTAL)
                 && !player.compensatedEntities.getSelf().inVehicle()) {
             player.checkManager.onBlockPlace(blockPlace);
             player.checkManager.queuePostFlyingBlockPlace(blockPlace);
@@ -1023,16 +1038,16 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
             BlockPredictionAckSender.sendAck(player, packet.sequence());
 
             // Stop inventory desync from cancelling place
-            if (player.bukkitPlayer != null) {
+            if (player.platformPlayer != null) {
                 // TODO: Is this unsafe enough to have to run on the main thread?
                 if (hand == InteractionHand.MAIN_HAND) {
                     ItemStack mainHand =
-                            ItemUtil.copy(player.bukkitPlayer.getInventory().getItemInHand());
+                            ItemUtil.copy(player.platformPlayer.getInventory().getMainHand());
                     player.user.write(new Slot(
                             0, player.getInventory().stateID, 36 + player.packetStateData.lastSlotSelected, mainHand));
                 } else {
                     ItemStack offHand =
-                            ItemUtil.copy(player.bukkitPlayer.getInventory().getItemInOffHand());
+                            ItemUtil.copy(player.platformPlayer.getInventory().getOffHand());
                     player.user.write(new Slot(0, player.getInventory().stateID, 45, offHand));
                 }
             }
@@ -1061,16 +1076,20 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
 
     public void processClientTickEndReceive(PacketReceiveEvent event, CultPlayer player) {
         if (event.getPhase() != ConnectionPhase.PLAY) return;
-        dispatchPrePredictionReceive(event, player);
-        dispatchReceiveHandlers(event, player);
+        // The Geyser bridge ends each Bedrock client tick after translating its frame. Geyser's
+        // tick end here only closes that frame's Java projection.
+        if (player.user.getBedrockBridgeConnection() == null) {
+            dispatchPrePredictionReceive(event, player);
+            dispatchReceiveHandlers(event, player);
 
-        player.packetStateData.acceptedClientTick++;
-        player.packetStateData.lastClientTickEndTransaction = player.lastTransactionReceived.get();
+            player.packetStateData.acceptedClientTick++;
+            player.packetStateData.lastClientTickEndTransaction = player.lastTransactionReceived.get();
+            player.serverOpenedInventoryThisTick = false;
+            player.packetStateData.carriedItemChangedThisClientTick = false;
+        }
         player.packetStateData.receivedMovementThisClientTick = false;
-        player.serverOpenedInventoryThisTick = false;
         player.packetStateData.bedrockTranslatedMovement.clear();
         player.packetStateData.clientMovementInputUpdatedThisClientTick = false;
-        player.packetStateData.carriedItemChangedThisClientTick = false;
         player.packetStateData.vehicleMovePacketsThisClientTick = 0;
         player.packetStateData.clientTickVehicleMovePacketsThisClientTick = 0;
         player.packetStateData.localAuthoritativeVehicleMovePacketsThisClientTick = 0;
@@ -1274,7 +1293,7 @@ public class CheckManagerListener implements ac.cult.cultac.network.OpaqueReceiv
     }
 
     private static void applyClientBreakPrediction(CultPlayer player, BlockPos blockPosition) {
-        NmsBlockBreakResolver.applyBlockBreak(player, blockPosition);
+        VanillaBlockActions.breakBlock(player, blockPosition);
     }
 
     private static boolean isBlockBreakAction(PlayerAction action) {

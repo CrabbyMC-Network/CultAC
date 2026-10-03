@@ -14,11 +14,6 @@ import ac.cult.cultac.utils.anticheat.MessageUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -152,13 +147,19 @@ public class CultDebug implements BuildableCommand {
             return;
         }
 
-        Player bukkitPlayer = Bukkit.getPlayerExact(tokens[0]);
-        CultPlayer target = bukkitPlayer == null
+        PlatformPlayer platformPlayer =
+                CultAPI.INSTANCE.getPlatformPlayerFactory().getFromName(tokens[0]);
+        CultPlayer target = platformPlayer == null
                 ? null
-                : CultAPI.INSTANCE.getPlayerDataManager().getPlayer(bukkitPlayer.getUniqueId());
-        if (target == null || target.bukkitPlayer == null) {
+                : CultAPI.INSTANCE.getPlayerDataManager().getPlayer(platformPlayer.getUniqueId());
+        if (target == null || target.platformPlayer == null) {
             sender.sendMessage(
                     Component.text("Player is not available for validation block control", NamedTextColor.RED));
+            return;
+        }
+
+        if (!platformPlayer.hasServerAuthority()) {
+            sender.sendMessage(Component.text("This platform cannot mutate server blocks", NamedTextColor.RED));
             return;
         }
 
@@ -175,33 +176,21 @@ public class CultDebug implements BuildableCommand {
         }
 
         String blockToken = tokens[4];
-        BlockData blockData;
+        String expectedId = "*".equals(blockToken) ? "minecraft:air" : blockToken;
         try {
-            blockData = "*".equals(blockToken) ? Material.AIR.createBlockData() : Bukkit.createBlockData(blockToken);
+            CultAPI.INSTANCE
+                    .getPlatformServer()
+                    .applyValidationBlock(
+                            platformPlayer,
+                            x,
+                            y,
+                            z,
+                            expectedId,
+                            ghostOnly,
+                            () -> logValidationBlock(target, x, y, z, expectedId, ghostOnly ? "packet" : "world"));
         } catch (IllegalArgumentException exception) {
             sender.sendMessage(Component.text("Unknown block " + blockToken, NamedTextColor.RED));
-            return;
         }
-
-        String expectedId = "*".equals(blockToken) ? "minecraft:air" : blockToken;
-        Location location = new Location(bukkitPlayer.getWorld(), x, y, z);
-        if (ghostOnly) {
-            bukkitPlayer.sendBlockChange(location, blockData);
-            // The compensated world only reflects the ghost once the outbound packet
-            // has been through Cult's send pipeline, so verify and log two ticks out.
-            CultPlayer logTarget = target;
-            CultAPI.INSTANCE
-                    .getScheduler()
-                    .getGlobalRegionScheduler()
-                    .runDelayed(
-                            CultAPI.INSTANCE.getGrimPlugin(),
-                            () -> logValidationBlock(logTarget, x, y, z, expectedId, "packet"),
-                            2L);
-            return;
-        }
-
-        location.getBlock().setBlockData(blockData, false);
-        logValidationBlock(target, x, y, z, expectedId, "world");
     }
 
     private static void logValidationBlock(CultPlayer target, int x, int y, int z, String expectedId, String mode) {
@@ -241,7 +230,7 @@ public class CultDebug implements BuildableCommand {
                         sender, "sender-not-found", "%prefix% &cYou cannot be exempt to use this command!"));
                 return;
             }
-            targetCultPlayer.checkManager.getDebugHandler().toggleListener(senderCultPlayer.bukkitPlayer);
+            targetCultPlayer.checkManager.getDebugHandler().toggleListener(senderCultPlayer.platformPlayer);
         } else {
             sender.sendMessage(MessageUtil.getParsedComponent(
                     sender,
@@ -290,7 +279,7 @@ public class CultDebug implements BuildableCommand {
             PlatformPlayer platformPlayer = sender.getPlatformPlayer();
             User user = platformPlayer == null
                     ? null
-                    : CultAPI.INSTANCE.getPlayerDataManager().getUser((Player) platformPlayer.getNative());
+                    : CultAPI.INSTANCE.getPlayerDataManager().getUser(platformPlayer);
             sender.sendMessage(MessageUtil.getParsedComponent(
                     sender, "player-not-found", "%prefix% &cPlayer is exempt or offline!"));
 

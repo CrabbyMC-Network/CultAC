@@ -2,6 +2,7 @@ package ac.cult.cultac.utils.anticheat.update;
 
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.collisions.HitboxData;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
@@ -11,11 +12,10 @@ import java.util.List;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.block.BlockFace;
 
 public final class BlockBreak {
     public final BlockPos position;
-    public final BlockFace face;
+    public final Direction face;
     public final int faceId;
     public final PlayerAction action;
     public final int sequence;
@@ -28,7 +28,7 @@ public final class BlockBreak {
     public BlockBreak(
             CultPlayer player,
             BlockPos position,
-            BlockFace face,
+            Direction face,
             int faceId,
             PlayerAction action,
             int sequence,
@@ -49,7 +49,6 @@ public final class BlockBreak {
     public SimpleCollisionBox getCombinedBox() {
         CollisionBox placedOn = HitboxData.getBlockHitbox(
                 player,
-                player.getInventory().getHeldItem().getType(),
                 SpigotConversionUtil.fromNmsBlockState(block),
                 position.getX(),
                 position.getY(),

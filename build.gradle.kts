@@ -12,8 +12,7 @@ import versioning.BuildConfig
 import versioning.VersionUtil
 
 plugins {
-    // Shared classloader for paperweight-userdev across subprojects (common, bukkit,
-    // legacy-placement-adapter apply it without a version).
+    // Shared classloader for paperweight-userdev across common and bukkit.
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.23" apply false
 }
 
@@ -22,7 +21,7 @@ BuildConfig.init(project)
 val baseVersion = "0.1.0"
 group = "ac.cult.cultac"
 version = VersionUtil.computeVersion(project, baseVersion)
-description = "Libre simulation anticheat designed for 26.3 with 1.21.2+ server and client support."
+description = "Libre simulation anticheat with Java 26.3 client action simulation."
 
 ext["timestamp"] = System.currentTimeMillis().toString()
 ext["git_branch"] = VersionUtil.getGitBranch(project, true)

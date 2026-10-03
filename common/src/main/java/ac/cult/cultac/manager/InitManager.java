@@ -49,9 +49,7 @@ public class InitManager {
                 .add(new PacketManager())
                 .add(new ViaBackwardsManager())
                 .add(new TickRunner())
-                .add(new TickEndEvent())
                 .add(new CommandRegister(CultAPI.INSTANCE.getCommandService()))
-                .add(new ChannelManager())
                 .add(new UpdateChecker())
                 .add(new PacketLimiter())
                 .add(CultAPI.INSTANCE.getAlertManager())
@@ -61,11 +59,8 @@ public class InitManager {
                 .add(new JavaVersion())
                 .add(new ViaVersion())
                 .add(new TAB())
+                .add(ac.cult.cultac.utils.minecraft.IsolatedMinecraft::start)
                 .add(new NetworkManagerStart())
-                // Geyser Bedrock bridge starts late: it taps Geyser sessions and must run
-                // after networking is up. The initable itself loads no Geyser classes
-                // (soft-dep: gated on the Geyser-Spigot plugin, LinkageError-guarded).
-                .add(new GeyserBedrockBridgeInit())
                 .addAll(extraStartableInitables)
                 .build();
 
@@ -73,6 +68,7 @@ public class InitManager {
                 // Detach the Geyser session taps before Cult's own networking tears down.
                 .add(new TerminateGeyserBedrockBridge())
                 .add(new TerminateNetworkManager())
+                .add(ac.cult.cultac.utils.minecraft.IsolatedMinecraft::stop)
                 .add(CultAPI.INSTANCE.getDataStoreLifecycle())
                 .addAll(extraStoppableInitables)
                 .build();
@@ -84,6 +80,8 @@ public class InitManager {
                 initable.load();
             } catch (Exception e) {
                 LogUtil.error("Failed to load " + initable.getClass().getSimpleName(), e);
+                if (CultAPI.INSTANCE.getLoader().failOnInitializationError())
+                    throw new IllegalStateException("CultAC initialization failed", e);
             }
         }
         loaded = true;
@@ -95,6 +93,8 @@ public class InitManager {
                 initable.start();
             } catch (Exception e) {
                 LogUtil.error("Failed to start " + initable.getClass().getSimpleName(), e);
+                if (CultAPI.INSTANCE.getLoader().failOnInitializationError())
+                    throw new IllegalStateException("CultAC startup failed", e);
             }
         }
         started = true;

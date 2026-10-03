@@ -24,7 +24,9 @@ public class NettyScheduler {
         watchdogTask = channel()
                 .eventLoop()
                 .scheduleAtFixedRate(
-                        () -> player.runSafely(this::tick),
+                        // Watchdogs can author a correction and its surrounding proofs.
+                        // Keep that entire operation behind earlier outbound packets.
+                        () -> player.user.executeAfterWrites(this::tick),
                         WATCHDOG_PERIOD_MS,
                         WATCHDOG_PERIOD_MS,
                         TimeUnit.MILLISECONDS);

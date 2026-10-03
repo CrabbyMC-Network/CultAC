@@ -7,7 +7,7 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.packet.InventoryPackets.CreativeSlot;
 import ac.cult.cultac.player.CultPlayer;
-import org.bukkit.GameMode;
+import ac.cult.cultac.protocol.value.GameMode;
 
 @CheckData(
         name = "CrashB",

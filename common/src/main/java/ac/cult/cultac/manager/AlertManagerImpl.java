@@ -209,8 +209,7 @@ public final class AlertManagerImpl implements AlertManager, ConfigReloadable, S
     public Set<Player> getEnabledAlerts() {
         Set<Player> enabled = new HashSet<>();
         for (PlatformPlayer platformPlayer : AlertType.NORMAL.players) {
-            Player bukkitPlayer = org.bukkit.Bukkit.getPlayer(platformPlayer.getUniqueId());
-            if (bukkitPlayer != null) {
+            if (platformPlayer.getNative() instanceof Player bukkitPlayer) {
                 enabled.add(bukkitPlayer);
             }
         }

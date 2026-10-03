@@ -7,19 +7,16 @@ import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class PlayerLoginHooks implements ac.cult.cultac.network.UserLifecycleHooks {
 
     @Override
-    public void onLogin(ac.cult.cultac.network.protocol.player.User user, Player player) {
-        if (player == null) {
+    public void onLogin(ac.cult.cultac.network.protocol.player.User user, PlatformPlayer platformPlayer) {
+        if (platformPlayer == null) {
             return;
         }
 
-        PlatformPlayer platformPlayer =
-                CultAPI.INSTANCE.getPlatformPlayerFactory().getFromNativePlayerType(player);
         var config = CultAPI.INSTANCE.getConfigManager();
 
         if (config.getConfig().getBooleanElse("debug-pipeline-on-join", false)) {

@@ -8,7 +8,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.bukkit.Material;
 
 /** Immutable entity-dependent shape inputs; never backed by a live server entity. */
 public record JavaCollisionState(
@@ -17,9 +16,10 @@ public record JavaCollisionState(
 
     public static JavaCollisionState of(CultPlayer player, PacketEntity actor, double fallDistance) {
         boolean self = actor == player.compensatedEntities.getSelf();
-        boolean walks =
-                BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(actor.type).is(EntityTypeTags.POWDER_SNOW_WALKABLE_MOBS)
-                        || self && player.getInventory().getBoots().getType() == Material.LEATHER_BOOTS;
+        boolean walks = BuiltInRegistries.ENTITY_TYPE
+                        .wrapAsHolder(actor.type)
+                        .is(EntityTypeTags.POWDER_SNOW_WALKABLE_MOBS)
+                || self && player.getInventory().getBoots().getItem() == net.minecraft.world.item.Items.LEATHER_BOOTS;
         return new JavaCollisionState(
                 fallDistance, walks, self && player.isSneaking, actor.type == EntityTypesCompat.FALLING_BLOCK);
     }

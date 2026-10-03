@@ -1,79 +1,31 @@
 package ac.cult.cultac.utils.nmsutil;
 
-import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.ItemUseAnimation;
-import net.minecraft.world.item.component.UseEffects;
-import org.bukkit.inventory.ItemStack;
+import ac.cult.cultac.protocol.value.ItemUseState;
 
-public class IsUsingItem {
-    /** Servers older than 1.21.11 have no UseEffects item component. */
-    private static final DataComponentType<UseEffects> USE_EFFECTS_COMPONENT = useEffectsComponent();
+public final class IsUsingItem {
+    private IsUsingItem() {}
 
     public static boolean isUsingItem(CultPlayer player) {
-        if (player.bukkitPlayer == null) return false;
-
-        ItemStack activeItem = player.bukkitPlayer.getActiveItem();
-        return activeItem != null && !activeItem.getType().isAir();
+        return state(player).active();
     }
 
     public static boolean isSlowDueToUsingItem(CultPlayer player) {
-        ItemStack activeItem = getActiveItem(player);
-        if (activeItem == null || activeItem.getType().isAir()) {
-            return false;
-        }
-        if (USE_EFFECTS_COMPONENT != null) {
-            return !getUseEffects(activeItem).canSprint();
-        }
-        // Before the UseEffects component existed, the client slowed while using
-        // items with eat, drink, or block animations.
-        ItemUseAnimation animation =
-                SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
-        return animation == ItemUseAnimation.EAT
-                || animation == ItemUseAnimation.DRINK
-                || animation == ItemUseAnimation.BLOCK;
+        ItemUseState state = state(player);
+        return state.active() && !state.canSprint();
     }
 
     public static float getUseItemSpeedMultiplier(CultPlayer player) {
-        ItemStack activeItem = getActiveItem(player);
-        if (activeItem == null || activeItem.getType().isAir()) {
-            return 1.0F;
-        }
-        if (USE_EFFECTS_COMPONENT != null) {
-            return getUseEffects(activeItem).speedMultiplier();
-        }
-        ItemUseAnimation animation =
-                SpigotConversionUtil.toNmsItemStack(activeItem).getUseAnimation();
-        return animation == ItemUseAnimation.EAT
-                        || animation == ItemUseAnimation.DRINK
-                        || animation == ItemUseAnimation.BLOCK
-                ? 0.2F
-                : 1.0F;
+        ItemUseState state = state(player);
+        return state.active() ? state.speedMultiplier() : 1.0F;
     }
 
     public static void stopUseItem(CultPlayer player) {
-        if (player.bukkitPlayer == null) return;
-        player.bukkitPlayer.clearActiveItem();
+        if (player.platformPlayer != null) player.platformPlayer.clearActiveItem();
     }
 
-    private static ItemStack getActiveItem(CultPlayer player) {
-        if (player.bukkitPlayer == null) return null;
-        return player.bukkitPlayer.getActiveItem();
-    }
-
-    private static UseEffects getUseEffects(ItemStack item) {
-        return SpigotConversionUtil.toNmsItemStack(item).getOrDefault(USE_EFFECTS_COMPONENT, UseEffects.DEFAULT);
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static DataComponentType<UseEffects> useEffectsComponent() {
-        try {
-            return (DataComponentType)
-                    DataComponents.class.getField("USE_EFFECTS").get(null);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
+    private static ItemUseState state(CultPlayer player) {
+        ItemUseState state = player.platformPlayer == null ? null : player.platformPlayer.getItemUseState();
+        return state == null ? ItemUseState.NONE : state;
     }
 }

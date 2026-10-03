@@ -15,6 +15,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSpectatorAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
@@ -22,8 +23,7 @@ import ac.grim.grimac.api.config.ConfigManager;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import java.util.ArrayDeque;
 import net.minecraft.core.BlockPos;
-import org.bukkit.GameMode;
-import org.bukkit.block.data.BlockData;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 
 @CheckData(
@@ -51,7 +51,7 @@ public class PacketOrderI extends Check implements PostPredictionListener {
     private boolean cancelledDigging;
 
     private BlockPos startedDiggingPos;
-    private BlockData startedDiggingState;
+    private BlockState startedDiggingState;
     private boolean digging;
     private final ArrayDeque<FlagData> flags = new ArrayDeque<>();
 

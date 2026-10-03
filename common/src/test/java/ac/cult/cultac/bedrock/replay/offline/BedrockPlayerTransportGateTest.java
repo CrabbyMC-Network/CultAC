@@ -1,16 +1,21 @@
 package ac.cult.cultac.bedrock.replay.offline;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import ac.cult.cultac.bedrock.MovementPlatform;
+import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.events.packets.listeners.CheckManagerListener;
 import ac.cult.cultac.events.packets.listeners.PacketServerTeleport;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
+import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundAcceptTeleportation;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.value.Vec3d;
 import ac.cult.cultac.utils.data.SetbackPosWithVector;
+import java.util.UUID;
 import net.minecraft.world.phys.Vec3;
 import org.junit.Test;
 
@@ -93,6 +98,92 @@ public final class BedrockPlayerTransportGateTest {
             assertFalse(player.getSetbackTeleportUtil().isPendingSetback());
             assertTrue(player.getSetbackTeleportUtil().hasPendingBedrockTransportTeleport());
             assertTrue(player.getSetbackTeleportUtil().pendingTeleports.size() > pendingBefore);
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
+    }
+
+    @Test
+    public void teleportAcknowledgingFrameProjectsOffGround() {
+        OfflineCultTestBootstrap.installConfig();
+        CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
+        try {
+            seedSetbackAnchor(player, new Vec3(10.0D, 64.0D, 20.0D));
+            CheckManagerListener listener = new CheckManagerListener();
+            var gate = player.packetStateData.bedrockTranslatedMovement;
+            ServerboundMovePlayer projection =
+                    new ServerboundMovePlayer(10.0D, 64.0D, 20.0D, 0, 0, true, false, true, false);
+
+            gate.clear();
+            gate.markTeleportFrame();
+            gate.allowPlayer(true);
+            PacketReceiveEvent<ServerboundMovePlayer> teleport = receiveEvent(player, projection);
+            listener.onMovePlayer(teleport, player, projection);
+            assertFalse(teleport.isCancelled());
+            assertFalse(teleport.getPacket().onGround());
+            assertFalse(player.packetStateData.lastPacketWasTeleport);
+
+            gate.clear();
+            gate.allowPlayer(true);
+            PacketReceiveEvent<ServerboundMovePlayer> nextFrame = receiveEvent(player, projection);
+            listener.onMovePlayer(nextFrame, player, projection);
+            assertFalse(nextFrame.isCancelled());
+            assertTrue(nextFrame.getPacket().onGround());
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
+    }
+
+    @Test
+    public void geyserTeleportResponsePassesOffGroundOncePerAcknowledgement() throws ReflectiveOperationException {
+        OfflineCultTestBootstrap.installConfig();
+        CultPlayer player = OfflineBedrockReplayRunnerTest.offlinePlayer();
+        try {
+            seedSetbackAnchor(player, new Vec3(0.5D, 64.0D, 0.5D));
+            CheckManagerListener listener = new CheckManagerListener();
+            ServerboundMovePlayer response =
+                    new ServerboundMovePlayer(5.0D, 70.0D, 5.0D, 10.0F, 20.0F, true, false, true, true);
+
+            PacketReceiveEvent<ServerboundMovePlayer> unannounced = receiveEvent(player, response);
+            listener.onMovePlayer(unannounced, player, response);
+            assertTrue(unannounced.isCancelled());
+
+            ServerboundAcceptTeleportation accept =
+                    new ServerboundAcceptTeleportation(9, new Vec3d(5.0D, 70.0D, 5.0D), 10.0F, 20.0F);
+            listener.onAcceptTeleportation(RecordReceiveTestEvents.teleport(player, accept), player, accept);
+            PacketReceiveEvent<ServerboundMovePlayer> answered = receiveEvent(player, response);
+            listener.onMovePlayer(answered, player, response);
+            assertFalse(answered.isCancelled());
+            assertFalse(answered.getPacket().onGround());
+            var visible = player.getSetbackTeleportUtil().getClass().getDeclaredField("bedrockPaperVisiblePosition");
+            visible.setAccessible(true);
+            assertEquals(new Vec3(5.0D, 70.0D, 5.0D), visible.get(player.getSetbackTeleportUtil()));
+
+            PacketReceiveEvent<ServerboundMovePlayer> repeated = receiveEvent(player, response);
+            listener.onMovePlayer(repeated, player, response);
+            assertTrue(repeated.isCancelled());
+        } finally {
+            OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
+        }
+    }
+
+    @Test
+    public void bridgedTickEndOnlyClosesTheProjectedFrame() {
+        OfflineCultTestBootstrap.installConfig();
+        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        BedrockPlayerState state = new BedrockPlayerState(uuid);
+        state.setSetbacksEnabled(true);
+        User user = OfflineCultTestBootstrap.wireUser(new User.Profile(uuid, ".Bridged_Client"), new Object());
+        CultPlayer player = new CultPlayer(user, MovementPlatform.BEDROCK, state);
+        try {
+            int acceptedTicks = player.packetStateData.acceptedClientTick;
+            player.packetStateData.bedrockTranslatedMovement.allowPlayer(true);
+
+            new CheckManagerListener().processClientTickEndReceive(RecordReceiveTestEvents.tickEnd(player), player);
+
+            assertFalse(player.packetStateData.bedrockTranslatedMovement.hasPending());
+            // The bridge already counted this client tick when it translated the frame.
+            assertEquals(acceptedTicks, player.packetStateData.acceptedClientTick);
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(player);
         }

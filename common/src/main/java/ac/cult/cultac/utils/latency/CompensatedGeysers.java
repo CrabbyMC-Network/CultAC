@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.block.data.BlockData;
 
 /**
  * Client-visible potent-sulfur block entity tickers, in vanilla ticker order.
@@ -64,8 +63,9 @@ public final class CompensatedGeysers {
         if (state == null) {
             return false;
         }
-        BlockData data = SpigotConversionUtil.fromNmsBlockState(state);
-        return "POTENT_SULFUR".equals(data.getMaterial().name())
-                && !data.getAsString(false).contains("potent_sulfur_state=dry");
+        BlockState data = SpigotConversionUtil.fromNmsBlockState(state);
+        return "POTENT_SULFUR".equals(ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(data.getBlock()))
+                && !net.minecraft.commands.arguments.blocks.BlockStateParser.serialize(data)
+                        .contains("potent_sulfur_state=dry");
     }
 }

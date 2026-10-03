@@ -10,12 +10,12 @@ import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.*;
 import ac.cult.cultac.protocol.data.ProtocolData;
+import ac.cult.cultac.protocol.netty.CultDecoder;
+import ac.cult.cultac.protocol.netty.CultEncoder;
 import ac.cult.cultac.protocol.packet.ClientboundPackets;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
-import ac.cult.cultac.protocol.paper.CultDecoder;
-import ac.cult.cultac.protocol.paper.CultEncoder;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.*;
 import io.netty.channel.*;
@@ -592,6 +592,88 @@ class CultTransportTest {
     }
 
     @Test
+    void synchronousProxyConfigurationResumesQueuedPlayFramesWithoutHostReadRequest() throws Exception {
+        try (var f = new Fixture(true)) {
+            f.channel.pipeline().replace(CultDecoder.NAME, CultDecoder.NAME, new CultDecoder(f.connection, true));
+            var observed = new ArrayList<String>();
+            f.channel.pipeline().replace("decoder", "decoder", new ChannelInboundHandlerAdapter() {
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object message) {
+                    ByteBuf view = ((ByteBuf) message).duplicate();
+                    var phase = f.connection.phase(SERVERBOUND);
+                    observed.add(phase + ":"
+                            + RUNTIME.data().packets(phase, SERVERBOUND).name(Wire.readVarInt(view)));
+                    ctx.fireChannelRead(message);
+                    // Velocity switches its session handler here, without requesting a read.
+                }
+            });
+            f.connection.phase(SERVERBOUND, CONFIGURATION);
+            var frames = List.of(
+                    f.frame(SERVERBOUND, CONFIGURATION, "finish_configuration"),
+                    f.pong(PLAY, 1),
+                    f.frame(SERVERBOUND, PLAY, "configuration_acknowledged"),
+                    f.pong(CONFIGURATION, 2),
+                    f.frame(SERVERBOUND, CONFIGURATION, "finish_configuration"),
+                    f.pong(PLAY, 3));
+            f.channel.writeInbound(frames.toArray());
+            f.pump();
+            f.pump();
+            for (ByteBuf frame : frames) {
+                assertSame(frame, f.channel.readInbound());
+                frame.release();
+            }
+            assertEquals(
+                    List.of(
+                            "CONFIGURATION:minecraft:finish_configuration",
+                            "PLAY:minecraft:pong",
+                            "PLAY:minecraft:configuration_acknowledged",
+                            "CONFIGURATION:minecraft:pong",
+                            "CONFIGURATION:minecraft:finish_configuration",
+                            "PLAY:minecraft:pong"),
+                    observed);
+            assertEquals(PLAY, f.connection.phase(SERVERBOUND));
+        }
+    }
+
+    @Test
+    void proxyHostReadPauseHoldsQueuedAndLateFramesUntilItsEventCompletes() throws Exception {
+        try (var f = new Fixture(true)) {
+            f.channel.pipeline().replace(CultDecoder.NAME, CultDecoder.NAME, new CultDecoder(f.connection, true));
+            var received = new AtomicInteger();
+            f.channel.pipeline().replace("decoder", "decoder", new ChannelInboundHandlerAdapter() {
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object message) {
+                    if (received.incrementAndGet() == 1) ctx.channel().config().setAutoRead(false);
+                    ctx.fireChannelRead(message);
+                }
+            });
+            var first = f.pong(PLAY, 1);
+            var second = f.pong(PLAY, 2);
+            var late = f.pong(PLAY, 3);
+            var decoder = f.channel.pipeline().context(CultDecoder.NAME);
+            ((CultDecoder) decoder.handler()).channelRead(decoder, first);
+            ((CultDecoder) decoder.handler()).channelRead(decoder, second);
+            f.pump();
+            assertSame(first, f.channel.readInbound());
+            first.release();
+            assertNull(f.channel.readInbound(), "Proxy event must pause the next frame");
+            ((CultDecoder) decoder.handler()).channelRead(decoder, late);
+            f.pump();
+            assertNull(f.channel.readInbound(), "An already-read frame must also respect the host pause");
+            // MinecraftConnection.setAutoReading(true) performs both operations.
+            f.channel.config().setAutoRead(true);
+            f.channel.read();
+            f.pump();
+            f.pump();
+            assertSame(second, f.channel.readInbound());
+            second.release();
+            assertSame(late, f.channel.readInbound());
+            late.release();
+            assertEquals(3, received.get());
+        }
+    }
+
+    @Test
     void nativeInboundConfigurationTaskPassesInlineWhileOutboundFramesWaitForOwner() throws Exception {
         try (var f = new Fixture(true)) {
             f.channel.pipeline().replace("decoder", "inbound_config", new UnconfiguredPipelineHandler.Inbound());
@@ -875,6 +957,123 @@ class CultTransportTest {
     }
 
     @Test
+    void hostCallbacksFollowQueuedPacketsAndCaptureTheirProofsBeforeLaterWrites() throws Exception {
+        try (var f = new Fixture(true)) {
+            var sequence = new AtomicInteger();
+            f.routes.send(ClientboundPackets.PING, event -> {
+                f.assertOwner();
+                if (event.getPacket().id() >= 100) {
+                    event.getWritesAfterSend()
+                            .add(new CultWrite(new ClientboundPing(sequence.incrementAndGet()), false));
+                }
+            });
+            var blocked = new CountDownLatch(1);
+            var release = new CountDownLatch(1);
+            f.owner.execute(() -> {
+                blocked.countDown();
+                try {
+                    assertTrue(release.await(5, TimeUnit.SECONDS));
+                } catch (InterruptedException ex) {
+                    throw new AssertionError(ex);
+                }
+            });
+            assertTrue(blocked.await(5, TimeUnit.SECONDS));
+            try {
+                f.channel.write(f.ping(PLAY, 100));
+                f.channel.write(f.ping(PLAY, 200));
+                var ctx = f.channel.pipeline().context(CultEncoder.NAME);
+                ((CultEncoder) ctx.handler()).executeAfterWrites(ctx, () -> {
+                    f.assertOwner();
+                    assertEquals(2, sequence.get(), "Both earlier packets must prepare their proof first");
+                    f.user.write(new ClientboundPing(sequence.incrementAndGet()));
+                });
+                f.channel.writeAndFlush(f.ping(PLAY, 300));
+                release.countDown();
+                f.pump();
+                assertEquals(
+                        List.of("D", "P100", "P1", "D", "D", "P200", "P2", "D", "P3", "D", "P300", "P4", "D"),
+                        f.output());
+            } finally {
+                release.countDown();
+            }
+        }
+    }
+
+    @Test
+    void modelScheduledProofsAllocateAtTheirOutboundQueuePosition() throws Exception {
+        try (var f = new Fixture(true)) {
+            var sequence = new AtomicInteger();
+            f.routes.send(ClientboundPackets.PING, event -> {
+                f.assertOwner();
+                if (event.getPacket().id() >= 100) {
+                    event.getWritesAfterSend()
+                            .add(new CultWrite(new ClientboundPing(sequence.incrementAndGet()), false));
+                }
+            });
+            var blocked = new CountDownLatch(1);
+            var release = new CountDownLatch(1);
+            f.owner.execute(() -> {
+                blocked.countDown();
+                try {
+                    assertTrue(release.await(5, TimeUnit.SECONDS));
+                } catch (InterruptedException ex) {
+                    throw new AssertionError(ex);
+                }
+            });
+            assertTrue(blocked.await(5, TimeUnit.SECONDS));
+            try {
+                f.channel.write(f.ping(PLAY, 100));
+                f.channel.writeAndFlush(f.ping(PLAY, 200));
+                // A scheduled model task can run while I/O still holds packet 200.
+                f.owner.execute(() -> f.user.executeAfterWrites(() -> {
+                    f.assertOwner();
+                    f.user.write(new ClientboundPing(sequence.incrementAndGet()));
+                }));
+                release.countDown();
+                f.pump();
+                assertEquals(List.of("D", "P100", "P1", "D", "D", "P200", "P2", "D", "P3"), f.output());
+            } finally {
+                release.countDown();
+            }
+        }
+    }
+
+    @Test
+    void afterSendProofsPrecedeProofsCreatedByFollowingQueuedPackets() throws Exception {
+        try (var f = new Fixture(true)) {
+            var sequence = new AtomicInteger();
+            f.routes.send(ClientboundPackets.PING, event -> {
+                f.assertOwner();
+                if (event.getPacket().id() >= 100) {
+                    event.getWritesAfterSend()
+                            .add(new CultWrite(new ClientboundPing(sequence.incrementAndGet()), false));
+                    event.getTasksAfterSend().add(() -> f.user.write(new ClientboundPing(sequence.incrementAndGet())));
+                }
+            });
+            var blocked = new CountDownLatch(1);
+            var release = new CountDownLatch(1);
+            f.owner.execute(() -> {
+                blocked.countDown();
+                try {
+                    assertTrue(release.await(5, TimeUnit.SECONDS));
+                } catch (InterruptedException ex) {
+                    throw new AssertionError(ex);
+                }
+            });
+            assertTrue(blocked.await(5, TimeUnit.SECONDS));
+            try {
+                f.channel.write(f.ping(PLAY, 100));
+                f.channel.writeAndFlush(f.ping(PLAY, 200));
+                release.countDown();
+                f.pump();
+                assertEquals(List.of("D", "P100", "P1", "D", "P2", "D", "P200", "P3", "D", "P4"), f.output());
+            } finally {
+                release.countDown();
+            }
+        }
+    }
+
+    @Test
     void writesQueuedDuringEmissionDrainWithoutGrowingTheCallStack() throws Exception {
         try (var f = new Fixture(false)) {
             int count = 4096;
@@ -1009,7 +1208,7 @@ class CultTransportTest {
             owner = owned ? new DefaultEventExecutor() : null;
             connection = new CultConnection(channel, routes.dispatcher, ignored -> {
                 ownerLookups.incrementAndGet();
-                return owner;
+                return owner == null ? null : new PacketOwner(owner, null);
             });
             connection.phase(SERVERBOUND, PLAY);
             connection.phase(CLIENTBOUND, PLAY);

@@ -7,7 +7,6 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import java.util.List;
-import org.bukkit.ChatColor;
 
 public class FlagCaller extends CultProcessor implements PostPredictionListener {
     public FlagCaller(CultPlayer player) {
@@ -33,7 +32,7 @@ public class FlagCaller extends CultProcessor implements PostPredictionListener 
                     continue;
                 }
                 flag.getCheck()
-                        .flag(flag.getVerbose().getString() + " " + ChatColor.DARK_GRAY
+                        .flag(flag.getVerbose().getString() + " " + "\u00a78"
                                 + predictionComplete.getPredictionResult().getIdentifier());
             }
         }

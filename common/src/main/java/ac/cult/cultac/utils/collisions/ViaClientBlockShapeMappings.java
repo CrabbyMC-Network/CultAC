@@ -25,12 +25,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
 public final class ViaClientBlockShapeMappings {
-    // Material#isSolid from the vanilla 1.8 block registry (IDs 0..197).
+    // Block#isSolid from the vanilla 1.8 block registry (IDs 0..197).
     // This is material metadata, not collision-shape fullness. E.g. slabs are
     // solid material and ladders are not, regardless of their collision boxes.
     private static final Set<Integer> LEGACY_NON_SOLID_MATERIAL_IDS = Set.of(
@@ -71,7 +68,7 @@ public final class ViaClientBlockShapeMappings {
     }
 
     static Optional<CollisionBox> movement(
-            CultPlayer player, BlockData state, int x, int y, int z, double entityBottom) {
+            CultPlayer player, BlockState state, int x, int y, int z, double entityBottom) {
         Replacement replacement = replacement(player, state);
         if (replacement == null) {
             return Optional.empty();
@@ -85,7 +82,7 @@ public final class ViaClientBlockShapeMappings {
                 .or(() -> Optional.of(latest));
     }
 
-    static Optional<CollisionBox> visual(CultPlayer player, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> visual(CultPlayer player, BlockState state, int x, int y, int z) {
         Replacement replacement = replacement(player, state);
         if (replacement == null) {
             return Optional.empty();
@@ -119,7 +116,7 @@ public final class ViaClientBlockShapeMappings {
                 : mapping.legacyMaterialSolidity().getOrDefault(state.getBlock(), state.isSolid());
     }
 
-    private static Replacement replacement(CultPlayer player, BlockData state) {
+    private static Replacement replacement(CultPlayer player, BlockState state) {
         if (player == null || player.bedrockState != null || state == null) {
             return null;
         }
@@ -175,7 +172,7 @@ public final class ViaClientBlockShapeMappings {
         }
         BitSet representedCurrentStates = representedCurrentStates(version, toServer, toClient);
         Map<Integer, Replacement> replacements = new HashMap<>();
-        Set<Material> needsReplacementByMaterial = new HashSet<>();
+        Set<Block> needsReplacementByMaterial = new HashSet<>();
 
         for (BlockState state : Block.BLOCK_STATE_REGISTRY) {
             int currentId = Block.getId(state);
@@ -185,7 +182,7 @@ public final class ViaClientBlockShapeMappings {
 
             needsReplacementByMaterial.add(
                     ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state)
-                            .getMaterial());
+                            .getBlock());
 
             int clientState = mapStateId(currentId, toClient);
             if (clientState < 0) {
@@ -330,11 +327,8 @@ public final class ViaClientBlockShapeMappings {
         }
     }
 
-    private static BlockState toBlockState(BlockData state) {
-        if (state instanceof CraftBlockData craftBlockData) {
-            return craftBlockData.getState();
-        }
-        return null;
+    private static BlockState toBlockState(BlockState state) {
+        return state;
     }
 
     private record Snapshot(EnumMap<ClientVersion, VersionMappings> versions) {
@@ -370,12 +364,12 @@ public final class ViaClientBlockShapeMappings {
 
     private record VersionMappings(
             Map<Integer, Replacement> replacements,
-            Set<Material> needsReplacementMaterials,
+            Set<Block> needsReplacementMaterials,
             Map<Block, Boolean> legacyMaterialSolidity) {
         boolean isEmpty() {
             return replacements.isEmpty() && needsReplacementMaterials.isEmpty();
         }
     }
 
-    private record Replacement(BlockState blockState, BlockData blockData) {}
+    private record Replacement(BlockState blockState, BlockState blockData) {}
 }

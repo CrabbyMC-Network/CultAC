@@ -5,6 +5,7 @@ import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import java.util.ArrayList;
@@ -20,8 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import org.bukkit.GameMode;
-import org.bukkit.block.data.BlockData;
 
 /**
  * MCP-Reborn 26.2 PotentSulfurBlockEntity#LAUNCH_ENTITY_TICKER: while a potent
@@ -170,13 +169,13 @@ public final class GeyserVelocity {
     }
 
     private static boolean isEruptingPotentSulfur(BlockState state) {
-        BlockData data = SpigotConversionUtil.fromNmsBlockState(state);
-        if (!"POTENT_SULFUR".equals(data.getMaterial().name())) {
+        BlockState data = SpigotConversionUtil.fromNmsBlockState(state);
+        if (!"POTENT_SULFUR".equals(ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(data.getBlock()))) {
             return false;
         }
         // The PotentSulfurBlock class only exists on 26.2 servers, so read the
         // BlockStateProperties#POTENT_SULFUR_STATE property from the serialized form.
-        String serialized = data.getAsString(false);
+        String serialized = net.minecraft.commands.arguments.blocks.BlockStateParser.serialize(data);
         return serialized.contains("potent_sulfur_state=erupting")
                 || serialized.contains("potent_sulfur_state=continuous");
     }

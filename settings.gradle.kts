@@ -62,10 +62,15 @@ if (gradle.startParameter.isBuildScan) {
 
 rootProject.name = "cultac"
 include("common")
+include("placement-api")
+include("placement-runtime")
+include("vanilla-runtime")
+include("vanilla-bootstrap")
+include("velocity-bootstrap", "velocity-platform")
+include("velocity-validation")
+project(":velocity-validation").projectDir = file("validation/velocity/harness")
 include("bukkit")
-include("legacy-placement-adapter")
-include("placement-26-2-adapter")
-include("placement-1-21-11-adapter")
-include("protocol", "protocol-paper")
+include("protocol", "protocol-netty")
+include("protocol-codec")
 
 if (file("workspace.gradle.kts").exists()) apply(from = "workspace.gradle.kts")

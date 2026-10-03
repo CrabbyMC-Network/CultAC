@@ -33,7 +33,7 @@ public class PacketServerTeleport {
             return;
         }
         // The wire packet is ID-only through 26.2 and carries position in
-        // 26.3. Translation presents the server's wire format here.
+        // 26.3. The transport preserves the intercepted endpoint's wire format.
         if (ack.position() == null) {
             return;
         }

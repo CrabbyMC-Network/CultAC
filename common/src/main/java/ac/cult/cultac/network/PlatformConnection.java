@@ -1,0 +1,46 @@
+package ac.cult.cultac.network;
+
+import ac.cult.cultac.network.protocol.player.User;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
+import ac.cult.cultac.player.CultPlayer;
+import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.Nullable;
+
+/** Platform operations for one exact transport connection, never an account lookup. */
+public interface PlatformConnection {
+    /** Available once the platform has authenticated this connection. */
+    @Nullable
+    User.Profile authenticatedProfile();
+
+    /** Available once the platform's player has been attached to this connection. */
+    @Nullable
+    PlayerBinding playerBinding();
+
+    ac.cult.cultac.utils.minecraft.MinecraftRegistries registries();
+
+    /** Null uses the host protocol, as on the Paper native transport. */
+    default ac.cult.cultac.protocol.ProtocolVersion wireVersion() {
+        return null;
+    }
+
+    default ac.cult.cultac.protocol.PacketProjection packetProjection() {
+        return null;
+    }
+
+    void disconnect(Component reason);
+
+    /** Direct platform delivery; must not call back through User.sendMessage. */
+    void sendMessage(Component message);
+
+    interface PlayerBinding {
+        PlatformPlayer player();
+
+        /** Rechecked on the packet owner before binding; a reconnect must not steal this session. */
+        boolean isCurrent();
+
+        boolean matches(Object nativePlayer);
+
+        /** Initializes platform state when joining or attaching during a reload. */
+        void initialize(CultPlayer player);
+    }
+}

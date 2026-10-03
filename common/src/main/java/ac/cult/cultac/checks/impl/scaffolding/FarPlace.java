@@ -8,7 +8,7 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.math.VectorUtils;
 import net.minecraft.core.BlockPos;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Blocks;
 
 @CheckData(
         name = "FarPlace",
@@ -25,7 +25,7 @@ public class FarPlace extends BlockPlaceCheck {
 
         BlockPos blockPos = place.getPlacedAgainstBlockLocation();
 
-        if (place.getMaterial() == Material.SCAFFOLDING) return;
+        if (place.getMaterial() == Blocks.SCAFFOLDING) return;
 
         double min = Double.MAX_VALUE;
         for (double d : player.getPossibleEyeHeights()) {

@@ -7,8 +7,7 @@ import ac.cult.cultac.manager.player.ActionManager;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.PacketStateData;
 import ac.cult.cultac.utils.latency.CompensatedInventory;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.cloudburstmc.protocol.bedrock.packet.ContainerClosePacket;
 import org.cloudburstmc.protocol.bedrock.packet.MobEquipmentPacket;
 import org.geysermc.geyser.inventory.GeyserItemStack;
@@ -49,11 +48,11 @@ public class GeyserInventoryActionsTest {
     public void unchangedGeyserSlotsDoNotOverwriteCompensatedState() throws Exception {
         var player = player();
         var session = session();
-        player.getInventory().inventory.getSlot(9).set(new ItemStack(Material.DIAMOND_SWORD));
+        player.getInventory().inventory.getSlot(9).set(new ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
         GeyserInventoryActions.translate(session, player, new MobEquipmentPacket(), () -> {});
         assertEquals(
-                Material.DIAMOND_SWORD,
-                player.getInventory().inventory.getSlot(9).getItem().getType());
+                net.minecraft.world.item.Items.DIAMOND_SWORD,
+                player.getInventory().inventory.getSlot(9).getItem().getItem());
     }
 
     @Test
@@ -61,7 +60,7 @@ public class GeyserInventoryActionsTest {
         var player = player();
         player.hasInventoryOpen = true;
         player.getInventory().openWindowID = 3;
-        player.getInventory().menu.setCarried(new ItemStack(Material.STONE));
+        player.getInventory().menu.setCarried(new ItemStack(net.minecraft.world.item.Items.STONE));
         GeyserInventoryActions.translate(session(), player, new ContainerClosePacket(), () -> {});
         assertFalse(player.hasInventoryOpen);
         assertEquals(0, player.getInventory().openWindowID);
@@ -87,9 +86,11 @@ public class GeyserInventoryActionsTest {
         var player = player();
         var target = player.getInventory();
         target.openWindowID = 3;
-        target.applyBedrockSlots(4, java.util.Map.of(9, new ItemStack(Material.STONE)));
+        target.applyBedrockSlots(4, java.util.Map.of(9, new ItemStack(net.minecraft.world.item.Items.STONE)));
         assertTrue(target.menu.getSlot(9).getItem().isEmpty());
-        target.applyBedrockSlots(0, java.util.Map.of(9, new ItemStack(Material.STONE)));
-        assertEquals(Material.STONE, target.inventory.getSlot(9).getItem().getType());
+        target.applyBedrockSlots(0, java.util.Map.of(9, new ItemStack(net.minecraft.world.item.Items.STONE)));
+        assertEquals(
+                net.minecraft.world.item.Items.STONE,
+                target.inventory.getSlot(9).getItem().getItem());
     }
 }

@@ -24,6 +24,7 @@ public class BadPacketsA extends Check implements CheckListener {
             PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
         final int slot = packet.slot();
 
+        // TODO: codex claims that this flags on join sometimes
         if (slot == lastSlot && flag(V.write(verbose()).sint(slot)) && shouldModifyPackets()) {
             event.setCancelled(true);
             player.onPacketCancel();

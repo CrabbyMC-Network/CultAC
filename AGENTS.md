@@ -14,8 +14,8 @@ layout and the build/test commands are adapted to this tree.
   (`bedrock/`), checks, managers, and the platform SPI (`platform/api/`).
 - `bukkit/` — the Bukkit/Paper platform module. Bukkit/Paper-only; the Fabric
   modules were removed in the port. The distributable jar is built here.
-- `legacy-placement-adapter/` — the pre-1.13 placement adapter, merged into the
-  bukkit shadow jar.
+- `placement-api/` — JDK-only inputs and results shared with the isolated runtime.
+- `placement-runtime/` — the isolated original vanilla Java 26.3 action and geometry runtime.
 - Full build: `./gradlew build` (output at `bukkit/build/libs/`)
 - Unit tests: `./gradlew :common:test`
 - Offline Bedrock replay tests: `./gradlew :common:offlineBedrockReplayTest`

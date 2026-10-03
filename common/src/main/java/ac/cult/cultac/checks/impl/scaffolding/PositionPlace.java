@@ -10,7 +10,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import net.minecraft.SharedConstants;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Blocks;
 
 @CheckData(
         name = "PositionPlace",
@@ -35,7 +35,7 @@ public class PositionPlace extends BlockPlaceCheck {
 
     @Override
     public void onBlockPlace(final BlockPlace place) {
-        if (place.getMaterial() == Material.SCAFFOLDING || player.inVehicle()) return;
+        if (place.getMaterial() == Blocks.SCAFFOLDING || player.inVehicle()) return;
 
         SimpleCollisionBox combined = getCombinedBox(place);
 

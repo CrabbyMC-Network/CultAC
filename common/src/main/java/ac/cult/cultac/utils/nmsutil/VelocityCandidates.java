@@ -12,8 +12,9 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Set;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 public final class VelocityCandidates {
     private VelocityCandidates() {}
@@ -141,10 +142,10 @@ public final class VelocityCandidates {
             return OptionalDouble.empty();
         }
 
-        Material onBlock = context.getWorldData().getOnBlock();
+        Block onBlock = context.getWorldData().getOnBlock();
         CultPlayer player = result.getPlayer();
         boolean use26Dot2 = player != null && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_2);
-        if (use26Dot2 ? !isBouncyBlock(onBlock) : onBlock != Material.SLIME_BLOCK) {
+        if (use26Dot2 ? !isBouncyBlock(onBlock) : onBlock != Blocks.SLIME_BLOCK) {
             return OptionalDouble.empty();
         }
 
@@ -158,7 +159,7 @@ public final class VelocityCandidates {
             // MCP-Reborn 26.2 Entity#restituteMovementAfterCollisions (Entity.java:803-844)
             double gravity = effectiveGravity(player);
             if (suppressesBounceAtGravity(player.getClientVersion(), deltaY, gravity)
-                    || onBlock == Material.HONEY_BLOCK) {
+                    || onBlock == Blocks.HONEY_BLOCK) {
                 // Below the effective-gravity impact speed (or inside
                 // #suppresses_bounce) the 26.2 client does not bounce at all.
                 return OptionalDouble.empty();
@@ -179,19 +180,20 @@ public final class VelocityCandidates {
         return result.getValidMovements().getClosestTrace().preCollisionVelocity();
     }
 
-    private static boolean isBouncyBlock(Material onBlock) {
+    private static boolean isBouncyBlock(Block onBlock) {
         if (onBlock == null) return false;
         // Blocks registered with a bounceRestitution in the 26.2 client
         // registry (MCP-Reborn Blocks.java): slime (1.0) and beds (0.75).
-        return onBlock == Material.SLIME_BLOCK
-                || "SHELF_MUSHROOM".equals(onBlock.name())
-                || (NmsBlockTags.isBed(onBlock) && !"STRAW_BED".equals(onBlock.name()));
+        return onBlock == Blocks.SLIME_BLOCK
+                || "SHELF_MUSHROOM".equals(ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(onBlock))
+                || (NmsBlockTags.isBed(onBlock)
+                        && !"STRAW_BED".equals(ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(onBlock)));
     }
 
-    private static double blockBounciness(PredictionResult result, Material onBlock) {
+    private static double blockBounciness(PredictionResult result, Block onBlock) {
         // MCP-Reborn 26.2 Entity#getBlockBounciness: non-living entities (such as
         // boats and minecarts) only receive 80% of the block's restitution.
-        double restitution = onBlock == Material.SLIME_BLOCK ? 1.0D : isBouncyBlock(onBlock) ? 0.75D : 0.0D;
+        double restitution = onBlock == Blocks.SLIME_BLOCK ? 1.0D : isBouncyBlock(onBlock) ? 0.75D : 0.0D;
         PacketEntity vehicle = result.getSimulationContext().getVehicle();
         boolean living = vehicle == null || vehicle.isLivingEntity();
         return living ? restitution : restitution * 0.8D;
@@ -329,7 +331,7 @@ public final class VelocityCandidates {
 
     private static double applyPostVerticalCollisionBlockVelocity(
             PredictionResult result, double deltaY, double clippedY) {
-        Material onBlock = result.getSimulationContext().getWorldData().getOnBlock();
+        Block onBlock = result.getSimulationContext().getWorldData().getOnBlock();
         boolean suppressingBounce = result.getSimulationContext().getVehicle() == null
                 && result.getSimulationContext().isSneaking();
         CultPlayer player = result.getPlayer();
@@ -350,7 +352,7 @@ public final class VelocityCandidates {
                 // #suppresses_bounce (vanilla: honey block) and the impact-speed
                 // gate both force restitution to zero.
                 if (suppressesBounceAtGravity(player.getClientVersion(), deltaY, gravity)
-                        || onBlock == Material.HONEY_BLOCK) {
+                        || onBlock == Blocks.HONEY_BLOCK) {
                     restitution = 0.0D;
                 } else {
                     restitution = Math.max(restitution, blockBounciness(result, onBlock));
@@ -367,7 +369,7 @@ public final class VelocityCandidates {
         }
 
         if (deltaY < 0.0D) {
-            if (onBlock == Material.SLIME_BLOCK) {
+            if (onBlock == Blocks.SLIME_BLOCK) {
                 return -deltaY;
             }
 
@@ -376,7 +378,7 @@ public final class VelocityCandidates {
             }
         }
 
-        if (onBlock == Material.SLIME_BLOCK || NmsBlockTags.isBed(onBlock)) {
+        if (onBlock == Blocks.SLIME_BLOCK || NmsBlockTags.isBed(onBlock)) {
             return deltaY;
         }
 

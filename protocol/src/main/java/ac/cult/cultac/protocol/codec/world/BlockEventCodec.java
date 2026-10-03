@@ -14,6 +14,11 @@ import io.netty.buffer.ByteBuf;
 
 public final class BlockEventCodec implements PacketCodec<ClientboundBlockEvent> {
     @Override
+    public boolean requiresModelValues() {
+        return true;
+    }
+
+    @Override
     public ClientboundBlockEvent read(ByteBuf input, ProtocolContext context) {
         var position = Wire.readBlockPos(input);
         int action = input.readUnsignedByte(), parameter = input.readUnsignedByte();

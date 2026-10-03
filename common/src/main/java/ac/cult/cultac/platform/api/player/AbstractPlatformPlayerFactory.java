@@ -50,7 +50,7 @@ public abstract class AbstractPlatformPlayerFactory<T> implements PlatformPlayer
 
         // Check cache first
         PlatformPlayer cachedPlayer = cache.getPlayer(uuid);
-        if (cachedPlayer != null) {
+        if (cachedPlayer != null && cachedPlayer.getNative() == nativePlayer) {
             return cachedPlayer;
         }
 
@@ -62,6 +62,11 @@ public abstract class AbstractPlatformPlayerFactory<T> implements PlatformPlayer
     @Override
     public final void invalidatePlayer(@NotNull UUID uuid) {
         cache.removePlayer(uuid);
+    }
+
+    @Override
+    public final void invalidatePlayer(@NotNull PlatformPlayer player) {
+        cache.removePlayer(player);
     }
 
     @Override

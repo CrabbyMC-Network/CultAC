@@ -2,6 +2,7 @@ package ac.cult.cultac.checks.impl.prediction.pipeline.java;
 
 import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.nmsutil.Collisions;
@@ -12,7 +13,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.bukkit.GameMode;
 
 /** 26.1/26.2 Entity#checkInsideBlocks and the movement-affecting block callbacks. */
 public final class JavaInsideBlockEffects {

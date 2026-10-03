@@ -20,13 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.event.block.BlockMultiPlaceEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerBucketEvent;
 
 // Agreement with bukkit is more important than agreement with the client (for buckets)
 //
@@ -59,6 +55,7 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         if (predictionComplete.isTeleport()) return;
 
         PredictionResult result = predictionComplete.getPredictionResult();
@@ -86,8 +83,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
 
             for (GhostBlock ghostBlock : pseudoPlaces) {
                 // ignore end crystals
-                if (ghostBlock.getItemUsed() != null && ghostBlock.getItemUsed().getType() == Material.END_CRYSTAL)
-                    continue;
+                if (ghostBlock.getItemUsed() != null
+                        && ghostBlock.getItemUsed().getItem() == net.minecraft.world.item.Items.END_CRYSTAL) continue;
 
                 final SimpleCollisionBox place = new SimpleCollisionBox(ghostBlock.getPosition()).expandMax(0, 0.5, 0);
                 if (place.isIntersected(movement)) {
@@ -141,7 +138,7 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
                 ghostData.revert();
 
                 // No predictions, ensure no ghost block. Special case when bukkit fails to confirm block place.
-                if (player.bukkitPlayer != null && ghostData.isReverted()) {
+                if (player.platformPlayer != null && ghostData.isReverted()) {
                     ResyncWorldUtil.resyncPositions(player, new SimpleCollisionBox(data.getKey()).expand(1));
                 }
             }
@@ -157,7 +154,7 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         return false;
     }
 
-    public void handleUpdateServerBlockState(BlockPos position, BlockData newState) {
+    public void handleUpdateServerBlockState(BlockPos position, BlockState newState) {
         GhostData existing = unknownStuff.get(position);
         if (existing != null) {
             existing.serverState = newState;
@@ -171,11 +168,13 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
     }
 
     public void handlePseudoPlace(GhostBlock ghostBlock) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         pseudoPlaces.add(ghostBlock);
     }
 
     // This method is called if and only if it isn't placed on a known desync pos
-    public void handleBlockPlace(BlockPos placeBox, BlockData original, BlockData newState, BlockPlace place) {
+    public void handleBlockPlace(BlockPos placeBox, BlockState original, BlockState newState, BlockPlace place) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         // Assume permanent desync
         if (place.isUseItem()) {
             bucketUseLocations.add(placeBox);
@@ -186,7 +185,7 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
             original = existing.getServerState();
         }
 
-        Material type = newState.getMaterial();
+        Block type = newState.getBlock();
         double height =
                 NmsBlockTags.isFence(type) || NmsBlockTags.isWall(type) || NmsBlockTags.isFenceGate(type) ? 1.5 : 1;
 
@@ -214,32 +213,7 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         }
     }
 
-    public void onServerValidBucketUse(PlayerBucketEvent bucketEvent) {
-        BlockPos blockPos = new BlockPos(
-                bucketEvent.getBlock().getX(),
-                bucketEvent.getBlock().getY(),
-                bucketEvent.getBlock().getZ());
-
-        onPlace(blockPos, bucketEvent.isCancelled());
-    }
-
-    public void onServerValidBlockPlace(BlockPlaceEvent event) {
-        // Remove from unknownBlocks if exists
-        if (event instanceof BlockMultiPlaceEvent) {
-            for (BlockState block : ((BlockMultiPlaceEvent) event).getReplacedBlockStates()) {
-                BlockPos placeBox = new BlockPos(block.getX(), block.getY(), block.getZ());
-                onPlace(placeBox, event.isCancelled());
-            }
-        } else {
-            BlockPos placeBox = new BlockPos(
-                    event.getBlock().getX(),
-                    event.getBlock().getY(),
-                    event.getBlock().getZ());
-            onPlace(placeBox, event.isCancelled());
-        }
-    }
-
-    private void onPlace(BlockPos pos, boolean isCancelled) {
+    public void onServerBlockChange(BlockPos pos, boolean isCancelled) {
         GhostData data = unknownStuff.get(pos);
         if (data != null) {
             if (isCancelled) {
@@ -257,8 +231,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
     public final class GhostData {
         final BlockPos placedPos;
         final SimpleCollisionBox placedBox;
-        BlockData serverState;
-        final BlockData clientState;
+        BlockState serverState;
+        final BlockState clientState;
         final BlockPlace place;
         LinkedList<GhostData> revertIfReverted = null;
 
@@ -269,8 +243,8 @@ public class GhostBlockMitigator extends CultProcessor implements PostPrediction
         public GhostData(
                 BlockPos placedPos,
                 SimpleCollisionBox placedBox,
-                BlockData serverState,
-                BlockData clientState,
+                BlockState serverState,
+                BlockState clientState,
                 BlockPlace place) {
             this.placedPos = placedPos;
             this.placedBox = placedBox;

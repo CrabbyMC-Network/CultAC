@@ -22,7 +22,6 @@ import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -70,12 +69,16 @@ public class PacketPlayerRespawn {
         player.packetStateData.showsDeathScreen = packet.showDeathScreen();
 
         var spawnInfo = packet.spawnInfo();
-        var dimensionType = MinecraftServer.getServer()
-                .registryAccess()
+        var dimensionType = player.user
+                .registries()
+                .access()
                 .lookupOrThrow(Registries.DIMENSION_TYPE)
                 .byIdOrThrow(spawnInfo.dimensionTypeId());
-        player.gamemode = org.bukkit.GameMode.valueOf(spawnInfo.gameMode().name());
-        player.entityID = player.bukkitPlayer == null ? packet.playerId() : player.bukkitPlayer.getEntityId();
+        player.gamemode = ac.cult.cultac.protocol.value.GameMode.valueOf(
+                spawnInfo.gameMode().name());
+        // ClientPacketListener.handleLogin sets the local player's ID from this packet.
+        // A proxy may rewrite it independently of the backend's native entity ID.
+        player.entityID = packet.playerId();
         player.compensatedEntities.vehicles.clearServerVehicle();
         final PacketEntitySelf freshSelf = new PacketEntitySelf(player);
         player.compensatedEntities.playerEntity = freshSelf;
@@ -89,7 +92,7 @@ public class PacketPlayerRespawn {
         player.compensatedEntities.resetClientTickOrder();
         player.compensatedEntities
                 .getSelf()
-                .setDefaultBlockInteractionRange(player.gamemode == org.bukkit.GameMode.CREATIVE);
+                .setDefaultBlockInteractionRange(player.gamemode == ac.cult.cultac.protocol.value.GameMode.CREATIVE);
         player.compensatedEntities.selfTrackedEntity =
                 new TrackerData(0, 0, 0, 0, 0, EntityTypesCompat.PLAYER, player.lastTransactionSent.get());
         player.dimension = NmsIdentifierUtil.resourceKey(Registries.DIMENSION, spawnInfo.dimension());
@@ -106,8 +109,9 @@ public class PacketPlayerRespawn {
         var spawnInfo = packet.spawnInfo();
         ResourceKey<Level> dimension = NmsIdentifierUtil.resourceKey(Registries.DIMENSION, spawnInfo.dimension());
         String worldName = spawnInfo.dimension();
-        var dimensionType = MinecraftServer.getServer()
-                .registryAccess()
+        var dimensionType = player.user
+                .registries()
+                .access()
                 .lookupOrThrow(Registries.DIMENSION_TYPE)
                 .byIdOrThrow(spawnInfo.dimensionTypeId());
         final List<Runnable> afterSend = event.getTasksAfterSend();
@@ -202,10 +206,12 @@ public class PacketPlayerRespawn {
             badPacketsF.lastSprinting = false;
             player.compensatedEntities.hasSprintingAttributeEnabled = false;
             player.refreshPlayerPose();
-            player.gamemode = org.bukkit.GameMode.valueOf(spawnInfo.gameMode().name());
+            player.gamemode = ac.cult.cultac.protocol.value.GameMode.valueOf(
+                    spawnInfo.gameMode().name());
             player.compensatedEntities
                     .getSelf()
-                    .setDefaultBlockInteractionRange(player.gamemode == org.bukkit.GameMode.CREATIVE);
+                    .setDefaultBlockInteractionRange(
+                            player.gamemode == ac.cult.cultac.protocol.value.GameMode.CREATIVE);
             player.compensatedWorld.setDimension(worldName, dimensionType);
         };
         player.latencyUtils.addRealTimeTaskNext(applyRespawnState);

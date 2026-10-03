@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.data.BlockData;
 
 @BedrockSupported
 public class Phase extends Check implements PostPredictionListener {
@@ -106,9 +106,9 @@ public class Phase extends Check implements PostPredictionListener {
             if (intersects(newBox, box, bedrock) && !intersects(oldBox, box, bedrock)) {
                 BlockPos blockPos = BlockPos.containing(
                         (box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2, (box.minZ + box.maxZ) / 2);
-                BlockData state = player.compensatedWorld.getBlockDataAt(blockPos);
+                BlockState state = player.compensatedWorld.getBlockDataAt(blockPos);
                 // We don't attempt to calculate the many ways a block can be updated
-                if (NmsBlockTags.isConnectingBlock(state.getMaterial())) {
+                if (NmsBlockTags.isConnectingBlock(state.getBlock())) {
                     continue;
                 }
 

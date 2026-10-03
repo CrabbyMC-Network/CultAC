@@ -3,11 +3,13 @@ package ac.cult.cultac.utils.latency;
 import ac.cult.cultac.checks.impl.movement.GhostBlockMitigator;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.ClientBlockShapes;
 import ac.cult.cultac.utils.collisions.ViaClientBlockShapeMappings;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.*;
 import ac.cult.cultac.utils.math.CultMath;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.NativeBlockCollisionHelper;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
@@ -31,18 +33,13 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.util.Vector;
 
 // Inspired by
 // https://github.com/GeyserMC/Geyser/blob/master/connector/src/main/java/org/geysermc/connector/network/session/cache/ChunkCache.java
 public class CompensatedWorld implements BlockGetter {
     private static final BlockState AIR_STATE = Block.stateById(0);
-    public static final BlockData airData = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(
-                    AIR_STATE)
-            .clone();
+    public static final BlockState airData =
+            ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(AIR_STATE);
     private static final int RECENT_CLIENT_COLLISION_CHANGE_TICKS = 3;
     private static final int RECENT_CLIENT_FLUID_CHANGE_TICKS = 3;
     private static final int MAX_REINTERN_CONTENT_COMPARISONS_PER_TICK = 10;
@@ -66,7 +63,9 @@ public class CompensatedWorld implements BlockGetter {
     private int minHeight = 0;
     private int maxHeight = 256;
     private String visibleDimension = "minecraft:overworld";
+    private net.minecraft.world.level.dimension.DimensionType visibleDimensionType;
     private boolean fastLava;
+    private boolean hasSkyLight = true;
     private ClientboundDimensionData lastClientboundDimension =
             new ClientboundDimensionData("minecraft:overworld", 0, 256);
 
@@ -97,6 +96,7 @@ public class CompensatedWorld implements BlockGetter {
     public static final class CachedChunk {
         private final CachedSection[] sections;
         private final int transaction;
+        private CompensatedLight light;
 
         public CachedChunk(CachedSection[] sections, int transaction) {
             this.sections = sections;
@@ -473,7 +473,7 @@ public class CompensatedWorld implements BlockGetter {
         return (int) chunkPosition;
     }
 
-    public void updateBlock(BlockPos pos, BlockData state) {
+    public void updateBlock(BlockPos pos, BlockState state) {
         updateBlock(pos.getX(), pos.getY(), pos.getZ(), toNmsState(state));
     }
 
@@ -498,7 +498,36 @@ public class CompensatedWorld implements BlockGetter {
         return originalServerBlocks.containsKey(pos.asLong());
     }
 
-    public BlockData updateBlock(int x, int y, int z, int combinedID) {
+    public void applyLight(
+            String dimension, int x, int z, net.minecraft.network.protocol.game.ClientboundLightUpdatePacketData data) {
+        if (!dimension.equals(dimensionForChunk(x, z))) return;
+        CachedChunk chunk = getChunk(x, z);
+        if (chunk == null) return;
+        if (chunk.light == null) chunk.light = new CompensatedLight(chunk.sectionCount());
+        chunk.light.apply(data);
+    }
+
+    public int getRawBrightness(int x, int y, int z) {
+        CachedChunk chunk = getChunk(x >> 4, z >> 4);
+        return chunk != null && chunk.light != null
+                ? chunk.light.brightness(x, y, z, minHeight, hasSkyLight)
+                : hasSkyLight ? 15 : 0;
+    }
+
+    public record PendingPrediction(BlockPos position, int sequence, BlockState retained, BlockState predicted) {}
+
+    /** Immutable observations for the opt-in client snapshot comparison. */
+    public List<PendingPrediction> pendingPredictionSnapshot() {
+        return originalServerBlocks.values().stream()
+                .map(prediction -> new PendingPrediction(
+                        prediction.getBlockPosition(),
+                        prediction.getSequence(),
+                        Block.stateById(prediction.getOriginalBlockId()),
+                        Block.stateById(prediction.getPredictedBlockId())))
+                .toList();
+    }
+
+    public BlockState updateBlock(int x, int y, int z, int combinedID) {
         return updateBlock(x, y, z, Block.stateById(combinedID));
     }
 
@@ -695,11 +724,11 @@ public class CompensatedWorld implements BlockGetter {
         });
     }
 
-    public BlockData updateBlock(int x, int y, int z, BlockState newState) {
+    public BlockState updateBlock(int x, int y, int z, BlockState newState) {
         newState = ViaClientBlockShapeMappings.clientBlockState(player, newState);
         BlockPos asVector = new BlockPos(x, y, z);
         BlockPrediction prediction = originalServerBlocks.get(asVector.asLong());
-        BlockData original = getBlockDataAt(asVector);
+        BlockState original = getBlockDataAt(asVector);
 
         if (isCurrentlyPredicting && !player.isBedrockMovement()) {
             if (prediction == null) {
@@ -713,16 +742,14 @@ public class CompensatedWorld implements BlockGetter {
                                 asVector,
                                 serverState,
                                 Block.getId(newState),
-                                isPlayerTryingToDisableCult
-                                        ? null
-                                        : new Vec3(
-                                                player.x, player.y,
-                                                player.z))); // Remember server controlled block type
+                                isPlayerTryingToDisableCult ? null : new Vec3(player.x, player.y, player.z),
+                                clientPredictionSequence)); // Remember server controlled block type
             } else {
                 prediction.setForBlockUpdate(
                         currentlyChangedBlocks); // Block existing there was placed by client, mark block to have a new
                 // prediction
                 prediction.setPredictedBlockId(Block.getId(newState));
+                prediction.setSequence(clientPredictionSequence);
             }
             currentlyChangedBlocks.add(asVector);
         }
@@ -735,9 +762,7 @@ public class CompensatedWorld implements BlockGetter {
             // confirmation handling decides whether to keep it or restore the original server state.
             prediction.setOriginalBlockId(Block.getId(newState));
             ghostBlockMitigator.handleUpdateServerBlockState(
-                    asVector,
-                    ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
-                            .clone());
+                    asVector, ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState));
             return original;
         }
 
@@ -746,13 +771,12 @@ public class CompensatedWorld implements BlockGetter {
         // This works because of how we optimized wrappedblockstate (avoid messing with inner tick predictions)
         if (getBlockStateAt(asVector).equals(newState)) return original;
 
-        player.checkManager.getSimulationProcessor().handleBlockChange(asVector, original.clone());
+        player.checkManager.getSimulationProcessor().handleBlockChange(asVector, original);
         player.checkManager
                 .getSimulationProcessor()
                 .handleBlockChange(
                         asVector,
-                        ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
-                                .clone());
+                        ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState));
         markRecentClientCollisionChange(asVector, toNmsState(original), newState);
         markRecentClientFluidChange(asVector, toNmsState(original), newState);
 
@@ -761,8 +785,7 @@ public class CompensatedWorld implements BlockGetter {
         if (debugBlockChanges
                 && isCurrentlyPredicting
                 && getBlockStateAt(asVector).equals(newState)) {
-            String state = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(newState)
-                    .getAsString(false);
+            String state = net.minecraft.commands.arguments.blocks.BlockStateParser.serialize(newState);
             if (state.startsWith("minecraft:")) state = state.substring("minecraft:".length());
             player.sendMessage(Component.text("[places] ", NamedTextColor.AQUA)
                     .append(Component.text(x + ", " + y + ", " + z, NamedTextColor.GRAY))
@@ -937,7 +960,7 @@ public class CompensatedWorld implements BlockGetter {
     private void pruneOrphanedShulkerBoxes() {
         openShulkerBoxes.removeIf(box -> box.blockPos != null
                 ? !NmsBlockTags.isShulkerBox(
-                        player.compensatedWorld.getBlockDataAt(box.blockPos).getMaterial())
+                        player.compensatedWorld.getBlockDataAt(box.blockPos).getBlock())
                 : !player.compensatedEntities.entityMap.containsValue(box.entity));
     }
 
@@ -974,7 +997,7 @@ public class CompensatedWorld implements BlockGetter {
                 continue;
             }
 
-            BlockFace pushDirection = data.getFacing(player);
+            Direction pushDirection = data.getFacing(player);
             if (queryBox.isCollided(openShulkerCollisionBox(data))) {
                 queryBox.expand(
                         Math.abs(pushDirection.getModX()),
@@ -987,16 +1010,15 @@ public class CompensatedWorld implements BlockGetter {
         return shulkerPushes;
     }
 
-    public BlockData getBlockDataAt(BlockPos vector3i) {
+    public BlockState getBlockDataAt(BlockPos vector3i) {
         return getBlockDataAt(vector3i.getX(), vector3i.getY(), vector3i.getZ());
     }
 
-    public BlockData getBlockDataAt(int x, int y, int z) {
+    public BlockState getBlockDataAt(int x, int y, int z) {
         BlockState state = getBlockStateAt(x, y, z);
         return state == null
-                ? airData.clone()
-                : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state)
-                        .clone();
+                ? airData
+                : ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state);
     }
 
     public BlockState getBlockStateAt(BlockPos vector3i) {
@@ -1036,12 +1058,12 @@ public class CompensatedWorld implements BlockGetter {
         return getBlockStateAt(blockPos);
     }
 
-    @Override
+    // Paper BlockGetter extension; vanilla uses the ordinary state accessors.
     public BlockState getBlockStateIfLoaded(BlockPos blockPos) {
         return getBlockStateAt(blockPos);
     }
 
-    @Override
+    // Paper BlockGetter extension; vanilla uses the ordinary state accessors.
     public FluidState getFluidIfLoaded(BlockPos blockPos) {
         return isChunkLoaded(blockPos.getX() >> 4, blockPos.getZ() >> 4)
                 ? getFluidStateAt(blockPos)
@@ -1240,20 +1262,20 @@ public class CompensatedWorld implements BlockGetter {
         queuePendingReintern(position.getX() >> 4, sectionIndex, position.getZ() >> 4, section);
     }
 
-    public Material getMaterialAt(double x, double y, double z) {
+    public Block getMaterialAt(double x, double y, double z) {
         return getBlockDataAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z))
-                .getMaterial();
+                .getBlock();
     }
 
-    public Material getMaterialAt(int x, int y, int z) {
-        return getBlockDataAt(x, y, z).getMaterial();
+    public Block getMaterialAt(int x, int y, int z) {
+        return getBlockDataAt(x, y, z).getBlock();
     }
 
-    public Material getMaterialAt(BlockPos position) {
-        return getBlockDataAt(position).getMaterial();
+    public Block getMaterialAt(BlockPos position) {
+        return getBlockDataAt(position).getBlock();
     }
 
-    public BlockData getBlockDataAt(double x, double y, double z) {
+    public BlockState getBlockDataAt(double x, double y, double z) {
         return getBlockDataAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
     }
 
@@ -1356,9 +1378,19 @@ public class CompensatedWorld implements BlockGetter {
 
     public void setDimension(String dimension, net.minecraft.world.level.dimension.DimensionType type) {
         visibleDimension = dimension;
+        visibleDimensionType = type;
         minHeight = type.minY();
         maxHeight = minHeight + type.height();
         fastLava = dimensionHasFastLava(type);
+        hasSkyLight = type.hasSkyLight();
+    }
+
+    public String getVisibleDimension() {
+        return visibleDimension;
+    }
+
+    public net.minecraft.world.level.dimension.DimensionType getVisibleDimensionType() {
+        return visibleDimensionType;
     }
 
     private static boolean dimensionHasFastLava(net.minecraft.world.level.dimension.DimensionType dimension) {
@@ -1436,11 +1468,11 @@ public class CompensatedWorld implements BlockGetter {
         return maxHeight;
     }
 
-    public BlockData getBlockDataAt(Vector aboveCCWPos) {
+    public BlockState getBlockDataAt(Vector3dm aboveCCWPos) {
         return getBlockDataAt(aboveCCWPos.getX(), aboveCCWPos.getY(), aboveCCWPos.getZ());
     }
 
-    private static BlockState toNmsState(BlockData data) {
+    private static BlockState toNmsState(BlockState data) {
         return NmsBlockTags.toNmsState(data);
     }
 }

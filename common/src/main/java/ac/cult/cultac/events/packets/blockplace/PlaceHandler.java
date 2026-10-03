@@ -5,16 +5,14 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItemOn;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
-import ac.cult.cultac.utils.blockplace.NmsBlockPlaceResolver;
 import ac.cult.cultac.utils.blockplace.SmoketestPredictionSafety;
+import ac.cult.cultac.utils.blockplace.VanillaBlockActions;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import ac.cult.cultac.utils.nmsutil.TraverseBlocks;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
 
 public class PlaceHandler {
     public static void handleQueuedUseItem(CultPlayer player, ServerboundUseItem place) {
@@ -72,69 +70,14 @@ public class PlaceHandler {
     }
 
     private static void handleUseItem(CultPlayer player, ServerboundUseItem place) {
-        if (player.gamemode == GameMode.SPECTATOR || player.gamemode == GameMode.ADVENTURE) return;
-
-        InteractionHand hand = SpigotConversionUtil.toNmsHand(place.hand());
-        ItemStack placedWith = player.getInventory().getHandItem(hand);
-        UseItemHandler.handleUseItem(player, placedWith, hand);
+        VanillaBlockActions.use(player, SpigotConversionUtil.toNmsHand(place.hand()));
     }
 
     private static void handleUseItemOn(CultPlayer player, ServerboundUseItemOn place) {
-        // Check for interactable first (door, etc)
         InteractionHand hand = SpigotConversionUtil.toNmsHand(place.hand());
-        ItemStack placedWith = player.getInventory().getHandItem(hand);
-        ItemStack offhand = player.getInventory().getOffHand();
-
-        boolean onlyAir = placedWith.isEmpty() && offhand.isEmpty();
-
-        // The offhand is unable to interact with blocks like this... try to stop some desync points before they happen
-        if ((!player.isSneaking || onlyAir) && hand == InteractionHand.MAIN_HAND) {
-            BlockPlace blockPlace = createUseItemOnBlockPlace(player, place, placedWith);
-
-            boolean consumesPlace = NmsBlockPlaceResolver.applyBlockUse(player, blockPlace);
-
-            if (player.debugPlaces) {
-                player.sendMessage("Place: use=" + blockPlace.isUseItem() + " place=" + blockPlace.isPlaced()
-                        + " isBlock=" + blockPlace.isBlock() + " consumes=" + consumesPlace);
-            }
-
-            if (consumesPlace) {
-                return;
-            }
-        }
-
-        if (player.gamemode == GameMode.SPECTATOR || player.gamemode == GameMode.ADVENTURE) return;
-
-        BlockPlace blockPlace = createUseItemOnBlockPlace(player, place, placedWith);
-
-        if (player.checkManager.getCompensatedCooldown().hasItem(placedWith)) {
-            return;
-        }
-
-        if (placedWith.getType() == Material.FIRE_CHARGE || placedWith.getType() == Material.FLINT_AND_STEEL) {
-            NmsBlockPlaceResolver.applyIgnitionItem(player, blockPlace, placedWith.getType() == Material.FIRE_CHARGE);
-            return;
-        }
-
-        if (placedWith.getType() == Material.POWDER_SNOW_BUCKET) {
-            var before = ac.cult.cultac.utils.blockplace.PlacementSnapshot.capture(player, blockPlace);
-            if (NmsBlockPlaceResolver.applyBlockPlace(player, blockPlace)) {
-                if (player.gamemode != GameMode.CREATIVE) UseItemHandler.setPlayerItem(player, hand, Material.BUCKET);
-                NmsBlockPlaceResolver.applyAfterUseOn(player, before);
-            } else {
-                NmsBlockPlaceResolver.applyWorldModifyingUseItem(player, blockPlace);
-            }
-            return;
-        }
-
-        // BlockItem.useOn tries placement before falling back to Item.useOn.
-        if (blockPlace.isBlock() && NmsBlockPlaceResolver.applyBlockPlace(player, blockPlace)) {
-            return;
-        }
-        if (NmsBlockPlaceResolver.applyClientSideUseOnItem(player, blockPlace)) {
-            return;
-        }
-        NmsBlockPlaceResolver.applyWorldModifyingUseItem(player, blockPlace);
+        VanillaBlockActions.useOn(
+                player,
+                createUseItemOnBlockPlace(player, place, player.getInventory().getHandItem(hand)));
     }
 
     private static BlockPlace createUseItemOnBlockPlace(

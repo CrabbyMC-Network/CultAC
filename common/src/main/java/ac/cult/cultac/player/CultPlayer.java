@@ -25,12 +25,11 @@ import ac.cult.cultac.manager.player.handlers.NoOpResyncHandler;
 import ac.cult.cultac.network.CultWrite;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.player.User;
-import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPing;
-import ac.cult.cultac.utils.anticheat.HumanFormatter;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.anticheat.NettyScheduler;
@@ -56,7 +55,6 @@ import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
-import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import ac.grim.grimac.api.AbstractCheck;
 import ac.grim.grimac.api.GrimUser;
 import ac.grim.grimac.api.PacketWorld;
@@ -66,8 +64,6 @@ import ac.grim.grimac.api.handler.ResyncHandler;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.protocol.packet.PacketTracker;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,15 +85,9 @@ import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.minecraft.SharedConstants;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.entity.Player;
-import org.bukkit.permissions.Permission;
-import org.bukkit.permissions.PermissionDefault;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -113,7 +103,6 @@ public class CultPlayer implements GrimUser {
                 CultAPI.INSTANCE.getEventBus().get(GrimTransactionSendEvent.class);
     }
 
-    private static final Method SERVER_PLAYER_LEVEL_METHOD = resolveServerPlayerLevelMethod();
     private static final @NotNull ClientVersion SERVER_VERSION =
             ClientVersion.fromProtocolVersion(SharedConstants.getProtocolVersion());
 
@@ -150,7 +139,6 @@ public class CultPlayer implements GrimUser {
     public long lastJoinedWorld;
 
     public int entityID;
-    public @Nullable Player bukkitPlayer;
     public @MonotonicNonNull PlatformPlayer platformPlayer;
     // Start transaction handling stuff
     // Determining player ping
@@ -322,11 +310,11 @@ public class CultPlayer implements GrimUser {
     @Setter
     private boolean forceSlowMovement = true;
 
-    private static final Permission DISABLED_PERMISSION = new Permission("cult.disabled", PermissionDefault.FALSE);
+    private static final String DISABLED_PERMISSION = "cult.disabled";
 
     public void updateDisabled() {
-        if (bukkitPlayer == null) return;
-        boolean current = bukkitPlayer.hasPermission(DISABLED_PERMISSION);
+        if (platformPlayer == null) return;
+        boolean current = platformPlayer.hasPermission(DISABLED_PERMISSION, false);
         if (current != disabled) {
             disabled = current;
         }
@@ -342,8 +330,7 @@ public class CultPlayer implements GrimUser {
         this.playerUUID = Objects.requireNonNull(user.getUUID(), "uuid");
         this.movementPlatform = movementPlatform;
         this.bedrockState = bedrockState;
-        this.bukkitPlayer = user.getPlayer();
-        this.entityID = bukkitPlayer == null ? 0 : bukkitPlayer.getEntityId();
+        this.platformPlayer = user.getPlayer();
         this.timeJoined = System.currentTimeMillis();
         onReload();
 
@@ -373,51 +360,12 @@ public class CultPlayer implements GrimUser {
         this.trigHandler = new TrigHandler(this);
 
         this.packetStateData = new PacketStateData();
-        updateServerPlayerBinding(user.getPlayer(), user.getHandle());
+        if (platformPlayer != null && user.getCultConnection().platform() != null) {
+            var binding = user.getCultConnection().platform().playerBinding();
+            if (binding != null && binding.isCurrent()) binding.initialize(this);
+        }
         // reload last: pulls config, per-check permissions, and the punishment manager
         reload();
-    }
-
-    public void updateServerPlayerBinding(@Nullable Player player, @Nullable ServerPlayer serverPlayer) {
-        this.bukkitPlayer = player;
-        if (player != null) {
-            this.entityID = player.getEntityId();
-        }
-        if (serverPlayer != null) {
-            ServerLevel level = serverPlayerLevel(serverPlayer);
-            this.gamemode = switch (serverPlayer.gameMode.getGameModeForPlayer()) {
-                case CREATIVE -> GameMode.CREATIVE;
-                case ADVENTURE -> GameMode.ADVENTURE;
-                case SPECTATOR -> GameMode.SPECTATOR;
-                default -> GameMode.SURVIVAL;
-            };
-            this.dimension = level.dimension();
-            this.world = NmsIdentifierUtil.resourceKey(this.dimension);
-            this.compensatedWorld.setLastClientboundDimension(this.world, level.dimensionType());
-            this.compensatedWorld.setDimension(this.world, level.dimensionType());
-            this.lastJoinedWorld = System.currentTimeMillis();
-        }
-    }
-
-    private static Method resolveServerPlayerLevelMethod() {
-        for (String candidate : new String[] {"level", "serverLevel"}) {
-            try {
-                return ServerPlayer.class.getMethod(candidate);
-            } catch (NoSuchMethodException ignored) {
-                // Mojang renamed the covariant ServerPlayer world accessor after 1.21.5.
-            }
-        }
-        throw new IllegalStateException("Unable to resolve ServerPlayer level accessor");
-    }
-
-    private static ServerLevel serverPlayerLevel(ServerPlayer player) {
-        try {
-            return (ServerLevel) SERVER_PLAYER_LEVEL_METHOD.invoke(player);
-        } catch (IllegalAccessException exception) {
-            throw new IllegalStateException("Unable to access ServerPlayer level", exception);
-        } catch (InvocationTargetException exception) {
-            throw new IllegalStateException("ServerPlayer level lookup failed", exception.getCause());
-        }
     }
 
     public void onRemove() {
@@ -546,8 +494,9 @@ public class CultPlayer implements GrimUser {
 
     public void sendTransaction(boolean async) {
         if (async) {
-            // Re-enter on the connection's event loop so the id is allocated in send order
-            user.execute(() -> sendTransaction(false));
+            // The model owner can run ahead of I/O's queued packets. Allocate
+            // the proof at its outbound position so acknowledgements stay ordered.
+            user.executeAfterWrites(() -> sendTransaction(false));
             return;
         }
 
@@ -562,7 +511,7 @@ public class CultPlayer implements GrimUser {
 
     private boolean canSendTransactionNow() {
         var phase = user.getEncoderState();
-        return user.getHandle() != null && (phase == ConnectionPhase.PLAY || phase == ConnectionPhase.CONFIGURATION);
+        return user.getPlayer() != null && (phase == ConnectionPhase.PLAY || phase == ConnectionPhase.CONFIGURATION);
     }
 
     public int sendTransactionAndGetId() {
@@ -822,9 +771,8 @@ public class CultPlayer implements GrimUser {
     }
 
     public void closeInventorySafely() {
-        if (bukkitPlayer != null) {
-            FoliaCompatUtil.runTaskForEntity(
-                    bukkitPlayer, CultAPI.INSTANCE.getPlugin(), () -> bukkitPlayer.closeInventory(), null, 0);
+        if (platformPlayer != null) {
+            platformPlayer.closeInventory();
         }
     }
 
@@ -910,14 +858,14 @@ public class CultPlayer implements GrimUser {
     // TODO: Create a configurable timer for this
     @Override
     public void updatePermissions() {
-        if (bukkitPlayer == null) return;
+        if (platformPlayer == null) return;
         try {
-            boolean noModifyPacket = bukkitPlayer.hasPermission("cult.nomodifypacket");
-            boolean noSetback = bukkitPlayer.hasPermission("cult.nosetback");
-            boolean immune = bukkitPlayer.hasPermission("cult.immune");
-            boolean showHealth = bukkitPlayer.hasPermission("cult.showhealth");
-            boolean bypassChat = bukkitPlayer.hasPermission("cult.chatbypass");
-            boolean cultDisabled = bukkitPlayer.hasPermission(DISABLED_PERMISSION);
+            boolean noModifyPacket = platformPlayer.hasPermission("cult.nomodifypacket");
+            boolean noSetback = platformPlayer.hasPermission("cult.nosetback");
+            boolean immune = platformPlayer.hasPermission("cult.immune");
+            boolean showHealth = platformPlayer.hasPermission("cult.showhealth");
+            boolean bypassChat = platformPlayer.hasPermission("cult.chatbypass");
+            boolean cultDisabled = platformPlayer.hasPermission(DISABLED_PERMISSION, false);
 
             for (AbstractCheck check : getChecks()) {
                 if (check instanceof Check c) {
@@ -1056,7 +1004,7 @@ public class CultPlayer implements GrimUser {
 
     @Override
     public int getKeepAlivePing() {
-        return bukkitPlayer == null ? -1 : bukkitPlayer.getPing();
+        return platformPlayer == null ? -1 : platformPlayer.getPing();
     }
 
     @Override
@@ -1135,6 +1083,15 @@ public class CultPlayer implements GrimUser {
         if (resolved != null) {
             return resolved;
         }
+        // A proxy knows the authenticated client's protocol directly. Its loaded
+        // vanilla model and a backend Via connection are different endpoints.
+        var platform = user.getCultConnection().platform();
+        var wireVersion = platform == null ? null : platform.wireVersion();
+        if (wireVersion != null) {
+            resolved = ClientVersion.fromProtocolVersion(wireVersion.protocol());
+            resolvedClientVersion = resolved;
+            return resolved;
+        }
         if (ViaVersionUtil.isAvailable()) {
             try {
                 int protocolVersion =
@@ -1187,33 +1144,23 @@ public class CultPlayer implements GrimUser {
 
     @Override
     public void sendMessage(String message) {
-        if (bukkitPlayer != null) {
-            bukkitPlayer.sendMessage(message);
-        } else if (platformPlayer != null) {
+        if (platformPlayer != null) {
             platformPlayer.sendMessage(message);
         }
     }
 
     public void sendMessage(Component message) {
-        if (bukkitPlayer != null) {
-            HumanFormatter.message(bukkitPlayer, message);
-        } else if (platformPlayer != null) {
+        if (platformPlayer != null) {
             platformPlayer.sendMessage(message);
         }
     }
 
     @Override
     public boolean hasPermission(String s) {
-        if (bukkitPlayer != null) {
-            return bukkitPlayer.hasPermission(s);
-        }
         return platformPlayer != null && platformPlayer.hasPermission(s);
     }
 
     public boolean hasPermission(String s, boolean defaultIfUnset) {
-        if (bukkitPlayer != null) {
-            return bukkitPlayer.hasPermission(s);
-        }
         return platformPlayer != null && platformPlayer.hasPermission(s, defaultIfUnset);
     }
 

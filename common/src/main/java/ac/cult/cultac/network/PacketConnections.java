@@ -2,32 +2,21 @@ package ac.cult.cultac.network;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.network.protocol.player.User;
-import ac.cult.cultac.utils.anticheat.LogUtil;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.network.Connection;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
-import org.bukkit.entity.Player;
 
 /** One directory of attached sessions, with a secondary current-account index. */
 final class PacketConnections {
     private final Map<Channel, CultConnection> connections = new ConcurrentHashMap<>();
     private final Map<UUID, CultConnection> currentByUuid = new ConcurrentHashMap<>();
     private volatile UserLifecycleHooks hooks = UserLifecycleHooks.NONE;
-    private final Field configurationProfileField = resolveConfigurationProfileField();
-    private final Method profileIdMethod = resolveProfileMethod("id", "getId");
-    private final Method profileNameMethod = resolveProfileMethod("name", "getName");
 
     void hooks(UserLifecycleHooks hooks) {
         this.hooks = java.util.Objects.requireNonNull(hooks);
@@ -50,10 +39,11 @@ final class PacketConnections {
 
     private void prepare(CultConnection session) {
         if (!session.channel().isActive() || session.disconnected()) return;
-        var profile = connectionProfile(session.nativeConnection());
-        if (profile == null || profile.uuid() == null) return;
-        var user = authenticate(session, profile.uuid(), profile.name());
-        if (user != null && profile.player() != null) completeLogin(user, profile.player(), profile.serverPlayer());
+        var platform = session.platform();
+        var profile = platform == null ? null : platform.authenticatedProfile();
+        if (profile == null || profile.getUUID() == null) return;
+        var user = authenticate(session, profile.getUUID(), profile.getName());
+        if (user != null) completeLogin(user, platform.playerBinding());
     }
 
     private User authenticate(CultConnection session, UUID uuid, String name) {
@@ -80,11 +70,17 @@ final class PacketConnections {
         currentByUuid.put(user.getUUID(), user.getCultConnection());
     }
 
-    User getUser(Player player) {
-        var nativeConnection = player == null ? null : currentPlayerConnection(player);
-        var session = nativeConnection == null ? null : get(nativeConnection.channel);
-        User user = session == null ? null : session.user();
-        return user != null && !session.disconnected() && player.getUniqueId().equals(user.getUUID()) ? user : null;
+    User getUser(PlatformPlayer player) {
+        if (player == null) return null;
+        return getUser(player.getUniqueId(), player.getNative());
+    }
+
+    User getUser(UUID uuid, Object nativePlayer) {
+        User user = getUser(uuid);
+        if (user == null || user.getCultConnection().disconnected()) return null;
+        var platform = user.getCultConnection().platform();
+        var binding = platform == null ? null : platform.playerBinding();
+        return binding != null && binding.isCurrent() && binding.matches(nativePlayer) ? user : null;
     }
 
     User getUser(UUID uuid) {
@@ -92,28 +88,21 @@ final class PacketConnections {
         return session == null ? null : session.user();
     }
 
-    void playerJoined(Player player) {
-        var nativeConnection = currentPlayerConnection(player);
-        var session = nativeConnection == null ? null : get(nativeConnection.channel);
-        if (session == null) return;
-        ServerPlayer serverPlayer = ((CraftPlayer) player).getHandle();
-        UUID uuid = player.getUniqueId();
-        String name = player.getName();
-        session.execute(() -> {
-            User user = authenticate(session, uuid, name);
-            if (user != null && uuid.equals(user.getUUID())) completeLogin(user, player, serverPlayer);
-        });
+    void playerJoined(CultConnection session) {
+        session.execute(() -> prepare(session));
     }
 
-    private void completeLogin(User user, Player player, ServerPlayer serverPlayer) {
+    private void completeLogin(User user, PlatformConnection.PlayerBinding binding) {
         var session = user.getCultConnection();
-        if (session.disconnected() || session.loginNotified || !isPlayerConnection(player, user.getConnection()))
-            return;
-        user.bind(player, serverPlayer);
+        if (binding == null || session.disconnected() || session.loginNotified || !binding.isCurrent()) return;
+        PlatformPlayer player = binding.player();
+        if (!user.getUUID().equals(player.getUniqueId())) throw new IllegalStateException("Connection account changed");
+        user.bind(player);
         if (currentByUuid.get(user.getUUID()) != session) promote(user);
         var cultPlayer = session.player();
         if (cultPlayer != null) {
-            cultPlayer.updateServerPlayerBinding(player, serverPlayer);
+            cultPlayer.platformPlayer = player;
+            binding.initialize(cultPlayer);
             cultPlayer.updatePermissions();
         }
         session.loginNotified = true;
@@ -138,7 +127,11 @@ final class PacketConnections {
             }
         } finally {
             // Shutdown must still find a session while owner cleanup is in progress.
-            connections.remove(session.channel(), session);
+            try {
+                session.packets().close();
+            } finally {
+                connections.remove(session.channel(), session);
+            }
         }
     }
 
@@ -172,67 +165,4 @@ final class PacketConnections {
         }
         return completion.minimalCompletionStage();
     }
-
-    private static Connection currentPlayerConnection(Player player) {
-        if (!(player instanceof CraftPlayer craftPlayer)) {
-            return null;
-        }
-        if (craftPlayer.getHandle().connection == null) {
-            return null;
-        }
-        return craftPlayer.getHandle().connection.connection;
-    }
-
-    private static boolean isPlayerConnection(Player player, Connection connection) {
-        return currentPlayerConnection(player) == connection;
-    }
-
-    private ConnectionProfile connectionProfile(Connection connection) {
-        if (connection.getPacketListener() instanceof ServerGamePacketListenerImpl listener
-                && listener.player != null) {
-            ServerPlayer serverPlayer = listener.player;
-            Player player = serverPlayer.getBukkitEntity();
-            return new ConnectionProfile(serverPlayer.getUUID(), player.getName(), player, serverPlayer);
-        }
-
-        if (connection.getPacketListener() instanceof ServerConfigurationPacketListenerImpl configurationListener) {
-            try {
-                Object profile = configurationProfileField.get(configurationListener);
-                if (profile == null) {
-                    return null;
-                }
-                UUID uuid = (UUID) profileIdMethod.invoke(profile);
-                String name = (String) profileNameMethod.invoke(profile);
-                return new ConnectionProfile(uuid, name, null, null);
-            } catch (ReflectiveOperationException exception) {
-                LogUtil.warn("Failed to read configuration profile");
-                exception.printStackTrace();
-            }
-        }
-
-        return null;
-    }
-
-    private static Field resolveConfigurationProfileField() {
-        try {
-            Field field = ServerConfigurationPacketListenerImpl.class.getDeclaredField("gameProfile");
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException exception) {
-            throw new IllegalStateException("Failed to resolve Minecraft configuration profile field", exception);
-        }
-    }
-
-    private static Method resolveProfileMethod(String... candidates) {
-        for (String candidate : candidates) {
-            try {
-                return com.mojang.authlib.GameProfile.class.getMethod(candidate);
-            } catch (NoSuchMethodException ignored) {
-                // Authlib changed GameProfile from accessors to record-style methods.
-            }
-        }
-        throw new IllegalStateException("Failed to resolve Authlib game profile accessor");
-    }
-
-    private record ConnectionProfile(UUID uuid, String name, Player player, ServerPlayer serverPlayer) {}
 }

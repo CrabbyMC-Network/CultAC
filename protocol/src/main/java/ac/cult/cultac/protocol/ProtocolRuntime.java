@@ -143,10 +143,14 @@ public final class ProtocolRuntime {
 
     /** Decode an isolated view positioned after its packet ID. The view is consumed. */
     public Object decode(ConnectionPhase phase, PacketDirection direction, int id, ByteBuf input) {
+        return decode(phase, direction, id, input, CodecState.EMPTY);
+    }
+
+    public Object decode(ConnectionPhase phase, PacketDirection direction, int id, ByteBuf input, CodecState state) {
         var bound = binding(phase, direction, id);
         if (bound == null) throw new ProtocolResolutionException("No consumed codec for " + direction + "/" + id);
         try {
-            Object record = bound.type().codec().read(input, bound.context());
+            Object record = bound.type().codec().read(input, bound.context().withState(state));
             if (!bound.type().recordClass().isInstance(record)) {
                 throw new ProtocolResolutionException("Wrong decoded record for " + bound.type());
             }
@@ -161,6 +165,10 @@ public final class ProtocolRuntime {
 
     /** Writes both ID and payload; failures restore the destination writer index. */
     public <R> void encode(ConnectionPhase phase, PacketType<R> type, R packet, ByteBuf output) {
+        encode(phase, type, packet, output, CodecState.EMPTY);
+    }
+
+    public <R> void encode(ConnectionPhase phase, PacketType<R> type, R packet, ByteBuf output, CodecState state) {
         if (!supports(type)) throw new UnsupportedOnVersionException("Unsupported type " + type);
         if (!type.writable()) throw new UnsupportedOnVersionException("Read-only packet " + type);
         // A variant family names its own variant; a renamed family has one name on this version.
@@ -175,7 +183,7 @@ public final class ProtocolRuntime {
         int start = output.writerIndex();
         try {
             Wire.writeVarInt(output, id);
-            type.codec().write(output, bound.context(), packet);
+            type.codec().write(output, bound.context().withState(state), packet);
         } catch (RuntimeException | Error failure) {
             output.writerIndex(start);
             throw failure;

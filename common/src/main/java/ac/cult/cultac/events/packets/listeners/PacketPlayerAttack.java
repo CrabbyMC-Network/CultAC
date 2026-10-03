@@ -9,10 +9,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
-import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class PacketPlayerAttack {
 
@@ -34,10 +31,11 @@ public class PacketPlayerAttack {
                 ItemStack heldItem = player.getInventory().getHeldItem();
                 PacketEntity entity = player.compensatedEntities.getEntity(interact.entityId());
 
-                if (entity != null
-                        && (!(entity.type instanceof LivingEntity) || entity.type == EntityTypesCompat.PLAYER)) {
-                    boolean hasKnockbackSword =
-                            heldItem != null && heldItem.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0;
+                if (entity != null) {
+                    boolean hasKnockbackSword = heldItem != null
+                            && ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                            heldItem, net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK)
+                                    > 0;
 
                     player.maxPlayerAttackSlow += 1;
 

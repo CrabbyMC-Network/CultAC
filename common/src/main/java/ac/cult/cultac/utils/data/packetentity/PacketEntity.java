@@ -19,6 +19,7 @@ import ac.cult.cultac.network.packet.EntityPositionPath;
 import ac.cult.cultac.network.packet.PacketCodecUtil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.BoatData;
 import ac.cult.cultac.utils.data.ReachInterpolationData;
@@ -32,7 +33,6 @@ import java.util.List;
 import lombok.Getter;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
 
 // You may not copy this check unless your anticheat is licensed under GPL
@@ -73,7 +73,7 @@ public class PacketEntity {
     public ReachInterpolationData newPacketLocation;
     private long clientTickOrder = Long.MAX_VALUE;
 
-    public HashMap<PotionEffectType, Integer> potionsMap = null;
+    public HashMap<MovementEffect, Integer> potionsMap = null;
     public BoatEntityStatus boatStatus = null;
 
     @Getter
@@ -741,14 +741,14 @@ public class PacketEntity {
         return riding;
     }
 
-    public void addPotionEffect(PotionEffectType effect, int amplifier) {
+    public void addPotionEffect(MovementEffect effect, int amplifier) {
         if (potionsMap == null) {
             potionsMap = new HashMap<>();
         }
         potionsMap.put(effect, amplifier);
     }
 
-    public void removePotionEffect(PotionEffectType effect) {
+    public void removePotionEffect(MovementEffect effect) {
         if (potionsMap == null) return;
         potionsMap.remove(effect);
     }

@@ -15,6 +15,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSetCarriedItem;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundUseItem;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
@@ -23,11 +24,9 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.item.equipment.Equippable;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
 
 @Getter
 public class ActionManager extends CultProcessor implements CheckListener, ClientTickEndListener {
@@ -70,11 +69,12 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
     public void useItem(InteractionHand usedHand) {
         hand = usedHand;
         ItemStack heldStack = player.getInventory().getHandItem(hand);
-        if (heldStack == null) heldStack = ItemStack.empty();
+        if (heldStack == null) heldStack = ItemStack.EMPTY;
 
-        this.blocking = heldStack.getType() == Material.SHIELD
+        this.blocking = heldStack.getItem() == net.minecraft.world.item.Items.SHIELD
                 || (player.getClientVersion().isOlderThan(ClientVersion.V_1_9)
-                        && heldStack.getType().name().endsWith("_SWORD"));
+                        && ac.cult.cultac.utils.inventory.ItemUtil.name(heldStack.getItem())
+                                .endsWith("_SWORD"));
 
         if (canStartUsingItem(heldStack)) {
             player.packetStateData.setSlowedByUsingItem(true);
@@ -119,18 +119,21 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
         net.minecraft.world.item.ItemStack nms = SpigotConversionUtil.toNmsItemStack(stack);
 
         if (version.isNewerThanOrEquals(ClientVersion.V_1_21_4)) {
-            if (stack.getType() == Material.GOAT_HORN
-                    || stack.getType() == Material.SHIELD
-                    || stack.getType() == Material.SPYGLASS) {
+            if (stack.getItem() == net.minecraft.world.item.Items.GOAT_HORN
+                    || stack.getItem() == net.minecraft.world.item.Items.SHIELD
+                    || stack.getItem() == net.minecraft.world.item.Items.SPYGLASS) {
                 return true;
             }
-            if (stack.getType() == Material.BOW || stack.getType() == Material.CROSSBOW) {
+            if (stack.getItem() == net.minecraft.world.item.Items.BOW
+                    || stack.getItem() == net.minecraft.world.item.Items.CROSSBOW) {
                 // Baseline deliberately does not infer projectile availability.
                 return false;
             }
-            if (stack.getType() == Material.TRIDENT) {
+            if (stack.getItem() == net.minecraft.world.item.Items.TRIDENT) {
                 return !nms.nextDamageWillBreak()
-                        && stack.getEnchantmentLevel(org.bukkit.enchantments.Enchantment.RIPTIDE) <= 0;
+                        && ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                        stack, net.minecraft.world.item.enchantment.Enchantments.RIPTIDE)
+                                <= 0;
             }
 
             Consumable consumable = nms.get(DataComponents.CONSUMABLE);
@@ -151,17 +154,22 @@ public class ActionManager extends CultProcessor implements CheckListener, Clien
 
         // The compact legacy path retained by this fork. These are the baseline
         // items whose use can be proven without guessing projectile inventory.
-        Material material = stack.getType();
+        net.minecraft.world.item.Item material = stack.getItem();
         // 1.8 ItemSword#onItemRightClick sets a 72000-tick BLOCK use action.
-        if (version.isOlderThan(ClientVersion.V_1_9) && material.name().endsWith("_SWORD")) return true;
-        if (material == Material.SHIELD || material == Material.SPYGLASS || material == Material.GOAT_HORN) {
+        if (version.isOlderThan(ClientVersion.V_1_9)
+                && ac.cult.cultac.utils.inventory.ItemUtil.name(material).endsWith("_SWORD")) return true;
+        if (material == net.minecraft.world.item.Items.SHIELD
+                || material == net.minecraft.world.item.Items.SPYGLASS
+                || material == net.minecraft.world.item.Items.GOAT_HORN) {
             return true;
         }
-        if (material == Material.TRIDENT) {
+        if (material == net.minecraft.world.item.Items.TRIDENT) {
             return !nms.nextDamageWillBreak()
-                    && stack.getEnchantmentLevel(org.bukkit.enchantments.Enchantment.RIPTIDE) <= 0;
+                    && ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                    stack, net.minecraft.world.item.enchantment.Enchantments.RIPTIDE)
+                            <= 0;
         }
-        if (material == Material.BOW || material == Material.CROSSBOW) {
+        if (material == net.minecraft.world.item.Items.BOW || material == net.minecraft.world.item.Items.CROSSBOW) {
             return false;
         }
 

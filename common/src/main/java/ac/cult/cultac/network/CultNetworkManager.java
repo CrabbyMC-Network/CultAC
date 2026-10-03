@@ -3,6 +3,7 @@ package ac.cult.cultac.network;
 import ac.cult.cultac.network.packet.LegacyViaInputBridge;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.util.viaversion.ViaVersionUtil;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.protocol.ProtocolRuntime;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import io.netty.channel.Channel;
@@ -10,24 +11,16 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import net.minecraft.network.Connection;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.java.JavaPlugin;
 
-public final class CultNetworkManager implements Listener {
+public final class CultNetworkManager {
     private final PacketConnections connections = new PacketConnections();
     private PacketDispatcher dispatcher;
     private Runnable installChannels;
+    private Runnable startPlatform;
     private java.util.function.Supplier<CompletionStage<Void>> removeChannels;
-    private java.util.function.Function<Channel, io.netty.util.concurrent.EventExecutor> ownerResolver =
-            Channel::eventLoop;
+    private java.util.function.Function<Channel, PacketOwner> ownerResolver = channel -> null;
 
-    private JavaPlugin plugin;
+    private boolean loaded;
     private boolean started;
     private CompletableFuture<Void> stopped;
 
@@ -37,14 +30,24 @@ public final class CultNetworkManager implements Listener {
 
     public synchronized void configureTransport(
             ProtocolRuntime runtime, Runnable install, java.util.function.Supplier<CompletionStage<Void>> remove) {
+        configureTransport(runtime, install, () -> {}, remove);
+    }
+
+    public synchronized void configureTransport(
+            ProtocolRuntime runtime,
+            Runnable install,
+            Runnable start,
+            java.util.function.Supplier<CompletionStage<Void>> remove) {
         if (dispatcher != null) throw new IllegalStateException("Transport already configured");
         dispatcher = new PacketDispatcher(runtime);
         installChannels = java.util.Objects.requireNonNull(install);
+        startPlatform = java.util.Objects.requireNonNull(start);
         removeChannels = java.util.Objects.requireNonNull(remove);
     }
 
-    public CultConnection createConnection(Connection nativeConnection, Channel channel) {
-        var connection = new CultConnection(nativeConnection, channel, dispatcher(), ch -> ownerResolver.apply(ch));
+    public CultConnection createConnection(PlatformConnection platform, Channel channel) {
+        var connection = new CultConnection(
+                java.util.Objects.requireNonNull(platform), channel, dispatcher(), ch -> ownerResolver.apply(ch));
         connections.attach(connection);
         return connection;
     }
@@ -54,25 +57,25 @@ public final class CultNetworkManager implements Listener {
      * hook is in place before anything else snapshots the server's connection
      * initializer (Geyser captures it at enable time for its local channels).
      */
-    public synchronized void load(JavaPlugin plugin) {
+    public synchronized void load() {
         if (stopped != null && !stopped.isDone())
             throw new IllegalStateException("Network shutdown is still in progress");
-        if (this.plugin != null) {
+        if (loaded) {
             return;
         }
         stopped = null;
-        this.plugin = plugin;
         java.util.Objects.requireNonNull(installChannels, "Configure transport before load")
                 .run();
+        loaded = true;
     }
 
-    public void start(JavaPlugin plugin) {
+    public synchronized void start() {
         if (started) {
             return;
         }
-        load(plugin);
+        load();
+        startPlatform.run();
         started = true;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     /** Read-only snapshot; null means shutdown has not started. Does not initiate or retry shutdown. */
@@ -88,7 +91,6 @@ public final class CultNetworkManager implements Listener {
             completion = stopped = new CompletableFuture<>();
         }
         try {
-            HandlerList.unregisterAll(this);
             removeChannels
                     .get()
                     .thenCompose(ignored -> connections.disconnectRemainingUsers())
@@ -106,7 +108,7 @@ public final class CultNetworkManager implements Listener {
     private synchronized void finishStop() {
         connections.clearUsers();
         dispatcher.clear();
-        plugin = null;
+        loaded = false;
     }
 
     public void lifecycleHooks(UserLifecycleHooks hooks) {
@@ -125,7 +127,7 @@ public final class CultNetworkManager implements Listener {
         return connections.disconnect(user.getCultConnection());
     }
 
-    public User getUser(Player player) {
+    public User getUser(PlatformPlayer player) {
         return connections.getUser(player);
     }
 
@@ -133,14 +135,18 @@ public final class CultNetworkManager implements Listener {
         return connections.getUser(uuid);
     }
 
-    public void setPacketOwnerResolver(
-            java.util.function.Function<Channel, io.netty.util.concurrent.EventExecutor> resolver) {
+    /** Platform adapters must supply the player instance as well as its account identity. */
+    public User getUser(UUID uuid, Object nativePlayer) {
+        return connections.getUser(uuid, nativePlayer);
+    }
+
+    public void setPacketOwnerResolver(java.util.function.Function<Channel, PacketOwner> resolver) {
         ownerResolver = java.util.Objects.requireNonNull(resolver);
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        connections.playerJoined(event.getPlayer());
+    public void playerJoined(Channel channel) {
+        var connection = connections.get(channel);
+        if (connection != null) connections.playerJoined(connection);
     }
 
     public static void runDeferredPacketTask(String phase, Runnable runnable) {

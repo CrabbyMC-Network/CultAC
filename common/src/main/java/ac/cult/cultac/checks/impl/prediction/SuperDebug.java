@@ -19,7 +19,6 @@ import ac.cult.cultac.utils.nmsutil.Collisions;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Bukkit;
 
 public class SuperDebug extends CultProcessor implements PostPredictionListener {
 
@@ -80,9 +79,9 @@ public class SuperDebug extends CultProcessor implements PostPredictionListener 
                 player.z,
                 player.xRot,
                 player.yRot,
-                player.bukkitPlayer == null
+                player.platformPlayer == null
                         ? "null"
-                        : player.bukkitPlayer.getWorld().getName() + exempt);
+                        : player.platformPlayer.getWorld().getName() + exempt);
 
         if (predictionComplete.isTeleport()) {
             movementHistory.add(new MovementFrame(TELEPORT_MARKER, TELEPORT_MARKER, location));
@@ -111,7 +110,7 @@ public class SuperDebug extends CultProcessor implements PostPredictionListener 
         sb.append("\nClient Brand: ");
         sb.append(player.getBrand());
         sb.append("\nServer Version: ");
-        sb.append(Bukkit.getMinecraftVersion());
+        sb.append(net.minecraft.SharedConstants.getCurrentVersion().id());
         sb.append("\nPing: ");
         sb.append(player.getTransactionPing());
         sb.append(" ms\n\n");

@@ -3,7 +3,7 @@ package ac.cult.cultac.utils.blockplace;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 @AllArgsConstructor
 @Getter

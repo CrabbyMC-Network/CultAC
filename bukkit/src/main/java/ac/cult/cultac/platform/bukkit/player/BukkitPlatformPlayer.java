@@ -11,7 +11,7 @@ import ac.cult.cultac.platform.bukkit.entity.BukkitCultEntity;
 import ac.cult.cultac.platform.bukkit.sender.BukkitComponentSender;
 import ac.cult.cultac.platform.bukkit.utils.convert.BukkitConversionUtils;
 import ac.cult.cultac.platform.bukkit.utils.reflection.PaperUtils;
-import ac.cult.cultac.utils.anticheat.MultiLibUtil;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
 import ac.cult.cultac.utils.math.Location;
 import java.util.UUID;
@@ -19,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
@@ -41,7 +40,7 @@ public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPl
         this.bukkitPlayer = bukkitPlayer;
         this.inventory = new BukkitPlatformInventory(bukkitPlayer);
         if (CommonCultArguments.USE_CHAT_FAST_BYPASS.value()) {
-            this.user = CultAPI.INSTANCE.getPlayerDataManager().getUser(bukkitPlayer);
+            this.user = CultAPI.INSTANCE.getNetworkManager().getUser(bukkitPlayer.getUniqueId(), bukkitPlayer);
         } else {
             this.user = null;
         }
@@ -107,6 +106,37 @@ public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPl
     }
 
     @Override
+    public int getPing() {
+        return bukkitPlayer.getPing();
+    }
+
+    @Override
+    public int getEntityId() {
+        return bukkitPlayer.getEntityId();
+    }
+
+    @Override
+    public void closeInventory() {
+        ac.cult.cultac.network.protocol.util.FoliaCompatUtil.runTaskForEntity(
+                bukkitPlayer, CultACBukkitLoaderPlugin.LOADER, bukkitPlayer::closeInventory, null, 0);
+    }
+
+    @Override
+    public ac.cult.cultac.protocol.value.ItemUseState getItemUseState() {
+        return BukkitItemUseState.read(bukkitPlayer);
+    }
+
+    @Override
+    public void clearActiveItem() {
+        bukkitPlayer.clearActiveItem();
+    }
+
+    @Override
+    public void resendBlocks(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        BukkitBlockResync.resend(bukkitPlayer, minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
     public Vec3 getPosition() {
         if (CAN_USE_DIRECT_GETTERS) {
             return new Vec3(this.bukkitPlayer.getX(), this.bukkitPlayer.getY(), this.bukkitPlayer.getZ());
@@ -123,12 +153,12 @@ public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPl
 
     @Override
     public GameMode getGameMode() {
-        return bukkitPlayer.getGameMode();
+        return GameMode.valueOf(bukkitPlayer.getGameMode().name());
     }
 
     @Override
     public void setGameMode(GameMode gameMode) {
-        bukkitPlayer.setGameMode(gameMode);
+        bukkitPlayer.setGameMode(org.bukkit.GameMode.valueOf(gameMode.name()));
     }
 
     public World getBukkitWorld() {
@@ -149,11 +179,6 @@ public class BukkitPlatformPlayer extends BukkitCultEntity implements PlatformPl
     public CompletableFuture<Boolean> teleportAsync(Location location) {
         org.bukkit.Location bLoc = BukkitConversionUtils.toBukkitLocation(location);
         return PaperUtils.teleportAsync(this.bukkitPlayer, bLoc);
-    }
-
-    @Override
-    public boolean isExternalPlayer() {
-        return MultiLibUtil.isExternalPlayer(this.bukkitPlayer);
     }
 
     @Override

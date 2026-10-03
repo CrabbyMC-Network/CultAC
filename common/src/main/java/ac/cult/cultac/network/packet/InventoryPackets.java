@@ -5,7 +5,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 import com.mojang.datafixers.util.Pair;
 import java.util.List;
 import net.minecraft.world.entity.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 /** Consumed inventory values. The platform decodes items with its vanilla ByteBuf helpers. */
 public final class InventoryPackets {
@@ -26,7 +26,7 @@ public final class InventoryPackets {
 
     public record Cursor(ItemStack item) implements ClientboundPacket {}
 
-    /** Vanilla item values stay at the existing equipment consumer; only self equipment needs Bukkit conversion. */
+    /** Equipment values remain owned by the packet; consumers copy stacks before predicting changes. */
     public record Equipment(int entityId, List<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> slots)
             implements ClientboundPacket {
         public Equipment {

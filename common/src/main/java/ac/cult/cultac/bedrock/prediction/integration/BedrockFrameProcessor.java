@@ -60,7 +60,10 @@ public final class BedrockFrameProcessor {
         if (frame == null) return null;
         var processor = player.checkManager.getSimulationProcessor();
         var teleport = player.getSetbackTeleportUtil().acknowledgeBedrockTeleportFrame(frame);
-        if (teleport.isTeleport()) processor.applyAcceptedBedrockTeleport(teleport);
+        if (teleport.isTeleport()) {
+            processor.applyAcceptedBedrockTeleport(teleport);
+            player.packetStateData.bedrockTranslatedMovement.markTeleportFrame();
+        }
         player.bedrockState.offerAuthInputFrame(frame);
         if (frame.hasRawInputFlag(org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData.START_FLYING)
                 && player.canFly) player.isFlying = true;

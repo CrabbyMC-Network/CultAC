@@ -13,7 +13,6 @@ import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.grim.grimac.api.event.events.CompletePredictionEvent;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import lombok.Getter;
-import org.bukkit.ChatColor;
 
 // @CheckData(name = "Simulation", configName = "Simulation", decay = 0.02)
 public class OffsetHandler extends Check implements PostPredictionListener {
@@ -66,7 +65,7 @@ public class OffsetHandler extends Check implements PostPredictionListener {
         if ((offset >= threshold || offset >= immediateSetbackThreshold)
                 && flag(
                         V.write(verbose()).f64(offset),
-                        () -> formatOffset(offset) + " " + ChatColor.DARK_GRAY + predictionResult.getIdentifier())) {
+                        () -> formatOffset(offset) + " " + "\u00a78" + predictionResult.getIdentifier())) {
             advantageGained += offset;
 
             boolean isSetback = advantageGained >= maxAdvantage || offset >= immediateSetbackThreshold;

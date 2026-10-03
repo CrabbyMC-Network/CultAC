@@ -11,8 +11,6 @@ import ac.cult.cultac.protocol.PacketDirection;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.network.Connection;
-import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,15 +24,10 @@ class PacketConnectionsTest {
 
     private CultConnection session(UUID uuid) throws Exception {
         var channel = new EmbeddedChannel();
-        var nativeConnection = mock(Connection.class);
-        nativeConnection.channel = channel;
-        var listener = mock(ServerConfigurationPacketListenerImpl.class);
-        var profile = ServerConfigurationPacketListenerImpl.class.getDeclaredField("gameProfile");
-        profile.setAccessible(true);
-        profile.set(listener, new com.mojang.authlib.GameProfile(uuid, "ConnectionTest"));
-        when(nativeConnection.getPacketListener()).thenReturn(listener);
+        var platform = ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.platformConnection();
+        when(platform.authenticatedProfile()).thenReturn(new User.Profile(uuid, "ConnectionTest"));
         var session = new CultConnection(
-                nativeConnection, channel, CultAPI.INSTANCE.getNetworkManager().dispatcher(), ignored -> null);
+                platform, channel, CultAPI.INSTANCE.getNetworkManager().dispatcher(), ignored -> null);
         session.phase(PacketDirection.SERVERBOUND, ConnectionPhase.CONFIGURATION);
         session.phase(PacketDirection.CLIENTBOUND, ConnectionPhase.CONFIGURATION);
         connections.attach(session);
@@ -137,6 +130,49 @@ class PacketConnectionsTest {
             assertFalse(session.disconnected());
             assertSame(user, connections.getUser(user.getUUID()));
             assertSame(session, connections.get(session.channel()));
+        } finally {
+            close(session);
+        }
+    }
+
+    @Test
+    void platformBindingWaitsForCurrentConnectionAndNotifiesOnce() throws Exception {
+        var uuid = UUID.randomUUID();
+        var session = session(uuid);
+        var player = mock(ac.cult.cultac.platform.api.player.PlatformPlayer.class);
+        when(player.getUniqueId()).thenReturn(uuid);
+        Object nativePlayer = new Object();
+        when(player.getNative()).thenReturn(nativePlayer);
+        var binding = mock(PlatformConnection.PlayerBinding.class);
+        when(binding.player()).thenReturn(player);
+        when(binding.matches(nativePlayer)).thenReturn(true);
+        when(session.platform().playerBinding()).thenReturn(binding);
+        AtomicInteger joins = new AtomicInteger();
+        connections.hooks(new UserLifecycleHooks() {
+            @Override
+            public void onLogin(User user, ac.cult.cultac.platform.api.player.PlatformPlayer joined) {
+                assertSame(player, joined);
+                assertSame(player, user.getPlayer());
+                assertSame(player, user.getCultPlayer().platformPlayer);
+                joins.incrementAndGet();
+            }
+        });
+        try {
+            session.prepare();
+            assertNotNull(session.player());
+            assertNull(session.user().getPlayer());
+            assertNull(connections.getUser(uuid, nativePlayer));
+            verify(binding, never()).initialize(any());
+            when(binding.isCurrent()).thenReturn(true);
+            connections.playerJoined(session);
+            connections.playerJoined(session);
+            ((EmbeddedChannel) session.channel()).runPendingTasks();
+            assertEquals(1, joins.get());
+            verify(binding).initialize(session.player());
+            assertSame(session.user(), connections.getUser(uuid, nativePlayer));
+            assertNull(connections.getUser(uuid, new Object()));
+            when(binding.isCurrent()).thenReturn(false);
+            assertNull(connections.getUser(uuid, nativePlayer));
         } finally {
             close(session);
         }

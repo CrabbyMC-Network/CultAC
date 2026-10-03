@@ -6,28 +6,23 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.latency.CompensatedGeysers;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedChunk;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
+import ac.cult.cultac.utils.minecraft.NativeChunkSections;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.PalettedContainerFactory;
 
-/** Pinned 26.3 section reader, using vanilla's palette implementation. */
+/** Native section reader, using the host's original palette implementation. */
 public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
-    // Creating a vanilla palette factory builds DFU codecs; share it for this server registry.
-    private static volatile SectionFactory sectionFactory;
 
     @Override
     public void handleMapChunk(CultPlayer player, PacketSendEvent<Chunk> event, Chunk packet) {
         var dimension = player.compensatedWorld.getLastClientboundDimension();
         CachedSection[] chunks = new CachedSection[dimension.sectionCount()];
-        var palettes = palettes();
+        var registries = player.user.registries().access();
         var bytes = new FriendlyByteBuf(Unpooled.wrappedBuffer(packet.sections()));
         try {
             for (int i = 0; i < chunks.length; i++) {
-                var section = new LevelChunkSection(palettes);
+                var section = NativeChunkSections.create(registries);
                 section.read(bytes);
                 chunks[i] = new CachedSection(section.getStates().copy());
             }
@@ -38,6 +33,12 @@ public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
                 .filter(position -> hasGeyserTicker(chunks, dimension.minHeight(), position))
                 .toList();
         addChunkToCache(event, player, chunks, true, dimension.dimension(), packet.x(), packet.z(), tickers);
+        if (packet.light() != null) {
+            player.latencyUtils.addRealTimeTask(
+                    player.lastTransactionSent.get(),
+                    () -> player.compensatedWorld.applyLight(
+                            dimension.dimension(), packet.x(), packet.z(), packet.light()));
+        }
     }
 
     private static boolean hasGeyserTicker(CachedSection[] sections, int minHeight, BlockPos position) {
@@ -47,16 +48,4 @@ public class PacketWorldReaderTwentySix extends BasePacketWorldReader {
         return CompensatedGeysers.hasTicker(sections[sectionIndex].getState(
                 CachedChunk.index(position.getX() & 0xF, offsetY & 0xF, position.getZ() & 0xF)));
     }
-
-    private static PalettedContainerFactory palettes() {
-        RegistryAccess access = MinecraftServer.getServer().registryAccess();
-        SectionFactory factory = sectionFactory;
-        if (factory == null || factory.access() != access) {
-            factory = new SectionFactory(access, PalettedContainerFactory.create(access));
-            sectionFactory = factory;
-        }
-        return factory.palettes();
-    }
-
-    private record SectionFactory(RegistryAccess access, PalettedContainerFactory palettes) {}
 }

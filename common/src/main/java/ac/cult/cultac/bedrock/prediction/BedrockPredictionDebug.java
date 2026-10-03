@@ -18,7 +18,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.ChatColor;
 
 public final class BedrockPredictionDebug {
 
@@ -87,7 +86,7 @@ public final class BedrockPredictionDebug {
     }
 
     public static String formatConsoleDebug(
-            CultPlayer player, PredictionComplete predictionComplete, ChatColor labelColor, ChatColor color) {
+            CultPlayer player, PredictionComplete predictionComplete, String labelColor, String color) {
         if (!player.isBedrockMovement()
                 || player.bedrockState == null
                 || predictionComplete.getPredictionResult() == null) {
@@ -189,7 +188,7 @@ public final class BedrockPredictionDebug {
 
     public static boolean shouldRecordMovementDebug(CultPlayer player, PredictionResult result) {
         if (player == null
-                || player.bukkitPlayer == null
+                || player.platformPlayer == null
                 || !player.isBedrockMovement()
                 || player.bedrockState == null
                 || result == null) {
@@ -201,11 +200,11 @@ public final class BedrockPredictionDebug {
         }
         Function<Object, Object> active =
                 CultAPI.INSTANCE.getExternalAPI().getFunction("cultac.bedrock.movementDebug.active");
-        return active != null && Boolean.TRUE.equals(active.apply(player.bukkitPlayer.getName()));
+        return active != null && Boolean.TRUE.equals(active.apply(player.platformPlayer.getName()));
     }
 
     private static void publishMovementDebug(CultPlayer player, PredictionResult result, String debugLog) {
-        if (player.bukkitPlayer == null || result == null || debugLog == null) {
+        if (player.platformPlayer == null || result == null || debugLog == null) {
             return;
         }
         BedrockPredictionResult bedrockResult = result.getProfileResult(BedrockPredictionResult.class);
@@ -219,7 +218,7 @@ public final class BedrockPredictionDebug {
         if (active == null || record == null) {
             return;
         }
-        String username = player.bukkitPlayer.getName();
+        String username = player.platformPlayer.getName();
         if (!Boolean.TRUE.equals(active.apply(username))) {
             return;
         }

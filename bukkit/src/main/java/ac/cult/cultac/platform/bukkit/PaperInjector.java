@@ -3,8 +3,8 @@ package ac.cult.cultac.platform.bukkit;
 import ac.cult.cultac.network.CultNetworkManager;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
-import ac.cult.cultac.protocol.paper.CultDecoder;
-import ac.cult.cultac.protocol.paper.CultEncoder;
+import ac.cult.cultac.protocol.netty.CultDecoder;
+import ac.cult.cultac.protocol.netty.CultEncoder;
 import io.netty.channel.Channel;
 import io.papermc.paper.network.ChannelInitializeListenerHolder;
 import java.lang.reflect.Field;
@@ -44,7 +44,7 @@ final class PaperInjector {
         if (!(channel.pipeline().get("packet_handler") instanceof Connection nativeConnection)) return;
         var inbound = existing ? installedPhase(channel, "decoder", PacketDecoder.class) : ConnectionPhase.HANDSHAKE;
         var outbound = existing ? installedPhase(channel, "encoder", PacketEncoder.class) : ConnectionPhase.HANDSHAKE;
-        var connection = manager.createConnection(nativeConnection, channel);
+        var connection = manager.createConnection(new BukkitConnectionAdapter(nativeConnection), channel);
         if (existing) {
             connection.phase(PacketDirection.SERVERBOUND, inbound);
             connection.phase(PacketDirection.CLIENTBOUND, outbound);

@@ -11,7 +11,6 @@ import ac.cult.cultac.bedrock.protocol.BedrockTeleportProvenance;
 import ac.cult.cultac.checks.impl.movement.timer.AbstractTimerCheck;
 import ac.cult.cultac.checks.impl.movement.timer.TimerCheck;
 import ac.cult.cultac.network.event.PacketSendEvent;
-import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.ConnectionPhase;
@@ -22,7 +21,6 @@ import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
@@ -262,9 +260,7 @@ public final class BedrockTransportAuthorityTest {
     }
 
     private static void enableTransactionPackets(CultPlayer player) throws ReflectiveOperationException {
-        Field handle = User.class.getDeclaredField("handle");
-        handle.setAccessible(true);
-        handle.set(player.user, Mockito.mock(ServerPlayer.class));
+        player.user.bind(Mockito.mock(ac.cult.cultac.platform.api.player.PlatformPlayer.class));
     }
 
     private static PacketSendEvent<ClientboundSetPassengers> sendEvent(

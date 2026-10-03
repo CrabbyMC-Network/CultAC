@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 @AllArgsConstructor
 public enum Platform {
+    VELOCITY("velocity"),
     FABRIC("fabric"),
     BUKKIT("bukkit"),
     FOLIA("folia");

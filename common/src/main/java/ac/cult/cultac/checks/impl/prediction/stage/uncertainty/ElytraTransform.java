@@ -6,10 +6,10 @@ import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.math.VectorUtils;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.util.Vector;
 
 public class ElytraTransform implements UncertaintyHandler {
     @Override
@@ -88,12 +88,12 @@ public class ElytraTransform implements UncertaintyHandler {
         // and getXRot() from the entity state being ticked. In Cult that state
         // is the packet-local SimulationContext, not mutable CultPlayer fields
         // that may already have advanced while candidate vectors are replayed.
-        Vector currentLook = ReachUtils.getLook(player, context.getXRot(), context.getYRot());
+        Vector3dm currentLook = ReachUtils.getLook(player, context.getXRot(), context.getYRot());
         return getElytraMovement(player, start, currentLook, context.getYRot(), gravity);
     }
 
     public static Vec3 getElytraMovement(
-            CultPlayer player, Vec3 vector, Vector lookVector, float pitch, double gravity) {
+            CultPlayer player, Vec3 vector, Vector3dm lookVector, float pitch, double gravity) {
         float yRotRadians = pitch * 0.017453292F;
         double horizontalLookLength =
                 Math.sqrt(lookVector.getX() * lookVector.getX() + lookVector.getZ() * lookVector.getZ());

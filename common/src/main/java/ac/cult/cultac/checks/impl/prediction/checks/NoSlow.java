@@ -8,12 +8,12 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.cult.cultac.utils.nmsutil.IsUsingItem;
 import lombok.Setter;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 
 // @CheckData(name = "NoSlow", stableKey = "cult.movement.noslow")
 public class NoSlow extends Check implements PostPredictionListener {
@@ -33,7 +33,17 @@ public class NoSlow extends Check implements PostPredictionListener {
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
-
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) {
+            shouldCheck = false;
+            if (doneSettingMetadata) {
+                player.settingMetaData = false;
+                doneSettingMetadata = false;
+            }
+            if (predictionComplete.getPredictionResult() != null) {
+                predictionComplete.getPredictionResult().setExceedsSlowedSpeed(false);
+            }
+            return;
+        }
         if (predictionComplete.isTeleport()
                 || predictionComplete.isExempt()
                 || player.inVehicle()
@@ -93,6 +103,7 @@ public class NoSlow extends Check implements PostPredictionListener {
     @CultPacketHandler
     public void onPlayerAction(
             PacketReceiveEvent<ServerboundPlayerAction> event, CultPlayer player, ServerboundPlayerAction packet) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         if (packet.action() == PlayerAction.RELEASE_USE_ITEM && !player.settingMetaData) {
             shouldCheck = true;
         }

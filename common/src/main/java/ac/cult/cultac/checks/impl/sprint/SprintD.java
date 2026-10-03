@@ -7,9 +7,9 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import org.bukkit.potion.PotionEffectType;
 
 @CheckData(
         name = "SprintD",
@@ -34,7 +34,7 @@ public class SprintD extends Check implements PostPredictionListener {
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
-        if (player.compensatedEntities.hasPotionEffect(PotionEffectType.BLINDNESS) && !startedSprintingBeforeBlind) {
+        if (player.compensatedEntities.hasPotionEffect(MovementEffect.BLINDNESS) && !startedSprintingBeforeBlind) {
             if (player.isSprinting) {
                 flagWithSetback();
             } else reward();

@@ -9,10 +9,10 @@ import ac.cult.cultac.bedrock.protocol.*;
 import ac.cult.cultac.checks.impl.bedrock.BedrockMovement;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
 

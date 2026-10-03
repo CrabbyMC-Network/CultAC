@@ -3,6 +3,7 @@ package ac.cult.cultac.utils.latency;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.LegacyPistonCollision;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.NoCollisionBox;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -31,7 +31,6 @@ import net.minecraft.world.level.block.state.properties.PistonType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.bukkit.block.BlockFace;
 
 public final class CompensatedWorldPistons {
     private static final BlockState AIR_STATE = Block.stateById(0);
@@ -59,7 +58,7 @@ public final class CompensatedWorldPistons {
             return;
         }
 
-        Direction eventDirection = Direction.from3DDataValue(triggerData & 7);
+        net.minecraft.core.Direction eventDirection = net.minecraft.core.Direction.from3DDataValue(triggerData & 7);
 
         BlockState pistonState = world.getBlockStateAt(pos);
         if (!isPistonBlock(pistonState.getBlock()) || !pistonState.hasProperty(PistonBaseBlock.FACING)) {
@@ -81,7 +80,7 @@ public final class CompensatedWorldPistons {
                 pistonState = pistonState.setValue(PistonBaseBlock.EXTENDED, triggerType != 0);
             }
         }
-        Direction direction = pistonState.getValue(PistonBaseBlock.FACING);
+        net.minecraft.core.Direction direction = pistonState.getValue(PistonBaseBlock.FACING);
 
         boolean extending = triggerType == 0;
         boolean sticky = pistonState.getBlock() == Blocks.STICKY_PISTON;
@@ -113,7 +112,7 @@ public final class CompensatedWorldPistons {
 
         applyClientPistonBlockEvent(pos, pistonState, direction, triggerType, triggerData, structure, transaction);
 
-        BlockFace movementDirection = toBlockFace(extending ? direction : direction.getOpposite());
+        Direction movementDirection = toBlockFace(extending ? direction : direction.getOpposite());
 
         List<SimpleCollisionBox> retractingSourceFixBoxes = Collections.emptyList();
         if (!extending) {
@@ -122,7 +121,7 @@ public final class CompensatedWorldPistons {
         }
 
         if (structure.resolved()) {
-            Direction nmsMovementDirection = extending ? direction : direction.getOpposite();
+            net.minecraft.core.Direction nmsMovementDirection = extending ? direction : direction.getOpposite();
             for (BlockPos pushed : structure.toPush()) {
                 BlockPos movingPos = pushed.relative(nmsMovementDirection);
                 addTrackedMovingPistonMovementBoxes(movingPos, boxes, movingPositions);
@@ -172,7 +171,7 @@ public final class CompensatedWorldPistons {
     private void applyClientPistonBlockEvent(
             BlockPos pos,
             BlockState sourcePistonState,
-            Direction direction,
+            net.minecraft.core.Direction direction,
             int triggerType,
             int triggerData,
             PistonStructure structure,
@@ -199,7 +198,7 @@ public final class CompensatedWorldPistons {
                 .setValue(MovingPistonBlock.TYPE, sticky ? PistonType.STICKY : PistonType.DEFAULT);
         BlockState movedSourceState = (sticky ? Blocks.STICKY_PISTON : Blocks.PISTON)
                 .defaultBlockState()
-                .setValue(PistonBaseBlock.FACING, Direction.from3DDataValue(triggerData & 7));
+                .setValue(PistonBaseBlock.FACING, net.minecraft.core.Direction.from3DDataValue(triggerData & 7));
         trackMovingPiston(pos, movingSourceState, movedSourceState, direction, false, true, transaction);
         world.updateBlock(pos.getX(), pos.getY(), pos.getZ(), movingSourceState);
 
@@ -212,7 +211,11 @@ public final class CompensatedWorldPistons {
     }
 
     private void applyClientPistonMoveBlocks(
-            BlockPos pistonPos, Direction direction, boolean extending, PistonStructure structure, int transaction) {
+            BlockPos pistonPos,
+            net.minecraft.core.Direction direction,
+            boolean extending,
+            PistonStructure structure,
+            int transaction) {
         // MCP-Reborn PistonBaseBlock#moveBlocks stores each pushed block as a
         // MOVING_PISTON at its destination, with the original moved state stored
         // in the PistonMovingBlockEntity. The original positions are then set to
@@ -233,7 +236,7 @@ public final class CompensatedWorldPistons {
             originals.put(pushed, pushedState);
         }
 
-        Direction movementDirection = extending ? direction : direction.getOpposite();
+        net.minecraft.core.Direction movementDirection = extending ? direction : direction.getOpposite();
         for (int i = toPush.size() - 1; i >= 0; i--) {
             BlockPos destination = toPush.get(i).relative(movementDirection);
             originals.remove(destination);
@@ -270,7 +273,7 @@ public final class CompensatedWorldPistons {
             BlockPos pos,
             BlockState movingState,
             BlockState movedState,
-            Direction direction,
+            net.minecraft.core.Direction direction,
             boolean extending,
             boolean source,
             int transaction) {
@@ -372,7 +375,7 @@ public final class CompensatedWorldPistons {
 
     public PistonPushes tickPlayerInPistonPushingArea(SimpleCollisionBox playerBox) {
         if (usesLegacyCollision()) return legacyPistonPushes(playerBox);
-        Set<BlockFace> launches = new HashSet<>();
+        Set<Direction> launches = new HashSet<>();
         SimpleCollisionBox pistonPushes = new SimpleCollisionBox();
         boolean currentPass = reportsAfterBlockEntities();
 
@@ -395,7 +398,7 @@ public final class CompensatedWorldPistons {
                 }
             }
 
-            BlockFace direction = data.getMovementDirection();
+            Direction direction = data.getMovementDirection();
             boolean movementIntersects = movementAmount > 0.0D;
             boolean sourceFixIntersects = intersectsAny(playerBox, data.retractingSourceFixBoxes);
 
@@ -423,7 +426,7 @@ public final class CompensatedWorldPistons {
             }
 
             if (sourceFixIntersects) {
-                BlockFace sourceFixDirection = direction.getOppositeFace();
+                Direction sourceFixDirection = direction.getOppositeFace();
                 playerBox.expand(
                         Math.abs(sourceFixDirection.getModX()),
                         Math.abs(sourceFixDirection.getModY()),
@@ -460,11 +463,11 @@ public final class CompensatedWorldPistons {
     }
 
     private PistonPushes legacyPistonPushes(SimpleCollisionBox playerBox) {
-        Set<BlockFace> launches = new HashSet<>();
+        Set<Direction> launches = new HashSet<>();
         SimpleCollisionBox pushes = new SimpleCollisionBox();
         for (LegacyPistonMovement movement : lastLegacyPistonMovements) {
             if (!playerBox.isIntersected(movement.box)) continue;
-            BlockFace direction = movement.direction;
+            Direction direction = movement.direction;
             if (movement.launch) {
                 // 1.8 assigns motion on the facing axis; this branch does not
                 // call moveEntity and contributes no position-only shove.
@@ -490,13 +493,13 @@ public final class CompensatedWorldPistons {
         return result;
     }
 
-    private record LegacyPistonMovement(SimpleCollisionBox box, BlockFace direction, double amount, boolean launch) {}
+    private record LegacyPistonMovement(SimpleCollisionBox box, Direction direction, double amount, boolean launch) {}
 
     public boolean reportsAfterBlockEntities() {
         return !player.isBedrockMovement() && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3);
     }
 
-    private static void unionSignedAxis(SimpleCollisionBox box, BlockFace direction, double limit) {
+    private static void unionSignedAxis(SimpleCollisionBox box, Direction direction, double limit) {
         if (direction.getModX() != 0) {
             box.unionX(direction.getModX() * limit);
         }
@@ -509,7 +512,7 @@ public final class CompensatedWorldPistons {
     }
 
     private static double movementNeededToExit(
-            SimpleCollisionBox area, BlockFace direction, SimpleCollisionBox entityBox) {
+            SimpleCollisionBox area, Direction direction, SimpleCollisionBox entityBox) {
         return switch (direction) {
             case EAST -> area.maxX - entityBox.minX;
             case WEST -> entityBox.maxX - area.minX;
@@ -540,7 +543,8 @@ public final class CompensatedWorldPistons {
                         && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2));
     }
 
-    private static List<SimpleCollisionBox> retractingSourceFixBoxes(BlockPos sourcePos, Direction pistonDirection) {
+    private static List<SimpleCollisionBox> retractingSourceFixBoxes(
+            BlockPos sourcePos, net.minecraft.core.Direction pistonDirection) {
         // MCP-Reborn PistonBaseBlock#triggerEvent creates a retracting source
         // PistonMovingBlockEntity, and PistonMovingBlockEntity#moveCollidedEntities
         // calls fixEntityWithinPistonBase only after the source head has collided.
@@ -624,10 +628,11 @@ public final class CompensatedWorldPistons {
         }
     }
 
-    private PistonStructure resolvePistonStructure(BlockPos pistonPos, Direction pistonDirection, boolean extending) {
+    private PistonStructure resolvePistonStructure(
+            BlockPos pistonPos, net.minecraft.core.Direction pistonDirection, boolean extending) {
         List<BlockPos> toPush = new ArrayList<>();
         List<BlockPos> toDestroy = new ArrayList<>();
-        Direction pushDirection = extending ? pistonDirection : pistonDirection.getOpposite();
+        net.minecraft.core.Direction pushDirection = extending ? pistonDirection : pistonDirection.getOpposite();
         BlockPos startPos = extending ? pistonPos.relative(pistonDirection) : pistonPos.relative(pistonDirection, 2);
         BlockPos retractingHeadPos = extending ? null : pistonPos.relative(pistonDirection);
         BlockState startState = getPistonStructureStateAt(startPos, retractingHeadPos);
@@ -672,10 +677,10 @@ public final class CompensatedWorldPistons {
 
     private boolean addPistonBlockLine(
             BlockPos pistonPos,
-            Direction pushDirection,
-            Direction pistonDirection,
+            net.minecraft.core.Direction pushDirection,
+            net.minecraft.core.Direction pistonDirection,
             BlockPos start,
-            Direction direction,
+            net.minecraft.core.Direction direction,
             BlockPos retractingHeadPos,
             List<BlockPos> toPush,
             List<BlockPos> toDestroy) {
@@ -768,15 +773,15 @@ public final class CompensatedWorldPistons {
 
     private boolean addPistonBranchingBlocks(
             BlockPos pistonPos,
-            Direction pushDirection,
-            Direction pistonDirection,
+            net.minecraft.core.Direction pushDirection,
+            net.minecraft.core.Direction pistonDirection,
             BlockPos fromPos,
             BlockPos retractingHeadPos,
             List<BlockPos> toPush,
             List<BlockPos> toDestroy) {
         BlockState blockState = getPistonStructureStateAt(fromPos, retractingHeadPos);
 
-        for (Direction direction : Direction.values()) {
+        for (net.minecraft.core.Direction direction : net.minecraft.core.Direction.values()) {
             if (direction.getAxis() == pushDirection.getAxis()) {
                 continue;
             }
@@ -810,7 +815,7 @@ public final class CompensatedWorldPistons {
         return state;
     }
 
-    private boolean canStickyPistonPull(BlockState state, BlockPos pos, Direction pistonDirection) {
+    private boolean canStickyPistonPull(BlockState state, BlockPos pos, net.minecraft.core.Direction pistonDirection) {
         // MCP-Reborn PistonBaseBlock#triggerEvent only calls moveBlocks on sticky
         // retraction when the block two ahead is non-air, pushable backward, and
         // has NORMAL piston reaction or is itself a piston block.
@@ -829,9 +834,9 @@ public final class CompensatedWorldPistons {
     private boolean isPistonPushable(
             BlockState state,
             BlockPos pos,
-            Direction direction,
+            net.minecraft.core.Direction direction,
             boolean allowDestroyable,
-            Direction connectionDirection) {
+            net.minecraft.core.Direction connectionDirection) {
         // MCP-Reborn PistonBaseBlock#isPushable. World-border checks are server
         // world checks; for a tracked player near the arena, the dimension height
         // limit is the exact client-relevant bound Cult has locally.
@@ -847,10 +852,10 @@ public final class CompensatedWorldPistons {
                 || state.getBlock() == Blocks.REINFORCED_DEEPSLATE) {
             return false;
         }
-        if (direction == Direction.DOWN && pos.getY() == world.getMinHeight()) {
+        if (direction == net.minecraft.core.Direction.DOWN && pos.getY() == world.getMinHeight()) {
             return false;
         }
-        if (direction == Direction.UP && pos.getY() == world.getMaxHeight()) {
+        if (direction == net.minecraft.core.Direction.UP && pos.getY() == world.getMaxHeight()) {
             return false;
         }
 
@@ -904,14 +909,14 @@ public final class CompensatedWorldPistons {
                 pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, true);
     }
 
-    private static BlockFace toBlockFace(Direction direction) {
+    private static Direction toBlockFace(net.minecraft.core.Direction direction) {
         return switch (direction) {
-            case DOWN -> BlockFace.DOWN;
-            case UP -> BlockFace.UP;
-            case NORTH -> BlockFace.NORTH;
-            case SOUTH -> BlockFace.SOUTH;
-            case WEST -> BlockFace.WEST;
-            case EAST -> BlockFace.EAST;
+            case DOWN -> Direction.DOWN;
+            case UP -> Direction.UP;
+            case NORTH -> Direction.NORTH;
+            case SOUTH -> Direction.SOUTH;
+            case WEST -> Direction.WEST;
+            case EAST -> Direction.EAST;
         };
     }
 
@@ -960,13 +965,17 @@ public final class CompensatedWorldPistons {
 
         private final BlockPos pos;
         private final BlockState movedState;
-        private final Direction direction;
+        private final net.minecraft.core.Direction direction;
         private final boolean extending;
         private final boolean source;
         private int clientBlockEntityTicks;
 
         private MovingPistonState(
-                BlockPos pos, BlockState movedState, Direction direction, boolean extending, boolean source) {
+                BlockPos pos,
+                BlockState movedState,
+                net.minecraft.core.Direction direction,
+                boolean extending,
+                boolean source) {
             this.pos = pos.immutable();
             this.movedState = movedState;
             this.direction = direction;
@@ -1001,7 +1010,7 @@ public final class CompensatedWorldPistons {
             return extending ? progress - 1.0F : 1.0F - progress;
         }
 
-        private Direction movementDirection() {
+        private net.minecraft.core.Direction movementDirection() {
             return extending ? direction : direction.getOpposite();
         }
 
@@ -1066,7 +1075,7 @@ public final class CompensatedWorldPistons {
                 return;
             }
 
-            Direction movementDirection = movementDirection();
+            net.minecraft.core.Direction movementDirection = movementDirection();
             for (AABB localBox : shape.toAabbs()) {
                 AABB movedBox = moveByPositionAndProgress(pos, localBox, progress);
                 boxes.add(toSimpleCollisionBox(getMovementArea(movedBox, movementDirection, deltaProgress)));
@@ -1094,7 +1103,7 @@ public final class CompensatedWorldPistons {
                     pos.getZ() + direction.getStepZ() * extendedProgress);
         }
 
-        private static AABB getMovementArea(AABB box, Direction direction, double amount) {
+        private static AABB getMovementArea(AABB box, net.minecraft.core.Direction direction, double amount) {
             double step = amount * direction.getAxisDirection().getStep();
             double min = Math.min(step, 0.0D);
             double max = Math.max(step, 0.0D);

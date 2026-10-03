@@ -6,7 +6,6 @@ import ac.cult.cultac.checks.CheckInfo;
 import ac.cult.cultac.checks.type.CheckListener;
 import ac.cult.cultac.player.CultPlayer;
 import java.util.Locale;
-import org.bukkit.ChatColor;
 
 @BedrockSupported
 public final class BedrockMovement extends Check implements CheckListener {
@@ -39,7 +38,7 @@ public final class BedrockMovement extends Check implements CheckListener {
 
     public void flagMovement(double offset, int debugIdentifier) {
         if (canFlagMovement()) {
-            flag(String.format(Locale.ROOT, "%.5f", offset) + " " + ChatColor.DARK_GRAY + debugIdentifier);
+            flag(String.format(Locale.ROOT, "%.5f", offset) + " " + "\u00a78" + debugIdentifier);
         }
     }
 

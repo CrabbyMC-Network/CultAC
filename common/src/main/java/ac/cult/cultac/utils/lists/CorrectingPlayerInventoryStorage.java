@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.SharedConstants;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * This is responsible for lag compensation of the player's inventory
@@ -101,7 +101,7 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
             ItemStack existing = getItem(slot);
             ItemStack serverside = player.platformPlayer.getInventory().getStack(bukkitSlot, slot);
 
-            if (existing.getType() != serverside.getType() || existing.getAmount() != serverside.getAmount()) {
+            if (existing.getItem() != serverside.getItem() || existing.getCount() != serverside.getCount()) {
                 CultAPI.INSTANCE
                         .getScheduler()
                         .getEntityScheduler()
@@ -145,6 +145,10 @@ public class CorrectingPlayerInventoryStorage extends InventoryStorage {
 
     public void tickWithBukkit() {
         if (player.platformPlayer == null) return;
+        if (!player.platformPlayer.hasServerAuthority()) {
+            pendingFinalizedSlot.clear();
+            return;
+        }
 
         // Loop all slot changes the client has predicted and check that the server has accepted them
         int tickID = CultAPI.INSTANCE.getTickManager().currentTick;

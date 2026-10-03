@@ -25,6 +25,7 @@ import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.network.protocol.teleport.RelativeFlag;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.SetbackPosWithVector;
 import ac.cult.cultac.utils.data.TeleportAcceptData;
@@ -42,15 +43,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.junit.Test;
 
@@ -1022,44 +1020,9 @@ public final class OfflineBedrockReplayRunnerTest {
 
     private static ItemStack itemStack(Material material) {
         if (material == Material.AIR) {
-            return ItemStack.empty();
+            return ItemStack.EMPTY;
         }
-        return new ReplayItemStack(material);
-    }
-
-    private static final class ReplayItemStack extends ItemStack {
-        private final Material material;
-
-        private ReplayItemStack(Material material) {
-            this.material = material;
-        }
-
-        @Override
-        public Material getType() {
-            return material;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public org.bukkit.inventory.meta.ItemMeta getItemMeta() {
-            // Material-only armor fixtures are fresh items with no damage.
-            // This offline stack has no CraftItemStack delegate to query.
-            return null;
-        }
-
-        @Override
-        public Map<Enchantment, Integer> getEnchantments() {
-            return Map.of();
-        }
-
-        @Override
-        public int getEnchantmentLevel(Enchantment ench) {
-            return 0;
-        }
+        return new ItemStack(org.bukkit.craftbukkit.util.CraftMagicNumbers.getItem(material));
     }
 
     private static void seedInitialVelocity(CultPlayer player, Vec3 velocity) {

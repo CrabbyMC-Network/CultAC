@@ -1,10 +1,10 @@
 package ac.cult.cultac.utils.floodgate;
 
+import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.UUID;
-import org.bukkit.Bukkit;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.api.GeyserApi;
 import org.geysermc.geyser.configuration.GeyserConfig;
@@ -98,6 +98,7 @@ public final class GeyserUtil {
     }
 
     private static boolean isGeyserPluginEnabled() {
-        return Bukkit.getPluginManager().isPluginEnabled("Geyser-Spigot");
+        var plugins = CultAPI.INSTANCE.getPluginManager();
+        return plugins.isPluginEnabled("Geyser-Spigot") || plugins.isPluginEnabled("Geyser-Velocity");
     }
 }

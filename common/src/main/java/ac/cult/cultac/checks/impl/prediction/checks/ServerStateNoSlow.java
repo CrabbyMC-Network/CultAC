@@ -29,6 +29,7 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
 
     @Override
     public void onPredictionComplete(final PredictionComplete predictionComplete) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         if (predictionComplete.isTeleport()) return;
         if (predictionComplete.isExempt()) {
             ticksSlowed = 0;
@@ -49,12 +50,14 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
 
     @CultPacketHandler
     public void onUseItem(PacketReceiveEvent<ServerboundUseItem> event, CultPlayer player, ServerboundUseItem packet) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         hand = SpigotConversionUtil.toNmsHand(packet.hand());
     }
 
     @CultPacketHandler
     public void onSetCarriedItem(
             PacketReceiveEvent<ServerboundSetCarriedItem> event, CultPlayer player, ServerboundSetCarriedItem packet) {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         if (bufferThreshold != Integer.MAX_VALUE && hand != InteractionHand.OFF_HAND) {
             IsUsingItem.stopUseItem(player);
         }
@@ -70,6 +73,7 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
     }
 
     public void tick() {
+        if (player.platformPlayer == null || !player.platformPlayer.hasServerAuthority()) return;
         boolean bukkitUsingItem = IsUsingItem.isUsingItem(player);
 
         if (!bukkitUsingItem) {
@@ -88,7 +92,7 @@ public class ServerStateNoSlow extends CultProcessor implements PostPredictionLi
             } else {
                 // fail
                 buffer = Math.min(bufferThreshold, buffer + 1);
-                if (buffer >= bufferThreshold && player.bukkitPlayer != null) {
+                if (buffer >= bufferThreshold && player.platformPlayer != null) {
                     // TODO: Transform to be thread safe!
                     IsUsingItem.stopUseItem(player);
                     if (player.debugNoSlow) {

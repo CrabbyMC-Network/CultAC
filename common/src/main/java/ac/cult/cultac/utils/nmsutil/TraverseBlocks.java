@@ -1,25 +1,24 @@
 package ac.cult.cultac.utils.nmsutil;
 
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.HitboxData;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.HitData;
 import ac.cult.cultac.utils.data.Pair;
 import ac.cult.cultac.utils.math.CultMath;
+import ac.cult.cultac.utils.math.Vector3dm;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
 public class TraverseBlocks {
@@ -30,7 +29,7 @@ public class TraverseBlocks {
     // although I still don't understand Mojang's obsession with streams in some of the hottest methods... that kills
     // performance
     public static HitData traverseBlocks(
-            CultPlayer player, Vec3 start, Vec3 end, BiFunction<BlockData, BlockPos, HitData> predicate) {
+            CultPlayer player, Vec3 start, Vec3 end, BiFunction<BlockState, BlockPos, HitData> predicate) {
         // I guess go back by the collision epsilon?
         double endX = CultMath.lerp(-1.0E-7D, end.x, start.x);
         double endY = CultMath.lerp(-1.0E-7D, end.y, start.y);
@@ -44,7 +43,7 @@ public class TraverseBlocks {
 
         if (start.equals(end)) return null;
 
-        BlockData state = player.compensatedWorld.getBlockDataAt(floorStartX, floorStartY, floorStartZ);
+        BlockState state = player.compensatedWorld.getBlockDataAt(floorStartX, floorStartY, floorStartZ);
         HitData apply = predicate.apply(state, new BlockPos(floorStartX, floorStartY, floorStartZ));
 
         if (apply != null) {
@@ -95,30 +94,29 @@ public class TraverseBlocks {
         return null;
     }
 
-    public static @Nullable HitData getNearestHitResult(
-            CultPlayer player, Material heldItem, boolean sourcesHaveHitbox) {
+    public static @Nullable HitData getNearestHitResult(CultPlayer player, Block heldItem, boolean sourcesHaveHitbox) {
         Vec3 startingPos = new Vec3(player.x, player.y + player.getEyeHeight(), player.z);
-        Vector startingVec = new Vector(startingPos.x, startingPos.y, startingPos.z);
+        Vector3dm startingVec = new Vector3dm(startingPos.x, startingPos.y, startingPos.z);
         Ray trace = new Ray(player, startingPos.x, startingPos.y, startingPos.z, player.xRot, player.yRot);
-        Vector endVec = trace.getPointAtDistance(5);
+        Vector3dm endVec = trace.getPointAtDistance(5);
         Vec3 endPos = new Vec3(endVec.getX(), endVec.getY(), endVec.getZ());
 
         return traverseBlocks(player, startingPos, endPos, (block, vector3i) -> {
-            CollisionBox data = HitboxData.getBlockHitbox(
-                    player, heldItem, block, vector3i.getX(), vector3i.getY(), vector3i.getZ());
+            CollisionBox data =
+                    HitboxData.getBlockHitbox(player, block, vector3i.getX(), vector3i.getY(), vector3i.getZ());
             List<SimpleCollisionBox> boxes = new ArrayList<>();
             data.downCast(boxes);
 
             double bestHitResult = Double.MAX_VALUE;
-            Vector bestHitLoc = null;
-            BlockFace bestFace = null;
+            Vector3dm bestHitLoc = null;
+            Direction bestFace = null;
 
             for (SimpleCollisionBox box : boxes) {
-                Pair<Vector, BlockFace> intercept =
+                Pair<Vector3dm, Direction> intercept =
                         ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
                 if (intercept.getFirst() == null) continue; // No intercept
 
-                Vector hitLoc = intercept.getFirst();
+                Vector3dm hitLoc = intercept.getFirst();
 
                 if (hitLoc.distanceSquared(startingVec) < bestHitResult) {
                     bestHitResult = hitLoc.distanceSquared(startingVec);
@@ -145,7 +143,7 @@ public class TraverseBlocks {
                         vector3i.getY() + waterHeight,
                         vector3i.getZ() + 1);
 
-                Pair<Vector, BlockFace> intercept =
+                Pair<Vector3dm, Direction> intercept =
                         ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(6));
 
                 if (intercept.getFirst() != null) {
@@ -161,7 +159,7 @@ public class TraverseBlocks {
         Vec3 startingPos = new Vec3(player.x, player.y + player.getEyeHeight(), player.z);
         Ray trace = new Ray(player, startingPos.x, startingPos.y, startingPos.z, player.xRot, player.yRot);
         double range = getBlockInteractionRange(player);
-        Vector endVec = trace.getPointAtDistance(range);
+        Vector3dm endVec = trace.getPointAtDistance(range);
         Vec3 endPos = new Vec3(endVec.getX(), endVec.getY(), endVec.getZ());
 
         // This mirrors PlaceOnWaterBlockItem#getPlayerPOVHitResult: OUTLINE blocks, SOURCE_ONLY fluids.
@@ -179,7 +177,7 @@ public class TraverseBlocks {
         Vec3 location = hitResult.getLocation();
         return new HitData(
                 blockPos,
-                new Vector(location.x, location.y, location.z),
+                new Vector3dm(location.x, location.y, location.z),
                 toBlockFace(hitResult.getDirection()),
                 player.compensatedWorld.getBlockDataAt(blockPos));
     }
@@ -188,14 +186,14 @@ public class TraverseBlocks {
         return player.compensatedEntities.getSelf().getBlockInteractionRange();
     }
 
-    private static BlockFace toBlockFace(Direction direction) {
+    private static Direction toBlockFace(net.minecraft.core.Direction direction) {
         return switch (direction) {
-            case DOWN -> BlockFace.DOWN;
-            case UP -> BlockFace.UP;
-            case NORTH -> BlockFace.NORTH;
-            case SOUTH -> BlockFace.SOUTH;
-            case WEST -> BlockFace.WEST;
-            case EAST -> BlockFace.EAST;
+            case DOWN -> Direction.DOWN;
+            case UP -> Direction.UP;
+            case NORTH -> Direction.NORTH;
+            case SOUTH -> Direction.SOUTH;
+            case WEST -> Direction.WEST;
+            case EAST -> Direction.EAST;
         };
     }
 }

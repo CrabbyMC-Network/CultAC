@@ -13,7 +13,7 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntitySelf;
 import ac.cult.cultac.utils.inventory.InventoryClick;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
 import ac.cult.cultac.utils.nmsutil.Collisions;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Blocks;
 
 public class PacketPlayerWindow {
 
@@ -92,7 +92,7 @@ public class PacketPlayerWindow {
         return Collisions.hasMaterial(
                 cultPlayer,
                 cultPlayer.boundingBox.copy().expand(0.1),
-                pair -> pair.getFirst().getMaterial() == Material.NETHER_PORTAL);
+                pair -> pair.getFirst().getBlock() == Blocks.NETHER_PORTAL);
     }
 
     public static void handleInventory(CultPlayer cultPlayer, boolean nowOpen) {

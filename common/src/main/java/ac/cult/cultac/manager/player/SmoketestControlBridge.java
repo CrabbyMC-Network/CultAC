@@ -2,16 +2,15 @@ package ac.cult.cultac.manager.player;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.events.packets.patch.ResyncWorldUtil;
-import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.blockplace.SmoketestPredictionSafety;
 import ac.cult.cultac.utils.latency.SectionPool;
+import ac.cult.cultac.utils.math.Location;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import org.bukkit.Location;
 
 public final class SmoketestControlBridge {
     private static final String CHANNEL = "cult:smoketest_control";
@@ -148,28 +147,31 @@ public final class SmoketestControlBridge {
     }
 
     private static void resyncCurrentSection(CultPlayer player) {
-        if (player.bukkitPlayer == null) {
+        if (player.platformPlayer == null) {
             return;
         }
-        FoliaCompatUtil.runTaskForEntity(
-                player.bukkitPlayer,
-                CultAPI.INSTANCE.getPlugin(),
-                () -> {
-                    if (player.bukkitPlayer == null || !player.bukkitPlayer.isOnline()) {
-                        return;
-                    }
-                    Location location = player.bukkitPlayer.getLocation();
-                    int blockX = location.getBlockX();
-                    int blockY = location.getBlockY();
-                    int blockZ = location.getBlockZ();
-                    int minX = blockX & ~15;
-                    int minY = ((blockY - 2) >> 4) << 4;
-                    int minZ = blockZ & ~15;
-                    player.runSafely(() ->
-                            ResyncWorldUtil.resyncPositions(player, minX, minY, minZ, minX + 15, minY + 15, minZ + 15));
-                },
-                null,
-                0);
+        CultAPI.INSTANCE
+                .getScheduler()
+                .getEntityScheduler()
+                .execute(
+                        player.platformPlayer,
+                        CultAPI.INSTANCE.getGrimPlugin(),
+                        () -> {
+                            if (player.platformPlayer == null || !player.platformPlayer.isOnline()) {
+                                return;
+                            }
+                            Location location = player.platformPlayer.getLocation();
+                            int blockX = location.getBlockX();
+                            int blockY = location.getBlockY();
+                            int blockZ = location.getBlockZ();
+                            int minX = blockX & ~15;
+                            int minY = ((blockY - 2) >> 4) << 4;
+                            int minZ = blockZ & ~15;
+                            player.runSafely(() -> ResyncWorldUtil.resyncPositions(
+                                    player, minX, minY, minZ, minX + 15, minY + 15, minZ + 15));
+                        },
+                        null,
+                        0);
     }
 
     private static String safeLabel(String label) {

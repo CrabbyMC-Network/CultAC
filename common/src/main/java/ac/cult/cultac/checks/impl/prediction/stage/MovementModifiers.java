@@ -5,6 +5,7 @@ import ac.cult.cultac.checks.impl.prediction.PredictionResult;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.checks.impl.prediction.stage.uncertainty.EntityPush;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.data.TransactionOrder;
 import ac.cult.cultac.utils.data.TransactionVel;
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.BlockFace;
 
 public class MovementModifiers {
     public static final String FLUID_HOP_REASON = "swim hop";
@@ -210,7 +210,7 @@ public class MovementModifiers {
 
     private static void addSlimePistonLaunches(List<PredVector> start, SimulationContext state) {
         for (PredVector vector : new ArrayList<>(start)) {
-            for (BlockFace direction : state.getWorldData().getPistonPushes().getSlimeBlockLaunches()) {
+            for (Direction direction : state.getWorldData().getPistonPushes().getSlimeBlockLaunches()) {
                 double x = direction.getModX() == 0 ? vector.getX() : direction.getModX();
                 double y = direction.getModY() == 0 ? vector.getY() : direction.getModY();
                 double z = direction.getModZ() == 0 ? vector.getZ() : direction.getModZ();

@@ -3,16 +3,17 @@ package ac.cult.cultac.utils.latency;
 import ac.cult.cultac.network.packet.InventoryPackets.MerchantOffer;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.MenuType;
-import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 final class PredictedResultSlotValidator {
     private PredictedResultSlotValidator() {}
 
-    record ResultAllowance(Material material, long amount) {}
+    record ResultAllowance(Item material, long amount) {}
 
     static ResultAllowance dialogResultAllowance(
             MenuType menuType,
@@ -62,8 +63,8 @@ final class PredictedResultSlotValidator {
             return null;
         }
 
-        long credit = materialCount(afterSlots, afterCarried, result.getType())
-                - materialCount(beforeSlots, beforeCarried, result.getType());
+        long credit = materialCount(afterSlots, afterCarried, result.getItem())
+                - materialCount(beforeSlots, beforeCarried, result.getItem());
         if (credit <= 0) {
             return null;
         }
@@ -71,11 +72,11 @@ final class PredictedResultSlotValidator {
             return null;
         }
         if (clickedSlot != resultSlot
-                && amountOf(afterResult, result.getType()) <= amountOf(beforeResult, result.getType())) {
+                && amountOf(afterResult, result.getItem()) <= amountOf(beforeResult, result.getItem())) {
             return null;
         }
 
-        return new ResultAllowance(result.getType(), credit);
+        return new ResultAllowance(result.getItem(), credit);
     }
 
     private static boolean isSaneDialogResult(
@@ -102,17 +103,19 @@ final class PredictedResultSlotValidator {
         ItemStack input = slots.get(0);
         return switch (menuType) {
             case STONECUTTER ->
-                !isEmpty(input) && input.getType().isBlock() && result.getType().isBlock();
-            case ANVIL -> sameMaterial(input, result) && result.getAmount() <= input.getAmount();
+                !isEmpty(input)
+                        && input.getItem() instanceof net.minecraft.world.item.BlockItem
+                        && result.getItem() instanceof net.minecraft.world.item.BlockItem;
+            case ANVIL -> sameMaterial(input, result) && result.getCount() <= input.getCount();
             case GRINDSTONE -> slots.size() >= 2 && saneGrindstoneResult(slots, result);
             case CARTOGRAPHY_TABLE -> slots.size() >= 2 && saneCartographyResult(slots, result);
             case LOOM ->
                 slots.size() >= 2
                         && sameMaterial(input, result)
-                        && input.getType().name().endsWith("_BANNER")
+                        && ItemUtil.name(input.getItem()).endsWith("_BANNER")
                         && !isEmpty(slots.get(1))
-                        && slots.get(1).getType().name().endsWith("_DYE")
-                        && result.getAmount() == 1;
+                        && ItemUtil.name(slots.get(1).getItem()).endsWith("_DYE")
+                        && result.getCount() == 1;
             case MERCHANT ->
                 PredictedMerchantInventory.matchesResult(slots, merchantOffers, selectedMerchantOffer, result);
             default -> false;
@@ -135,21 +138,21 @@ final class PredictedResultSlotValidator {
                 continue;
             }
 
-            long gained = materialCount(afterSlots, afterCarried, candidate.getType())
-                    - materialCount(beforeSlots, beforeCarried, candidate.getType());
+            long gained = materialCount(afterSlots, afterCarried, candidate.getItem())
+                    - materialCount(beforeSlots, beforeCarried, candidate.getItem());
             if (gained <= 0) {
                 continue;
             }
 
-            long consumedSameMaterial = consumedInputAmount(menuType, beforeSlots, afterSlots, candidate.getType());
+            long consumedSameMaterial = consumedInputAmount(menuType, beforeSlots, afterSlots, candidate.getItem());
             ItemStack claimedResult = ItemUtil.copy(candidate);
-            claimedResult.setAmount((int) Math.min(Integer.MAX_VALUE, gained + consumedSameMaterial));
+            claimedResult.setCount((int) Math.min(Integer.MAX_VALUE, gained + consumedSameMaterial));
             if (isSaneDialogResult(
                     menuType, beforeSlots, afterSlots, claimedResult, merchantOffers, selectedMerchantOffer)) {
                 return claimedResult;
             }
         }
-        return ItemStack.empty();
+        return ItemStack.EMPTY;
     }
 
     static boolean isClientClaimPlausible(
@@ -168,7 +171,7 @@ final class PredictedResultSlotValidator {
             List<ItemStack> afterSlots,
             ItemStack afterCarried,
             boolean allowCreativeCreation,
-            Material creditedMaterial,
+            Item creditedMaterial,
             long creditedAmount) {
         if (beforeSlots.size() != afterSlots.size()) {
             return false;
@@ -177,8 +180,8 @@ final class PredictedResultSlotValidator {
             return true;
         }
 
-        Map<Material, Long> beforeCounts = new EnumMap<>(Material.class);
-        Map<Material, Long> afterCounts = new EnumMap<>(Material.class);
+        Map<Item, Long> beforeCounts = new IdentityHashMap<>();
+        Map<Item, Long> afterCounts = new IdentityHashMap<>();
         if (!addStacks(beforeCounts, beforeSlots) || !addStack(beforeCounts, beforeCarried)) {
             return false;
         }
@@ -186,7 +189,7 @@ final class PredictedResultSlotValidator {
             return false;
         }
 
-        for (Map.Entry<Material, Long> entry : afterCounts.entrySet()) {
+        for (Map.Entry<Item, Long> entry : afterCounts.entrySet()) {
             long credit = entry.getKey() == creditedMaterial ? Math.max(0, creditedAmount) : 0;
             if (entry.getValue() > beforeCounts.getOrDefault(entry.getKey(), 0L) + credit) {
                 return false;
@@ -195,7 +198,7 @@ final class PredictedResultSlotValidator {
         return true;
     }
 
-    private static boolean addStacks(Map<Material, Long> counts, List<ItemStack> stacks) {
+    private static boolean addStacks(Map<Item, Long> counts, List<ItemStack> stacks) {
         for (ItemStack stack : stacks) {
             if (!addStack(counts, stack)) {
                 return false;
@@ -204,20 +207,20 @@ final class PredictedResultSlotValidator {
         return true;
     }
 
-    private static boolean addStack(Map<Material, Long> counts, ItemStack stack) {
+    private static boolean addStack(Map<Item, Long> counts, ItemStack stack) {
         if (isEmpty(stack)) {
             return true;
         }
-        if (stack.getAmount() <= 0 || stack.getType() == null || stack.getType() == Material.AIR) {
+        if (stack.getCount() <= 0 || stack.getItem() == null || stack.getItem() == Items.AIR) {
             return false;
         }
 
-        counts.merge(stack.getType(), (long) stack.getAmount(), Long::sum);
+        counts.merge(stack.getItem(), (long) stack.getCount(), Long::sum);
         return true;
     }
 
     static boolean costMatches(ItemStack cost, ItemStack stack) {
-        return !isEmpty(cost) && !isEmpty(stack) && cost.getType() == stack.getType();
+        return !isEmpty(cost) && !isEmpty(stack) && cost.getItem() == stack.getItem();
     }
 
     private static boolean saneGrindstoneResult(List<ItemStack> slots, ItemStack result) {
@@ -225,13 +228,11 @@ final class PredictedResultSlotValidator {
         for (int slot = 0; slot < 2; slot++) {
             ItemStack input = slots.get(slot);
             if (sameMaterial(input, result)
-                    || !isEmpty(input)
-                            && input.getType() == Material.ENCHANTED_BOOK
-                            && result.getType() == Material.BOOK) {
-                available += input.getAmount();
+                    || !isEmpty(input) && input.getItem() == Items.ENCHANTED_BOOK && result.getItem() == Items.BOOK) {
+                available += input.getCount();
             }
         }
-        return available > 0 && result.getAmount() <= available;
+        return available > 0 && result.getCount() <= available;
     }
 
     private static boolean saneCartographyResult(List<ItemStack> slots, ItemStack result) {
@@ -239,18 +240,18 @@ final class PredictedResultSlotValidator {
         ItemStack additional = slots.get(1);
         if (isEmpty(map)
                 || isEmpty(additional)
-                || map.getType() != Material.FILLED_MAP
-                || result.getType() != Material.FILLED_MAP) {
+                || map.getItem() != Items.FILLED_MAP
+                || result.getItem() != Items.FILLED_MAP) {
             return false;
         }
-        return additional.getType() == Material.MAP
-                ? result.getAmount() == 2
-                : (additional.getType() == Material.PAPER || additional.getType() == Material.GLASS_PANE)
-                        && result.getAmount() == 1;
+        return additional.getItem() == Items.MAP
+                ? result.getCount() == 2
+                : (additional.getItem() == Items.PAPER || additional.getItem() == Items.GLASS_PANE)
+                        && result.getCount() == 1;
     }
 
     private static boolean sameMaterial(ItemStack first, ItemStack second) {
-        return !isEmpty(first) && !isEmpty(second) && first.getType() == second.getType();
+        return !isEmpty(first) && !isEmpty(second) && first.getItem() == second.getItem();
     }
 
     private static boolean inputsConsumed(MenuType menuType, List<ItemStack> before, List<ItemStack> after) {
@@ -258,14 +259,14 @@ final class PredictedResultSlotValidator {
         long beforeAmount = 0;
         long afterAmount = 0;
         for (int slot = 0; slot < inputSlots && slot < before.size() && slot < after.size(); slot++) {
-            beforeAmount += isEmpty(before.get(slot)) ? 0 : before.get(slot).getAmount();
-            afterAmount += isEmpty(after.get(slot)) ? 0 : after.get(slot).getAmount();
+            beforeAmount += isEmpty(before.get(slot)) ? 0 : before.get(slot).getCount();
+            afterAmount += isEmpty(after.get(slot)) ? 0 : after.get(slot).getCount();
         }
         return afterAmount < beforeAmount;
     }
 
     private static long consumedInputAmount(
-            MenuType menuType, List<ItemStack> before, List<ItemStack> after, Material material) {
+            MenuType menuType, List<ItemStack> before, List<ItemStack> after, Item material) {
         int inputSlots = dialogInputSlots(menuType);
         long beforeAmount = 0;
         long afterAmount = 0;
@@ -285,7 +286,7 @@ final class PredictedResultSlotValidator {
         };
     }
 
-    private static long materialCount(List<ItemStack> slots, ItemStack carried, Material material) {
+    private static long materialCount(List<ItemStack> slots, ItemStack carried, Item material) {
         long count = amountOf(carried, material);
         for (ItemStack slot : slots) {
             count += amountOf(slot, material);
@@ -293,8 +294,8 @@ final class PredictedResultSlotValidator {
         return count;
     }
 
-    private static int amountOf(ItemStack stack, Material material) {
-        return material != null && !isEmpty(stack) && stack.getType() == material ? stack.getAmount() : 0;
+    private static int amountOf(ItemStack stack, Item material) {
+        return material != null && !isEmpty(stack) && stack.getItem() == material ? stack.getCount() : 0;
     }
 
     private static boolean isEmpty(ItemStack stack) {

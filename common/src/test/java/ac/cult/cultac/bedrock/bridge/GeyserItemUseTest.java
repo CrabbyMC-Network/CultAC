@@ -8,6 +8,7 @@ import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.UUID;
@@ -16,8 +17,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
@@ -58,8 +57,7 @@ public class GeyserItemUseTest {
                     .getInventory()
                     .inventory
                     .getSlot(36)
-                    .set(CraftItemStack.asBukkitCopy(
-                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SAND, 61)));
+                    .set((new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SAND, 61)));
             h.position(2369.6301, 65.75320, -40.47053);
             var click = useOn(support, 1);
             GeyserItemUse.observe(h.session, h.player, click, 0);
@@ -121,11 +119,7 @@ public class GeyserItemUseTest {
             try (var h = new Harness()) {
                 var support = new BlockPos(2292, 62, -84);
                 h.seed(support);
-                h.player
-                        .getInventory()
-                        .inventory
-                        .getSlot(36)
-                        .set(CraftItemStack.asBukkitCopy(new net.minecraft.world.item.ItemStack(item, 22)));
+                h.player.getInventory().inventory.getSlot(36).set((new net.minecraft.world.item.ItemStack(item, 22)));
                 // Capture 1790130256806, tick 4842: the next block overlaps the
                 // current player, even if the movement box still trails behind.
                 h.position(2292.6438, 63, -82.84734);

@@ -7,9 +7,9 @@ import ac.cult.cultac.network.protocol.player.User;
 import ac.cult.cultac.protocol.ConnectionPhase;
 import ac.cult.cultac.protocol.PacketDirection;
 import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.netty.CultDecoder;
+import ac.cult.cultac.protocol.netty.CultEncoder;
 import ac.cult.cultac.protocol.packet.ServerboundPackets;
-import ac.cult.cultac.protocol.paper.CultDecoder;
-import ac.cult.cultac.protocol.paper.CultEncoder;
 import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -48,7 +48,7 @@ final class InboundConsumerFixture implements AutoCloseable {
         ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.installConfig();
         var runtime = TestProtocolRuntime.create(ac.cult.cultac.protocol.data.ProtocolData.load(ProtocolVersion.V26_3));
         manager.configureTransport(runtime, () -> {}, () -> CompletableFuture.completedFuture(null));
-        manager.setPacketOwnerResolver(channel -> separateOwner ? owners.next() : null);
+        manager.setPacketOwnerResolver(channel -> separateOwner ? new PacketOwner(owners.next(), null) : null);
         manager.lifecycleHooks(new UserLifecycleHooks() {
             @Override
             public void onAuthenticated(User user) {
@@ -78,18 +78,13 @@ final class InboundConsumerFixture implements AutoCloseable {
                             channel.pipeline().addLast("decoder", new ChannelInboundHandlerAdapter());
                             channel.pipeline().addLast("prepender", new ChannelOutboundHandlerAdapter());
                             channel.pipeline().addLast("encoder", new ChannelOutboundHandlerAdapter());
-                            var nativeListener = org.mockito.Mockito.mock(
-                                    net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class);
-                            // Mockito may generate more than one subclass level; bind the declaring class directly.
-                            var profile = net.minecraft.server.network.ServerConfigurationPacketListenerImpl.class
-                                    .getDeclaredField("gameProfile");
-                            profile.setAccessible(true);
-                            profile.set(nativeListener, new com.mojang.authlib.GameProfile(uuid, "InboundConsumer"));
+                            var platform =
+                                    ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap.platformConnection();
+                            org.mockito.Mockito.when(platform.authenticatedProfile())
+                                    .thenReturn(new User.Profile(uuid, "InboundConsumer"));
                             var nativeConnection = org.mockito.Mockito.mock(Connection.class);
                             nativeConnection.channel = channel;
-                            org.mockito.Mockito.when(nativeConnection.getPacketListener())
-                                    .thenReturn(nativeListener);
-                            var wire = manager.createConnection(nativeConnection, channel);
+                            var wire = manager.createConnection(platform, channel);
                             wire.phase(PacketDirection.SERVERBOUND, ConnectionPhase.CONFIGURATION);
                             wire.phase(PacketDirection.CLIENTBOUND, ConnectionPhase.CONFIGURATION);
                             CultDecoder.install(wire);

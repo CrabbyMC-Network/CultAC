@@ -7,7 +7,6 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.*;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -16,7 +15,9 @@ final class GeyserItemStacks {
     private GeyserItemStacks() {}
 
     static ItemStack toServerItem(
-            GeyserSession session, org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack source) {
+            java.util.function.Supplier<net.minecraft.core.RegistryAccess> registrySource,
+            GeyserSession session,
+            org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack source) {
         if (source == null || source.getAmount() <= 0) return ItemStack.EMPTY;
         var mapping = session.getItemMappings().getMapping(source.getId()).getJavaItem();
         if (mapping.javaId() != source.getId()) throw new IllegalArgumentException("Unknown item " + source.getId());
@@ -24,8 +25,7 @@ final class GeyserItemStacks {
                 .orElseThrow();
         ItemStack result = new ItemStack(item, source.getAmount());
         if (source.getDataComponentsPatch() == null) return result;
-        var registries = MinecraftServer.getServer().registryAccess();
-        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        var ops = registrySource.get().createSerializationContext(NbtOps.INSTANCE);
         source.getDataComponentsPatch().getDataComponents().forEach((sourceType, component) -> {
             var targetType = component(sourceType);
             if (component.getValue() == null) {

@@ -2,14 +2,14 @@ package ac.cult.cultac.bedrock.player;
 
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.player.CultPlayer;
-import ac.cult.cultac.utils.blockplace.NmsBlockBreakResolver;
+import ac.cult.cultac.protocol.value.GameMode;
+import ac.cult.cultac.utils.blockplace.VanillaBlockActions;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.GameMasterBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.cloudburstmc.protocol.bedrock.data.PlayerBlockActionData;
 
 public final class BedrockBlockBreakActions {
@@ -38,7 +38,7 @@ public final class BedrockBlockBreakActions {
                 case START_BREAK, BLOCK_CONTINUE_DESTROY -> {
                     breaking = pos;
                     if (canDestroy(player, pos) && BlockBreakSpeed.getBlockDamage(player, pos) >= 1.0) {
-                        NmsBlockBreakResolver.applyBlockBreak(player, pos);
+                        VanillaBlockActions.breakBlock(player, pos);
                         breaking = null;
                     }
                 }
@@ -46,7 +46,7 @@ public final class BedrockBlockBreakActions {
                     if (!pos.equals(breaking)) continue;
                     breaking = null;
                     if (!canDestroy(player, pos)) continue;
-                    NmsBlockBreakResolver.applyBlockBreak(player, pos);
+                    VanillaBlockActions.breakBlock(player, pos);
                 }
                 default -> {}
             }

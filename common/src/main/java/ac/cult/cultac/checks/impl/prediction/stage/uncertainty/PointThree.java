@@ -9,8 +9,9 @@ import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.math.VectorUtils;
 import ac.cult.cultac.utils.nmsutil.BlockProperties;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 public class PointThree implements UncertaintyHandler {
 
@@ -94,7 +95,7 @@ public class PointThree implements UncertaintyHandler {
         if (result == null) return false;
 
         WorldData data = result.getSimulationContext().getWorldData();
-        boolean isBounce = data.getOnBlock() == Material.SLIME_BLOCK || NmsBlockTags.isBed(data.getOnBlock());
+        boolean isBounce = data.getOnBlock() == Blocks.SLIME_BLOCK || NmsBlockTags.isBed(data.getOnBlock());
         return data.maybeInLiquid()
                 || data.getClimbing().determineOptimistically()
                 || result.getSimulationContext().usesFallFlyingMovement()
@@ -114,8 +115,8 @@ public class PointThree implements UncertaintyHandler {
         }
 
         // TODO: If we want to be TECHNICALLY correct on ALL edge cases, get the frictions and stuff around the player
-        Material onBlock = lastResult == null
-                ? Material.STONE
+        Block onBlock = lastResult == null
+                ? Blocks.STONE
                 : lastResult.getSimulationContext().getWorldData().getOnBlock();
 
         boolean recoveringFromLastTickSkip = context.getLastTickSkip().getRaw() == 1;

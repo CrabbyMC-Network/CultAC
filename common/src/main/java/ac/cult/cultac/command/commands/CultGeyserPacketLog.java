@@ -1,13 +1,13 @@
 package ac.cult.cultac.command.commands;
 
+import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
 import ac.cult.cultac.command.BuildableCommand;
 import ac.cult.cultac.platform.api.manager.cloud.CloudPlatformCommandArguments;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.platform.api.sender.Sender;
 import ac.cult.cultac.utils.floodgate.GeyserUtil;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
@@ -36,7 +36,8 @@ public final class CultGeyserPacketLog implements BuildableCommand {
             return;
         }
         boolean onJoin = context.flags().isPresent("onjoin");
-        Player player = onJoin ? null : Bukkit.getPlayerExact(username);
+        PlatformPlayer player =
+                onJoin ? null : CultAPI.INSTANCE.getPlatformPlayerFactory().getFromName(username);
         if (!onJoin && player == null) {
             sender.sendMessage(Component.text(
                     "Player is offline. Use --onjoin with their Bedrock username to capture their next join."));

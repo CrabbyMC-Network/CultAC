@@ -21,12 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
-import org.bukkit.inventory.ItemStack;
 
 public final class BedrockClientBlockShapeMappings {
     // The bundled generator targets the latest Java version supported by this CultAC build.
@@ -66,7 +63,7 @@ public final class BedrockClientBlockShapeMappings {
         SNAPSHOT.set(Snapshot.empty());
     }
 
-    static Optional<CollisionBox> movement(CultPlayer player, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> movement(CultPlayer player, BlockState state, int x, int y, int z) {
         if (player == null || player.bedrockState == null || state == null) {
             return Optional.empty();
         }
@@ -85,7 +82,7 @@ public final class BedrockClientBlockShapeMappings {
         return Optional.of(entry.movement().copy().offset(x, y, z));
     }
 
-    static Optional<CollisionBox> visual(CultPlayer player, BlockData state, int x, int y, int z) {
+    static Optional<CollisionBox> visual(CultPlayer player, BlockState state, int x, int y, int z) {
         return Optional.empty();
     }
 
@@ -140,11 +137,8 @@ public final class BedrockClientBlockShapeMappings {
         return BedrockCollisionWorldBuilder.clientComputedMovement(state);
     }
 
-    private static BlockState toBlockState(BlockData state) {
-        if (state instanceof CraftBlockData craftBlockData) {
-            return craftBlockData.getState();
-        }
-        return null;
+    private static BlockState toBlockState(BlockState state) {
+        return state;
     }
 
     private static BedrockCollisionShapeQuery bedrockQuery(
@@ -160,7 +154,7 @@ public final class BedrockClientBlockShapeMappings {
 
     private static boolean wearingLeatherBoots(CultPlayer player) {
         ItemStack boots = player.getInventory().getBoots();
-        return boots != null && boots.getType() == Material.LEATHER_BOOTS;
+        return boots != null && boots.getItem() == net.minecraft.world.item.Items.LEATHER_BOOTS;
     }
 
     private static CollisionBox fromLocalBoxes(List<BlockAabb> boxes) {

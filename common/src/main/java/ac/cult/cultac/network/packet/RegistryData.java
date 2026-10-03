@@ -6,7 +6,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistrySynchronization;
 import net.minecraft.resources.ResourceKey;
 
-/** Only the block-transformer/provider definitions used by placement are decoded. */
+/** Client-visible configuration entries, including custom data and known-pack references. */
 public record RegistryData(
         ResourceKey<? extends Registry<?>> registry, List<RegistrySynchronization.PackedRegistryEntry> entries)
         implements ClientboundPacket {

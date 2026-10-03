@@ -33,12 +33,9 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.junit.Test;
 
 public final class ReachabilityOrderingParityTest {
@@ -99,7 +96,7 @@ public final class ReachabilityOrderingParityTest {
             player.getInventory()
                     .inventory
                     .getInventoryStorage()
-                    .setItem(Inventory.SLOT_CHESTPLATE, new MaterialItemStack(Material.ELYTRA));
+                    .setItem(Inventory.SLOT_CHESTPLATE, new ItemStack(net.minecraft.world.item.Items.ELYTRA));
 
             PacketReceiveEvent event = receiveEvent(player, glideStartPacket());
             new PacketEntityAction().onPlayerCommand(event, player, (ServerboundPlayerCommand) event.getPacket());
@@ -163,7 +160,7 @@ public final class ReachabilityOrderingParityTest {
             player.getInventory()
                     .inventory
                     .getInventoryStorage()
-                    .setItem(Inventory.SLOT_CHESTPLATE, new MaterialItemStack(Material.ELYTRA));
+                    .setItem(Inventory.SLOT_CHESTPLATE, new ItemStack(net.minecraft.world.item.Items.ELYTRA));
 
             PacketReceiveEvent event = dispatchGlideStartThroughManagers(player);
 
@@ -272,11 +269,11 @@ public final class ReachabilityOrderingParityTest {
             player.getInventory()
                     .inventory
                     .getInventoryStorage()
-                    .setItem(Inventory.HOTBAR_OFFSET, new MaterialItemStack(Material.CARROT_ON_A_STICK));
+                    .setItem(Inventory.HOTBAR_OFFSET, new ItemStack(net.minecraft.world.item.Items.CARROT_ON_A_STICK));
             evaluate.invoke(runner, pig);
             assertEquals(1, vehicleC.flags);
 
-            player.getInventory().inventory.getInventoryStorage().setItem(Inventory.HOTBAR_OFFSET, ItemStack.empty());
+            player.getInventory().inventory.getInventoryStorage().setItem(Inventory.HOTBAR_OFFSET, ItemStack.EMPTY);
             PacketEntity strider = new PacketEntity(EntityTypesCompat.STRIDER, 11);
             evaluate.invoke(runner, strider);
             assertEquals(2, vehicleC.flags);
@@ -284,7 +281,9 @@ public final class ReachabilityOrderingParityTest {
             player.getInventory()
                     .inventory
                     .getInventoryStorage()
-                    .setItem(Inventory.SLOT_OFFHAND, new MaterialItemStack(Material.WARPED_FUNGUS_ON_A_STICK));
+                    .setItem(
+                            Inventory.SLOT_OFFHAND,
+                            new ItemStack(net.minecraft.world.item.Items.WARPED_FUNGUS_ON_A_STICK));
             evaluate.invoke(runner, strider);
             assertEquals(2, vehicleC.flags);
         } finally {
@@ -533,34 +532,6 @@ public final class ReachabilityOrderingParityTest {
         public boolean flag(String verbose) {
             flags++;
             return true;
-        }
-    }
-
-    private static final class MaterialItemStack extends ItemStack {
-        private final Material material;
-
-        private MaterialItemStack(Material material) {
-            this.material = material;
-        }
-
-        @Override
-        public Material getType() {
-            return material;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public Map<Enchantment, Integer> getEnchantments() {
-            return Map.of();
-        }
-
-        @Override
-        public int getEnchantmentLevel(Enchantment enchantment) {
-            return 0;
         }
     }
 }

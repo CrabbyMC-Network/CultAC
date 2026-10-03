@@ -18,8 +18,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import javax.annotation.Nullable;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 public class PlayerDataManager {
     private static final class Channels {
@@ -50,12 +48,8 @@ public class PlayerDataManager {
         return user != null && exemptUsers.remove(user);
     }
 
-    public CultPlayer getPlayer(final Player player) {
+    public CultPlayer getPlayer(final PlatformPlayer player) {
         if (player == null) {
-            return null;
-        }
-        // External (proxy-hosted) players have no Cult session on this server.
-        if (MultiLibUtil.isExternalPlayer(player)) {
             return null;
         }
         User user = CultAPI.INSTANCE.getNetworkManager().getUser(player);
@@ -96,7 +90,7 @@ public class PlayerDataManager {
     }
 
     @Nullable
-    public User getUser(final Player player) {
+    public User getUser(final PlatformPlayer player) {
         return CultAPI.INSTANCE.getNetworkManager().getUser(player);
     }
 
@@ -179,15 +173,17 @@ public class PlayerDataManager {
             CultAPI.INSTANCE.getDataStoreLifecycle().playerToggleStore().evict(uuid);
         }
 
-        PlatformPlayer quittingPlayer = PlatformPlayerCache.getInstance().getPlayer(uuid);
-        if (quittingPlayer != null) {
+        PlatformPlayer quittingPlayer = user.getPlayer();
+        boolean currentPlayer =
+                quittingPlayer != null && PlatformPlayerCache.getInstance().getPlayer(uuid) == quittingPlayer;
+        if (currentPlayer) {
             CultAPI.INSTANCE.getAlertManager().handlePlayerQuit(quittingPlayer);
         }
-        if (CultAPI.INSTANCE.getSpectateManager() != null) {
+        if (currentPlayer && CultAPI.INSTANCE.getSpectateManager() != null) {
             CultAPI.INSTANCE.getSpectateManager().onQuit(uuid);
         }
-        if (CultAPI.INSTANCE.getPlatformPlayerFactory() != null) {
-            CultAPI.INSTANCE.getPlatformPlayerFactory().invalidatePlayer(uuid);
+        if (quittingPlayer != null && CultAPI.INSTANCE.getPlatformPlayerFactory() != null) {
+            CultAPI.INSTANCE.getPlatformPlayerFactory().invalidatePlayer(quittingPlayer);
         }
     }
 
@@ -225,7 +221,9 @@ public class PlayerDataManager {
     private boolean isKnownBedrockPlayer(UUID uuid) {
         return FloodgateUtil.isFloodgatePlayer(uuid)
                 || isGeyserFormattedUuid(uuid)
-                || (Bukkit.getPluginManager().isPluginEnabled("Geyser-Spigot") && GeyserUtil.isGeyserPlayer(uuid));
+                || ((CultAPI.INSTANCE.getPluginManager().isPluginEnabled("Geyser-Spigot")
+                                || CultAPI.INSTANCE.getPluginManager().isPluginEnabled("Geyser-Velocity"))
+                        && GeyserUtil.isGeyserPlayer(uuid));
     }
 
     private boolean isGeyserFormattedUuid(UUID uuid) {

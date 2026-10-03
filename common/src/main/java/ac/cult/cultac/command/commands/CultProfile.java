@@ -29,12 +29,8 @@ public class CultProfile implements BuildableCommand {
         Sender sender = context.sender();
         PlayerSelector target = context.get("target");
 
-        PlatformPlayer targetPlatformPlayer = target.getSinglePlayer().getPlatformPlayer();
-        if (Objects.requireNonNull(targetPlatformPlayer, "targetPlatformPlayer").isExternalPlayer()) {
-            sender.sendMessage(MessageUtil.getParsedComponent(
-                    sender, "player-not-this-server", "%prefix% &cThis player isn't on this server!"));
-            return;
-        }
+        PlatformPlayer targetPlatformPlayer =
+                Objects.requireNonNull(target.getSinglePlayer().getPlatformPlayer(), "targetPlatformPlayer");
 
         CultPlayer cultPlayer = CultAPI.INSTANCE.getPlayerDataManager().getPlayer(targetPlatformPlayer.getUniqueId());
         if (cultPlayer == null) {

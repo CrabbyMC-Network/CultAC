@@ -9,8 +9,8 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPong;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
-import org.bukkit.GameMode;
 
 // @CheckData(name = "NegativeTimer", configName = "NegativeTimer", setback = 10)
 @DeadCheck(

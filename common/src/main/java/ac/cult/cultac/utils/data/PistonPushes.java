@@ -1,20 +1,20 @@
 package ac.cult.cultac.utils.data;
 
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import java.util.Set;
 import lombok.Data;
-import org.bukkit.block.BlockFace;
 
 @Data
 public class PistonPushes {
     SimpleCollisionBox push;
     SimpleCollisionBox pistonPush;
     SimpleCollisionBox shulkerPush;
-    Set<BlockFace> slimeBlockLaunches;
+    Set<Direction> slimeBlockLaunches;
     // The piston snapshot already represents the pass visible to this movement.
     boolean pistonMovementPhased;
 
-    public PistonPushes(SimpleCollisionBox push, Set<BlockFace> slimeBlockLaunches) {
+    public PistonPushes(SimpleCollisionBox push, Set<Direction> slimeBlockLaunches) {
         this(push, push.copy(), new SimpleCollisionBox(), slimeBlockLaunches);
     }
 
@@ -22,7 +22,7 @@ public class PistonPushes {
             SimpleCollisionBox push,
             SimpleCollisionBox pistonPush,
             SimpleCollisionBox shulkerPush,
-            Set<BlockFace> slimeBlockLaunches) {
+            Set<Direction> slimeBlockLaunches) {
         this.push = push;
         this.pistonPush = pistonPush;
         this.shulkerPush = shulkerPush;

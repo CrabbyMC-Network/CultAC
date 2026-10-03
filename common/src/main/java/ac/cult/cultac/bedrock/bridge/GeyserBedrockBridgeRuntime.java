@@ -114,14 +114,18 @@ public final class GeyserBedrockBridgeRuntime {
         }
     }
 
+    private static String geyserVersion() {
+        var manager = CultAPI.INSTANCE.getPluginManager();
+        var plugin = manager.getPlugin("Geyser-Spigot");
+        if (plugin == null) plugin = manager.getPlugin("Geyser-Velocity");
+        return plugin == null ? "unknown" : plugin.getVersion();
+    }
+
     private static void initializeBridge() {
         packetLogger = new BedrockPacketLogger(
                 CultAPI.INSTANCE.getGrimPlugin().getDataFolder().toPath().resolve("geyserpacketlogs"),
                 "cultac_version=" + CultAPI.INSTANCE.getExternalAPI().getGrimVersion() + "\ngeyser_version="
-                        + org.bukkit.Bukkit.getPluginManager()
-                                .getPlugin("Geyser-Spigot")
-                                .getDescription()
-                                .getVersion(),
+                        + geyserVersion(),
                 LogUtil::info);
 
         GeyserUtil.forceForwardPlayerPing();
@@ -135,7 +139,7 @@ public final class GeyserBedrockBridgeRuntime {
             });
         }
 
-        EventRegistrar owner = EventRegistrar.of(CultAPI.INSTANCE.getPlugin());
+        EventRegistrar owner = EventRegistrar.of(CultAPI.INSTANCE.getLoader());
         GeyserEventSubscriptions subscriptions =
                 new GeyserEventSubscriptions(GeyserApi.api().eventBus(), owner);
         eventSubscriptions = subscriptions;
@@ -1074,11 +1078,11 @@ public final class GeyserBedrockBridgeRuntime {
         }
     }
 
-    private static io.netty.util.concurrent.EventExecutor packetOwner(io.netty.channel.Channel channel) {
+    private static ac.cult.cultac.network.PacketOwner packetOwner(io.netty.channel.Channel channel) {
         for (PacketTapHandler tap : PACKET_TAPS.values()) {
             var downstream = tap.connection.getDownstream();
             if (downstream != null && sameJavaConnection(downstream.getSession().getChannel(), channel)) {
-                return tap.connection.getTickEventLoop();
+                return new ac.cult.cultac.network.PacketOwner(tap.connection.getTickEventLoop(), tap.connection);
             }
         }
         return null;
@@ -1194,21 +1198,10 @@ public final class GeyserBedrockBridgeRuntime {
     }
 
     private static PacketTapHandler packetTapForUser(User user) {
-        Object associatedConnection = user.getBedrockBridgeConnection();
-        if (associatedConnection instanceof GeyserConnection geyserConnection) {
-            PacketTapHandler associatedTap = PACKET_TAPS.get(geyserConnection);
-            if (associatedTap != null && associatedTap.matchesJavaUser(user)) {
-                return associatedTap;
-            }
-        }
-
-        for (PacketTapHandler tap : PACKET_TAPS.values()) {
-            if (tap.matchesJavaUser(user)) {
-                user.setBedrockBridgeConnection(tap.connection);
-                return tap;
-            }
-        }
-        return null;
+        // Owner resolution linked this connection to its Geyser session once.
+        if (!(user.getBedrockBridgeConnection() instanceof GeyserConnection geyserConnection)) return null;
+        PacketTapHandler tap = PACKET_TAPS.get(geyserConnection);
+        return tap != null && tap.matchesJavaUser(user) ? tap : null;
     }
 
     static void removeHandlerIfPresent(ChannelPipeline pipeline, String handlerName) {

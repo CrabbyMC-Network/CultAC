@@ -1,6 +1,7 @@
 package ac.cult.cultac.utils.data;
 
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityShulker;
@@ -9,7 +10,6 @@ import java.util.Objects;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.block.BlockFace;
 
 public class ShulkerData {
     public static final int BLOCK_ANIMATION_TICKS = 10;
@@ -51,7 +51,7 @@ public class ShulkerData {
         this.entity = entity;
     }
 
-    public BlockFace getFacing(CultPlayer player) {
+    public Direction getFacing(CultPlayer player) {
         if (blockPos != null) {
             BlockState state = player.compensatedWorld.getBlockStateAt(blockPos);
             if (NmsBlockTags.isShulkerBox(state)) {
@@ -60,7 +60,7 @@ public class ShulkerData {
         } else if (entity instanceof PacketEntityShulker) {
             return ((PacketEntityShulker) entity).facing.getOppositeFace();
         }
-        return BlockFace.UP; // default state
+        return Direction.UP; // default state
     }
 
     public boolean canPushEntities() {

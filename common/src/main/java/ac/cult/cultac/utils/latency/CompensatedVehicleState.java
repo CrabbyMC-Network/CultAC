@@ -20,7 +20,6 @@ import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import java.util.Collection;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 import org.jetbrains.annotations.Nullable;
 
 public final class CompensatedVehicleState implements Debuggable {
@@ -437,10 +436,11 @@ public final class CompensatedVehicleState implements Debuggable {
             return false;
         }
         if (vehicle.type == EntityTypesCompat.PIG) {
-            return player.getInventory().hasClientSelectableHandItem(Material.CARROT_ON_A_STICK);
+            return player.getInventory().hasClientSelectableHandItem(net.minecraft.world.item.Items.CARROT_ON_A_STICK);
         }
         if (vehicle.type == EntityTypesCompat.STRIDER) {
-            return player.getInventory().hasClientSelectableHandItem(Material.WARPED_FUNGUS_ON_A_STICK);
+            return player.getInventory()
+                    .hasClientSelectableHandItem(net.minecraft.world.item.Items.WARPED_FUNGUS_ON_A_STICK);
         }
         return false;
     }
@@ -659,11 +659,14 @@ public final class CompensatedVehicleState implements Debuggable {
                 .equals(ac.cult.cultac.utils.nmsutil.EntityTypeUtil.getKey(vehicle.type)
                         .getPath())) return false;
         if (vehicle.type == EntityTypesCompat.PIG) {
-            return hasSaddle(vehicle) && player.getInventory().hasClientSelectedHandItem(Material.CARROT_ON_A_STICK);
+            return hasSaddle(vehicle)
+                    && player.getInventory()
+                            .hasClientSelectedHandItem(net.minecraft.world.item.Items.CARROT_ON_A_STICK);
         }
         if (vehicle.type == EntityTypesCompat.STRIDER) {
             return hasSaddle(vehicle)
-                    && player.getInventory().hasClientSelectedHandItem(Material.WARPED_FUNGUS_ON_A_STICK);
+                    && player.getInventory()
+                            .hasClientSelectedHandItem(net.minecraft.world.item.Items.WARPED_FUNGUS_ON_A_STICK);
         }
         if (vehicle instanceof PacketEntityHorse horse) return horse.hasSaddle;
         if (vehicle instanceof PacketEntityNautilus nautilus) return nautilus.hasSaddle;

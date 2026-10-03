@@ -1,6 +1,6 @@
 package ac.cult.cultac.network;
 
-import ac.cult.cultac.platform.bukkit.BukkitPacketCodecs;
+import ac.cult.cultac.network.codec.NativePacketCodecs;
 import ac.cult.cultac.protocol.PacketType;
 import ac.cult.cultac.protocol.ProtocolRuntime;
 import ac.cult.cultac.protocol.data.ProtocolData;
@@ -21,6 +21,6 @@ public final class TestProtocolRuntime {
     public static List<PacketType<?>> catalog() {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
-        return BukkitPacketCodecs.catalog(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+        return NativePacketCodecs.catalog(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
     }
 }

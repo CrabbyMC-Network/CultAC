@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractContainerMenu {
@@ -27,11 +27,11 @@ public abstract class AbstractContainerMenu {
     public AbstractContainerMenu(CultPlayer player, Inventory playerInventory) {
         this.player = player;
         this.playerInventory = playerInventory;
-        this.carriedItem = ItemStack.empty();
+        this.carriedItem = ItemStack.EMPTY;
     }
 
     public AbstractContainerMenu() {
-        this.carriedItem = ItemStack.empty();
+        this.carriedItem = ItemStack.EMPTY;
     }
 
     public Slot addSlot(Slot slot) {
@@ -51,7 +51,7 @@ public abstract class AbstractContainerMenu {
     }
 
     public void setCarried(ItemStack stack) {
-        carriedItem = stack == null ? ItemStack.empty() : stack;
+        carriedItem = stack == null ? ItemStack.EMPTY : stack;
     }
 
     public ItemStack getPlayerInventoryItem(int slot) {

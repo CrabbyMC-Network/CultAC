@@ -3,7 +3,6 @@ package ac.cult.cultac.platform.bukkit.world;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.platform.api.world.PlatformChunk;
 import ac.cult.cultac.platform.api.world.PlatformWorld;
-import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import java.util.UUID;
 import net.minecraft.SharedConstants;
 import net.minecraft.world.level.block.Block;
@@ -33,7 +32,9 @@ public record BukkitPlatformWorld(@NotNull World bukkitWorld) implements Platfor
             return Block.stateById(blockId);
         } else {
             if (BukkitPlatformChunk.isIllegalY(bukkitWorld, y)) return Blocks.AIR.defaultBlockState();
-            return NmsBlockTags.toNmsState(bukkitWorld.getBlockAt(x, y, z).getBlockData());
+            return ((org.bukkit.craftbukkit.block.data.CraftBlockData)
+                            bukkitWorld.getBlockAt(x, y, z).getBlockData())
+                    .getState();
         }
     }
 

@@ -3,7 +3,7 @@ package ac.cult.cultac.bedrock.prediction.integration;
 import ac.cult.cultac.bedrock.prediction.model.MovementModifierState;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
-import org.bukkit.GameMode;
+import ac.cult.cultac.protocol.value.GameMode;
 
 final class BedrockMovementModifierFactory {
     private BedrockMovementModifierFactory() {}

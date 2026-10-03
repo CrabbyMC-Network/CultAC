@@ -5,7 +5,7 @@ import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.slot.Slot;
 import java.util.List;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 final class PredictedMerchantInventory {
     private static final int PAYMENT_A_SLOT = 0;
@@ -64,8 +64,8 @@ final class PredictedMerchantInventory {
             offer = findSatisfiedOffer(offers, slots.get(PAYMENT_B_SLOT), slots.get(PAYMENT_A_SLOT), selectedTrade);
         }
         return offer != null
-                && offer.result().getType() == result.getType()
-                && offer.result().getAmount() == result.getAmount();
+                && offer.result().getItem() == result.getItem()
+                && offer.result().getCount() == result.getCount();
     }
 
     private static boolean movePaymentSlotBackToInventory(AbstractContainerMenu menu, int paymentSlot) {
@@ -83,7 +83,7 @@ final class PredictedMerchantInventory {
             return false;
         }
 
-        slot.set(isEmpty(stack) ? ItemStack.empty() : stack);
+        slot.set(isEmpty(stack) ? ItemStack.EMPTY : stack);
         return true;
     }
 
@@ -98,17 +98,17 @@ final class PredictedMerchantInventory {
                 if (slot != null) {
                     ItemStack existing = slot.getItem();
                     if (!isEmpty(existing) && ItemUtil.isSameItemSameTags(stack, existing)) {
-                        int combined = existing.getAmount() + stack.getAmount();
+                        int combined = existing.getCount() + stack.getCount();
                         int max = slot.getMaxStackSize(existing);
                         if (combined <= max) {
-                            stack.setAmount(0);
-                            existing.setAmount(combined);
+                            stack.setCount(0);
+                            existing.setCount(combined);
                             slot.set(existing);
                             moved = true;
-                        } else if (existing.getAmount() < max) {
-                            int movedAmount = max - existing.getAmount();
-                            stack.setAmount(stack.getAmount() - movedAmount);
-                            existing.setAmount(max);
+                        } else if (existing.getCount() < max) {
+                            int movedAmount = max - existing.getCount();
+                            stack.setCount(stack.getCount() - movedAmount);
+                            existing.setCount(max);
                             slot.set(existing);
                             moved = true;
                         }
@@ -123,7 +123,7 @@ final class PredictedMerchantInventory {
             while (inRange(index, startSlot, endSlot, backwards)) {
                 Slot slot = menu.getSlot(index);
                 if (slot != null && isEmpty(slot.getItem()) && slot.mayPlace(stack)) {
-                    slot.set(ItemUtil.split(stack, Math.min(stack.getAmount(), slot.getMaxStackSize(stack))));
+                    slot.set(ItemUtil.split(stack, Math.min(stack.getCount(), slot.getMaxStackSize(stack))));
                     moved = true;
                     break;
                 }
@@ -161,19 +161,19 @@ final class PredictedMerchantInventory {
                 continue;
             }
 
-            int paymentAmount = isEmpty(payment) ? 0 : payment.getAmount();
-            int movedAmount = Math.min(source.getMaxStackSize() - paymentAmount, source.getAmount());
+            int paymentAmount = isEmpty(payment) ? 0 : payment.getCount();
+            int movedAmount = Math.min(source.getMaxStackSize() - paymentAmount, source.getCount());
             if (movedAmount <= 0) {
                 continue;
             }
 
             ItemStack newPayment = ItemUtil.copy(source);
-            newPayment.setAmount(paymentAmount + movedAmount);
-            source.setAmount(source.getAmount() - movedAmount);
-            sourceSlot.set(isEmpty(source) ? ItemStack.empty() : source);
+            newPayment.setCount(paymentAmount + movedAmount);
+            source.setCount(source.getCount() - movedAmount);
+            sourceSlot.set(isEmpty(source) ? ItemStack.EMPTY : source);
             paymentSlot.set(newPayment);
 
-            if (newPayment.getAmount() >= source.getMaxStackSize()) {
+            if (newPayment.getCount() >= source.getMaxStackSize()) {
                 break;
             }
         }
@@ -189,7 +189,7 @@ final class PredictedMerchantInventory {
         ItemStack buyB;
         if (isEmpty(menu.getSlot(PAYMENT_A_SLOT).getItem())) {
             buyA = menu.getSlot(PAYMENT_B_SLOT).getItem();
-            buyB = ItemStack.empty();
+            buyB = ItemStack.EMPTY;
         } else {
             buyA = menu.getSlot(PAYMENT_A_SLOT).getItem();
             buyB = menu.getSlot(PAYMENT_B_SLOT).getItem();
@@ -200,7 +200,7 @@ final class PredictedMerchantInventory {
             offer = findSatisfiedOffer(offers, buyB, buyA, selectedTrade);
         }
 
-        resultSlot.set(offer == null ? ItemStack.empty() : ItemUtil.copy(offer.result()));
+        resultSlot.set(offer == null ? ItemStack.EMPTY : ItemUtil.copy(offer.result()));
     }
 
     private static MerchantOffer findSatisfiedOffer(
@@ -229,13 +229,13 @@ final class PredictedMerchantInventory {
         if (offer == null
                 || offer.outOfStock()
                 || !PredictedResultSlotValidator.costMatches(offer.costA(), buyA)
-                || buyA.getAmount() < offer.costA().getAmount()) {
+                || buyA.getCount() < offer.costA().getCount()) {
             return false;
         }
         return isEmpty(offer.costB())
                 ? isEmpty(buyB)
                 : PredictedResultSlotValidator.costMatches(offer.costB(), buyB)
-                        && buyB.getAmount() >= offer.costB().getAmount();
+                        && buyB.getCount() >= offer.costB().getCount();
     }
 
     private static boolean isEmpty(ItemStack stack) {

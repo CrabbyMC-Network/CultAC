@@ -2,7 +2,7 @@ package ac.cult.cultac.utils.inventory.slot;
 
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.inventory.InventoryStorage;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class ResultSlot extends Slot {
 

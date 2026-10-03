@@ -25,8 +25,8 @@ public class PlatformPlayerCache {
      */
     public PlatformPlayer addOrGetPlayer(UUID uuid, PlatformPlayer player) {
         return playerCache.compute(uuid, (key, existing) -> {
-            if (existing != null) {
-                return existing; // Return existing instance if already cached
+            if (existing != null && existing.getNative() == player.getNative()) {
+                return existing;
             }
             return player;
         });
@@ -39,6 +39,10 @@ public class PlatformPlayerCache {
      */
     public void removePlayer(UUID uuid) {
         playerCache.remove(uuid);
+    }
+
+    public void removePlayer(PlatformPlayer expected) {
+        playerCache.remove(expected.getUniqueId(), expected);
     }
 
     /**

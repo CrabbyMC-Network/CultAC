@@ -31,11 +31,7 @@ import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.block.data.CraftBlockData;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.java.JavaPluginLoader;
 import org.mockito.Mockito;
 
 public final class OfflineCultTestBootstrap {
@@ -58,7 +54,6 @@ public final class OfflineCultTestBootstrap {
         initializeProtocolRuntime();
         initializePaperGlobalConfiguration();
         installBukkitServer();
-        installCultPlugin();
         installPlatformLoader();
         loadVanillaData();
         ConfigManager config = Mockito.mock(ConfigManager.class);
@@ -102,6 +97,12 @@ public final class OfflineCultTestBootstrap {
     /** Offline state tests still encode authored records through the real transport. */
     static ac.cult.cultac.network.protocol.player.User wireUser(
             ac.cult.cultac.network.protocol.player.User.Profile profile) {
+        return wireUser(profile, null);
+    }
+
+    /** A non-null bridge attaches the connection to a Geyser session through owner resolution. */
+    static ac.cult.cultac.network.protocol.player.User wireUser(
+            ac.cult.cultac.network.protocol.player.User.Profile profile, Object bedrockBridge) {
         var runtime =
                 CultAPI.INSTANCE.getNetworkManager().dispatcher().scanner().runtime();
         var channel = new io.netty.channel.embedded.EmbeddedChannel();
@@ -112,11 +113,17 @@ public final class OfflineCultTestBootstrap {
         // Offline tests invoke consumers directly. Routes are empty so authored
         // packets are encoded without running those consumers a second time.
         var routes = new ac.cult.cultac.network.PacketDispatcher(runtime);
-        var transport = new ac.cult.cultac.network.CultConnection(channel, routes, ignored -> null);
-        ac.cult.cultac.protocol.paper.CultDecoder.install(transport);
-        ac.cult.cultac.protocol.paper.CultEncoder.install(transport);
+        var transport = new ac.cult.cultac.network.CultConnection(
+                channel,
+                routes,
+                ignored -> bedrockBridge == null
+                        ? null
+                        : new ac.cult.cultac.network.PacketOwner(channel.eventLoop(), bedrockBridge));
+        ac.cult.cultac.protocol.netty.CultDecoder.install(transport);
+        ac.cult.cultac.protocol.netty.CultEncoder.install(transport);
         for (var direction : ac.cult.cultac.protocol.PacketDirection.values())
             transport.phase(direction, ac.cult.cultac.protocol.ConnectionPhase.PLAY);
+        transport.resolveOwner();
         var user = new ac.cult.cultac.network.protocol.player.User(profile, transport);
         return user;
     }
@@ -173,6 +180,15 @@ public final class OfflineCultTestBootstrap {
     }
 
     /** Dynamic registry IDs in login/respawn use the server encoder's registry. */
+    public static ac.cult.cultac.network.PlatformConnection platformConnection() {
+        var platform = Mockito.mock(ac.cult.cultac.network.PlatformConnection.class);
+        Mockito.when(platform.registries())
+                .thenReturn(new ac.cult.cultac.utils.minecraft.MinecraftRegistries(
+                        () -> net.minecraft.server.MinecraftServer.getServer().registryAccess(),
+                        () -> net.minecraft.server.MinecraftServer.getServer().getResourceManager()));
+        return platform;
+    }
+
     public static net.minecraft.core.RegistryAccess.Frozen vanillaRegistries() {
         installConfig();
         return worldRegistries;
@@ -187,16 +203,6 @@ public final class OfflineCultTestBootstrap {
         Mockito.when(server.registryAccess()).thenReturn(registries);
         current.set(null, server);
         return () -> current.set(null, previous);
-    }
-
-    private static void installCultPlugin() {
-        try {
-            Field pluginField = CultAPI.class.getDeclaredField("plugin");
-            pluginField.setAccessible(true);
-            pluginField.set(CultAPI.INSTANCE, plugin());
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("failed to install offline Cult plugin", exception);
-        }
     }
 
     private static void installPlatformLoader() {
@@ -214,6 +220,9 @@ public final class OfflineCultTestBootstrap {
                 new Class<?>[] {PlatformLoader.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "getPermissionManager" -> noOpPermissions;
+                    case "getPluginManager" ->
+                        Mockito.mock(ac.cult.cultac.platform.api.manager.PlatformPluginManager.class);
+                    case "getPlatformServer" -> Mockito.mock(ac.cult.cultac.platform.api.PlatformServer.class);
                     case "getPlugin" -> grimPlugin;
                     default -> defaultValue(method.getReturnType());
                 });
@@ -366,18 +375,6 @@ public final class OfflineCultTestBootstrap {
         }
     }
 
-    private static final class ReplayEmptyItemStack extends ItemStack {
-        @Override
-        public Material getType() {
-            return Material.AIR;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-    }
-
     private static PluginManager pluginManager() {
         if (pluginManager != null) {
             return pluginManager;
@@ -387,27 +384,6 @@ public final class OfflineCultTestBootstrap {
                 new Class<?>[] {PluginManager.class},
                 (proxy, method, args) -> defaultValue(method.getReturnType()));
         return OfflineCultTestBootstrap.pluginManager;
-    }
-
-    @SuppressWarnings("removal")
-    private static JavaPlugin plugin() {
-        PluginDescriptionFile description =
-                new PluginDescriptionFile("CultACOfflineReplay", "offline-bedrock-replay", "ac.cult.cultac.CultAC");
-        File dataFolder = new File("build/offline-bedrock-replay-plugin");
-        dataFolder.mkdirs();
-        return new OfflineJavaPlugin(
-                new JavaPluginLoader(Bukkit.getServer()),
-                description,
-                dataFolder,
-                new File(dataFolder, "CultACOfflineReplay.jar"));
-    }
-
-    @SuppressWarnings("removal")
-    public static final class OfflineJavaPlugin extends JavaPlugin {
-        private OfflineJavaPlugin(
-                JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
-            super(loader, description, dataFolder, file);
-        }
     }
 
     @SuppressWarnings("unchecked")

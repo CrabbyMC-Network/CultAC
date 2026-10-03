@@ -77,7 +77,9 @@ final class SmoketestSnapshotBridge {
             input.readBoolean(); // expectNoInventoryResync
         }
 
-        int blockCount = checkedCount(input.readInt(), 2048, "blocks");
+        // Declared fixture regions may exceed one chunk section. Each block needs
+        // four ints and a UTF length, so the bounded payload limits allocation.
+        int blockCount = checkedCount(input.readInt(), input.available() / 18, "blocks");
         List<BlockSnapshot> blocks = new ArrayList<>(blockCount);
         for (int i = 0; i < blockCount; i++) {
             blocks.add(new BlockSnapshot(
@@ -178,7 +180,7 @@ final class SmoketestSnapshotBridge {
     }
 
     private static void compareItem(
-            List<String> mismatches, String owner, ItemSnapshot expected, org.bukkit.inventory.ItemStack item) {
+            List<String> mismatches, String owner, ItemSnapshot expected, net.minecraft.world.item.ItemStack item) {
         net.minecraft.world.item.ItemStack cult = SpigotConversionUtil.toNmsItemStack(item);
         String key = cult.isEmpty()
                 ? "minecraft:air"

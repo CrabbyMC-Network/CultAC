@@ -4,7 +4,6 @@ import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.platform.api.Platform;
 import ac.cult.cultac.platform.api.world.PlatformChunk;
-import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +37,8 @@ public class BukkitPlatformChunk implements PlatformChunk {
 
         return isFlat // Cache blockDataToID because Strings are expensive
                 ? blockDataToId.computeIfAbsent(
-                        block.getBlockData(), data -> Block.getId(NmsBlockTags.toNmsState(data)))
+                        block.getBlockData(),
+                        data -> Block.getId(((org.bukkit.craftbukkit.block.data.CraftBlockData) data).getState()))
                 : getLegacyBlockID(block);
     }
 

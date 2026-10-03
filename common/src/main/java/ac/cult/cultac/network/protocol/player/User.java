@@ -1,28 +1,19 @@
 package ac.cult.cultac.network.protocol.player;
 
-import ac.cult.cultac.CultAPI;
-import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
+import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
-import net.minecraft.network.Connection;
-import net.minecraft.server.level.ServerPlayer;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 public final class User {
     @Nullable
-    private Player player;
-
-    @Nullable
-    private ServerPlayer handle;
+    private volatile PlatformPlayer player;
 
     private final Profile profile;
     private final AtomicBoolean closeRequested = new AtomicBoolean();
-    // Kept untyped so Java connections do not require the optional Geyser classes.
-    private volatile Object bedrockBridgeConnection;
     private final ac.cult.cultac.network.CultConnection cultConnection;
 
     public User(Profile profile, ac.cult.cultac.network.CultConnection connection) {
@@ -33,6 +24,11 @@ public final class User {
 
     public ac.cult.cultac.network.CultConnection getCultConnection() {
         return cultConnection;
+    }
+
+    public ac.cult.cultac.utils.minecraft.MinecraftRegistries registries() {
+        return java.util.Objects.requireNonNull(
+                cultConnection.platform().registries(), "Connection registry context unavailable");
     }
 
     public ac.cult.cultac.player.CultPlayer getCultPlayer() {
@@ -52,17 +48,8 @@ public final class User {
     }
 
     @Nullable
-    public Player getPlayer() {
+    public PlatformPlayer getPlayer() {
         return player;
-    }
-
-    @Nullable
-    public ServerPlayer getHandle() {
-        return handle;
-    }
-
-    public Connection getConnection() {
-        return cultConnection.nativeConnection();
     }
 
     public Object getChannel() {
@@ -82,13 +69,17 @@ public final class User {
         getPacketExecutor().execute(task);
     }
 
-    @Nullable
-    public Object getBedrockBridgeConnection() {
-        return bedrockBridgeConnection;
+    public void executeAfterWrites(Runnable task) {
+        cultConnection.executeAfterWrites(task);
     }
 
-    public void setBedrockBridgeConnection(Object connection) {
-        bedrockBridgeConnection = connection;
+    public boolean isPreparingWrites() {
+        return cultConnection.isPreparingWrites();
+    }
+
+    @Nullable
+    public Object getBedrockBridgeConnection() {
+        return cultConnection.bedrockBridge();
     }
 
     public ac.cult.cultac.protocol.ConnectionPhase getConnectionState() {
@@ -129,23 +120,18 @@ public final class User {
             return;
         }
 
-        if (player != null) {
-            FoliaCompatUtil.runTaskForEntity(
-                    player, CultAPI.INSTANCE.getPlugin(), () -> player.kick(Component.text("Disconnected")), null, 0);
-        } else {
-            getConnection().disconnect(net.minecraft.network.chat.Component.literal("Disconnected"));
-        }
+        var platform = cultConnection.platform();
+        if (platform != null) platform.disconnect(Component.text("Disconnected"));
+        else cultConnection.channel().close();
     }
 
     public void sendMessage(Component component) {
-        if (player != null) {
-            player.sendMessage(component);
-        }
+        var platform = cultConnection.platform();
+        if (platform != null) platform.sendMessage(component);
     }
 
-    public void bind(@Nullable Player player, @Nullable ServerPlayer handle) {
-        this.player = player;
-        this.handle = handle;
+    public void bind(PlatformPlayer player) {
+        this.player = java.util.Objects.requireNonNull(player);
     }
 
     public static final class Profile {

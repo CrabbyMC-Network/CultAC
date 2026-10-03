@@ -18,9 +18,10 @@ public class PacketWorldBorder extends CultProcessor implements CheckListener, C
             ClientVersion.fromProtocolVersion(net.minecraft.SharedConstants.getProtocolVersion());
     double centerX;
     double centerZ;
-    double oldDiameter;
-    double newDiameter;
-    double absoluteMaxSize;
+    // WorldBorder's initial client state before an initialize-border packet.
+    double oldDiameter = 59_999_968;
+    double newDiameter = 59_999_968;
+    double absoluteMaxSize = 29_999_984;
     long startTime = 1;
     long endTime = 1;
     long lerpDurationTicks;

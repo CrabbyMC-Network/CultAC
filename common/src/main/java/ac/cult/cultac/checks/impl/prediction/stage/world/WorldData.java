@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Block;
 
 @AllArgsConstructor
 @Getter
@@ -45,7 +45,7 @@ public class WorldData {
     @Setter
     DesyncStatus weirdFourteenFifteenLava;
 
-    Material onBlock;
+    Block onBlock;
     StuckEdgeData sneak;
     BubbleColumnData bubbleColumn;
     PistonPushes pistonPushes;

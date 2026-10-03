@@ -13,11 +13,11 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.Hand;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.grim.grimac.api.storage.verbose.Verbose;
-import org.bukkit.GameMode;
 
 @CheckData(name = "PacketOrderB", stableKey = "cult.packetorder.noswing", description = "Did not swing for attack")
 public class PacketOrderB extends Check implements CheckListener {

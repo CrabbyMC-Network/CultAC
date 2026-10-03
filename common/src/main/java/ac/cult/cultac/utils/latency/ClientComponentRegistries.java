@@ -1,92 +1,73 @@
 package ac.cult.cultac.utils.latency;
 
-import ac.cult.cultac.network.packet.RegistryData;
-import java.util.ArrayList;
+import ac.cult.cultac.protocol.data.ModelRegistryNames;
+import ac.cult.cultac.utils.minecraft.MinecraftRegistries;
+import ac.cult.cultac.utils.minecraft.NativeGeometryTags;
+import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.RegistrySynchronization;
-import net.minecraft.core.component.BlockTransformer;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.TagNetworkSerialization;
-import net.minecraft.world.item.ItemStack;
 
-/** Received component definitions; tag membership deliberately uses the server registry. */
+/**
+ * The block, item and fluid tags a client received, as named memberships for host-side checks.
+ * The vanilla runtime reads no client registries: interactions transfer only item type data.
+ */
 public final class ClientComponentRegistries {
-    private static final DataComponentType<Holder<BlockTransformer>> BLOCK_TRANSFORMER_COMPONENT =
-            blockTransformerComponent();
-
-    private final Map<ResourceKey<? extends Registry<?>>, List<RegistrySynchronization.PackedRegistryEntry>> entries =
+    private final Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> tags =
             new HashMap<>();
-    private RegistryAccess.Frozen received;
+    private ac.cult.placement.api.GeometryTags geometryTags;
+    private final Map<ModelRegistryNames, ac.cult.placement.api.GeometryTags> modelTags =
+            new java.util.IdentityHashMap<>();
 
-    public void append(RegistryData packet) {
-        if (isRelevant(packet.registry())) {
-            entries.computeIfAbsent(packet.registry(), ignored -> new ArrayList<>())
-                    .addAll(packet.entries());
-        }
+    public void appendTags(ac.cult.cultac.network.packet.RegistryTags packet) {
+        if (packet.tags().entrySet().stream().allMatch(entry -> entry.getValue().equals(tags.get(entry.getKey()))))
+            return;
+        tags.putAll(packet.tags());
+        geometryTags = null;
+        modelTags.clear();
     }
 
-    public void finish() {
-        if (entries.isEmpty()) return;
-        Map<ResourceKey<? extends Registry<?>>, RegistryDataLoader.NetworkedRegistryData> network = new HashMap<>();
-        entries.forEach((key, values) -> network.put(
-                key,
-                new RegistryDataLoader.NetworkedRegistryData(
-                        List.copyOf(values), TagNetworkSerialization.NetworkPayload.EMPTY)));
-        var server = MinecraftServer.getServer();
-        received = RegistryDataLoader.load(
-                        network,
-                        server.getResourceManager(),
-                        server.registryAccess()
-                                .listRegistries()
-                                .filter(lookup -> !entries.containsKey(lookup.key()))
-                                .toList(),
-                        RegistryDataLoader.SYNCHRONIZED_REGISTRIES.stream()
-                                .filter(data -> entries.containsKey(data.key()))
-                                .toList(),
-                        Runnable::run)
-                .join();
-        entries.clear();
+    public ac.cult.placement.api.GeometryTags geometryTags(MinecraftRegistries context) {
+        if (geometryTags == null)
+            geometryTags = new ac.cult.placement.api.GeometryTags(
+                    exportTags(
+                            net.minecraft.core.registries.BuiltInRegistries.BLOCK,
+                            tags.get(net.minecraft.core.registries.Registries.BLOCK)),
+                    exportTags(
+                            net.minecraft.core.registries.BuiltInRegistries.ITEM,
+                            tags.get(net.minecraft.core.registries.Registries.ITEM)),
+                    exportTags(
+                            net.minecraft.core.registries.BuiltInRegistries.FLUID,
+                            tags.get(net.minecraft.core.registries.Registries.FLUID)));
+        return geometryTags;
     }
 
-    public Holder<BlockTransformer> transformer(ItemStack stack) {
-        if (BLOCK_TRANSFORMER_COMPONENT == null) return null;
-        Holder<BlockTransformer> component = stack.get(BLOCK_TRANSFORMER_COMPONENT);
-        if (component == null || received == null) return component;
-        var registry = received.lookup(Registries.BLOCK_TRANSFORMER);
-        if (registry.isEmpty()) return component;
-        if (stack.getComponentsPatch().split().added().has(BLOCK_TRANSFORMER_COMPONENT)) {
-            // Explicit item components are serialized by the connection registry ID.
-            int id = MinecraftServer.getServer()
-                    .registryAccess()
-                    .lookupOrThrow(Registries.BLOCK_TRANSFORMER)
-                    .getId(component.value());
-            return registry.get().get(id).orElse(null);
-        }
-        // Default item components are initialized by key after configuration.
-        return component.unwrapKey().flatMap(registry.get()::get).orElse(null);
+    /** One snapshot per model and received generation; tag names and empty memberships stay intact. */
+    public ac.cult.placement.api.GeometryTags geometryTags(MinecraftRegistries context, ModelRegistryNames names) {
+        return modelTags.computeIfAbsent(names, key -> NativeGeometryTags.translate(geometryTags(context), key));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static DataComponentType<Holder<BlockTransformer>> blockTransformerComponent() {
-        try {
-            return (DataComponentType)
-                    DataComponents.class.getField("BLOCK_TRANSFORMER").get(null);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
-    }
-
-    private static boolean isRelevant(ResourceKey<? extends Registry<?>> key) {
-        return key.equals(Registries.BLOCK_TRANSFORMER) || key.equals(Registries.BLOCK_STATE_PROVIDER);
+    private static <T> Map<String, List<String>> exportTags(
+            Registry<T> registry, TagNetworkSerialization.NetworkPayload payload) {
+        var result = new HashMap<String, List<String>>();
+        if (payload == null)
+            registry.getTags()
+                    .forEach(tag -> result.put(
+                            NmsIdentifierUtil.resourceKey(tag.key()),
+                            tag.stream()
+                                    .map(holder -> NmsIdentifierUtil.registryKey(registry, holder.value()))
+                                    .toList()));
+        else
+            payload.resolve(registry)
+                    .tags()
+                    .forEach((name, members) -> result.put(
+                            NmsIdentifierUtil.tagKey(name),
+                            members.stream()
+                                    .map(holder -> NmsIdentifierUtil.registryKey(registry, holder.value()))
+                                    .toList()));
+        return Map.copyOf(result);
     }
 }

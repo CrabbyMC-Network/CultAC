@@ -6,6 +6,8 @@ import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.value.AttributeModifier;
 import ac.cult.cultac.protocol.value.AttributeSnapshot;
+import ac.cult.cultac.protocol.value.Direction;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.ShulkerData;
 import ac.cult.cultac.utils.data.TrackerData;
@@ -25,10 +27,8 @@ import java.util.function.Consumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.BlockFace;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 
 public class CompensatedEntities {
     private static final EquipmentSlot SADDLE_EQUIPMENT_SLOT = resolveEquipmentSlot("saddle");
@@ -105,35 +105,35 @@ public class CompensatedEntities {
     }
 
     public Integer getJumpAmplifier() {
-        return getPotionLevelForPlayer(PotionEffectType.JUMP_BOOST);
+        return getPotionLevelForPlayer(MovementEffect.JUMP_BOOST);
     }
 
     public Integer getLevitationAmplifier() {
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_9)) return null;
-        return getPotionLevelForPlayer(PotionEffectType.LEVITATION);
+        return getPotionLevelForPlayer(MovementEffect.LEVITATION);
     }
 
     public Integer getSlowFallingAmplifier() {
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_13)) return null;
-        return getPotionLevelForPlayer(PotionEffectType.SLOW_FALLING);
+        return getPotionLevelForPlayer(MovementEffect.SLOW_FALLING);
     }
 
     public Integer getDolphinsGraceAmplifier() {
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_13)) return null;
-        return getPotionLevelForPlayer(PotionEffectType.DOLPHINS_GRACE);
+        return getPotionLevelForPlayer(MovementEffect.DOLPHINS_GRACE);
     }
 
-    public Integer getPotionLevelForPlayer(PotionEffectType type) {
+    public Integer getPotionLevelForPlayer(MovementEffect type) {
         PacketEntity desiredEntity = getEntityInControl();
 
-        HashMap<PotionEffectType, Integer> effects = desiredEntity.potionsMap;
+        HashMap<MovementEffect, Integer> effects = desiredEntity.potionsMap;
         if (effects == null) return null;
 
         return effects.get(type);
     }
 
-    public boolean hasPotionEffect(PotionEffectType type) {
-        HashMap<PotionEffectType, Integer> effects = playerEntity.potionsMap;
+    public boolean hasPotionEffect(MovementEffect type) {
+        HashMap<MovementEffect, Integer> effects = playerEntity.potionsMap;
         if (effects == null) return false;
         return effects.containsKey(type);
     }
@@ -644,7 +644,7 @@ public class CompensatedEntities {
         if (attachFaceData != null) {
             // This NMS -> Bukkit conversion is great and works in all 11 versions.
             ((PacketEntityShulker) entity).facing =
-                    BlockFace.valueOf(attachFaceData.value().toString().toUpperCase());
+                    Direction.valueOf(attachFaceData.value().toString().toUpperCase());
         }
 
         EntityMetadata.Entry peekData = WatchableIndexUtil.getIndex(watchableObjects, WatchableIndexUtil.SHULKER_PEEK);

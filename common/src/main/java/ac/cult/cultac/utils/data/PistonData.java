@@ -1,10 +1,10 @@
 package ac.cult.cultac.utils.data;
 
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import java.util.List;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import org.bukkit.block.BlockFace;
 
 public class PistonData implements TransactionOrder {
     private static final int LEGACY_CLIENT_VISIBLE_MOVING_PISTON_TICKS = 3;
@@ -13,7 +13,7 @@ public class PistonData implements TransactionOrder {
     public final boolean isPush;
     public final boolean hasSlimeBlock;
     public final boolean hasHoneyBlock;
-    public final BlockFace direction;
+    public final Direction direction;
     public final int lastTransactionSent;
     private final boolean phaseWithClientTickEnd;
 
@@ -34,7 +34,7 @@ public class PistonData implements TransactionOrder {
     public final List<SimpleCollisionBox> retractingSourceFixBoxes;
 
     public PistonData(
-            BlockFace direction,
+            Direction direction,
             List<BlockPos> movingPositions,
             List<SimpleCollisionBox> pushedBlocks,
             List<SimpleCollisionBox> retractingSourceFixBoxes,
@@ -54,7 +54,7 @@ public class PistonData implements TransactionOrder {
         this.phaseWithClientTickEnd = phaseWithClientTickEnd;
     }
 
-    public BlockFace getMovementDirection() {
+    public Direction getMovementDirection() {
         // MCP-Reborn PistonMovingBlockEntity#getMovementDirection returns the
         // piston facing while extending, and the opposite direction while retracting.
         return isPush ? direction : direction.getOppositeFace();

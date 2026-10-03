@@ -3,9 +3,7 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import net.minecraft.world.InteractionHand;
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public final class RiptideUtil {
     private static final int MIN_CHARGE_TICKS = 10;
@@ -13,10 +11,11 @@ public final class RiptideUtil {
     private RiptideUtil() {}
 
     public static int getRiptideLevel(ItemStack item) {
-        if (item == null || item.getType() != Material.TRIDENT) {
+        if (item == null || item.getItem() != net.minecraft.world.item.Items.TRIDENT) {
             return 0;
         }
-        return item.getEnchantmentLevel(Enchantment.RIPTIDE);
+        return ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                item, net.minecraft.world.item.enchantment.Enchantments.RIPTIDE);
     }
 
     public static boolean isValidRiptideRelease(CultPlayer player, InteractionHand hand) {

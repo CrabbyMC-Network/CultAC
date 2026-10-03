@@ -4,7 +4,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import ac.cult.cultac.player.CultPlayer;
-import org.bukkit.GameMode;
+import ac.cult.cultac.protocol.value.GameMode;
 import org.junit.Test;
 import org.mockito.Mockito;
 

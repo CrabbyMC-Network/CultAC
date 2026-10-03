@@ -2,8 +2,8 @@ package ac.cult.cultac.utils.inventory;
 
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.Equippable;
-import org.bukkit.inventory.ItemStack;
 
 public enum EquipmentType {
     MAINHAND,

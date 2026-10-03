@@ -5,6 +5,7 @@ import ac.cult.cultac.manager.init.ReloadableInitable;
 import ac.cult.cultac.manager.init.start.StartableInitable;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.math.Location;
 import java.util.ArrayList;
 import java.util.Map;
@@ -14,7 +15,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.GameMode;
 import org.jetbrains.annotations.NotNull;
 
 public class SpectateManager implements StartableInitable, ReloadableInitable {
@@ -59,6 +59,7 @@ public class SpectateManager implements StartableInitable, ReloadableInitable {
     }
 
     public boolean enable(PlatformPlayer platformPlayer) {
+        if (!platformPlayer.hasServerAuthority()) return false;
         if (spectatingPlayers.containsKey(platformPlayer.getUniqueId())) return false;
         spectatingPlayers.put(
                 platformPlayer.getUniqueId(),

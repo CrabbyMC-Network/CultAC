@@ -25,4 +25,8 @@ final class PacketRoutes {
         var binding = runtime.binding(phase, direction, id);
         return binding == null ? null : entries[binding.slot()];
     }
+
+    PacketDispatcher.Route get(PacketType<?> type) {
+        return runtime.contains(type) ? entries[runtime.slot(type)] : null;
+    }
 }

@@ -18,5 +18,7 @@ public interface PlatformPlayerFactory {
 
     void invalidatePlayer(UUID uuid);
 
+    void invalidatePlayer(PlatformPlayer player);
+
     Collection<PlatformPlayer> getOnlinePlayers();
 }

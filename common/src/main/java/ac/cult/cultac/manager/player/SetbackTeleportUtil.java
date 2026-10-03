@@ -37,6 +37,7 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundMoveVehicle;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundPlayerPosition;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundTeleportEntity;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.Relative;
 import ac.cult.cultac.protocol.value.Vec3d;
 import ac.cult.cultac.utils.anticheat.LogUtil;
@@ -64,7 +65,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 
 public class SetbackTeleportUtil extends CultProcessor implements PostPredictionListener {
@@ -305,7 +305,7 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
         }
         if (!player.shouldEnforceMovementSetbacks()) return true;
         // Player has permission to cheat, permission not given to OP by default.
-        return player.noSetbackPermission && player.bukkitPlayer != null;
+        return player.noSetbackPermission && player.platformPlayer != null;
     }
 
     // Only let us full resync once every five seconds to prevent unneeded bukkit load
@@ -547,6 +547,15 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
     }
 
     private void sendSetback(SetBackData data, boolean simulateVehicle, boolean dismounted) {
+        if (!player.isBedrockMovement() && !player.user.isPreparingWrites()) {
+            // Block movement as soon as the correction is requested. Allocate its
+            // proofs and dispatch its packets together at their outbound position,
+            // while isSendingSetback/isSetbackVal still describe those packets.
+            data.setPlugin(false);
+            requiredSetBack = data;
+            player.user.executeAfterWrites(() -> sendSetback(data, simulateVehicle, dismounted));
+            return;
+        }
         isSendingSetback = true;
         Vec3 position = data.getTeleportData().getLocation();
 
@@ -617,8 +626,10 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
                             teleportId);
                 // Receive the player's position packet to make setbacks appear smooth for other players (and to stop
                 // vanilla ac setbacks)
+                // For Bedrock this move is Paper's teleport response, which is never on ground.
+                boolean serverMoveOnGround = !player.isBedrockMovement() && data.isExpectedOnGround();
                 player.user.execute(() -> setPendingServerMove(new ServerboundMovePlayer(
-                        position.x, position.y, position.z, 0, 0, data.isExpectedOnGround(), false, true, false)));
+                        position.x, position.y, position.z, 0, 0, serverMoveOnGround, false, true, false)));
                 if (player.isBedrockMovement()) {
                     requiredSetBack = data;
                     GeyserBedrockBridgeRuntime.sendPlayerTeleport(

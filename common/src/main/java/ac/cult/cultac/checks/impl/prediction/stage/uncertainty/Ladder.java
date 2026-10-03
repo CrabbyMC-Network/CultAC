@@ -7,8 +7,8 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.nmsutil.FluidFallingAdjustedMovement;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 public class Ladder implements UncertaintyHandler {
     @Override
@@ -84,8 +84,8 @@ public class Ladder implements UncertaintyHandler {
                 && context.isSneaking()
                 && player.compensatedWorld
                                 .getBlockDataAt(from.x, from.y, from.z)
-                                .getMaterial()
-                        != Material.SCAFFOLDING) {
+                                .getBlock()
+                        != Blocks.SCAFFOLDING) {
             clampedY = 0;
         }
         if (context.getWorldData().getClimbingAtStart().isDesync()

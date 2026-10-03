@@ -3,6 +3,7 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.events.packets.PacketWorldBorder;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.ClientBlockShapes;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
@@ -10,6 +11,7 @@ import ac.cult.cultac.utils.data.Pair;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedChunk;
 import ac.cult.cultac.utils.latency.CompensatedWorld.CachedSection;
 import ac.cult.cultac.utils.math.CultMath;
+import ac.cult.cultac.utils.math.Vector3dm;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import java.util.ArrayList;
@@ -29,10 +31,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 public class Collisions {
     private static final double COLLISION_EPSILON = 1.0E-7;
@@ -488,7 +486,7 @@ public class Collisions {
                             BlockState data = section.getState(CachedChunk.index(x & 0xF, y & 0xF, z & 0xF));
 
                             if (data.isAir()) continue;
-                            Material material = data.getBukkitMaterial();
+                            Block material = data.getBlock();
                             CollisionBox collisionBox =
                                     ClientBlockShapes.movement(player, data, x, y, z, entityBottom, actor);
                             if (collisionBox.isNull()) continue;
@@ -499,7 +497,7 @@ public class Collisions {
 
                             if (edgeCount != 3
                                     && (edgeCount != 1 || data.hasLargeCollisionShape())
-                                    && (edgeCount != 2 || material == Material.PISTON_HEAD)) {
+                                    && (edgeCount != 2 || material == Blocks.PISTON_HEAD)) {
                                 // Don't add to a list if we only care if the player intersects with the block
                                 if (!onlyCheckCollide) {
                                     collisionBox.downCast(listOfBlocks);
@@ -571,8 +569,8 @@ public class Collisions {
         return vector.x * vector.x + vector.z * vector.z;
     }
 
-    public static Vector maybeBackOffFromEdge(
-            Vector vec3,
+    public static Vector3dm maybeBackOffFromEdge(
+            Vector3dm vec3,
             CultPlayer player,
             boolean lastOnGround,
             SimpleCollisionBox playerBB,
@@ -621,7 +619,7 @@ public class Collisions {
                     z += 0.05D;
                 }
             }
-            vec3 = new Vector(x, vec3.getY(), z);
+            vec3 = new Vector3dm(x, vec3.getY(), z);
         }
 
         return vec3;
@@ -676,7 +674,7 @@ public class Collisions {
         for (int i = blockPosX; i <= blockPos2X; ++i) {
             for (int j = blockPosY; j <= blockPos2Y; ++j) {
                 for (int k = blockPosZ; k <= blockPos2Z; ++k) {
-                    BlockData block = player.compensatedWorld.getBlockDataAt(i, j, k);
+                    BlockState block = player.compensatedWorld.getBlockDataAt(i, j, k);
                     Vec3 blockStuckSpeed = getStuckSpeedForBlock(player, block, powderSnowCanApply);
                     if (blockStuckSpeed != null) {
                         // Legacy/provisional contact summary. Java 26.2 commits actual
@@ -725,7 +723,7 @@ public class Collisions {
         for (int i = blockPosX; i <= blockPos2X; ++i) {
             for (int j = blockPosY; j <= blockPos2Y; ++j) {
                 for (int k = blockPosZ; k <= blockPos2Z; ++k) {
-                    BlockData block = player.compensatedWorld.getBlockDataAt(i, j, k);
+                    BlockState block = player.compensatedWorld.getBlockDataAt(i, j, k);
                     Vec3 blockStuckSpeed = getStuckSpeedForBlock(player, block, powderSnowCanApply);
                     if (blockStuckSpeed != null && sweptFullBlockEntityInside(fromAabb, toAabb, i, j, k)) {
                         // MCP-Reborn Entity#checkInsideBlocks replays the move
@@ -1236,10 +1234,10 @@ public class Collisions {
         for (int x = blockPosX; x <= blockPos2X; ++x) {
             for (int y = blockPosY; y <= blockPos2Y; ++y) {
                 for (int z = blockPosZ; z <= blockPos2Z; ++z) {
-                    BlockData block = player.compensatedWorld.getBlockDataAt(x, y, z);
+                    BlockState block = player.compensatedWorld.getBlockDataAt(x, y, z);
                     Vec3 blockStuckSpeed = getStuckSpeedForBlock(player, block);
                     if (blockStuckSpeed != null && sweptFullBlockEntityInside(fromAabb, toAabb, x, y, z)) {
-                        hits.add(x + "," + y + "," + z + ":" + block.getMaterial() + "=" + blockStuckSpeed);
+                        hits.add(x + "," + y + "," + z + ":" + block.getBlock() + "=" + blockStuckSpeed);
                     }
                 }
             }
@@ -1248,10 +1246,10 @@ public class Collisions {
     }
 
     private static void appendStuckSpeedHit(CultPlayer player, List<String> hits, int x, int y, int z, String mode) {
-        BlockData block = player.compensatedWorld.getBlockDataAt(x, y, z);
+        BlockState block = player.compensatedWorld.getBlockDataAt(x, y, z);
         Vec3 blockStuckSpeed = getStuckSpeedForBlock(player, block);
         if (blockStuckSpeed != null) {
-            hits.add(x + "," + y + "," + z + ":" + block.getMaterial() + "=" + blockStuckSpeed + ":" + mode);
+            hits.add(x + "," + y + "," + z + ":" + block.getBlock() + "=" + blockStuckSpeed + ":" + mode);
         }
     }
 
@@ -1314,11 +1312,11 @@ public class Collisions {
                 && c < maxC + COLLISION_EPSILON;
     }
 
-    public static Vec3 getStuckSpeedForBlock(CultPlayer player, BlockData blockData) {
+    public static Vec3 getStuckSpeedForBlock(CultPlayer player, BlockState blockData) {
         return getStuckSpeedForBlock(player, blockData, true);
     }
 
-    public static Vec3 getStuckSpeedForBlock(CultPlayer player, BlockData blockData, boolean powderSnowCanApply) {
+    public static Vec3 getStuckSpeedForBlock(CultPlayer player, BlockState blockData, boolean powderSnowCanApply) {
         Block block = NmsBlockTags.toNmsState(blockData).getBlock();
 
         // Vanilla applies these through entityInside -> Entity.makeStuckInBlock. Calling
@@ -1346,7 +1344,7 @@ public class Collisions {
         return getCobwebStuckSpeed(
                 player.getClientVersion(),
                 player.compensatedEntities.getEntityInControl().isLivingEntity(),
-                player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.WEAVING) != null);
+                player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.WEAVING) != null);
     }
 
     static Vec3 getCobwebStuckSpeed(ClientVersion version, boolean living, boolean weaving) {
@@ -1388,7 +1386,7 @@ public class Collisions {
 
     // Thanks Tuinity
     public static boolean hasMaterial(
-            CultPlayer player, SimpleCollisionBox checkBox, Predicate<Pair<BlockData, BlockPos>> searchingFor) {
+            CultPlayer player, SimpleCollisionBox checkBox, Predicate<Pair<BlockState, BlockPos>> searchingFor) {
         int minBlockX = (int) Math.floor(checkBox.minX);
         int maxBlockX = (int) Math.floor(checkBox.maxX);
         int minBlockY = (int) Math.floor(checkBox.minY);
@@ -1473,9 +1471,9 @@ public class Collisions {
     }
 
     private static boolean canGlideThrough(BlockState state) {
-        Material material = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state)
-                .getMaterial();
-        return switch (material.name()) {
+        Block material = ac.cult.cultac.network.protocol.util.SpigotConversionUtil.fromNmsBlockState(state)
+                .getBlock();
+        return switch (ac.cult.cultac.utils.nmsutil.NmsBlockTags.name(material)) {
             case "VINE",
                     "TWISTING_VINES",
                     "TWISTING_VINES_PLANT",

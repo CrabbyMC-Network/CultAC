@@ -35,12 +35,12 @@ final class GeyserInventoryActions {
         int selected = inventory.getHeldItemSlot();
         translator.run();
         var target = player.getInventory();
-        target.applyBedrockSlots(0, changes(session, before, inventory));
+        target.applyBedrockSlots(0, changes(player, session, before, inventory));
         if (menu != null && session.getInventoryHolder() == holder) {
-            target.applyBedrockSlots(menu.getJavaId(), changes(session, menuBefore, menu));
+            target.applyBedrockSlots(menu.getJavaId(), changes(player, session, menuBefore, menu));
         }
         ItemStack afterCursor = inventory.getCursor().copy().getItemStack();
-        if (!Objects.equals(cursor, afterCursor)) target.applyBedrockCursor(convert(session, afterCursor));
+        if (!Objects.equals(cursor, afterCursor)) target.applyBedrockCursor(convert(player, session, afterCursor));
         if (selected != inventory.getHeldItemSlot()) {
             int slot = inventory.getHeldItemSlot();
             PacketPlayerDigging.selectHotbarSlot(player, slot);
@@ -63,17 +63,19 @@ final class GeyserInventoryActions {
         return result;
     }
 
-    private static Map<Integer, org.bukkit.inventory.ItemStack> changes(
-            GeyserSession session, ItemStack[] before, Inventory inventory) {
-        var changed = new HashMap<Integer, org.bukkit.inventory.ItemStack>();
+    private static Map<Integer, net.minecraft.world.item.ItemStack> changes(
+            CultPlayer player, GeyserSession session, ItemStack[] before, Inventory inventory) {
+        var changed = new HashMap<Integer, net.minecraft.world.item.ItemStack>();
         for (int slot = 0; slot < before.length; slot++) {
             ItemStack after = inventory.getItem(slot).copy().getItemStack();
-            if (!Objects.equals(before[slot], after)) changed.put(slot, convert(session, after));
+            if (!Objects.equals(before[slot], after)) changed.put(slot, convert(player, session, after));
         }
         return changed;
     }
 
-    private static org.bukkit.inventory.ItemStack convert(GeyserSession session, ItemStack item) {
-        return SpigotConversionUtil.fromNmsItemStack(GeyserItemStacks.toServerItem(session, item));
+    private static net.minecraft.world.item.ItemStack convert(
+            CultPlayer player, GeyserSession session, ItemStack item) {
+        return SpigotConversionUtil.fromNmsItemStack(
+                GeyserItemStacks.toServerItem(() -> player.user.registries().access(), session, item));
     }
 }

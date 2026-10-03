@@ -86,13 +86,17 @@ public final class CultACBukkitLoaderPlugin extends JavaPlugin implements Platfo
     @Override
     public void onLoad() {
         LOADER = this;
-        BukkitProtocolTransport.initialize(CultAPI.INSTANCE.getNetworkManager(), getLogger());
+        BukkitProtocolTransport.initialize(CultAPI.INSTANCE.getNetworkManager(), this);
         CultAPI.INSTANCE.load(this, this.getBukkitInitTasks());
     }
 
     private Initable[] getBukkitInitTasks() {
         return new Initable[] {
             new ExemptOnlinePlayersOnReload(),
+            new ac.cult.cultac.manager.init.start.TickEndEvent(),
+            new ac.cult.cultac.manager.init.start.ChannelManager(),
+            new ac.cult.cultac.manager.init.start.GeyserBedrockBridgeInit(),
+            (StartableInitable) ac.cult.cultac.events.packets.ProxyAlertMessenger::new,
             new BukkitEventManager(),
             new BukkitLuckPermsInitable(),
             (StartableInitable) () -> {

@@ -14,14 +14,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Authoritative identity, player attachment and transport state for one channel. */
-public final class CultConnection {
+public final class CultConnection implements CodecState {
     private final Channel channel;
-    private final net.minecraft.network.Connection nativeConnection;
+    private final PlatformConnection platform;
     boolean loginNotified;
     private volatile boolean disconnected;
     private final PacketDispatcher dispatcher;
-    private final Function<Channel, EventExecutor> ownerResolver;
+    private final ProjectedPackets packets;
+    private final Function<Channel, PacketOwner> ownerResolver;
     private volatile EventExecutor owner;
+    // Kept untyped so Java connections do not require the optional Geyser classes.
+    private volatile Object bedrockBridge;
     private volatile ConnectionPhase serverbound = ConnectionPhase.HANDSHAKE, clientbound = ConnectionPhase.HANDSHAKE;
     private volatile User user;
     private volatile CultPlayer player;
@@ -32,18 +35,24 @@ public final class CultConnection {
     private Runnable removal;
     private volatile CompletableFuture<Void> removed;
 
-    public CultConnection(Channel channel, PacketDispatcher dispatcher, Function<Channel, EventExecutor> resolver) {
+    public CultConnection(Channel channel, PacketDispatcher dispatcher, Function<Channel, PacketOwner> resolver) {
         this(null, channel, dispatcher, resolver);
     }
 
     public CultConnection(
-            net.minecraft.network.Connection nativeConnection,
+            PlatformConnection platform,
             Channel channel,
             PacketDispatcher dispatcher,
-            Function<Channel, EventExecutor> resolver) {
-        this.nativeConnection = nativeConnection;
+            Function<Channel, PacketOwner> resolver) {
+        this.platform = platform;
         this.channel = Objects.requireNonNull(channel);
         this.dispatcher = Objects.requireNonNull(dispatcher);
+        var version = platform == null ? null : platform.wireVersion();
+        var model = dispatcher.runtime();
+        var wire = version == null || version == model.data().version()
+                ? model
+                : ProtocolRuntime.create(ac.cult.cultac.protocol.data.ProtocolData.load(version));
+        packets = new ProjectedPackets(wire, model, () -> platform.packetProjection());
         ownerResolver = Objects.requireNonNull(resolver);
         owner = channel.eventLoop();
     }
@@ -52,8 +61,15 @@ public final class CultConnection {
         return channel;
     }
 
-    public net.minecraft.network.Connection nativeConnection() {
-        return nativeConnection;
+    public PlatformConnection platform() {
+        return platform;
+    }
+
+    @Override
+    public <T> T require(Class<T> type) {
+        if (type == ac.cult.cultac.utils.minecraft.MinecraftRegistries.class && platform != null)
+            return type.cast(platform.registries());
+        return CodecState.EMPTY.require(type);
     }
 
     public boolean disconnected() {
@@ -71,11 +87,23 @@ public final class CultConnection {
     }
 
     public ProtocolRuntime runtime() {
-        return dispatcher.runtime();
+        return packets.wire();
+    }
+
+    public ProjectedPackets packets() {
+        return packets;
     }
 
     public EventExecutor owner() {
         return owner;
+    }
+    /** The Geyser session whose Java projection this connection carries, decided once with the owner. */
+    public Object bedrockBridge() {
+        return bedrockBridge;
+    }
+
+    void bedrockBridge(Object bridge) {
+        bedrockBridge = bridge;
     }
 
     public User user() {
@@ -98,8 +126,11 @@ public final class CultConnection {
     public void resolveOwner() {
         if (!ownerResolved && (serverbound == ConnectionPhase.CONFIGURATION || serverbound == ConnectionPhase.PLAY)) {
             ownerResolved = true;
-            EventExecutor resolved = ownerResolver.apply(channel);
-            if (resolved != null) owner = resolved;
+            PacketOwner resolved = ownerResolver.apply(channel);
+            if (resolved != null) {
+                owner = resolved.executor();
+                bedrockBridge = resolved.bedrockBridge();
+            }
         }
     }
 
@@ -136,6 +167,16 @@ public final class CultConnection {
     public void executeLater(Runnable task) {
         owner.execute(task);
     }
+    /** Allocate packet proofs only once earlier outbound work has reached its queue position. */
+    public ChannelFuture executeAfterWrites(Runnable task) {
+        return writeMessage(new WriteTask(Objects.requireNonNull(task)));
+    }
+
+    public boolean isPreparingWrites() {
+        return owner.inEventLoop() && reentrantWriter != null;
+    }
+
+    public record WriteTask(Runnable action) {}
 
     public void reentrantWriter(BiConsumer<Object, ChannelPromise> writer) {
         reentrantWriter = writer;

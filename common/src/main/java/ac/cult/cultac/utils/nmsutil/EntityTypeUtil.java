@@ -14,7 +14,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.animal.Animal;
-import org.bukkit.craftbukkit.entity.CraftEntityType;
 
 public final class EntityTypeUtil {
     private static final Map<EntityType<?>, Class<? extends Entity>> NMS_ENTITY_CLASSES = resolveNmsEntityClasses();
@@ -66,10 +65,6 @@ public final class EntityTypeUtil {
             return LivingEntity.class.isAssignableFrom(nmsClass);
         }
 
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        if (entityClass != null) {
-            return org.bukkit.entity.LivingEntity.class.isAssignableFrom(entityClass);
-        }
         return type != null && type.getCategory() != MobCategory.MISC;
     }
 
@@ -79,12 +74,6 @@ public final class EntityTypeUtil {
             return Animal.class.isAssignableFrom(nmsClass);
         }
 
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        if (entityClass != null) {
-            return org.bukkit.entity.Animals.class.isAssignableFrom(entityClass)
-                    || org.bukkit.entity.AbstractHorse.class.isAssignableFrom(entityClass)
-                    || org.bukkit.entity.Strider.class.isAssignableFrom(entityClass);
-        }
         return type != null
                 && (type.getCategory() == MobCategory.CREATURE || type.getCategory() == MobCategory.AXOLOTLS);
     }
@@ -95,10 +84,6 @@ public final class EntityTypeUtil {
             return AgeableMob.class.isAssignableFrom(nmsClass);
         }
 
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        if (entityClass != null) {
-            return org.bukkit.entity.Ageable.class.isAssignableFrom(entityClass);
-        }
         return isAnimal(type);
     }
 
@@ -111,8 +96,7 @@ public final class EntityTypeUtil {
             return true;
         }
 
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        return entityClass != null && org.bukkit.entity.AbstractHorse.class.isAssignableFrom(entityClass);
+        return false;
     }
 
     public static boolean isChestedHorseFamily(EntityType<?> type) {
@@ -124,8 +108,7 @@ public final class EntityTypeUtil {
             return true;
         }
 
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        return entityClass != null && org.bukkit.entity.ChestedHorse.class.isAssignableFrom(entityClass);
+        return false;
     }
 
     private static boolean isSubclassNamed(Class<?> type, String... superclassNames) {
@@ -146,11 +129,6 @@ public final class EntityTypeUtil {
                 nmsClass,
                 "net.minecraft.world.entity.vehicle.AbstractBoat",
                 "net.minecraft.world.entity.vehicle.boat.AbstractBoat")) {
-            return true;
-        }
-
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        if (entityClass != null && org.bukkit.entity.Boat.class.isAssignableFrom(entityClass)) {
             return true;
         }
 
@@ -180,11 +158,6 @@ public final class EntityTypeUtil {
                 nmsClass,
                 "net.minecraft.world.entity.vehicle.AbstractMinecart",
                 "net.minecraft.world.entity.vehicle.minecart.AbstractMinecart")) {
-            return true;
-        }
-
-        Class<? extends org.bukkit.entity.Entity> entityClass = bukkitEntityClass(type);
-        if (entityClass != null && org.bukkit.entity.Minecart.class.isAssignableFrom(entityClass)) {
             return true;
         }
 
@@ -235,7 +208,7 @@ public final class EntityTypeUtil {
                     classes.put(type, entityClass);
                 }
             } catch (IllegalAccessException ignored) {
-                // Leave this type to Bukkit/category fallback.
+                // Leave this type to the category fallback.
             }
         }
         return Map.copyOf(classes);
@@ -283,18 +256,5 @@ public final class EntityTypeUtil {
             return null;
         }
         return (Class<? extends Entity>) clazz;
-    }
-
-    private static Class<? extends org.bukkit.entity.Entity> bukkitEntityClass(EntityType<?> type) {
-        if (type == null) {
-            return null;
-        }
-
-        try {
-            org.bukkit.entity.EntityType bukkitType = CraftEntityType.minecraftToBukkit(type);
-            return bukkitType == null ? null : bukkitType.getEntityClass();
-        } catch (RuntimeException ignored) {
-            return null;
-        }
     }
 }

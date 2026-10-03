@@ -36,6 +36,7 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundUpdateAttributes;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundUpdateMobEffect;
 import ac.cult.cultac.protocol.value.AttributeSnapshot;
 import ac.cult.cultac.protocol.value.EntityDelta;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.protocol.value.Relative;
 import ac.cult.cultac.protocol.value.Vec3d;
 import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
@@ -63,7 +64,6 @@ import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
 
 public class PacketEntityReplication extends CultProcessor implements CheckListener, ClientTickEndListener {
@@ -840,7 +840,7 @@ public class PacketEntityReplication extends CultProcessor implements CheckListe
 
     private void handleUpdateMobEffect(
             PacketSendEvent<ClientboundUpdateMobEffect> event, ClientboundUpdateMobEffect packet) {
-        PotionEffectType type = toPotionEffectType(packet.effect());
+        MovementEffect type = toMovementEffect(packet.effect());
         if (type == null) {
             return;
         }
@@ -860,7 +860,7 @@ public class PacketEntityReplication extends CultProcessor implements CheckListe
 
     private void handleRemoveMobEffect(
             PacketSendEvent<ClientboundRemoveMobEffect> event, ClientboundRemoveMobEffect packet) {
-        PotionEffectType type = toPotionEffectType(packet.effect());
+        MovementEffect type = toMovementEffect(packet.effect());
         if (type == null) {
             return;
         }
@@ -1760,19 +1760,19 @@ public class PacketEntityReplication extends CultProcessor implements CheckListe
         hasSentPreWavePacket = false;
     }
 
-    private static PotionEffectType toPotionEffectType(String effect) {
+    private static MovementEffect toMovementEffect(String effect) {
         return switch (effect) {
-            case "minecraft:blindness" -> PotionEffectType.BLINDNESS;
-            case "minecraft:conduit_power" -> PotionEffectType.CONDUIT_POWER;
-            case "minecraft:dolphins_grace" -> PotionEffectType.DOLPHINS_GRACE;
-            case "minecraft:haste" -> PotionEffectType.HASTE;
-            case "minecraft:jump_boost" -> PotionEffectType.JUMP_BOOST;
-            case "minecraft:levitation" -> PotionEffectType.LEVITATION;
-            case "minecraft:mining_fatigue" -> PotionEffectType.MINING_FATIGUE;
-            case "minecraft:speed" -> PotionEffectType.SPEED;
-            case "minecraft:slowness" -> PotionEffectType.SLOWNESS;
-            case "minecraft:slow_falling" -> PotionEffectType.SLOW_FALLING;
-            case "minecraft:weaving" -> PotionEffectType.WEAVING;
+            case "minecraft:blindness" -> MovementEffect.BLINDNESS;
+            case "minecraft:conduit_power" -> MovementEffect.CONDUIT_POWER;
+            case "minecraft:dolphins_grace" -> MovementEffect.DOLPHINS_GRACE;
+            case "minecraft:haste" -> MovementEffect.HASTE;
+            case "minecraft:jump_boost" -> MovementEffect.JUMP_BOOST;
+            case "minecraft:levitation" -> MovementEffect.LEVITATION;
+            case "minecraft:mining_fatigue" -> MovementEffect.MINING_FATIGUE;
+            case "minecraft:speed" -> MovementEffect.SPEED;
+            case "minecraft:slowness" -> MovementEffect.SLOWNESS;
+            case "minecraft:slow_falling" -> MovementEffect.SLOW_FALLING;
+            case "minecraft:weaving" -> MovementEffect.WEAVING;
             default -> null;
         };
     }

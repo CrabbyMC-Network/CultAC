@@ -3,18 +3,15 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.level.block.state.BlockState;
-import org.bukkit.GameMode;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 
 public class BlockBreakSpeed {
 
@@ -26,11 +23,11 @@ public class BlockBreakSpeed {
         return getBlockDamage(player, position, player.compensatedWorld.getBlockDataAt(position), debug);
     }
 
-    public static double getBlockDamage(CultPlayer player, BlockPos position, BlockData block, boolean debug) {
+    public static double getBlockDamage(CultPlayer player, BlockPos position, BlockState block, boolean debug) {
         ItemStack tool = player.getInventory().getHeldItem();
         BlockState nmsBlock = toNmsState(block);
-        // Bukkit hardness mirrors vanilla destroySpeed, including -1 for unbreakable blocks.
-        float blockHardness = block == null ? 0.0f : block.getMaterial().getHardness();
+        // Default destroy speed includes -1 for unbreakable blocks.
+        float blockHardness = block == null ? 0.0f : block.getBlock().defaultDestroyTime();
         return getBlockDamage(player, tool, nmsBlock, blockHardness, debug);
     }
 
@@ -54,7 +51,7 @@ public class BlockBreakSpeed {
         net.minecraft.world.item.ItemStack nmsTool = SpigotConversionUtil.toNmsItemStack(tool);
 
         if (player.gamemode == GameMode.CREATIVE) {
-            if (tool != null && ItemUtil.isSword(tool.getType())) {
+            if (tool != null && ItemUtil.isSword(tool.getItem())) {
                 return 0;
             }
             return 1;
@@ -67,21 +64,22 @@ public class BlockBreakSpeed {
         boolean isCorrectToolForDrop = toolData.correctForDrops;
 
         if (speedMultiplier > 1.0f) {
-            int digSpeed = tool.getEnchantmentLevel(Enchantment.EFFICIENCY);
+            int digSpeed = ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                    tool, net.minecraft.world.item.enchantment.Enchantments.EFFICIENCY);
             if (digSpeed > 0) {
                 speedMultiplier += digSpeed * digSpeed + 1;
             }
         }
 
-        Integer digSpeed = player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.HASTE);
-        Integer conduit = player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.CONDUIT_POWER);
+        Integer digSpeed = player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.HASTE);
+        Integer conduit = player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.CONDUIT_POWER);
 
         if (digSpeed != null || conduit != null) {
             int hasteLevel = Math.max(digSpeed == null ? 0 : digSpeed, conduit == null ? 0 : conduit);
             speedMultiplier *= 1 + (0.2 * (hasteLevel + 1));
         }
 
-        Integer miningFatigue = player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.MINING_FATIGUE);
+        Integer miningFatigue = player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.MINING_FATIGUE);
 
         if (miningFatigue != null
                 && !player.isBedrockMovement()
@@ -115,10 +113,22 @@ public class BlockBreakSpeed {
             ItemStack leggings = player.getInventory().getLeggings();
             ItemStack boots = player.getInventory().getBoots();
 
-            if ((helmet == null || helmet.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
-                    && (chestplate == null || chestplate.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
-                    && (leggings == null || leggings.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)
-                    && (boots == null || boots.getEnchantmentLevel(Enchantment.AQUA_AFFINITY) == 0)) {
+            if ((helmet == null
+                            || ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                            helmet, net.minecraft.world.item.enchantment.Enchantments.AQUA_AFFINITY)
+                                    == 0)
+                    && (chestplate == null
+                            || ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                            chestplate, net.minecraft.world.item.enchantment.Enchantments.AQUA_AFFINITY)
+                                    == 0)
+                    && (leggings == null
+                            || ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                            leggings, net.minecraft.world.item.enchantment.Enchantments.AQUA_AFFINITY)
+                                    == 0)
+                    && (boots == null
+                            || ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                                            boots, net.minecraft.world.item.enchantment.Enchantments.AQUA_AFFINITY)
+                                    == 0)) {
                 speedMultiplier /= 5;
             }
         }
@@ -154,12 +164,23 @@ public class BlockBreakSpeed {
         boolean correctForDrops = false;
         boolean foundSpeed = false;
         boolean foundCorrectForDrops = false;
+        var clientTags =
+                player.registryState == null ? null : player.registryState.geometryTags(player.user.registries());
+        String block =
+                NmsIdentifierUtil.registryKey(net.minecraft.core.registries.BuiltInRegistries.BLOCK, state.getBlock());
 
         // Vanilla resolves speed and correct-for-drops independently using the first
         // matching rule which defines that property. Match named rule sets against the
         // per-player tag payload rather than this server's registry bindings.
         for (Tool.Rule rule : tool.rules()) {
-            if (!rule.blocks().contains(state.getBlock().builtInRegistryHolder())) {
+            var named = rule.blocks().unwrapKey();
+            boolean matches = named.isPresent() && clientTags != null
+                    ? clientTags
+                            .blocks()
+                            .getOrDefault(NmsIdentifierUtil.tagKey(named.get()), java.util.List.of())
+                            .contains(block)
+                    : rule.blocks().contains(state.getBlock().builtInRegistryHolder());
+            if (!matches) {
                 continue;
             }
 
@@ -193,10 +214,7 @@ public class BlockBreakSpeed {
 
     private record ModernToolData(float speed, boolean correctForDrops) {}
 
-    private static BlockState toNmsState(BlockData data) {
-        if (data instanceof CraftBlockData craftBlockData) {
-            return craftBlockData.getState();
-        }
-        return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+    private static BlockState toNmsState(BlockState block) {
+        return block;
     }
 }

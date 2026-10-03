@@ -7,7 +7,7 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundTeleportToEntity;
-import org.bukkit.GameMode;
+import ac.cult.cultac.protocol.value.GameMode;
 
 @CheckData(
         name = "BadPacketsK",

@@ -36,7 +36,6 @@ import ac.grim.grimac.internal.storage.backend.postgres.PostgresBackendProvider;
 import ac.grim.grimac.internal.storage.backend.redis.RedisBackendProvider;
 import ac.grim.grimac.internal.storage.backend.sqlite.SqliteBackendProvider;
 import lombok.Getter;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
@@ -57,7 +56,6 @@ public final class CultAPI {
     private DataStoreLifecycle dataStoreLifecycle;
     private final BackendRegistry backendRegistry = buildBackendRegistry();
     private PlatformLoader loader;
-    private JavaPlugin plugin;
     private InitManager initManager;
     private boolean initialized = false;
 
@@ -78,6 +76,7 @@ public final class CultAPI {
     private static Platform detectPlatform() {
         Platform override = CommonCultArguments.PLATFORM_OVERRIDE.value();
         if (override != null) return override;
+        if (ReflectionUtils.hasClass("com.velocitypowered.api.proxy.ProxyServer")) return Platform.VELOCITY;
         if (ReflectionUtils.hasClass("io.papermc.paper.threadedregions.RegionizedServer")) return Platform.FOLIA;
         if (ReflectionUtils.hasClass("org.bukkit.Bukkit")) return Platform.BUKKIT;
         if (ReflectionUtils.hasClass("net.fabricmc.loader.api.FabricLoader")) return Platform.FABRIC;
@@ -86,9 +85,6 @@ public final class CultAPI {
 
     public void load(PlatformLoader platformLoader, Initable... platformSpecificInitables) {
         this.loader = platformLoader;
-        if (platformLoader instanceof JavaPlugin javaPlugin) {
-            this.plugin = javaPlugin;
-        }
         this.dataStoreLifecycle = new DataStoreLifecycle(getGrimPlugin(), backendRegistry);
         this.initManager = new InitManager(platformSpecificInitables);
         this.initManager.load();

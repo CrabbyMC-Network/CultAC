@@ -25,8 +25,8 @@ import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 @Getter
 @ToString
@@ -465,9 +465,8 @@ public class SimulationContext {
         // super.tick() reaches LivingEntity#travelRidden/getRiddenSpeed.
         BlockPos blockPos =
                 new BlockPos((int) Math.floor(start.x), (int) Math.floor(start.y), (int) Math.floor(start.z));
-        Material currentBlock =
-                player.compensatedWorld.getBlockStateAt(blockPos).getBukkitMaterial();
-        Material legacyBlock = BlockProperties.getOnPos(player, lastTickMainSupportingBlockData, start);
+        Block currentBlock = player.compensatedWorld.getBlockStateAt(blockPos).getBlock();
+        Block legacyBlock = BlockProperties.getOnPos(player, lastTickMainSupportingBlockData, start);
         boolean warm = NmsBlockTags.hasBlockTag(currentBlock, BlockTags.STRIDER_WARM_BLOCKS)
                 || NmsBlockTags.hasBlockTag(legacyBlock, BlockTags.STRIDER_WARM_BLOCKS)
                 || player.compensatedWorld.getLavaFluidLevelAt(blockPos) > 0.0D;

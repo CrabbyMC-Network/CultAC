@@ -17,7 +17,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.Equippable;
-import org.bukkit.Material;
 
 @CheckData(
         name = "ElytraD",
@@ -64,9 +63,10 @@ public class ElytraD extends Check implements PostPredictionListener {
 
     private boolean canGlide() {
         // don't check the client/server version, this is relevant for all
-        final org.bukkit.inventory.ItemStack chestPlate = player.getInventory().getChestplate();
-        if (chestPlate.getType() == Material.ELYTRA
-                && ItemUtil.getDamageValue(chestPlate) < chestPlate.getType().getMaxDurability() - 1) return true;
+        final net.minecraft.world.item.ItemStack chestPlate =
+                player.getInventory().getChestplate();
+        if (chestPlate.getItem() == net.minecraft.world.item.Items.ELYTRA
+                && ItemUtil.getDamageValue(chestPlate) < ItemUtil.getMaxDamage(chestPlate) - 1) return true;
 
         // if the server or client doesn't support glider components return false
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_21_2)
@@ -79,7 +79,7 @@ public class ElytraD extends Check implements PostPredictionListener {
                 || isGlider(player.getInventory().getOffHand(), EquipmentSlot.OFFHAND);
     }
 
-    private static boolean isGlider(org.bukkit.inventory.ItemStack stack, EquipmentSlot slot) {
+    private static boolean isGlider(net.minecraft.world.item.ItemStack stack, EquipmentSlot slot) {
         ItemStack nms = SpigotConversionUtil.toNmsItemStack(stack);
         if (!nms.has(DataComponents.GLIDER)
                 || (nms.isDamageableItem() && nms.getDamageValue() >= (nms.getMaxDamage() - 1))) {

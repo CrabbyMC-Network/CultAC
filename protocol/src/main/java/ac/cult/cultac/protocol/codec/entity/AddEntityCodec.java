@@ -15,6 +15,12 @@ import ac.cult.cultac.protocol.wire.Wire;
 import io.netty.buffer.ByteBuf;
 
 public final class AddEntityCodec implements PacketCodec<ClientboundAddEntity> {
+    // The data field of a falling-block entity is a native block-state ID.
+    @Override
+    public boolean requiresModelValues() {
+        return true;
+    }
+
     @Override
     public ClientboundAddEntity read(ByteBuf input, ProtocolContext context) {
         int entityId = Wire.readVarInt(input);

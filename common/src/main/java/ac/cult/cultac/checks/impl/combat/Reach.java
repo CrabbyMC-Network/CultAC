@@ -23,9 +23,11 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundInteract;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.InteractAction;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.packetentity.PacketEntity;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
@@ -33,8 +35,6 @@ import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import java.util.*;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.util.Vector;
 
 // You may not copy the check unless you are licensed under GPL
 // @CheckData(name = "Reach", configName = "Reach", setback = 10)
@@ -259,7 +259,7 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
 
         double minDistance = Double.MAX_VALUE;
 
-        List<Vector> possibleLookDirs = new ArrayList<>();
+        List<Vector3dm> possibleLookDirs = new ArrayList<>();
         possibleLookDirs.add(ReachUtils.getLook(player, player.xRot, player.yRot));
 
         // If we are a tick behind, we don't know their next look so don't bother doing this
@@ -267,17 +267,17 @@ public class Reach extends Check implements CheckListener, ClientTickEndListener
             possibleLookDirs.add(ReachUtils.getLook(player, player.lastTickXRot, player.lastTickYRot));
         }
 
-        for (Vector lookVec : possibleLookDirs) {
+        for (Vector3dm lookVec : possibleLookDirs) {
             for (Vec3 from : fromCandidates) {
                 if (from == null) {
                     continue;
                 }
                 for (double eye : player.getPossibleEyeHeights()) {
-                    Vector eyePos = new Vector(from.x, from.y + eye, from.z);
-                    Vector endReachPos =
-                            eyePos.clone().add(new Vector(lookVec.getX() * 6, lookVec.getY() * 6, lookVec.getZ() * 6));
+                    Vector3dm eyePos = new Vector3dm(from.x, from.y + eye, from.z);
+                    Vector3dm endReachPos = eyePos.clone()
+                            .add(new Vector3dm(lookVec.getX() * 6, lookVec.getY() * 6, lookVec.getZ() * 6));
 
-                    Vector intercept = ReachUtils.calculateIntercept(targetBox, eyePos, endReachPos)
+                    Vector3dm intercept = ReachUtils.calculateIntercept(targetBox, eyePos, endReachPos)
                             .getFirst();
 
                     if (ReachUtils.isVecInside(targetBox, eyePos)) {

@@ -12,11 +12,11 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 
 /** Vanilla liquid-presence, body-depth, and eye queries deliberately have different bounds. */
 public final class ClientFluidQueries {
@@ -36,7 +36,7 @@ public final class ClientFluidQueries {
     }
 
     /** Classify one compensated cell without changing the caller's body-query bounds. */
-    public static Sample sample(CultPlayer player, BlockData block, BlockPos pos) {
+    public static Sample sample(CultPlayer player, BlockState block, BlockPos pos) {
         if (usesTagBasedFluidRules(player)
                 || (!player.isBedrockMovement() && player.getClientVersion().isOlderThan(ClientVersion.V_1_13))) {
             FluidState fluid = player.compensatedWorld.getFluidState(pos);
@@ -49,7 +49,7 @@ public final class ClientFluidQueries {
         if (NmsBlockTags.isWater(block)) {
             return new Sample(true, false, player.compensatedWorld.getWaterFluidLevelAt(pos));
         }
-        if (block.getMaterial() == Material.LAVA) {
+        if (block.getBlock() == Blocks.LAVA) {
             return new Sample(false, true, player.compensatedWorld.getLavaFluidLevelAt(pos));
         }
         return Sample.EMPTY;

@@ -77,8 +77,7 @@ run/
 fabric/run/
 
 # Runtime logs
-common/logs/
-protocol-validation/versions/*/logs/
+logs/
 
 # Python validation helpers
 __pycache__/
@@ -87,3 +86,9 @@ __pycache__/
 .ignored/
 /workspace.gradle.kts
 /mappings-generator/
+
+# Local validation run output stays out of git. The harness is the :velocity-validation module.
+/validation/*
+!/validation/velocity/
+/validation/velocity/*
+!/validation/velocity/harness/

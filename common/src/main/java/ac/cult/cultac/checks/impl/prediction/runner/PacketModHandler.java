@@ -9,6 +9,7 @@ import ac.cult.cultac.checks.type.PostPredictionListener;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.NumFormatter;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
@@ -20,7 +21,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 
 @ToString
 public class PacketModHandler extends Check implements EngineCheck, PostPredictionListener {

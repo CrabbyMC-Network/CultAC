@@ -45,6 +45,8 @@ import ac.cult.cultac.network.event.PacketReceiveEvent;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.GameMode;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.update.PositionUpdate;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
@@ -80,13 +82,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Generated;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.jetbrains.annotations.Nullable;
 
@@ -975,7 +974,7 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
             PredictionCommit preparedCommit = this.prepareBedrockCommit(result, diff, movementProfile);
             this.callPredictionEndListeners(result, preparedCommit);
             if (!this.player.isBedrockMovement()
-                    && this.player.bukkitPlayer != null
+                    && this.player.platformPlayer != null
                     && this.player.isGliding
                     && result.getInitialStartingVel().hasReason("Jumping sprinting")
                     && !CultAPI.INSTANCE
@@ -1642,7 +1641,7 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
                 player.isSneaking,
                 this.lastSneaking,
                 riding == null && player.isGliding,
-                player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.JUMP_BOOST),
+                player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.JUMP_BOOST),
                 this.getDepthStriderLevel(),
                 this.getSwiftSneakLevel(),
                 riding != null ? DesyncStatus.FALSE : DesyncStatus.UNKNOWN,
@@ -1704,7 +1703,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
 
         ItemStack leggings = this.player.getInventory().getLeggings();
         return !leggings.isEmpty() && !leggings.getEnchantments().isEmpty()
-                ? leggings.getEnchantmentLevel(Enchantment.SWIFT_SNEAK)
+                ? ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                        leggings, net.minecraft.world.item.enchantment.Enchantments.SWIFT_SNEAK)
                 : 0;
     }
 
@@ -1715,7 +1715,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
 
         ItemStack boots = this.player.getInventory().getBoots();
         if (!boots.isEmpty() && !boots.getEnchantments().isEmpty()) {
-            float level = boots.getEnchantmentLevel(Enchantment.DEPTH_STRIDER);
+            float level = ac.cult.cultac.utils.inventory.ItemUtil.enchantmentLevel(
+                    boots, net.minecraft.world.item.enchantment.Enchantments.DEPTH_STRIDER);
             if (level > 3.0F) {
                 level = 3.0F;
             }
@@ -1730,7 +1731,7 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
         }
     }
 
-    public void handleBlockChange(BlockPos pos, BlockData to) {
+    public void handleBlockChange(BlockPos pos, BlockState to) {
         if (this.lastPrediction != null) {
             if (!this.player.compensatedEntities.getSelf().inVehicle()) {
                 SimulationContext context = this.lastPrediction.getSimulationContext();
@@ -1750,7 +1751,7 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
                                     .setInFlowingLiquid(DesyncStatus.UNKNOWN);
                         }
 
-                        if (to.getMaterial() == Material.LAVA) {
+                        if (to.getBlock() == Blocks.LAVA) {
                             this.lastPrediction
                                     .getSimulationContext()
                                     .getWorldData()
@@ -1766,8 +1767,9 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
                         }
 
                         if (NmsBlockTags.toNmsState(to).is(BlockTags.CLIMBABLE)
-                                || to.getMaterial() == Material.POWDER_SNOW
-                                        && this.player.getInventory().getBoots().getType() == Material.LEATHER_BOOTS) {
+                                || to.getBlock() == Blocks.POWDER_SNOW
+                                        && this.player.getInventory().getBoots().getItem()
+                                                == net.minecraft.world.item.Items.LEATHER_BOOTS) {
                             this.lastPrediction
                                     .getSimulationContext()
                                     .getWorldData()
@@ -1801,8 +1803,8 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
         }
     }
 
-    private boolean changedBlockCanApplyPowderSnowStuckSpeed(SimulationContext context, BlockPos pos, BlockData to) {
-        if (to.getMaterial() != Material.POWDER_SNOW) {
+    private boolean changedBlockCanApplyPowderSnowStuckSpeed(SimulationContext context, BlockPos pos, BlockState to) {
+        if (to.getBlock() != Blocks.POWDER_SNOW) {
             return true;
         }
 

@@ -8,7 +8,7 @@ import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundGameEvent;
 import ac.cult.cultac.protocol.value.GameEventType;
-import org.bukkit.GameMode;
+import ac.cult.cultac.protocol.value.GameMode;
 
 public class PacketChangeGameState extends CultProcessor implements CheckListener {
     public PacketChangeGameState(CultPlayer playerData) {

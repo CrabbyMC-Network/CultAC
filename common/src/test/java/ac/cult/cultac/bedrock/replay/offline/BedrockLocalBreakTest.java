@@ -8,12 +8,12 @@ import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockCoordinateFrame;
 import ac.cult.cultac.checks.impl.bedrock.BedrockMovement;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.GameMode;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.PlayerActionType;
 import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
@@ -140,7 +140,7 @@ public class BedrockLocalBreakTest {
             p.compensatedWorld.updateBlock(2, 64, 0, Blocks.STONE.defaultBlockState());
             p.getInventory()
                     .inventory
-                    .setHeldItem(new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_SWORD));
+                    .setHeldItem(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
             p.bedrockState.blockBreakActions.apply(
                     p,
                     BedrockCoordinateFrame.IDENTITY,
@@ -148,10 +148,12 @@ public class BedrockLocalBreakTest {
                             action(PlayerActionType.START_BREAK, WALL),
                             action(PlayerActionType.BLOCK_PREDICT_DESTROY, WALL)));
             assertEquals(Blocks.STONE.defaultBlockState(), p.compensatedWorld.getBlockStateAt(WALL));
-            p.getInventory().inventory.setHeldItem(new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIRT, 3));
+            p.getInventory()
+                    .inventory
+                    .setHeldItem(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIRT, 3));
             p.bedrockState.blockBreakActions.apply(
                     p, BedrockCoordinateFrame.IDENTITY, List.of(action(PlayerActionType.DROP_ITEM, BlockPos.ZERO)));
-            assertEquals(2, p.getInventory().getHeldItem().getAmount());
+            assertEquals(2, p.getInventory().getHeldItem().getCount());
         } finally {
             OfflineBedrockReplayRunnerTest.closeOfflinePlayer(p);
         }

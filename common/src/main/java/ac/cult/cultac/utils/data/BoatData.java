@@ -11,9 +11,10 @@ import ac.cult.cultac.utils.math.CultMath;
 import ac.cult.cultac.utils.nmsutil.BlockProperties;
 import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 
 public class BoatData {
     public record BoatStatusSample(BoatEntityStatus status, double waterLevel, float landFriction) {}
@@ -196,10 +197,10 @@ public class BoatData {
                 if (j2 != 2) {
                     for (int k2 = k; k2 < l; ++k2) {
                         if (j2 <= 0 || k2 != k && k2 != l - 1) {
-                            BlockData blockData = player.compensatedWorld.getBlockDataAt(l1, k2, i2);
-                            Material blockMaterial = blockData.getMaterial();
+                            BlockState blockData = player.compensatedWorld.getBlockDataAt(l1, k2, i2);
+                            Block blockMaterial = blockData.getBlock();
 
-                            if (blockMaterial != Material.LILY_PAD
+                            if (blockMaterial != Blocks.LILY_PAD
                                     && ClientBlockShapes.movement(player, blockData, l1, k2, i2)
                                             .isIntersected(axisalignedbb1)) {
                                 f += BlockProperties.getMaterialFriction(blockMaterial);

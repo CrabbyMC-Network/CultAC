@@ -9,7 +9,6 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 import ac.cult.cultac.utils.anticheat.LogUtil;
 import ac.cult.cultac.utils.anticheat.MessageUtil;
 import ac.cult.cultac.utils.common.arguments.CommonCultArguments;
-import java.io.File;
 
 public class PacketPluginMessage {
 
@@ -45,15 +44,6 @@ public class PacketPluginMessage {
     }
 
     private static boolean isUsingProxy() {
-        return getBooleanFromFile("spigot.yml", "settings.bungeecord")
-                || getBooleanFromFile("paper.yml", "settings.velocity-support.enabled")
-                || getBooleanFromFile("config/paper-global.yml", "proxies.velocity.enabled");
-    }
-
-    private static boolean getBooleanFromFile(String pathToFile, String pathToValue) {
-        File file = new File(pathToFile);
-        if (!file.exists()) return false;
-        return org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
-                .getBoolean(pathToValue);
+        return CultAPI.INSTANCE.getPlatformServer().isProxyForwardingEnabled();
     }
 }

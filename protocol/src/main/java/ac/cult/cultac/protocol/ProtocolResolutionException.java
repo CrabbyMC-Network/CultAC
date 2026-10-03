@@ -5,4 +5,8 @@ public final class ProtocolResolutionException extends RuntimeException {
     public ProtocolResolutionException(String message) {
         super(message);
     }
+
+    public ProtocolResolutionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

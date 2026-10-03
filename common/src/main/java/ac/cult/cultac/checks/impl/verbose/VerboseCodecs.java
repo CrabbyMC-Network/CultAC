@@ -2,6 +2,7 @@ package ac.cult.cultac.checks.impl.verbose;
 
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.protocol.ProtocolVersion;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.utils.nmsutil.NmsIdentifierUtil;
@@ -14,7 +15,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import org.bukkit.block.BlockFace;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +31,7 @@ public final class VerboseCodecs {
     public static final int PACKET_TRANSACTION = Integer.MIN_VALUE + 1;
 
     static {
-        VerboseTags.registerEnum("face", BlockFace.values());
+        VerboseTags.registerEnum("face", Direction.values());
         var version = ProtocolVersion.of(SharedConstants.getProtocolVersion());
         var digging = java.util.Arrays.stream(PlayerAction.values())
                 .filter(action ->

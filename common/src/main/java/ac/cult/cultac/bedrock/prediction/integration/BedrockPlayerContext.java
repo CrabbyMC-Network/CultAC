@@ -10,14 +10,13 @@ import ac.cult.cultac.bedrock.protocol.BedrockAuthInputFrame;
 import ac.cult.cultac.bedrock.protocol.BedrockClientPoseState;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 import ac.cult.cultac.utils.inventory.ItemUtil;
 import ac.cult.cultac.utils.latency.CompensatedEntities;
 import ac.cult.cultac.utils.nmsutil.BoundingBoxSize;
 import ac.cult.cultac.utils.nmsutil.RiptideUtil;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
+import net.minecraft.world.item.ItemStack;
 
 record BedrockPlayerContext(
         BedrockClientPoseState pose,
@@ -83,13 +82,13 @@ record BedrockPlayerContext(
 
     private static BedrockEffectState horseEffects(PacketEntityHorse horse) {
         return BedrockEffectState.NONE
-                .withJumpBoostLevel(horseEffectLevel(horse, PotionEffectType.JUMP_BOOST))
-                .withLevitationLevel(horseEffectLevel(horse, PotionEffectType.LEVITATION))
-                .withSlowFalling(horseEffectLevel(horse, PotionEffectType.SLOW_FALLING) > 0)
-                .withWeaving(horseEffectLevel(horse, PotionEffectType.WEAVING) > 0);
+                .withJumpBoostLevel(horseEffectLevel(horse, MovementEffect.JUMP_BOOST))
+                .withLevitationLevel(horseEffectLevel(horse, MovementEffect.LEVITATION))
+                .withSlowFalling(horseEffectLevel(horse, MovementEffect.SLOW_FALLING) > 0)
+                .withWeaving(horseEffectLevel(horse, MovementEffect.WEAVING) > 0);
     }
 
-    private static int horseEffectLevel(PacketEntityHorse horse, PotionEffectType type) {
+    private static int horseEffectLevel(PacketEntityHorse horse, MovementEffect type) {
         return horse.potionsMap == null ? 0 : horse.potionsMap.getOrDefault(type, -1) + 1;
     }
 
@@ -149,7 +148,7 @@ record BedrockPlayerContext(
             return false;
         }
         ItemStack boots = player.getInventory().getBoots();
-        return boots != null && boots.getType() == Material.LEATHER_BOOTS;
+        return boots != null && boots.getItem() == net.minecraft.world.item.Items.LEATHER_BOOTS;
     }
 
     private static boolean wearingElytra(CultPlayer player) {
@@ -158,7 +157,7 @@ record BedrockPlayerContext(
         }
         ItemStack chestplate = player.getInventory().getChestplate();
         return chestplate != null
-                && chestplate.getType() == Material.ELYTRA
+                && chestplate.getItem() == net.minecraft.world.item.Items.ELYTRA
                 && ItemUtil.getDamageValue(chestplate) < BEDROCK_ELYTRA_MAX_DAMAGE - 1;
     }
 
@@ -182,7 +181,7 @@ record BedrockPlayerContext(
             return 0;
         }
         for (String name : names) {
-            PotionEffectType type = potionEffectType(name);
+            MovementEffect type = potionEffectType(name);
             if (type == null) {
                 continue;
             }
@@ -195,15 +194,21 @@ record BedrockPlayerContext(
     }
 
     @SuppressWarnings("deprecation")
-    private static PotionEffectType potionEffectType(String name) {
+    private static MovementEffect potionEffectType(String name) {
         return switch (name) {
-            case "JUMP", "JUMP_BOOST" -> PotionEffectType.JUMP_BOOST;
-            case "LEVITATION" -> PotionEffectType.LEVITATION;
-            case "SLOW_FALLING" -> PotionEffectType.SLOW_FALLING;
-            case "SLOW", "SLOWNESS" -> PotionEffectType.SLOWNESS;
-            case "SPEED" -> PotionEffectType.SPEED;
-            case "WEAVING" -> PotionEffectType.WEAVING;
-            default -> PotionEffectType.getByName(name);
+            case "JUMP", "JUMP_BOOST" -> MovementEffect.JUMP_BOOST;
+            case "LEVITATION" -> MovementEffect.LEVITATION;
+            case "SLOW_FALLING" -> MovementEffect.SLOW_FALLING;
+            case "SLOW", "SLOWNESS" -> MovementEffect.SLOWNESS;
+            case "SPEED" -> MovementEffect.SPEED;
+            case "WEAVING" -> MovementEffect.WEAVING;
+            default -> {
+                try {
+                    yield MovementEffect.valueOf(name);
+                } catch (IllegalArgumentException unknown) {
+                    yield null;
+                }
+            }
         };
     }
 

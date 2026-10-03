@@ -4,7 +4,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPacket;
 import ac.cult.cultac.utils.inventory.inventory.WindowClickType;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 /** A menu action and its claimed results, independent of the transport packet. */
 public record InventoryClick(

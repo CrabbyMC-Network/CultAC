@@ -5,10 +5,10 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.data.MainSupportingBlockData;
 import ac.cult.cultac.utils.math.CultMath;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
 public class BlockProperties {
     /**
@@ -18,15 +18,14 @@ public class BlockProperties {
      * For soul speed (server-sided only)
      * (we don't account for this and instead remove this debuff) And powder snow block attribute
      */
-    public static Material getOnPos(
-            CultPlayer player, MainSupportingBlockData mainSupportingBlockData, Vec3 playerPos) {
+    public static Block getOnPos(CultPlayer player, MainSupportingBlockData mainSupportingBlockData, Vec3 playerPos) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             // Entity#moveEntity uses the center below the feet, with a fallback
             // for the upper half of fences, walls and gates.
-            Material block = player.compensatedWorld.getMaterialAt(
+            Block block = player.compensatedWorld.getMaterialAt(
                     BlockPos.containing(playerPos.x, playerPos.y - 0.2F, playerPos.z));
-            if (block.isAir()) {
-                Material below = player.compensatedWorld.getMaterialAt(
+            if (block.defaultBlockState().isAir()) {
+                Block below = player.compensatedWorld.getMaterialAt(
                         BlockPos.containing(playerPos.x, playerPos.y - 1.2F, playerPos.z));
                 if (NmsBlockTags.isFence(below) || NmsBlockTags.isWall(below) || NmsBlockTags.isFenceGate(below))
                     return below;
@@ -41,11 +40,11 @@ public class BlockProperties {
             CultPlayer player, MainSupportingBlockData mainSupportingBlockData, Vec3 playerPos) {
         if (player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             double below = player.getClientVersion().isOlderThan(ClientVersion.V_1_15) ? 1.0D : 0.5000001D;
-            Material material = player.compensatedWorld.getMaterialAt(
+            Block material = player.compensatedWorld.getMaterialAt(
                     BlockPos.containing(playerPos.x, playerPos.y - below, playerPos.z));
             return getMaterialFriction(material);
         }
-        Material underPlayer = getBlockPosBelowThatAffectsMyMovement(player, mainSupportingBlockData, playerPos);
+        Block underPlayer = getBlockPosBelowThatAffectsMyMovement(player, mainSupportingBlockData, playerPos);
         return getMaterialFriction(underPlayer);
     }
 
@@ -60,27 +59,27 @@ public class BlockProperties {
                 CultMath.floor(playerPos.x), CultMath.floor(playerPos.y), CultMath.floor(playerPos.z));
         float inBlockSpeedFactor = getBlockSpeedFactor(inBlock);
         if (inBlockSpeedFactor != 1.0f
-                || inBlock.getBukkitMaterial() == Material.WATER
-                || inBlock.getBukkitMaterial() == Material.BUBBLE_COLUMN) {
+                || inBlock.getBlock() == Blocks.WATER
+                || inBlock.getBlock() == Blocks.BUBBLE_COLUMN) {
             return inBlockSpeedFactor;
         }
 
-        Material underPlayer = getBlockPosBelowThatAffectsMyMovement(player, mainSupportingBlockData, playerPos);
+        Block underPlayer = getBlockPosBelowThatAffectsMyMovement(player, mainSupportingBlockData, playerPos);
         return getBlockSpeedFactor(underPlayer);
     }
 
     public static boolean onHoneyBlock(
             CultPlayer player, MainSupportingBlockData mainSupportingBlockData, Vec3 playerPos) {
         if (player.getClientVersion().isOlderThan(ClientVersion.V_1_15)) return false;
-        Material inBlock = player.compensatedWorld
+        Block inBlock = player.compensatedWorld
                 .getBlockStateAt(CultMath.floor(playerPos.x), CultMath.floor(playerPos.y), CultMath.floor(playerPos.z))
-                .getBukkitMaterial();
+                .getBlock();
         // MCP-Reborn Entity#getBlockJumpFactor reads the entity's current
         // blockPosition first, then getBlockPosBelowThatAffectsMyMovement().
         // Jump-factor honey must follow that exact lookup, not getOnPosLegacy().
-        return inBlock == Material.HONEY_BLOCK
+        return inBlock == Blocks.HONEY_BLOCK
                 || getBlockPosBelowThatAffectsMyMovement(player, mainSupportingBlockData, playerPos)
-                        == Material.HONEY_BLOCK;
+                        == Blocks.HONEY_BLOCK;
     }
 
     /**
@@ -90,7 +89,7 @@ public class BlockProperties {
      * <p>
      * On soul speed block (server-sided only)
      */
-    private static Material getBlockPosBelowThatAffectsMyMovement(
+    private static Block getBlockPosBelowThatAffectsMyMovement(
             CultPlayer player, MainSupportingBlockData mainSupportingBlockData, Vec3 playerPos) {
         BlockPos pos = getOnPos(player, playerPos, mainSupportingBlockData, 0.500001F);
         return player.compensatedWorld.getMaterialAt(pos);
@@ -103,7 +102,7 @@ public class BlockProperties {
             float searchBelowPlayer) {
         BlockPos mainBlockPos = mainSupportingBlockData.getBlockPos();
         if (mainBlockPos != null) {
-            Material blockstate = player.compensatedWorld.getMaterialAt(mainBlockPos);
+            Block blockstate = player.compensatedWorld.getMaterialAt(mainBlockPos);
 
             // I genuinely don't understand this code, or why fences are special
             boolean shouldReturn = (!((double) searchBelowPlayer <= 0.5D) || !NmsBlockTags.isFence(blockstate))
@@ -121,12 +120,12 @@ public class BlockProperties {
                 CultMath.floor(playerPos.z));
     }
 
-    public static float getMaterialFriction(Material material) {
-        return getStateFriction(((CraftBlockData) material.createBlockData()).getState());
+    public static float getMaterialFriction(Block material) {
+        return getStateFriction(material.defaultBlockState());
     }
 
-    private static float getBlockSpeedFactor(Material type) {
-        return getStateSpeedFactor(((CraftBlockData) type.createBlockData()).getState());
+    private static float getBlockSpeedFactor(Block type) {
+        return getStateSpeedFactor(type.defaultBlockState());
     }
 
     private static float getBlockSpeedFactor(BlockState state) {

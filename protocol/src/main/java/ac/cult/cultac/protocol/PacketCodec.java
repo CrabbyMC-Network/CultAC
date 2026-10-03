@@ -15,6 +15,11 @@ public interface PacketCodec<R> {
         return true;
     }
 
+    /** Numeric/native values must be projected into the model's protocol before decoding. */
+    default boolean requiresModelValues() {
+        return false;
+    }
+
     /** Validate version-dependent enum mappings and other prerequisites eagerly. */
     default void validate(ProtocolData data) {}
 }

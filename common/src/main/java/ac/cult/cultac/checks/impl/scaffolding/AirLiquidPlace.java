@@ -4,12 +4,13 @@ import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.CheckData;
 import ac.cult.cultac.checks.type.BlockPlaceCheck;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.change.BlockModification;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import net.minecraft.core.BlockPos;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 @CheckData(
         name = "AirLiquidPlace",
@@ -61,8 +62,7 @@ public class AirLiquidPlace extends BlockPlaceCheck {
         if (player.gamemode == GameMode.CREATIVE) return;
 
         BlockPos blockPos = place.getPlacedAgainstBlockLocation();
-        Material placeAgainst =
-                player.compensatedWorld.getMaterialAt(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+        Block placeAgainst = player.compensatedWorld.getMaterialAt(blockPos.getX(), blockPos.getY(), blockPos.getZ());
 
         int currentTick = CultAPI.INSTANCE.getTickManager().currentTick;
         // this is actual more lenient than we need to be, We can check up to 1 ticks for all changes at location sand
@@ -77,13 +77,13 @@ public class AirLiquidPlace extends BlockPlaceCheck {
         // Check if old block from instant breaking in same tick as the current placement was valid
         // There should only be one block here for legit clients
         for (BlockModification blockModification : blockModifications) {
-            Material oldType = blockModification.oldBlockContents().getMaterial();
-            if (!oldType.isAir() && !NmsBlockTags.isNoPlaceLiquid(oldType)) {
+            Block oldType = blockModification.oldBlockContents().getBlock();
+            if (!oldType.defaultBlockState().isAir() && !NmsBlockTags.isNoPlaceLiquid(oldType)) {
                 return;
             }
         }
 
-        if (placeAgainst.isAir() || NmsBlockTags.isNoPlaceLiquid(placeAgainst)) { // fail
+        if (placeAgainst.defaultBlockState().isAir() || NmsBlockTags.isNoPlaceLiquid(placeAgainst)) { // fail
             if (flag() && shouldModifyPackets() && shouldCancel()) {
                 place.resync();
             }
@@ -93,7 +93,7 @@ public class AirLiquidPlace extends BlockPlaceCheck {
     public void handleBlockBreak(BlockPos pos) {
         player.blockHistory.add(new BlockModification(
                 player.compensatedWorld.getBlockDataAt(pos.getX(), pos.getY(), pos.getZ()),
-                Material.AIR.createBlockData(),
+                Blocks.AIR.defaultBlockState(),
                 pos,
                 CultAPI.INSTANCE.getTickManager().currentTick,
                 BlockModification.Cause.START_DIGGING));

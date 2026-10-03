@@ -11,6 +11,16 @@ import java.util.function.Consumer;
 
 /** Owns registration and dispatch. Each packet retains one immutable route entry. */
 public class PacketDispatcher {
+    // Bedrock PLAY runs its own engine on the Geyser tick loop. Listeners still see Geyser's
+    // Java projection of that movement, with its teleport and tick boundaries, so the projection
+    // passes the shared movement gate. Every other PLAY packet is handled by the bridge.
+    private static final java.util.Set<PacketType<?>> BEDROCK_BRIDGE_PLAY = java.util.Set.of(
+            ServerboundPackets.MOVE_PLAYER,
+            ServerboundPackets.MOVE_VEHICLE,
+            ServerboundPackets.ACCEPT_TELEPORTATION,
+            ServerboundPackets.CLIENT_TICK_END,
+            ServerboundPackets.CONFIGURATION_ACKNOWLEDGED,
+            ServerboundPackets.CUSTOM_PAYLOAD);
     private final ProtocolRuntime runtime;
     private final PacketHandlerScanner scanner;
     private PacketRouteBuilder registrations;
@@ -67,6 +77,10 @@ public class PacketDispatcher {
         return snapshot.get(direction, phase, id);
     }
 
+    public Route get(PacketType<?> type) {
+        return snapshot.get(type);
+    }
+
     public record Route(PacketType<?> type, ReceiveRoute<ServerboundPacket> receive, PacketSendRoute<Object> send) {}
 
     public record ReceiveRoute<R extends ServerboundPacket>(
@@ -87,11 +101,9 @@ public class PacketDispatcher {
         if (user == null) return;
         if (!user.getPacketExecutor().inEventLoop()) throw new IllegalStateException("Receive outside packet owner");
         try {
-            // This is anticheat policy: Bedrock PLAY uses its own engine.
             if (user.getBedrockBridgeConnection() != null
                     && event.getPhase() == ConnectionPhase.PLAY
-                    && event.getPacketType() != ServerboundPackets.CONFIGURATION_ACKNOWLEDGED
-                    && event.getPacketType() != ServerboundPackets.CUSTOM_PAYLOAD) return;
+                    && !BEDROCK_BRIDGE_PLAY.contains(event.getPacketType())) return;
             var player = user.getCultPlayer();
             if (player == null) routes.connection().dispatch(event, null, event.getOriginalPacket());
             else routes.dispatch(event, player);
@@ -116,6 +128,6 @@ public class PacketDispatcher {
         event.discardChanges();
         String message = "Error handling packet " + event.getPacketType().key()
                 + "; forwarding it because packet-error kicks are disabled.";
-        org.slf4j.LoggerFactory.getLogger(PacketDispatcher.class).error(message, failure);
+        ac.cult.cultac.utils.anticheat.LogUtil.error(message, failure);
     }
 }

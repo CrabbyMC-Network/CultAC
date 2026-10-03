@@ -8,17 +8,17 @@ import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerAction;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.StringReturner;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.LastInstance;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.nmsutil.BlockBreakSpeed;
 import ac.cult.cultac.utils.nmsutil.Ray;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import java.util.LinkedList;
 import net.minecraft.core.BlockPos;
-import org.bukkit.GameMode;
-import org.bukkit.util.Vector;
 
 /*
  * @author Inspired and originally written Sim0n
@@ -121,12 +121,12 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
 
     @Override
     public void onPlayerTickEnd(PacketReceiveEvent event) {
-        Vector playerPos = new Vector(player.lastX, player.lastY, player.lastZ);
+        Vector3dm playerPos = new Vector3dm(player.lastX, player.lastY, player.lastZ);
 
         // If the player isn't within 10 blocks of the block they are digging, don't bother.
         if (diggingLocation != null
                 && playerPos.distanceSquared(
-                                new Vector(diggingLocation.getX(), diggingLocation.getY(), diggingLocation.getZ()))
+                                new Vector3dm(diggingLocation.getX(), diggingLocation.getY(), diggingLocation.getZ()))
                         < 100) {
             if (lastDiggingAction
                     == PlayerAction.START_DESTROY_BLOCK) { // START_BREAK without FINISH_BREAK or CANCEL_BREAK
@@ -141,11 +141,11 @@ public abstract class AutoClickCheck extends Check implements CheckListener, Cli
                             playerPos.getZ(),
                             player.xRot,
                             player.yRot);
-                    Vector endVec = trace.getPointAtDistance(5);
+                    Vector3dm endVec = trace.getPointAtDistance(5);
 
                     SimpleCollisionBox hitbox =
                             new SimpleCollisionBox(diggingLocation).expand(0.1); // Give some more lenience
-                    Vector intercept = ReachUtils.calculateIntercept(hitbox, playerPos, endVec)
+                    Vector3dm intercept = ReachUtils.calculateIntercept(hitbox, playerPos, endVec)
                             .getFirst();
 
                     if (ReachUtils.isVecInside(hitbox, playerPos) || intercept != null) {

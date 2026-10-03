@@ -17,8 +17,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
 public final class NativeBlockCollisionHelper {
     private NativeBlockCollisionHelper() {}
@@ -53,26 +51,6 @@ public final class NativeBlockCollisionHelper {
         }
 
         return fromShape(getSelectionShape(player, state, x, y, z), x, y, z);
-    }
-
-    public static CollisionBox getCollisionBox(CultPlayer player, BlockData data, int x, int y, int z) {
-        return getCollisionBox(player, data, x, y, z, player == null ? Double.NaN : player.y);
-    }
-
-    public static CollisionBox getCollisionBox(
-            CultPlayer player, BlockData data, int x, int y, int z, double entityBottom) {
-        return getCollisionBox(player, data, x, y, z, entityBottom, JavaCollisionState.current(player));
-    }
-
-    public static CollisionBox getCollisionBox(
-            CultPlayer player, BlockData data, int x, int y, int z, double entityBottom, JavaCollisionState actor) {
-        if (player == null || data == null) {
-            return NoCollisionBox.INSTANCE;
-        }
-        if (data instanceof CraftBlockData craftBlockData) {
-            return getCollisionBox(player, craftBlockData.getState(), x, y, z, entityBottom, actor);
-        }
-        return getCollisionBox(player, player.compensatedWorld.getBlockStateAt(x, y, z), x, y, z, entityBottom, actor);
     }
 
     public static VoxelShape getCollisionShape(CultPlayer player, BlockState state, int x, int y, int z) {

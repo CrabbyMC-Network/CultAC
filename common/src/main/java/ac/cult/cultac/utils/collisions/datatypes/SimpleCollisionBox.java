@@ -1,12 +1,12 @@
 package ac.cult.cultac.utils.collisions.datatypes;
 
+import ac.cult.cultac.protocol.value.Direction;
+import ac.cult.cultac.utils.math.Location;
+import ac.cult.cultac.utils.math.Vector3dm;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Location;
-import org.bukkit.block.BlockFace;
-import org.bukkit.util.Vector;
 
 public class SimpleCollisionBox implements CollisionBox {
     public static final double COLLISION_EPSILON = 1.0E-7;
@@ -40,7 +40,7 @@ public class SimpleCollisionBox implements CollisionBox {
         isFullBlock = fullBlock;
     }
 
-    public SimpleCollisionBox(Vector min, Vector max) {
+    public SimpleCollisionBox(Vector3dm min, Vector3dm max) {
         this(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
     }
 
@@ -89,7 +89,7 @@ public class SimpleCollisionBox implements CollisionBox {
         maxY += height;
     }
 
-    public SimpleCollisionBox(Vector vec, double width, double height) {
+    public SimpleCollisionBox(Vector3dm vec, double width, double height) {
         this(vec.getX(), vec.getY(), vec.getZ(), vec.getX(), vec.getY(), vec.getZ());
         expand(width / 2, 0, width / 2);
         maxY += height;
@@ -137,7 +137,7 @@ public class SimpleCollisionBox implements CollisionBox {
         return this;
     }
 
-    public SimpleCollisionBox expand(BlockFace face) {
+    public SimpleCollisionBox expand(Direction face) {
         return expand(face.getModX(), face.getModY(), face.getModZ());
     }
 
@@ -267,7 +267,7 @@ public class SimpleCollisionBox implements CollisionBox {
         return offset(vector.x, vector.y, vector.z);
     }
 
-    public SimpleCollisionBox offset(BlockFace blockFace) {
+    public SimpleCollisionBox offset(Direction blockFace) {
         return offset(blockFace.getModX(), blockFace.getModY(), blockFace.getModZ());
     }
 

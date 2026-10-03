@@ -39,6 +39,7 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerCommand;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundPlayerInput;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundSwing;
 import ac.cult.cultac.protocol.value.AttributeSnapshot;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.protocol.value.PlayerCommandAction;
 import ac.cult.cultac.protocol.value.Vec3d;
@@ -54,11 +55,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.common.ServerboundPongPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.Blocks;
-import org.bukkit.block.BlockFace;
 import org.junit.Test;
 
 public final class OrderedLegacyCheckDispatchTest {
@@ -246,8 +245,8 @@ public final class OrderedLegacyCheckDispatchTest {
             BlockBreak blockBreak = new BlockBreak(
                     player,
                     BlockPos.ZERO,
-                    BlockFace.DOWN,
-                    Direction.DOWN.get3DDataValue(),
+                    Direction.DOWN,
+                    net.minecraft.core.Direction.DOWN.get3DDataValue(),
                     PlayerAction.START_DESTROY_BLOCK,
                     7,
                     Blocks.STONE.defaultBlockState());

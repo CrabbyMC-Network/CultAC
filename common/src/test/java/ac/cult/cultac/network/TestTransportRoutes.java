@@ -24,6 +24,11 @@ final class TestTransportRoutes {
             }
 
             @Override
+            public Route get(PacketType<?> type) {
+                return snapshot.get(type);
+            }
+
+            @Override
             public <R extends ServerboundPacket> void receive(
                     PacketReceiveEvent<R> event, ReceiveRoute<? super R> routes) {
                 routes.dispatch(event, null);

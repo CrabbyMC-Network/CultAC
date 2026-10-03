@@ -128,8 +128,8 @@ class PacketRoutesTest {
             for (var side : PacketDirection.values()) connection.phase(side, ConnectionPhase.CONFIGURATION);
             channel.pipeline().addLast("decoder", new io.netty.channel.ChannelInboundHandlerAdapter());
             channel.pipeline().addLast("encoder", new io.netty.channel.ChannelOutboundHandlerAdapter());
-            ac.cult.cultac.protocol.paper.CultDecoder.install(connection);
-            ac.cult.cultac.protocol.paper.CultEncoder.install(connection);
+            ac.cult.cultac.protocol.netty.CultDecoder.install(connection);
+            ac.cult.cultac.protocol.netty.CultEncoder.install(connection);
             var frame = io.netty.buffer.Unpooled.buffer();
             ac.cult.cultac.protocol.wire.Wire.writeVarInt(
                     frame,

@@ -9,9 +9,8 @@ import ac.cult.cultac.bedrock.replay.offline.OfflineCultTestBootstrap;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.latency.CompensatedInventory;
+import net.minecraft.world.item.ItemStack;
 import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -72,11 +71,8 @@ public final class BedrockGlideEquipmentTest {
     }
 
     private static ItemStack item(Material material, int damage) {
-        ItemStack item = mock(ItemStack.class);
-        Damageable meta = mock(Damageable.class);
-        when(item.getType()).thenReturn(material);
-        when(item.getItemMeta()).thenReturn(meta);
-        when(meta.getDamage()).thenReturn(damage);
+        ItemStack item = new ItemStack(org.bukkit.craftbukkit.util.CraftMagicNumbers.getItem(material));
+        item.set(net.minecraft.core.component.DataComponents.DAMAGE, damage);
         return item;
     }
 }

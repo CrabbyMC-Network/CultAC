@@ -22,7 +22,6 @@ import ac.cult.cultac.utils.nmsutil.EntityTypeUtil;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import java.util.Set;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 public class VehiclePredictionRunner extends CultProcessor implements VehicleListener, ClientTickEndListener {
     public VehiclePredictionRunner(CultPlayer playerData) {
@@ -209,11 +208,11 @@ public class VehiclePredictionRunner extends CultProcessor implements VehicleLis
             return;
         }
 
-        Material requiredItem;
+        net.minecraft.world.item.Item requiredItem;
         if (riding != null && riding.type == EntityTypesCompat.PIG) {
-            requiredItem = Material.CARROT_ON_A_STICK;
+            requiredItem = net.minecraft.world.item.Items.CARROT_ON_A_STICK;
         } else if (riding != null && riding.type == EntityTypesCompat.STRIDER) {
-            requiredItem = Material.WARPED_FUNGUS_ON_A_STICK;
+            requiredItem = net.minecraft.world.item.Items.WARPED_FUNGUS_ON_A_STICK;
         } else {
             return;
         }

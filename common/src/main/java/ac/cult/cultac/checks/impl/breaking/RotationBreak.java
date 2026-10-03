@@ -7,10 +7,12 @@ import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.checks.type.PostFlyingBlockBreakListener;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.data.Pair;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.nmsutil.Ray;
 import ac.cult.cultac.utils.nmsutil.ReachUtils;
 import ac.grim.grimac.api.storage.verbose.Verbose;
@@ -18,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.bukkit.block.BlockFace;
-import org.bukkit.util.Vector;
 
 @CheckData(
         name = "RotationBreak",
@@ -111,7 +111,7 @@ public class RotationBreak extends Check implements BlockBreakListener, PostFlyi
         for (double d : player.getPossibleEyeHeights()) {
             for (float[] lookDir : possibleLookDirs) {
                 Ray trace = new Ray(player, player.x, player.y + d, player.z, lookDir[0], lookDir[1]);
-                Pair<Vector, BlockFace> intercept =
+                Pair<Vector3dm, Direction> intercept =
                         ReachUtils.calculateIntercept(box, trace.getOrigin(), trace.getPointAtDistance(distance));
 
                 if (intercept.first() != null) return true;

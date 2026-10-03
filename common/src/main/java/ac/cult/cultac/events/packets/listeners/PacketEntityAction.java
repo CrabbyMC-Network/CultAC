@@ -16,7 +16,7 @@ import ac.cult.cultac.utils.nmsutil.GetBoundingBox;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class PacketEntityAction {
 
@@ -109,10 +109,10 @@ public class PacketEntityAction {
         // A grounded start or ghost glider must be resynchronized.
         final SetbackTeleportUtil setbackUtil = player.getSetbackTeleportUtil();
         setbackUtil.executeForceResync("elytra");
-        final org.bukkit.entity.Player bukkitPlayer = player.bukkitPlayer;
-        if (bukkitPlayer != null) {
+        final var platformPlayer = player.platformPlayer;
+        if (platformPlayer != null) {
             // Client ignores sneaking, use it to resync
-            bukkitPlayer.setSneaking(!bukkitPlayer.isSneaking());
+            platformPlayer.setSneaking(!platformPlayer.isSneaking());
         }
         event.setCancelled(true);
         player.onPacketCancel();
@@ -162,7 +162,7 @@ public class PacketEntityAction {
             case LEGS -> player.getInventory().getLeggings();
             case CHEST -> player.getInventory().getChestplate();
             case HEAD -> player.getInventory().getHelmet();
-            case BODY, SADDLE -> ItemStack.empty();
+            case BODY, SADDLE -> ItemStack.EMPTY;
         };
     }
 }

@@ -93,7 +93,7 @@ dependencies {
     implementation(libs.cult.bukkit.internal)
 
     implementation(project(":common"))
-    implementation(project(":protocol-paper"))
+    implementation(project(":protocol-netty"))
     shadow(project(":common"))
 }
 
@@ -213,7 +213,7 @@ tasks {
     // 1.18 - 1.20.4    = Java 17
     // 1.20.5 - 1.21.11 = Java 21
     // 26.1+            = Java 25
-    val version = "26.2"
+    val version = "26.3"
     val javaVersion = JavaLanguageVersion.of(25)
 
     val jvmArgsExternal = listOf(
@@ -240,14 +240,11 @@ tasks {
             // The complete protocol catalog and backend are loaded as a unit. During
             // staged migration not every transport entry point has a direct caller yet.
             exclude(project(":protocol"))
-            exclude(project(":protocol-paper"))
+            exclude(project(":protocol-netty"))
+            exclude(project(":placement-runtime"))
+            // Used by placement-runtime's class transform, which is kept whole above.
+            exclude(dependency("org.ow2.asm:asm:.*"))
         }
-        dependsOn(":placement-1-21-11-adapter:classes")
-        from(project(":placement-1-21-11-adapter").layout.buildDirectory.dir("classes/java/main"))
-        dependsOn(":placement-26-2-adapter:classes")
-        from(project(":placement-26-2-adapter").layout.buildDirectory.dir("classes/java/main"))
-        dependsOn(":legacy-placement-adapter:classes")
-        from(project(":legacy-placement-adapter").layout.buildDirectory.dir("classes/java/main"))
 
         exclude("META-INF/services/javax.annotation.processing.Processor")
 
@@ -266,13 +263,7 @@ tasks.register<ShadowJar>("devShadowJar") {
     group = "shadow"
     description = "Builds a development fat jar without relocations."
 
-    dependsOn(":legacy-placement-adapter:classes")
-    dependsOn(":placement-1-21-11-adapter:classes")
-    from(project(":placement-1-21-11-adapter").layout.buildDirectory.dir("classes/java/main"))
-    dependsOn(":placement-26-2-adapter:classes")
-    from(project(":placement-26-2-adapter").layout.buildDirectory.dir("classes/java/main"))
     from(sourceSets["main"].output)
-    from(project(":legacy-placement-adapter").layout.buildDirectory.dir("classes/java/main"))
     configurations = listOf(project.configurations["runtimeClasspath"])
 
     archiveFileName.set("CultAC-dev.jar")
@@ -291,18 +282,19 @@ tasks.register<ShadowJar>("devShadowJar") {
 // Native conformance sources and migration archives never enter the runtime jar.
 tasks.withType<ShadowJar>().configureEach {
     doLast {
+        check(ProcessBuilder("python3", rootProject.file("scripts/verify-no-bundled-minecraft.py").path,
+            archiveFile.get().asFile.path).inheritIO().start().waitFor() == 0)
         val forbiddenOracle = Regex("protocol/(validation|oracle|legacy)/|protocolvalidation/|protocol[-_]oracle|protocol[-_]validation|legacy[-_.]?extractor", RegexOption.IGNORE_CASE)
         ZipFile(archiveFile.get().asFile).use { archive ->
             for (required in listOf(
                 "ac/cult/cultac/protocol/ProtocolRuntime.class",
                 "ac/cult/cultac/network/CultConnection.class",
-                "ac/cult/cultac/protocol/paper/CultDecoder.class",
-                "ac/cult/cultac/protocol/paper/CultEncoder.class"
+                "ac/cult/cultac/protocol/netty/CultDecoder.class",
+                "ac/cult/cultac/protocol/netty/CultEncoder.class"
             )) {
                 check(archive.getEntry(required) != null) { "Protocol class missing from production jar: $required" }
             }
             for (entry in archive.entries()) {
-                check("asm" !in entry.name.split('/')) { "ASM in production jar: ${entry.name}" }
                 check(!forbiddenOracle.containsMatchIn(entry.name)) { "Protocol oracle in production jar: ${entry.name}" }
                 if (entry.name.endsWith("plugin.yml") || entry.name.endsWith("paper-plugin.yml")) {
                     val descriptor = archive.getInputStream(entry).bufferedReader().use { it.readText() }

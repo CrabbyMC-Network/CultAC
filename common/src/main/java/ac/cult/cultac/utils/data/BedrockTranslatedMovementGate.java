@@ -6,7 +6,8 @@ package ac.cult.cultac.utils.data;
 public final class BedrockTranslatedMovementGate {
     public sealed interface Decision permits Player, Vehicle, Rejected {}
 
-    public record Player(boolean canonicalGround) implements Decision {}
+    /** {@code teleport}: the frame acknowledged a teleport, so its projection is the teleport response. */
+    public record Player(boolean canonicalGround, boolean teleport) implements Decision {}
 
     public record Vehicle(int entityId) implements Decision {}
 
@@ -15,9 +16,14 @@ public final class BedrockTranslatedMovementGate {
     }
 
     private Decision pending;
+    private boolean teleportFrame;
+
+    public void markTeleportFrame() {
+        teleportFrame = true;
+    }
 
     public void allowPlayer(boolean canonicalGround) {
-        offer(new Player(canonicalGround));
+        offer(new Player(canonicalGround, teleportFrame));
     }
 
     public void allowVehicle(int entityId) {
@@ -54,5 +60,6 @@ public final class BedrockTranslatedMovementGate {
 
     public void clear() {
         pending = null;
+        teleportFrame = false;
     }
 }

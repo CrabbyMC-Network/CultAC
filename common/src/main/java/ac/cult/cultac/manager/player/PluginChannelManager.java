@@ -11,7 +11,6 @@ import ac.cult.cultac.protocol.packet.serverbound.ServerboundCustomPayload;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
-import org.bukkit.entity.Player;
 
 @Getter
 public class PluginChannelManager extends CultProcessor implements CheckListener {
@@ -46,6 +45,9 @@ public class PluginChannelManager extends CultProcessor implements CheckListener
             if (SmoketestSnapshotBridge.handle(player, channelName, payload)) {
                 return;
             }
+            if (SmoketestBlockEvidenceBridge.handle(player, channelName, payload)) {
+                return;
+            }
         }
 
         final int length = payload.length;
@@ -67,17 +69,10 @@ public class PluginChannelManager extends CultProcessor implements CheckListener
         }
     }
 
-    public void refreshFromBukkit(Player bukkitPlayer) {
-        if (bukkitPlayer == null) {
-            return;
+    public void refresh(String clientBrand, Set<String> currentChannels) {
+        if (this.brand == null && clientBrand != null && !clientBrand.isBlank()) {
+            updateBrand(clientBrand);
         }
-        if (this.brand == null) {
-            String clientBrand = bukkitPlayer.getClientBrandName();
-            if (clientBrand != null && !clientBrand.isBlank()) {
-                updateBrand(clientBrand);
-            }
-        }
-        Set<String> currentChannels = new HashSet<>(bukkitPlayer.getListeningPluginChannels());
         for (String channel : Set.copyOf(registeredChannels)) {
             if (!currentChannels.contains(channel)) {
                 handleChannelUnregistered(channel);

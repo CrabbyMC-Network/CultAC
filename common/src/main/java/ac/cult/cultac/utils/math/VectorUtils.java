@@ -5,7 +5,6 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import lombok.experimental.UtilityClass;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,14 +39,6 @@ public class VectorUtils {
                 CultMath.clamp(vectorCutTo.x, box.minX, box.maxX),
                 CultMath.clamp(vectorCutTo.y, box.minY, box.maxY),
                 CultMath.clamp(vectorCutTo.z, box.minZ, box.maxZ));
-    }
-
-    @Contract("_, _ -> new")
-    public static @NotNull Vector cutBoxToVector(@NotNull Vector vectorCutTo, @NotNull SimpleCollisionBox box) {
-        return new Vector(
-                CultMath.clamp(vectorCutTo.getX(), box.minX, box.maxX),
-                CultMath.clamp(vectorCutTo.getY(), box.minY, box.maxY),
-                CultMath.clamp(vectorCutTo.getZ(), box.minZ, box.maxZ));
     }
 
     // Clamping stops the player from causing an integer overflow and crashing the netty thread

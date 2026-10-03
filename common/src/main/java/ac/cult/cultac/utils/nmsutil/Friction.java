@@ -3,6 +3,7 @@ package ac.cult.cultac.utils.nmsutil;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.data.MainSupportingBlockData;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHappyGhast;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityNautilus;
@@ -12,7 +13,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.potion.PotionEffectType;
 
 public final class Friction {
     private Friction() {}
@@ -163,7 +163,7 @@ public final class Friction {
         }
         boolean skeletonHorse =
                 context.getVehicle() != null && context.getVehicle().type == EntityTypesCompat.SKELETON_HORSE;
-        boolean dolphinsGrace = context.getEntities().getPotionLevelForPlayer(PotionEffectType.DOLPHINS_GRACE) != null;
+        boolean dolphinsGrace = context.getEntities().getPotionLevelForPlayer(MovementEffect.DOLPHINS_GRACE) != null;
         return getSwimFriction(skeletonHorse, dolphinsGrace, context.getDepthStriderLevel());
     }
 

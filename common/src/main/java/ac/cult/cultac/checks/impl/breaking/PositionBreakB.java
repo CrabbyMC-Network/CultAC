@@ -6,11 +6,11 @@ import ac.cult.cultac.checks.impl.verbose.VerboseCodecs;
 import ac.cult.cultac.checks.type.BlockBreakListener;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.grim.grimac.api.storage.verbose.Verbose;
 import ac.grim.grimac.api.storage.verbose.VerboseTags;
-import org.bukkit.block.BlockFace;
 
 @CheckData(
         name = "PositionBreakB",
@@ -20,7 +20,7 @@ public class PositionBreakB extends Check implements BlockBreakListener {
     private static final Verbose V = Verbose.of("lastFace={face}, action={digging}");
 
     private final boolean allowLegacyFace = player.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_7_10);
-    private BlockFace lastFace;
+    private Direction lastFace;
 
     public PositionBreakB(CultPlayer player) {
         super(player);

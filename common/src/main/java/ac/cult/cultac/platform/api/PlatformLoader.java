@@ -12,6 +12,11 @@ import ac.grim.grimac.api.plugin.GrimPlugin;
 import org.jetbrains.annotations.NotNull;
 
 public interface PlatformLoader {
+    /** Whether a failed startup component must abort this platform's initialization. */
+    default boolean failOnInitializationError() {
+        return false;
+    }
+
     PlatformScheduler getScheduler();
 
     PlatformPlayerFactory getPlatformPlayerFactory();

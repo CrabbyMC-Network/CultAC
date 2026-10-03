@@ -3,13 +3,13 @@ package ac.cult.cultac.utils.data.packetentity;
 import ac.cult.cultac.checks.impl.sprint.SprintD;
 import ac.cult.cultac.network.packet.EntityPositionPath;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
 import ac.cult.cultac.utils.nmsutil.EntityTypesCompat;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
 
 public class PacketEntitySelf extends PacketEntity {
@@ -77,10 +77,10 @@ public class PacketEntitySelf extends PacketEntity {
     }
 
     @Override
-    public void addPotionEffect(PotionEffectType effect, int amplifier) {
+    public void addPotionEffect(MovementEffect effect, int amplifier) {
         // Blindness does not cancel sprinting that began before the effect.
-        if (effect == PotionEffectType.BLINDNESS
-                && (potionsMap == null || !potionsMap.containsKey(PotionEffectType.BLINDNESS))) {
+        if (effect == MovementEffect.BLINDNESS
+                && (potionsMap == null || !potionsMap.containsKey(MovementEffect.BLINDNESS))) {
             SprintD check = player.checkManager.getCheck(SprintD.class);
             if (check != null) {
                 check.startedSprintingBeforeBlind = player.isSprinting;

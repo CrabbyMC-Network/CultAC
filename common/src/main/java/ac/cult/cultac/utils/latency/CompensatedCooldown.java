@@ -45,7 +45,7 @@ public class CompensatedCooldown extends CultProcessor implements PositionListen
         });
     }
 
-    public boolean hasItem(org.bukkit.inventory.ItemStack item) {
+    public boolean hasItem(net.minecraft.world.item.ItemStack item) {
         return !cooldowns.isEmpty()
                 && item != null
                 && !item.isEmpty()

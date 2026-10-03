@@ -9,6 +9,7 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
 import ac.grim.grimac.api.storage.verbose.Verbose;
@@ -18,7 +19,6 @@ import java.util.List;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.block.BlockFace;
 
 @CheckData(
         name = "MultiPlace",
@@ -34,7 +34,7 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
 
     private final List<FlagData> flags = new ArrayList<>();
     private boolean hasPlaced;
-    private BlockFace lastFace;
+    private Direction lastFace;
     private Vec3 lastCursor;
     private BlockPos lastPos;
 
@@ -44,7 +44,7 @@ public class MultiPlace extends BlockPlaceCheck implements PostPredictionListene
 
     @Override
     public void onBlockPlace(final BlockPlace place) {
-        final BlockFace face = place.getDirection();
+        final Direction face = place.getDirection();
         final Vec3 cursor = place.getCursor();
         final BlockPos pos = place.getPlacedAgainstBlockLocation();
 

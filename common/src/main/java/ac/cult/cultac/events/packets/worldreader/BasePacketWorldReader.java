@@ -4,6 +4,7 @@ import ac.cult.cultac.network.CultPacketHandler;
 import ac.cult.cultac.network.event.PacketSendEvent;
 import ac.cult.cultac.network.packet.WorldPackets.BlockUpdate;
 import ac.cult.cultac.network.packet.WorldPackets.Chunk;
+import ac.cult.cultac.network.packet.WorldPackets.LightUpdate;
 import ac.cult.cultac.network.packet.WorldPackets.SectionBlocksUpdate;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockChangedAck;
@@ -30,6 +31,15 @@ public class BasePacketWorldReader {
     @CultPacketHandler
     public void onLevelChunkWithLight(PacketSendEvent<Chunk> event, CultPlayer player, Chunk packet) {
         handleMapChunk(player, event, packet);
+    }
+
+    @CultPacketHandler
+    public void onLightUpdate(PacketSendEvent<LightUpdate> event, CultPlayer player, LightUpdate packet) {
+        int transaction = appendTrailingProofTransaction(event, player);
+        String dimension = packetDimension(player);
+        player.latencyUtils.addRealTimeTask(transaction, () -> {
+            player.compensatedWorld.applyLight(dimension, packet.x(), packet.z(), packet.light());
+        });
     }
 
     @CultPacketHandler

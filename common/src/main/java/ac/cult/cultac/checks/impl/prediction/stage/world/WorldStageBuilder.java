@@ -6,6 +6,8 @@ import ac.cult.cultac.checks.impl.prediction.SimulationContext;
 import ac.cult.cultac.checks.impl.prediction.SimulationContext.HardCollidingEntityCollision;
 import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.Direction;
+import ac.cult.cultac.protocol.value.MovementEffect;
 import ac.cult.cultac.utils.collisions.CollisionData;
 import ac.cult.cultac.utils.collisions.datatypes.CollisionBox;
 import ac.cult.cultac.utils.collisions.datatypes.SimpleCollisionBox;
@@ -14,6 +16,7 @@ import ac.cult.cultac.utils.data.packetentity.PacketEntity;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityHorse;
 import ac.cult.cultac.utils.data.packetentity.PacketEntityStrider;
 import ac.cult.cultac.utils.math.CultMath;
+import ac.cult.cultac.utils.math.Vector3dm;
 import ac.cult.cultac.utils.nmsutil.BlockProperties;
 import ac.cult.cultac.utils.nmsutil.ClientFluidQueries;
 import ac.cult.cultac.utils.nmsutil.Collisions;
@@ -32,14 +35,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 public class WorldStageBuilder {
     // Temporary Bedrock push-out approximation, inset on every face.
@@ -106,7 +106,7 @@ public class WorldStageBuilder {
             weirdFourteenFifteenLava = DesyncStatus.fromBoolean(Collisions.hasMaterial(
                     player,
                     simulationContext.getToMaximumExtent(),
-                    data -> data.getFirst().getMaterial() == Material.LAVA));
+                    data -> data.getFirst().getBlock() == Blocks.LAVA));
             // too lazy to do this correctly, this will do. (solves issues like between tick stuff... mostly)
             if (lastPrediction != null) {
                 isInLava = isInLava.addBoolean(
@@ -153,9 +153,9 @@ public class WorldStageBuilder {
         AtomicReference<DesyncStatus> climbing =
                 new AtomicReference<>(DesyncStatus.fromBoolean(Collisions.onClimbable(player, to.x, to.y, to.z)));
 
-        BlockData toState = player.compensatedWorld.getBlockDataAt(to.x, to.y, to.z);
-        if (toState.getMaterial() == Material.POWDER_SNOW
-                && player.getInventory().getBoots().getType() == Material.LEATHER_BOOTS) {
+        BlockState toState = player.compensatedWorld.getBlockDataAt(to.x, to.y, to.z);
+        if (toState.getBlock() == Blocks.POWDER_SNOW
+                && player.getInventory().getBoots().getItem() == net.minecraft.world.item.Items.LEATHER_BOOTS) {
             climbing.set(DesyncStatus.UNKNOWN);
         }
 
@@ -165,11 +165,11 @@ public class WorldStageBuilder {
 
         if (player.isPointThree()) {
             Collisions.hasMaterial(player, feetBB, mat -> {
-                BlockData state = mat.getFirst();
+                BlockState state = mat.getFirst();
                 BlockPos blockPos = mat.getSecond();
 
                 boolean onClimbable = Collisions.onClimbable(player, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-                CollisionBox blockCollision = CollisionData.getData(state.getMaterial())
+                CollisionBox blockCollision = CollisionData.getData(state.getBlock())
                         .getMovementCollisionBox(player, player.getClientVersion(), state);
 
                 // The player can't occupy this block, so we don't care.
@@ -199,7 +199,7 @@ public class WorldStageBuilder {
 
         boolean isSuffocating = mightBeSuffocating(player, simulationContext);
         int numColliding = getNumEntitiesCollidingWith(simulationContext);
-        Material onBlock = BlockProperties.getOnPos(player, mainSupportingBlockData, to);
+        Block onBlock = BlockProperties.getOnPos(player, mainSupportingBlockData, to);
 
         SimpleCollisionBox minExtent = simulationContext.getFromMinimumExtent();
         StuckEdgeData stuckEdgeData = couldBeOnStuckEdge(
@@ -223,7 +223,7 @@ public class WorldStageBuilder {
         player.intersectedWithNetherPortal = Collisions.hasMaterial(
                 player,
                 simulationContext.getFromMinimumExtent().copy().union(simulationContext.getToMinimumExtent()),
-                pair -> pair.getFirst().getMaterial() == Material.NETHER_PORTAL);
+                pair -> pair.getFirst().getBlock() == Blocks.NETHER_PORTAL);
 
         DesyncStatus honeySlide = isSlidingDown(player, simulationContext);
         // MCP-Reborn Entity#checkSupportingBlock stores mainSupportingBlockPos
@@ -255,8 +255,8 @@ public class WorldStageBuilder {
 
         // Negative jump boost breaks onGround optimization
         boolean hasNegativeJumpBoost =
-                player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.JUMP_BOOST) != null
-                        && player.compensatedEntities.getPotionLevelForPlayer(PotionEffectType.JUMP_BOOST) < 0;
+                player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.JUMP_BOOST) != null
+                        && player.compensatedEntities.getPotionLevelForPlayer(MovementEffect.JUMP_BOOST) < 0;
         boolean canJump = desyncLastOnGround.determineOptimistically()
                 && (!simulationContext.isOnGround()
                         || hasNegativeJumpBoost
@@ -302,11 +302,11 @@ public class WorldStageBuilder {
             SimpleCollisionBox feetBB = GetBoundingBox.getBoundingBoxFromPosAndSize(
                     position.x, position.y, position.z, feetBoxSize, feetBoxSize);
             Collisions.hasMaterial(player, feetBB, mat -> {
-                BlockData state = mat.getFirst();
+                BlockState state = mat.getFirst();
                 BlockPos blockPos = mat.getSecond();
                 boolean onClimbable = Collisions.onClimbable(
                         player, blockPos.getX(), blockPos.getY(), blockPos.getZ(), context.isGliding());
-                CollisionBox blockCollision = CollisionData.getData(state.getMaterial())
+                CollisionBox blockCollision = CollisionData.getData(state.getBlock())
                         .getMovementCollisionBox(player, player.getClientVersion(), state);
                 if (onClimbable || !blockCollision.isFullBlock()) {
                     climbing.set(climbing.get().addBoolean(onClimbable));
@@ -357,7 +357,7 @@ public class WorldStageBuilder {
         if (oldLavaLogic) {
             lavaCollision.expand(-0.1f, 0, -0.1f);
             state.inLava = Collisions.hasMaterial(
-                    player, lavaCollision, mat -> mat.getFirst().getMaterial() == Material.LAVA);
+                    player, lavaCollision, mat -> mat.getFirst().getBlock() == Blocks.LAVA);
         }
 
         Collisions.hasMaterial(player, box, mat -> {
@@ -391,7 +391,7 @@ public class WorldStageBuilder {
             // If the player isn't touching the fluid, then they aren't being pushed by the water
             if (!isInsideFluid) return false;
 
-            Vector flow = FluidTypeFlowing.getFlow(
+            Vector3dm flow = FluidTypeFlowing.getFlow(
                     player,
                     mat.getSecond().getX(),
                     mat.getSecond().getY(),
@@ -453,7 +453,7 @@ public class WorldStageBuilder {
         // unlike java, anything with a collision box can push the player
         SimpleCollisionBox centered =
                 box.copy().offset(centerX - (box.minX + box.maxX) * 0.5, 0.0, centerZ - (box.minZ + box.maxZ) * 0.5);
-        for (BlockFace direction : new BlockFace[] {BlockFace.WEST, BlockFace.EAST, BlockFace.NORTH, BlockFace.SOUTH}) {
+        for (Direction direction : new Direction[] {Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH}) {
             if (direction.getModX() != 0 ? dx == 0.0F : dz == 0.0F) continue;
             SimpleCollisionBox corridor =
                     centered.copy().expandToCoordinate(direction.getModX(), 0.0, direction.getModZ());
@@ -490,16 +490,16 @@ public class WorldStageBuilder {
         }
         double relativeXMovement = xPosition - blockX;
         double relativeZMovement = zPosition - blockZ;
-        BlockFace direction = null;
+        Direction direction = null;
         double lowestValue = Double.MAX_VALUE;
 
-        for (BlockFace direction2 :
-                new BlockFace[] {BlockFace.WEST, BlockFace.EAST, BlockFace.NORTH, BlockFace.SOUTH}) {
+        for (Direction direction2 :
+                new Direction[] {Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH}) {
             double d6;
-            double d7 = direction2 == BlockFace.WEST || direction2 == BlockFace.EAST
+            double d7 = direction2 == Direction.WEST || direction2 == Direction.EAST
                     ? relativeXMovement
                     : relativeZMovement;
-            d6 = direction2 == BlockFace.EAST || direction2 == BlockFace.SOUTH ? 1.0 - d7 : d7;
+            d6 = direction2 == Direction.EAST || direction2 == Direction.SOUTH ? 1.0 - d7 : d7;
             // d7 and d6 flip the movement direction based on desired movement direction
             boolean doesSuffocate;
             switch (direction2) {
@@ -647,14 +647,14 @@ public class WorldStageBuilder {
             double negX = Math.min(-0.05, CultMath.clamp(target.x, -16, 16) - 0.05);
             double negZ = Math.min(-0.05, CultMath.clamp(target.z, -16, 16) - 0.05);
 
-            Vector NE =
-                    Collisions.maybeBackOffFromEdge(new Vector(posX, 0, negZ), player, lastOnGround, playerBB, true);
-            Vector NW =
-                    Collisions.maybeBackOffFromEdge(new Vector(negX, 0, negZ), player, lastOnGround, playerBB, true);
-            Vector SE =
-                    Collisions.maybeBackOffFromEdge(new Vector(posX, 0, posZ), player, lastOnGround, playerBB, true);
-            Vector SW =
-                    Collisions.maybeBackOffFromEdge(new Vector(negX, 0, posZ), player, lastOnGround, playerBB, true);
+            Vector3dm NE =
+                    Collisions.maybeBackOffFromEdge(new Vector3dm(posX, 0, negZ), player, lastOnGround, playerBB, true);
+            Vector3dm NW =
+                    Collisions.maybeBackOffFromEdge(new Vector3dm(negX, 0, negZ), player, lastOnGround, playerBB, true);
+            Vector3dm SE =
+                    Collisions.maybeBackOffFromEdge(new Vector3dm(posX, 0, posZ), player, lastOnGround, playerBB, true);
+            Vector3dm SW =
+                    Collisions.maybeBackOffFromEdge(new Vector3dm(negX, 0, posZ), player, lastOnGround, playerBB, true);
 
             boolean isEast = NE.getX() != posX || SE.getX() != posX;
             boolean isWest = NW.getX() != negX || SW.getX() != negX;
@@ -684,7 +684,7 @@ public class WorldStageBuilder {
                 // Entity#checkInsideBlocks then replays that movement one axis at a time before
                 // BubbleColumnBlock#entityInside applies Entity#onAboveBubbleColumn/onInsideBubbleColumn.
                 Vec3 stepFrom = from;
-                for (Direction.Axis axis : axisStepOrder(context.getTarget())) {
+                for (net.minecraft.core.Direction.Axis axis : axisStepOrder(context.getTarget())) {
                     double movementOnAxis = movement.get(axis);
                     if (movementOnAxis == 0.0) {
                         continue;
@@ -712,20 +712,26 @@ public class WorldStageBuilder {
         return new BubbleColumnData(airUpwards[0], pushUpwards[0], airDownwards[0], pushDownwards[0]);
     }
 
-    private static List<Direction.Axis> axisStepOrder(Vec3 movement) {
-        // MCP-Reborn 26.1 Direction#axisStepOrder and the 1.21.1 client
+    private static List<net.minecraft.core.Direction.Axis> axisStepOrder(Vec3 movement) {
+        // MCP-Reborn 26.1 net.minecraft.core.Direction#axisStepOrder and the 1.21.1 client
         // Entity#collideWithShapes both resolve Y first, then the smaller
         // horizontal component before the larger one.
         return Math.abs(movement.x) < Math.abs(movement.z)
-                ? List.of(Direction.Axis.Y, Direction.Axis.Z, Direction.Axis.X)
-                : List.of(Direction.Axis.Y, Direction.Axis.X, Direction.Axis.Z);
+                ? List.of(
+                        net.minecraft.core.Direction.Axis.Y,
+                        net.minecraft.core.Direction.Axis.Z,
+                        net.minecraft.core.Direction.Axis.X)
+                : List.of(
+                        net.minecraft.core.Direction.Axis.Y,
+                        net.minecraft.core.Direction.Axis.X,
+                        net.minecraft.core.Direction.Axis.Z);
     }
 
-    private static Direction positiveDirection(Direction.Axis axis) {
+    private static net.minecraft.core.Direction positiveDirection(net.minecraft.core.Direction.Axis axis) {
         return switch (axis) {
-            case X -> Direction.EAST;
-            case Y -> Direction.UP;
-            case Z -> Direction.SOUTH;
+            case X -> net.minecraft.core.Direction.EAST;
+            case Y -> net.minecraft.core.Direction.UP;
+            case Z -> net.minecraft.core.Direction.SOUTH;
         };
     }
 
@@ -746,8 +752,8 @@ public class WorldStageBuilder {
         boolean longMove = from.distanceToSqr(to) > 0.9999900000002526D * 0.9999900000002526D;
 
         Collisions.hasMaterial(player, sweptBox, mat -> {
-            BlockData state = mat.getFirst();
-            if (state.getMaterial() != Material.BUBBLE_COLUMN) {
+            BlockState state = mat.getFirst();
+            if (state.getBlock() != Blocks.BUBBLE_COLUMN) {
                 return false;
             }
 
@@ -817,7 +823,7 @@ public class WorldStageBuilder {
 
         int[] soulSandCount = new int[1];
         Collisions.hasMaterial(player, playerBox, mat -> {
-            if (mat.getFirst().getMaterial() == Material.SOUL_SAND) {
+            if (mat.getFirst().getBlock() == Blocks.SOUL_SAND) {
                 soulSandCount[0]++;
             }
             return false;
@@ -835,14 +841,14 @@ public class WorldStageBuilder {
         SimpleCollisionBox largeHoneySearch =
                 context.getFromMaximumExtent().copy().union(context.getToMaximumExtent());
         boolean hasSmall = Collisions.hasMaterial(player, smallHoneySearch, mat -> {
-            if (mat.getFirst().getMaterial() == Material.HONEY_BLOCK) {
+            if (mat.getFirst().getBlock() == Blocks.HONEY_BLOCK) {
                 BlockPos pos = mat.getSecond();
                 return Collisions.isSlidingDown(player, pos.getX(), pos.getY(), pos.getZ(), context.getEnd());
             }
             return false;
         });
         boolean hasLarge = Collisions.hasMaterial(player, largeHoneySearch, mat -> {
-            if (mat.getFirst().getMaterial() == Material.HONEY_BLOCK) {
+            if (mat.getFirst().getBlock() == Blocks.HONEY_BLOCK) {
                 BlockPos pos = mat.getSecond();
                 return Collisions.isSlidingDown(player, pos.getX(), pos.getY(), pos.getZ(), context.getEnd());
             }
@@ -918,8 +924,8 @@ public class WorldStageBuilder {
         // intersected by its body AABB during Entity#checkInsideBlocks.
         return player.compensatedWorld
                         .getBlockDataAt(context.getEnd().x, context.getEnd().y, context.getEnd().z)
-                        .getMaterial()
-                == Material.POWDER_SNOW;
+                        .getBlock()
+                == Blocks.POWDER_SNOW;
     }
 
     private Vec3 firstKnownStuckSpeed(Vec3 primary, Vec3 swept) {
@@ -931,16 +937,16 @@ public class WorldStageBuilder {
 
         SimpleCollisionBox fishingRodPulls = new SimpleCollisionBox();
         for (SimpleCollisionBox pullTo : player.compensatedEntities.fishingRodPulls) {
-            Vector pullOrigin = new Vector(player.lastX, player.lastY + 0.8 * 1.8, player.lastZ);
+            Vector3dm pullOrigin = new Vector3dm(player.lastX, player.lastY + 0.8 * 1.8, player.lastZ);
 
-            Vector diff = new Vector(pullTo.minX, pullTo.minY, pullTo.minZ)
+            Vector3dm diff = new Vector3dm(pullTo.minX, pullTo.minY, pullTo.minZ)
                     .subtract(pullOrigin)
                     .multiply(0.1);
             fishingRodPulls.minX = Math.min(0, diff.getX());
             fishingRodPulls.minY = Math.min(0, diff.getY());
             fishingRodPulls.minZ = Math.min(0, diff.getZ());
 
-            diff = new Vector(pullTo.maxX, pullTo.maxY, pullTo.maxZ)
+            diff = new Vector3dm(pullTo.maxX, pullTo.maxY, pullTo.maxZ)
                     .subtract(pullOrigin)
                     .multiply(0.1);
             fishingRodPulls.maxX = Math.max(0, diff.getX());
@@ -991,7 +997,7 @@ public class WorldStageBuilder {
         Collisions.hasMaterial(player, searchBox, (thing) -> {
             BlockPos blockPos = thing.getSecond();
 
-            CollisionBox collision = CollisionData.getData(thing.getFirst().getMaterial())
+            CollisionBox collision = CollisionData.getData(thing.getFirst().getBlock())
                     .getMovementCollisionBox(
                             player,
                             player.getClientVersion(),

@@ -7,7 +7,7 @@ import ac.cult.cultac.protocol.packet.clientbound.ClientboundBlockEvent;
 import ac.cult.cultac.utils.data.ShulkerData;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import net.minecraft.core.BlockPos;
-import org.bukkit.block.data.BlockData;
+import net.minecraft.world.level.block.state.BlockState;
 
 // If a player doesn't get this packet, then they don't know the shulker box is currently opened
 // Meaning if a player enters a chunk with an opened shulker box, they see the shulker box as closed.
@@ -26,8 +26,8 @@ public class PacketBlockAction {
 
         // The client ignores the state sent to the client.
         player.latencyUtils.addRealTimeTaskNow(() -> {
-            BlockData existing = player.compensatedWorld.getBlockDataAt(blockPos);
-            if (NmsBlockTags.isShulkerBox(existing.getMaterial())) {
+            BlockState existing = player.compensatedWorld.getBlockDataAt(blockPos);
+            if (NmsBlockTags.isShulkerBox(existing.getBlock())) {
                 // Param is the number of viewers of the shulker box.
                 // Hashset with .equals() set to be position
                 int action = packet.action();

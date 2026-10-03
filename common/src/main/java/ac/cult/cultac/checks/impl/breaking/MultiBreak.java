@@ -10,6 +10,7 @@ import ac.cult.cultac.network.protocol.ClientVersion;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.protocol.packet.Opaque;
 import ac.cult.cultac.protocol.packet.serverbound.ServerboundMovePlayer;
+import ac.cult.cultac.protocol.value.Direction;
 import ac.cult.cultac.protocol.value.PlayerAction;
 import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.anticheat.update.PredictionComplete;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
-import org.bukkit.block.BlockFace;
 
 @CheckData(
         name = "MultiBreak",
@@ -33,7 +33,7 @@ public class MultiBreak extends Check implements BlockBreakListener, PostPredict
 
     private final List<FlagData> flags = new ArrayList<>();
     private boolean hasBroken;
-    private BlockFace lastFace;
+    private Direction lastFace;
     private BlockPos lastPos;
 
     public MultiBreak(CultPlayer player) {

@@ -6,8 +6,8 @@ import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.update.BlockPlace;
 import ac.cult.cultac.utils.nmsutil.NmsBlockTags;
 import ac.grim.grimac.api.storage.verbose.Verbose;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.Material;
 
 @CheckData(
         name = "FabricatedPlace",
@@ -49,7 +49,7 @@ public class FabricatedPlace extends BlockPlaceCheck {
 
         // Determine if we allow up to 1.5 (Lecterns, Scaffolding, etc)
         boolean isExtended = NmsBlockTags.isShapeExceedsCube(place.getPlacedAgainstMaterial())
-                || place.getPlacedAgainstMaterial() == Material.LECTERN;
+                || place.getPlacedAgainstMaterial() == Blocks.LECTERN;
 
         double maxBound = isExtended ? 1.5 : 1.0;
         double minBound = 1.0 - maxBound; // Usually 0.0

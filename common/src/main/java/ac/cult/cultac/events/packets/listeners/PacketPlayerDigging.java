@@ -12,7 +12,7 @@ import ac.cult.cultac.utils.anticheat.update.BlockBreak;
 import ac.cult.cultac.utils.nmsutil.RiptideUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class PacketPlayerDigging {
     // LOW

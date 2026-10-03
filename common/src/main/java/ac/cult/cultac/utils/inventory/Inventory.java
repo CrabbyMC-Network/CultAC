@@ -1,14 +1,14 @@
 package ac.cult.cultac.utils.inventory;
 
 import ac.cult.cultac.player.CultPlayer;
+import ac.cult.cultac.protocol.value.GameMode;
 import ac.cult.cultac.utils.inventory.inventory.AbstractContainerMenu;
 import ac.cult.cultac.utils.inventory.slot.EquipmentSlot;
 import ac.cult.cultac.utils.inventory.slot.ResultSlot;
 import ac.cult.cultac.utils.inventory.slot.Slot;
 import lombok.Getter;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 public class Inventory extends AbstractContainerMenu {
     public static final int SLOT_OFFHAND = 45;
@@ -70,9 +70,9 @@ public class Inventory extends AbstractContainerMenu {
         return inventoryStorage.getItem(SLOT_OFFHAND);
     }
 
-    public boolean hasItemType(Material item) {
+    public boolean hasItemType(Item item) {
         for (int i = 0; i < inventoryStorage.items.length; ++i) {
-            if (inventoryStorage.getItem(i).getType() == item) {
+            if (inventoryStorage.getItem(i).getItem() == item) {
                 return true;
             }
         }
@@ -126,8 +126,8 @@ public class Inventory extends AbstractContainerMenu {
     private boolean hasRemainingSpaceForItem(ItemStack one, ItemStack two) {
         return !one.isEmpty()
                 && ItemUtil.isSameItemSameTags(one, two)
-                && one.getAmount() < one.getMaxStackSize()
-                && one.getAmount() < this.getMaxStackSize();
+                && one.getCount() < one.getMaxStackSize()
+                && one.getCount() < this.getMaxStackSize();
     }
 
     private static final int VANILLA_INVENTORY_SIZE = 36;
@@ -145,26 +145,26 @@ public class Inventory extends AbstractContainerMenu {
             i = this.getFreeSlot();
         }
 
-        return i == -1 ? resource.getAmount() : this.addResource(i, resource);
+        return i == -1 ? resource.getCount() : this.addResource(i, resource);
     }
 
     private int addResource(int slot, ItemStack stack) {
-        int i = stack.getAmount();
+        int i = stack.getCount();
         ItemStack itemstack = inventoryStorage.getItem(slot);
 
         if (itemstack.isEmpty()) {
-            itemstack = stack.clone();
-            itemstack.setAmount(0);
+            itemstack = stack.copy();
+            itemstack.setCount(0);
             inventoryStorage.setItem(slot, itemstack);
         }
 
         int j = i;
-        if (i > itemstack.getMaxStackSize() - itemstack.getAmount()) {
-            j = itemstack.getMaxStackSize() - itemstack.getAmount();
+        if (i > itemstack.getMaxStackSize() - itemstack.getCount()) {
+            j = itemstack.getMaxStackSize() - itemstack.getCount();
         }
 
-        if (j > this.getMaxStackSize() - itemstack.getAmount()) {
-            j = this.getMaxStackSize() - itemstack.getAmount();
+        if (j > this.getMaxStackSize() - itemstack.getCount()) {
+            j = this.getMaxStackSize() - itemstack.getCount();
         }
 
         if (j == 0) {
@@ -186,11 +186,11 @@ public class Inventory extends AbstractContainerMenu {
                 }
 
                 if (p_36041_ >= 0) {
-                    inventoryStorage.setItem(p_36041_, p_36042_.clone());
-                    p_36042_.setAmount(0);
+                    inventoryStorage.setItem(p_36041_, p_36042_.copy());
+                    p_36042_.setCount(0);
                     return true;
                 } else if (player.gamemode == GameMode.CREATIVE) {
-                    p_36042_.setAmount(0);
+                    p_36042_.setCount(0);
                     return true;
                 } else {
                     return false;
@@ -198,19 +198,19 @@ public class Inventory extends AbstractContainerMenu {
             } else {
                 int i;
                 do {
-                    i = p_36042_.getAmount();
+                    i = p_36042_.getCount();
                     if (p_36041_ == -1) {
-                        p_36042_.setAmount(this.addResource(p_36042_));
+                        p_36042_.setCount(this.addResource(p_36042_));
                     } else {
-                        p_36042_.setAmount(this.addResource(p_36041_, p_36042_));
+                        p_36042_.setCount(this.addResource(p_36041_, p_36042_));
                     }
-                } while (!p_36042_.isEmpty() && p_36042_.getAmount() < i);
+                } while (!p_36042_.isEmpty() && p_36042_.getCount() < i);
 
-                if (p_36042_.getAmount() == i && player.gamemode == GameMode.CREATIVE) {
-                    p_36042_.setAmount(0);
+                if (p_36042_.getCount() == i && player.gamemode == GameMode.CREATIVE) {
+                    p_36042_.setCount(0);
                     return true;
                 } else {
-                    return p_36042_.getAmount() < i;
+                    return p_36042_.getCount() < i;
                 }
             }
         }

@@ -11,14 +11,28 @@ through Geyser.
 Discord: https://discord.gg/nyeVp7UFau
 
 ## Compatibility
-* Java client support: primarily 1.21.2+, legacy 1.8-1.21.1 clients are deprecated
-* Java 21 or higher
-* Paper 1.21.2+, Spigot is unsupported.
+
+The native Velocity deployment uses Java 25, accepts Java clients 1.21.3–26.3, and runs
+entirely on the proxy without a server plugin. The following compatibility notes describe
+the existing Bukkit deployment.
+
+* Java client support: **26.3 only** (protocol 777).
+* Java 25 or higher.
+* Paper 26.3; Spigot is unsupported.
+
+Placement, block interaction, item use, and local break writes run in an isolated,
+runtime-acquired vanilla model. Earlier Paper hosts select the official named
+`1.21.11_unobfuscated` model; the newer family selects 26.3. It receives compensated state and client tag bindings;
+Paper and fork classes do not execute those actions.
+Minecraft jars are acquired from Mojang at first startup and verified in the plugin's
+version-specific runtime cache. Neither distributable bundles vanilla Minecraft or derived jars;
+later starts reuse the verified cache without requiring downloads. Recursive build checks enforce this for nested archives too.
+Legacy Java placement adapters and Bedrock block actions are outside this build's supported scope.
 
 Bedrock notes
 * GeyserFloatingPoints must be installed as a Geyser addon if players are > 3000 blocks from 0,0
 
-If you use a proxy such as Velocity or BungeeCord:
+If you run the Bukkit anticheat behind Velocity or BungeeCord:
 - Geyser and Floodgate must be on the backend server so we may read the bedrock client's packets
 - If you use ViaVersion, it must be installed on the backend server (where Cult is) ONLY.
   Cult does not support having ViaVersion installed on the proxy, even if it is also installed on the backend.

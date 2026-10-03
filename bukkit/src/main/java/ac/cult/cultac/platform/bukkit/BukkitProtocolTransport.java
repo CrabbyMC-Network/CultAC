@@ -1,26 +1,34 @@
 package ac.cult.cultac.platform.bukkit;
 
 import ac.cult.cultac.network.CultNetworkManager;
+import ac.cult.cultac.network.codec.NativePacketCodecs;
 import ac.cult.cultac.protocol.ProtocolRuntime;
 import ac.cult.cultac.protocol.ProtocolVersion;
 import ac.cult.cultac.protocol.data.ProtocolData;
-import java.util.logging.Logger;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
+import org.bukkit.Bukkit;
+import org.bukkit.event.HandlerList;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /** Resolves the codec catalog once before registering Paper's channel initializer. */
 final class BukkitProtocolTransport {
     private BukkitProtocolTransport() {}
 
-    static void initialize(CultNetworkManager manager, Logger logger) {
+    static void initialize(CultNetworkManager manager, JavaPlugin plugin) {
         var version = ProtocolVersion.of(SharedConstants.getProtocolVersion());
         var runtime = ProtocolRuntime.create(
                 ProtocolData.load(version),
-                BukkitPacketCodecs.catalog(
+                NativePacketCodecs.catalog(
                         net.minecraft.server.MinecraftServer.getServer().registryAccess()),
                 commandInputLimit(version));
         var injector = new PaperInjector(manager);
-        manager.configureTransport(runtime, injector::register, injector::unregister);
+        var listener = new BukkitConnectionListener(manager);
+        manager.configureTransport(
+                runtime, injector::register, () -> Bukkit.getPluginManager().registerEvents(listener, plugin), () -> {
+                    HandlerList.unregisterAll(listener);
+                    return injector.unregister();
+                });
     }
 
     private static int commandInputLimit(ProtocolVersion version) {

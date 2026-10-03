@@ -2,7 +2,6 @@ package ac.cult.cultac.manager;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.checks.Check;
-import ac.cult.cultac.events.packets.ProxyAlertMessenger;
 import ac.cult.cultac.platform.api.player.PlatformPlayer;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.utils.anticheat.LogUtil;
@@ -186,7 +185,8 @@ public class PunishmentManager implements ConfigReloadable {
                                                 .recordFlagFromCheck(player, check, vl, verboseWithoutGl);
                                     }
                                 }
-                                case "[proxy]" -> ProxyAlertMessenger.sendPluginMessage(cmd);
+                                case "[proxy]" ->
+                                    CultAPI.INSTANCE.getPlatformServer().forwardAlert(cmd);
                                 case "[alert]" -> {
                                     sentDebug = true;
                                     Component message = MessageUtil.miniMessage(cmd);

@@ -17,7 +17,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 
 @CheckData(
@@ -68,8 +67,9 @@ public class AirLiquidBreak extends Check implements BlockBreakListener {
 
         // the block does not have a hitbox
         boolean invalid = (block == Blocks.LIGHT
-                        && !(player.getInventory().getHeldItem().getType() == Material.LIGHT
-                                || player.getInventory().getOffHand().getType() == Material.LIGHT))
+                        && !(player.getInventory().getHeldItem().getItem() == net.minecraft.world.item.Items.LIGHT
+                                || player.getInventory().getOffHand().getItem()
+                                        == net.minecraft.world.item.Items.LIGHT))
                 || blockBreak.block.isAir()
                 || block == Blocks.WATER
                 || block == Blocks.LAVA
