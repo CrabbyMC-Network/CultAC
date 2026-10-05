@@ -21,8 +21,8 @@ BuildConfig.init(project)
 
 val baseVersion = "0.1.0"
 group = "ac.cult.cultac"
-version = VersionUtil.computeVersion(project, baseVersion)
-description = "Libre simulation anticheat designed for 26.3 with 1.21.2+ server and client support."
+version = VersionUtil.computeVersion(project, baseVersion) + "-crabbymc"
+description = "CrabbyMC-maintained CultAC fork; upstream GPLv3 attribution retained."
 
 ext["timestamp"] = System.currentTimeMillis().toString()
 ext["git_branch"] = VersionUtil.getGitBranch(project, true)

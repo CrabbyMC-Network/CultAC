@@ -1,4 +1,12 @@
-# CultAC
+# CultAC — CrabbyMC fork
+
+This is CrabbyMC Network's maintained fork of [CultAC/CultAC](https://github.com/CultAC/CultAC).
+The original CultAC/Grim attribution and GPLv3 license are retained. Modified builds use a
+`-crabbymc.jar` suffix and a `-crabbymc` plugin version.
+
+The CrabbyMC fork includes targeted server compatibility repairs. Proxy-hosted Geyser
+transport support is under development; it is not a released or validated feature yet.
+Until that transport is implemented, the upstream backend-Geyser requirements below apply.
 
 CultAC is an open source Minecraft anticheat designed to support the latest versions of Minecraft.
 

@@ -100,7 +100,7 @@ bukkit {
     provides = listOf("GrimAC")
     author = "CultAC"
     main = "ac.cult.cultac.platform.bukkit.CultACBukkitLoaderPlugin"
-    website = "https://github.com/CultAC/CultAC"
+    website = "https://github.com/CrabbyMC-Network/CultAC"
     apiVersion = "1.13"
     foliaSupported = true
 
@@ -267,7 +267,7 @@ tasks.register<ShadowJar>("devShadowJar") {
     from(project(":legacy-placement-adapter").layout.buildDirectory.dir("classes/java/main"))
     configurations = listOf(project.configurations["runtimeClasspath"])
 
-    archiveFileName.set("CultAC-dev.jar")
+    archiveFileName.set("CultAC-dev-crabbymc.jar")
     destinationDirectory.set(rootProject.layout.buildDirectory.dir("libs"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude("META-INF/services/javax.annotation.processing.Processor")
