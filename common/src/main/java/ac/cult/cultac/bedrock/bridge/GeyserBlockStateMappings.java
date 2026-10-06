@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
-import org.geysermc.geyser.network.GameProtocol;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.type.BlockMappings;
 
@@ -28,9 +27,21 @@ final class GeyserBlockStateMappings {
 
     private static Map<Integer, BlockState> create(BlockMappings mappings) {
         int[] javaIds = BedrockServerStateMappings.create(SharedConstants.getProtocolVersion(),
-                Block.BLOCK_STATE_REGISTRY.size(), GameProtocol.getJavaProtocolVersion(),
+                Block.BLOCK_STATE_REGISTRY.size(), javaProtocolVersion(),
                 mappings.getJavaToBedrockBlocks().length);
         return invert(mappings, javaIds);
+    }
+
+    private static int javaProtocolVersion() {
+        for (String name : new String[]{"org.geysermc.geyser.network.bedrock.GameProtocol", "org.geysermc.geyser.network.GameProtocol"}) {
+            try {
+                return (Integer) Class.forName(name, true, BlockMappings.class.getClassLoader())
+                        .getMethod("getJavaProtocolVersion").invoke(null);
+            } catch (ClassNotFoundException ignored) {
+                // The class moved in Geyser 2.11; retain both supported layouts.
+            } catch (ReflectiveOperationException failure) { throw new IllegalStateException("Cannot read Geyser Java protocol", failure); }
+        }
+        throw new IllegalStateException("Geyser protocol accessor unavailable");
     }
 
     static Map<Integer, BlockState> invert(BlockMappings mappings, int[] javaIds) {

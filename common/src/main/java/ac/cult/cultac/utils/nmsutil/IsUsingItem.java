@@ -1,12 +1,16 @@
 package ac.cult.cultac.utils.nmsutil;
 
+import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.player.CultPlayer;
 import ac.cult.cultac.network.protocol.util.SpigotConversionUtil;
+import ac.cult.cultac.network.protocol.util.FoliaCompatUtil;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.component.UseEffects;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 public class IsUsingItem {
     /** Servers older than 1.21.11 have no UseEffects item component. */
@@ -51,7 +55,16 @@ public class IsUsingItem {
 
     public static void stopUseItem(CultPlayer player) {
         if (player.bukkitPlayer == null) return;
-        player.bukkitPlayer.clearActiveItem();
+        stopUseItem(player.bukkitPlayer, CultAPI.INSTANCE.getPlugin());
+    }
+
+    static void stopUseItem(Player player, Plugin plugin) {
+        // clearActiveItem calls LivingEntity.stopUsingItem, which emits an
+        // ITEM_INTERACT_FINISH game event. Its listeners may access the world,
+        // so both packet callbacks and asynchronous enforcement must hand this
+        // mutation to the player's owning region. A retired entity is a no-op.
+        if (player == null || plugin == null) return;
+        FoliaCompatUtil.runTaskForEntity(player, plugin, player::clearActiveItem, null, 0);
     }
 
     private static ItemStack getActiveItem(CultPlayer player) {

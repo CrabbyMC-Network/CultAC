@@ -1,0 +1,6 @@
+id: cultacproxybridge
+name: CultACProxyBridge
+main: ac.cult.cultac.bridge.geyser.CultProxyExtension
+api: 2.9.0
+version: '${version}'
+authors: [CrabbyMC, CultAC]

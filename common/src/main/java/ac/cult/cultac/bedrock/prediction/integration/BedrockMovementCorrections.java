@@ -167,7 +167,7 @@ public final class BedrockMovementCorrections {
         int debugId = player.checkManager.getDebugHandler().hasRewindListeners()
                 ? SuperDebug.ensureBedrockCorrectionLog(player, result)
                 : 0;
-        if (GeyserBedrockBridgeRuntime.sendMovementCorrection(player.user, correction, frame.getPosition(), debugId)) requestedTransaction = -1;
+        if (ac.cult.cultac.bedrock.bridge.BedrockBridgeTransport.sendMovementCorrection(player.user, correction, frame.getPosition(), debugId)) requestedTransaction = -1;
         else pending = null;
     }
 

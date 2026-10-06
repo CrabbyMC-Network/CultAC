@@ -1,0 +1,9 @@
+package ac.cult.cultac.bridge.wire;
+import java.io.*;
+public record TeleportEmissionMessage(long request,long operation,int provenance,int setbackTransaction,
+        AuthInputMessage.Double3 feet,AuthInputMessage.Float3 rawEye,float yaw,float pitch,boolean onGround,
+        int sourceJavaTeleportId,int originX,int originZ,long originRevision) {
+    public TeleportEmissionMessage {if(request<0||operation<=0||provenance<0||provenance>2||feet==null||rawEye==null||originRevision<0||!Float.isFinite(yaw)||!Float.isFinite(pitch))throw new IllegalArgumentException("Invalid teleport emission");}
+    public byte[] encode(){try{var b=new ByteArrayOutputStream();var o=new DataOutputStream(b);o.writeLong(request);o.writeLong(operation);o.writeByte(provenance);o.writeInt(setbackTransaction);o.writeDouble(feet.x());o.writeDouble(feet.y());o.writeDouble(feet.z());o.writeFloat(rawEye.x());o.writeFloat(rawEye.y());o.writeFloat(rawEye.z());o.writeFloat(yaw);o.writeFloat(pitch);o.writeBoolean(onGround);o.writeInt(sourceJavaTeleportId);o.writeInt(originX);o.writeInt(originZ);o.writeLong(originRevision);return b.toByteArray();}catch(IOException e){throw new IllegalStateException(e);}}
+    public static TeleportEmissionMessage decode(byte[] b){if(b==null||b.length>256)throw new IllegalArgumentException("Invalid teleport size");try{var i=new DataInputStream(new ByteArrayInputStream(b));var value=new TeleportEmissionMessage(i.readLong(),i.readLong(),i.readUnsignedByte(),i.readInt(),new AuthInputMessage.Double3(i.readDouble(),i.readDouble(),i.readDouble()),new AuthInputMessage.Float3(i.readFloat(),i.readFloat(),i.readFloat()),i.readFloat(),i.readFloat(),i.readBoolean(),i.readInt(),i.readInt(),i.readInt(),i.readLong());if(i.available()!=0)throw new IllegalArgumentException("Trailing teleport bytes");return value;}catch(IOException e){throw new IllegalArgumentException("Truncated teleport",e);}}
+}

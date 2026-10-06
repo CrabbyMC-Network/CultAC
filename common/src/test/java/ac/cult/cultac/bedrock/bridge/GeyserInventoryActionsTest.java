@@ -17,7 +17,17 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class GeyserInventoryActionsTest {
-    @BeforeClass public static void bootstrap() throws Exception { GeyserItemComponentsTest.bootstrap(); }
+    @BeforeClass public static void bootstrap() throws Exception {
+        GeyserItemComponentsTest.bootstrap();
+        // Geyser 2.11 captures its logger when the item cache class initializes.
+        var instance = org.geysermc.geyser.GeyserImpl.class.getDeclaredField("instance");
+        instance.setAccessible(true);
+        Object previous = instance.get(null);
+        try {
+            instance.set(null, mock(org.geysermc.geyser.GeyserImpl.class, RETURNS_DEEP_STUBS));
+            Class.forName(GeyserItemStack.class.getName(), true, GeyserItemStack.class.getClassLoader());
+        } finally { instance.set(null, previous); }
+    }
 
     private static CultPlayer player() throws Exception {
         var player = mock(CultPlayer.class);

@@ -521,7 +521,7 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
                         position.x, position.y, position.z, data.isExpectedOnGround(), false)));
                 if (player.isBedrockMovement()) {
                     requiredSetBack = data;
-                    GeyserBedrockBridgeRuntime.sendPlayerTeleport(player.user, position, player.xRot, player.yRot,
+                    ac.cult.cultac.bedrock.bridge.BedrockBridgeTransport.sendPlayerTeleport(player.user, position, player.xRot, player.yRot,
                             data.isExpectedOnGround(), data.getTeleportData().getTransaction());
                 } else {
                     sendPlayerSetbackPackets(teleportId, position,
@@ -650,6 +650,7 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
     private boolean isConfirmedBedrockTeleport(TeleportData pending) {
         return !pending.isRotationOnly()
                 && pending.getBedrockTransportRevision() >= 0
+                && (!pending.isBedrockTransportReceiptRequired() || pending.isBedrockOriginConfirmed())
                 && (pending.isBedrockOriginConfirmed()
                     || pending.getBedrockCoordinateFrame().equals(activeBedrockCoordinateFrame))
                 && pending.getBedrockCoordinateFrame().revision() >= activeBedrockCoordinateFrame.revision()
@@ -1450,6 +1451,16 @@ public class SetbackTeleportUtil extends CultProcessor implements PostPrediction
         data.setBedrockTransportRevision(revision);
         applyBedrockOrigin(data, frame, localPacketTarget);
         pendingTeleports.add(data);
+    }
+
+    /** A proxy emission needs its real native client receipt even when its origin is unchanged. */
+    public void requireBedrockTransportReceipt(long transportRevision) {
+        for (TeleportData pending : pendingTeleports) {
+            if (pending.getBedrockTransportRevision() == transportRevision) {
+                pending.setBedrockTransportReceiptRequired(true);
+                pending.setBedrockOriginConfirmed(false);
+            }
+        }
     }
 
     public void confirmBedrockOrigin(long transportRevision, BedrockTeleportOperation operation,

@@ -1195,16 +1195,9 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
          List<PredVector> contextPacketStart = engine.applyModifiers(
             new MovementModifiers(), player, startingVel, curSimulationContext, lastPrediction, this.couldPotentiallyTickSkip
          );
-         List<PredVector> validInitialVelocities = engine.startingVelocities(
+         List<PredVector> validInitialVelocities = sortedStartingVelocities(engine.startingVelocities(
             new VelocityTransformer(curSimulationContext), player, contextPacketStart, curSimulationContext
-         );
-         SimulationContext sortContext = curSimulationContext;
-         validInitialVelocities.sort(
-            Comparator.comparing(PredVector::tickSkippingComparator)
-               .thenComparing(
-                  Comparator.comparing(PredVector::packetModifiersLength).thenComparing(predVector -> predVector.distanceToSqr(sortContext.getTarget()))
-               )
-         );
+         ), curSimulationContext);
 
          for (PredVector initialStartingVel : validInitialVelocities) {
             PredictionResult thisResult = new PredictionResult(
@@ -1313,6 +1306,16 @@ public class SimulationProcessor extends CultProcessor implements PositionListen
          cache.put(key, collisions);
       }
       return collisions;
+   }
+
+   static List<PredVector> sortedStartingVelocities(List<PredVector> candidates, SimulationContext context) {
+      // Engines may return immutable candidates. Sorting belongs to the runner;
+      // keep the engine's list intact, including empty vehicle predictions.
+      List<PredVector> sorted = new ArrayList<>(candidates);
+      sorted.sort(Comparator.comparing(PredVector::tickSkippingComparator)
+         .thenComparing(Comparator.comparing(PredVector::packetModifiersLength)
+            .thenComparing(vector -> vector.distanceToSqr(context.getTarget()))));
+      return sorted;
    }
 
    private List<SimulationContext> createSimulationContexts(

@@ -929,7 +929,7 @@ public final class GeyserBedrockBridgeRuntime {
     public static boolean sendPlayerTeleport(User user, Vec3 position, float yaw, float pitch,
                                               boolean onGround, int setbackTransaction) {
         PacketTapHandler tap = packetTapForUser(user);
-        if (tap == null) return false;
+        if (tap == null) return ProxyBridgeRuntime.sendPlayerTeleport(user, position, yaw, pitch, onGround, setbackTransaction);
         tap.connection.ensureInEventLoop(() -> {
             if (!tap.matchesJavaUser(user)) return;
             sendPlayerTeleport(tap, position, yaw, pitch, onGround,
@@ -962,7 +962,7 @@ public final class GeyserBedrockBridgeRuntime {
 
     public static boolean sendMovementCorrection(User user, BedrockMovementCorrection correction, Vec3 claimedPosition, int debugId) {
         PacketTapHandler tap = packetTapForUser(user);
-        if (tap == null) return false;
+        if (tap == null) return ProxyBridgeRuntime.sendMovementCorrection(user, correction);
         if (!tap.connection.getTickEventLoop().inEventLoop()) throw new IllegalStateException("Correction outside movement loop");
         {
             CultPlayer player = tap.currentPlayer();
@@ -1530,55 +1530,9 @@ public final class GeyserBedrockBridgeRuntime {
 
     }
 
-    private static BedrockAuthInputFrame createAuthInputFrame(
-            UUID uuid,
-            int protocolVersion,
-            PlayerAuthInputPacket packet,
-            Vec3 position,
-            Vec3 delta,
-            Integer predictedVehicleJavaId
-    ) {
-        Set<PlayerAuthInputData> inputData = packet.getInputData();
-        BedrockMoveVector moveVector = resolveMoveVector(packet);
-
-
-        return BedrockAuthInputFrame.builder(uuid)
-                .protocolVersion(protocolVersion)
-                .clientTick(packet.getTick())
-                .inputMode(packet.getInputMode() == null ? -1 : packet.getInputMode().ordinal())
-                .playMode(packet.getPlayMode() == null ? -1 : packet.getPlayMode().ordinal())
-                .interactionModel(packet.getInputInteractionModel() == null ? -1 : packet.getInputInteractionModel().ordinal())
-                .position(position)
-                .packetPosition(rawPosition(packet.getPosition()))
-                .delta(delta)
-                .reportedEndOfTickVelocity(toVec3(packet.getDelta()))
-                .predictedVehicleId(predictedVehicleId(packet))
-                .predictedVehicleJavaId(predictedVehicleJavaId)
-                .vehicleRotation(packet.getVehicleRotation() == null ? null
-                        : new BedrockAuthInputFrame.VehicleRotation(packet.getVehicleRotation().getY(), packet.getVehicleRotation().getX()))
-                .rotation(packet.getRotation().getY(), packet.getRotation().getX(), packet.getRotation().getY())
-                .moveVector(moveVector.x(), moveVector.z())
-                .rawInputFlags(rawInputFlags(inputData))
-                .rawInputFlagsHigh(rawInputFlagsHigh(inputData))
-                .jumping(hasAnyInput(inputData, PlayerAuthInputData.JUMP_DOWN, PlayerAuthInputData.JUMPING, PlayerAuthInputData.START_JUMPING, PlayerAuthInputData.AUTO_JUMPING_IN_WATER))
-                .jumpStarted(inputData.contains(PlayerAuthInputData.START_JUMPING))
-                .jumpPressedRaw(inputData.contains(PlayerAuthInputData.JUMP_PRESSED_RAW))
-                .jumpCurrentRaw(inputData.contains(PlayerAuthInputData.JUMP_CURRENT_RAW))
-                .wantUp(inputData.contains(PlayerAuthInputData.WANT_UP))
-                .sneaking(hasAnyInput(inputData, PlayerAuthInputData.SNEAK_CURRENT_RAW, PlayerAuthInputData.SNEAK_DOWN, PlayerAuthInputData.SNEAKING, PlayerAuthInputData.START_SNEAKING, PlayerAuthInputData.DESCEND, PlayerAuthInputData.SNEAK_TOGGLE_DOWN))
-                .startSneaking(hasAnyInput(inputData, PlayerAuthInputData.START_SNEAKING, PlayerAuthInputData.SNEAK_PRESSED_RAW, PlayerAuthInputData.SNEAKING, PlayerAuthInputData.SNEAK_DOWN, PlayerAuthInputData.SNEAK_CURRENT_RAW))
-                .stopSneaking(inputData.contains(PlayerAuthInputData.STOP_SNEAKING))
-                .sprinting(inputData.contains(PlayerAuthInputData.SPRINTING))
-                .startSwimming(inputData.contains(PlayerAuthInputData.START_SWIMMING))
-                .stopSwimming(inputData.contains(PlayerAuthInputData.STOP_SWIMMING))
-                .startCrawling(inputData.contains(PlayerAuthInputData.START_CRAWLING))
-                .stopCrawling(inputData.contains(PlayerAuthInputData.STOP_CRAWLING))
-                .startGliding(inputData.contains(PlayerAuthInputData.START_GLIDING))
-                .stopGliding(inputData.contains(PlayerAuthInputData.STOP_GLIDING))
-                .usingItem(hasAnyInput(inputData, PlayerAuthInputData.PERFORM_ITEM_INTERACTION, PlayerAuthInputData.PERFORM_ITEM_STACK_REQUEST, PlayerAuthInputData.START_USING_ITEM))
-                .blockAction(inputData.contains(PlayerAuthInputData.PERFORM_BLOCK_ACTIONS))
-                .authorityMode("client-auth-input")
-                .build();
+    private static BedrockAuthInputFrame createAuthInputFrame(UUID uuid, int protocolVersion, PlayerAuthInputPacket packet,
+            Vec3 position, Vec3 delta, Integer predictedVehicleJavaId) {
+        return BedrockAuthInputFrames.create(uuid, protocolVersion, packet, position, delta, predictedVehicleJavaId);
     }
 
     static boolean isPredictedHorse(org.geysermc.geyser.entity.type.Entity entity) {

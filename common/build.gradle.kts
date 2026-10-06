@@ -107,6 +107,22 @@ tasks.processResources {
 }
 
 dependencies {
+    api(project(":proxy-bridge-wire"))
+    // The proxy bridge reconstructs native Bedrock inputs without a backend Geyser plugin.
+    // Netty and fastutil come from the server. Cloudburst's split fastutil modules reuse
+    // the it.unimi.dsi.fastutil package, so bundling them would shadow Paper's copy.
+    api("org.cloudburstmc.protocol:bedrock-codec:3.0.0.Beta13-20260917.001841-27") {
+        exclude(group = "io.netty")
+        exclude(group = "org.cloudburstmc.fastutil.commons")
+        exclude(group = "org.cloudburstmc.fastutil.maps")
+        exclude(group = "org.cloudburstmc.fastutil.sets")
+    }
+    api("org.cloudburstmc.protocol:common:3.0.0.Beta13-20260917.001841-27") {
+        exclude(group = "io.netty")
+        exclude(group = "org.cloudburstmc.fastutil.commons")
+        exclude(group = "org.cloudburstmc.fastutil.maps")
+        exclude(group = "org.cloudburstmc.fastutil.sets")
+    }
     paperweight.paperDevBundle(providers.gradleProperty("paperDevBundleVersion").get())
 
     api(libs.cloud.core)

@@ -16,6 +16,8 @@ public class TeleportData {
     @Setter
     boolean bedrockOriginConfirmed = true;
     @Setter
+    boolean bedrockTransportReceiptRequired;
+    @Setter
     Vec3 bedrockLocalPacketTarget;
     @Setter
     BedrockTeleportOperation bedrockOperation;
@@ -80,6 +82,7 @@ public class TeleportData {
     public TeleportData copyWithLocation(Vec3 location) {
         TeleportData copy = new TeleportData(location, flags, deltaMovement, transaction, teleportId, sourceYaw, sourcePitch, finalYaw, finalPitch);
         copy.bedrockOriginConfirmed = bedrockOriginConfirmed;
+        copy.bedrockTransportReceiptRequired = bedrockTransportReceiptRequired;
         copy.bedrockCoordinateFrame = bedrockCoordinateFrame;
         copy.bedrockLocalPacketTarget = bedrockLocalPacketTarget;
         copy.positionOnly = positionOnly;

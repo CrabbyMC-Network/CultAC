@@ -49,6 +49,11 @@ repositories {
         includeGroup("github.scarsz")
     }
 
+    // Geyser ecosystem: :common exposes the pinned Cloudburst protocol snapshots
+    // (see common/build.gradle.kts), so the runtime classpath must resolve them here too.
+    maven("https://repo.opencollab.dev/maven-releases/")
+    maven("https://repo.opencollab.dev/maven-snapshots/")
+
     mavenCentral()
 }
 

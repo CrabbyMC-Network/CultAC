@@ -192,6 +192,13 @@ public class CompensatedEntities {
                     player.compensatedEntities.getSelf().gravity = calculateAttribute(snapshot, 0.0, 1024.0);
                 }
 
+                // Java 1.20.5 generalized horse jump strength to all living entities.
+                // Bedrock movement uses its separately compensated client-wire attributes.
+                if (!player.isBedrockMovement() && supportsAttributes(ClientVersion.V_1_20_5)
+                        && matchesAttribute(snapshot, "jump_strength")) {
+                    player.compensatedEntities.getSelf().jumpStrength = calculateAttribute(snapshot, 0.0, 32.0, Set.of());
+                }
+
                 if (supportsAttributes(ClientVersion.V_1_20_5) && matchesAttributeName(snapshot, "step_height")) {
                     player.compensatedEntities.getSelf().stepHeightAttribute = calculateAttribute(snapshot, 0.0, 10.0);
                 }

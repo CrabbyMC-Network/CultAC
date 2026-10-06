@@ -25,6 +25,12 @@ public class PacketPingListener {
     @CultPacketHandler
     public void onPong(PacketReceiveEvent event, CultPlayer player, ServerboundPongPacket packet) {
         event.setAcceptedTransactionResponse(false);
+        if (ac.cult.cultac.bedrock.bridge.ProxyBridgeRuntime.requiresNativeReceipt(player)) {
+            // Geyser-generated Java pongs do not prove native Bedrock consumption.
+            // Only the authenticated real NetworkStackLatency receipt may advance it.
+            event.setCancelled(true);
+            return;
+        }
         if (player.addTransactionResponse(packet.getId())) {
             event.setAcceptedTransactionResponse(true);
             boolean shouldCancel = !CultAPI.INSTANCE.getConfigManager().isDisablePongCancelling();

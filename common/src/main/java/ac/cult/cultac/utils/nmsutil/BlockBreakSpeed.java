@@ -68,9 +68,16 @@ public class BlockBreakSpeed {
         boolean isCorrectToolForDrop = toolData.correctForDrops;
 
         if (speedMultiplier > 1.0f) {
-            int digSpeed = tool.getEnchantmentLevel(Enchantment.EFFICIENCY);
-            if (digSpeed > 0) {
-                speedMultiplier += digSpeed * digSpeed + 1;
+            if (!player.isBedrockMovement()
+                    && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21)) {
+                // Player#getDestroySpeed uses the complete client-visible attribute,
+                // including Efficiency's modifier, rather than adding the enchant twice.
+                speedMultiplier += (float) player.compensatedEntities.getSelf().miningEfficiency;
+            } else {
+                int digSpeed = tool == null ? 0 : tool.getEnchantmentLevel(Enchantment.EFFICIENCY);
+                if (digSpeed > 0) {
+                    speedMultiplier += digSpeed * digSpeed + 1;
+                }
             }
         }
 
@@ -102,6 +109,13 @@ public class BlockBreakSpeed {
                 default:
                     speedMultiplier *= 0.00081;
             }
+        }
+
+        // 1.20.5+ Java clients apply this attribute even with an ineffective tool.
+        // Use transaction-compensated state, never the current Bukkit player.
+        if (!player.isBedrockMovement()
+                && player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)) {
+            speedMultiplier *= (float) player.compensatedEntities.getSelf().blockBreakSpeed;
         }
 
         double eyeHeight = player.getEyeHeight();

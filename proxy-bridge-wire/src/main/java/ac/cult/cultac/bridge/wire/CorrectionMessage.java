@@ -1,0 +1,11 @@
+package ac.cult.cultac.bridge.wire;
+import java.io.*;
+public record CorrectionMessage(long sequence,long generation,int vehicleJavaId,long runtimeId,long tick,
+        AuthInputMessage.Double3 feet,AuthInputMessage.Double3 velocity,float yaw,float pitch,boolean grounded,
+        int originX,int originZ,long originRevision,int teleportTransaction,Float angularVelocity,boolean vehicle) {
+    public CorrectionMessage {if(sequence<0||generation<0||runtimeId<0||tick<0||feet==null||velocity==null||!Float.isFinite(yaw)||!Float.isFinite(pitch)||angularVelocity!=null&&!Float.isFinite(angularVelocity))throw new IllegalArgumentException("Invalid correction");}
+    public byte[] encode(){try{var b=new ByteArrayOutputStream();var o=new DataOutputStream(b);o.writeLong(sequence);o.writeLong(generation);o.writeInt(vehicleJavaId);o.writeLong(runtimeId);o.writeLong(tick);vec(o,feet);vec(o,velocity);o.writeFloat(yaw);o.writeFloat(pitch);o.writeBoolean(grounded);o.writeInt(originX);o.writeInt(originZ);o.writeLong(originRevision);o.writeInt(teleportTransaction);o.writeBoolean(angularVelocity!=null);if(angularVelocity!=null)o.writeFloat(angularVelocity);o.writeBoolean(vehicle);return b.toByteArray();}catch(IOException e){throw new IllegalStateException(e);}}
+    public static CorrectionMessage decode(byte[] b){if(b==null||b.length>256)throw new IllegalArgumentException("Invalid correction size");try{var i=new DataInputStream(new ByteArrayInputStream(b));var v=new CorrectionMessage(i.readLong(),i.readLong(),i.readInt(),i.readLong(),i.readLong(),vec(i),vec(i),i.readFloat(),i.readFloat(),i.readBoolean(),i.readInt(),i.readInt(),i.readLong(),i.readInt(),i.readBoolean()?i.readFloat():null,i.readBoolean());if(i.available()!=0)throw new IllegalArgumentException("Trailing correction bytes");return v;}catch(IOException e){throw new IllegalArgumentException("Truncated correction",e);}}
+    private static void vec(DataOutputStream o,AuthInputMessage.Double3 v)throws IOException{o.writeDouble(v.x());o.writeDouble(v.y());o.writeDouble(v.z());}
+    private static AuthInputMessage.Double3 vec(DataInputStream i)throws IOException{return new AuthInputMessage.Double3(i.readDouble(),i.readDouble(),i.readDouble());}
+}

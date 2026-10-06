@@ -91,6 +91,7 @@ public class PacketManager implements StartableInitable {
         registrar.registerSendListener(PacketListenerPriority.LOW, new PacketServerPlayerRotation());
         registrar.registerSendListener(PacketListenerPriority.NORMAL, new PacketServerRegistries());
 
+        ac.cult.cultac.bedrock.bridge.ProxyBridgeRuntime.register(networkManager, registrar);
         new ac.cult.cultac.events.packets.ProxyAlertMessenger();
     }
 }

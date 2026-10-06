@@ -1,0 +1,178 @@
+package ac.cult.cultac.bridge.geyser;
+
+import ac.cult.cultac.bridge.wire.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import java.lang.reflect.Field;
+import java.util.*;
+import org.cloudburstmc.math.vector.Vector2f;
+import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.protocol.bedrock.data.*;
+import org.cloudburstmc.protocol.bedrock.netty.BedrockPacketWrapper;
+import org.cloudburstmc.protocol.bedrock.packet.*;
+import org.cloudburstmc.protocol.common.PacketSignal;
+import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
+import org.junit.Test;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+/** Real pinned native packet classes with a mocked Geyser event owner, never a second server. */
+public class GatewaySessionTest {
+    private static final class Harness {
+        final UUID player = UUID.randomUUID(), connection = UUID.randomUUID();
+        final BridgeEnvelopeCodec codec = new BridgeEnvelopeCodec(new byte[32]);
+        final GeyserSession nativeSession = mock(GeyserSession.class, RETURNS_DEEP_STUBS);
+        final GatewaySession gateway;
+        final GatewayOutbound outbound;
+        final List<BridgeEnvelope> backend = new ArrayList<>();
+        final List<BedrockPacket> written = new ArrayList<>(), projected = new ArrayList<>();
+        final Set<Long> acknowledged = new HashSet<>();
+        final ChannelHandlerContext context = mock(ChannelHandlerContext.class);
+        long rootSequence = 1;
+        Harness() throws Exception {
+            when(nativeSession.javaUuid()).thenReturn(player);
+            when(nativeSession.protocolVersion()).thenReturn(975);
+            when(nativeSession.getPlayerEntity().geyserId()).thenReturn(42L);
+            when(nativeSession.getPlayerEntity().getEntityId()).thenReturn(7);
+            when(nativeSession.getPlayerEntity().getBoundingBoxWidth()).thenReturn(.6F);
+            when(nativeSession.getPlayerEntity().getBoundingBoxHeight()).thenReturn(1.8F);
+            doAnswer(call -> { ((Runnable) call.getArgument(0)).run(); return null; })
+                    .when(nativeSession).ensureInEventLoop(any(Runnable.class));
+            when(context.newPromise()).thenAnswer(call -> mock(ChannelPromise.class));
+            when(context.write(any(), any(ChannelPromise.class))).thenAnswer(call -> {
+                if (call.getArgument(0) instanceof BedrockPacketWrapper wrapper) written.add(wrapper.getPacket());
+                return mock(io.netty.channel.ChannelFuture.class);
+            });
+            gateway = new GatewaySession(nativeSession, codec);
+            Field field = GatewaySession.class.getDeclaredField("outbound"); field.setAccessible(true);
+            outbound = (GatewayOutbound) field.get(gateway);
+            field = GatewaySession.class.getDeclaredField("delegate"); field.setAccessible(true);
+            field.set(gateway, new BedrockPacketHandler() {
+                @Override public PacketSignal handlePacket(BedrockPacket packet) { projected.add(packet); return PacketSignal.HANDLED; }
+            });
+            doAnswer(call -> {
+                if (call.getArgument(0) instanceof ServerboundCustomPayloadPacket payload) backend.add(codec.decode(payload.getData()));
+                return null;
+            }).when(nativeSession).sendDownstreamPacket(any(org.geysermc.mcprotocollib.network.packet.Packet.class));
+            doAnswer(call -> {
+                BedrockPacket packet = call.getArgument(0);
+                outbound.write(context, BedrockPacketWrapper.create(0, 0, 0, packet, null), context.newPromise());
+                return null;
+            }).when(nativeSession).sendUpstreamPacket(any(BedrockPacket.class));
+            var nativeBedrock = nativeSession.getUpstream().getSession();
+            doAnswer(call -> {
+                outbound.write(context, BedrockPacketWrapper.create(0, 0, 0, call.getArgument(0), null), context.newPromise());
+                return null;
+            }).when(nativeBedrock).sendPacketImmediately(any(BedrockPacket.class));
+            var nativeTeleport = new MovePlayerPacket(); nativeTeleport.setRuntimeEntityId(42);
+            nativeTeleport.setPosition(Vector3f.from(.5F, 83.62001F, .5F)); nativeTeleport.setRotation(Vector3f.ZERO);
+            nativeTeleport.setMode(MovePlayerPacket.Mode.TELEPORT);
+            nativeSession.sendUpstreamPacket(nativeTeleport);
+        }
+        void challenge() { gateway.receive(codec.encode(new BridgeEnvelope(BridgeEnvelope.Direction.TO_GATEWAY,
+                BridgeEnvelope.Kind.CHALLENGE, player, connection, 0, new byte[0]))); }
+        void control(BridgeEnvelope.Kind kind, byte[] body) { gateway.receive(codec.encode(new BridgeEnvelope(
+                BridgeEnvelope.Direction.TO_GATEWAY, kind, player, connection, rootSequence++, body))); }
+        NetworkStackLatencyPacket lastReceipt() {
+            return (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket).reduce((a, b) -> b).orElseThrow();
+        }
+        void ack() {
+            var reply = new NetworkStackLatencyPacket(); reply.setFromServer(true);
+            var marker = (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket latency
+                    && !acknowledged.contains(latency.getTimestamp())).findFirst().orElseThrow();
+            acknowledged.add(marker.getTimestamp());
+            reply.setTimestamp(Math.multiplyExact(marker.getTimestamp(), NativeReceiptTimestamp.SCALE));
+            gateway.handlePacket(reply);
+        }
+        void boundary(int marker) {
+            // A preceding native receipt can arrive after the next write request was queued.
+            BridgeEnvelope request = backend.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT
+                    || p.kind() == BridgeEnvelope.Kind.TELEPORT_EMISSION).reduce((a, b) -> b).orElseThrow();
+            long id = request.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT ? ActorStateMessage.decode(request.body()).request()
+                    : TeleportEmissionMessage.decode(request.body()).request();
+            control(BridgeEnvelope.Kind.LATENCY_RECEIPT,
+                    new BridgeControlMessage.Latency(BridgeControlMessage.Latency.BOUNDARY, id, marker).encode());
+        }
+        PlayerAuthInputPacket input(long tick) {
+            var input = new PlayerAuthInputPacket(); input.setTick(tick); input.setPosition(Vector3f.from(.5F, 83.62001F, .5F));
+            input.setDelta(Vector3f.ZERO); input.setRotation(Vector3f.ZERO); input.setMotion(Vector2f.ZERO);
+            input.setInputMode(InputMode.values()[0]); input.setPlayMode(ClientPlayMode.values()[0]);
+            input.setInputInteractionModel(InputInteractionModel.values()[0]); return input;
+        }
+        void initialize() { challenge(); ack(); boundary(100); ack(); boundary(101); ack(); }
+    }
+    @Test public void rawInputWaitsForHelloAndBothActualInitialWriteReceipts() throws Exception {
+        var h = new Harness(); h.challenge(); var input = h.input(10); h.gateway.handlePacket(input);
+        assertTrue(h.backend.isEmpty()); assertTrue(h.projected.isEmpty());
+        h.ack(); assertEquals(BridgeEnvelope.Kind.HELLO, h.backend.getFirst().kind());
+        assertFalse(h.backend.stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.CLIENT_PACKET));
+        h.boundary(100); h.ack(); h.boundary(101); h.ack();
+        assertEquals(BridgeEnvelope.Kind.CLIENT_PACKET, h.backend.getLast().kind());
+        assertTrue(h.projected.isEmpty());
+    }
+    @Test public void rejectedInputDoesNotReachTheOriginalMovementTranslator() throws Exception {
+        var h = new Harness(); h.initialize(); h.gateway.handlePacket(h.input(10));
+        var request = h.backend.getLast();
+        h.control(BridgeEnvelope.Kind.INPUT_RESULT, new BridgeControlMessage.InputResult(request.sequence(), false,
+                new AuthInputMessage.Double3(.5, 82, .5), new AuthInputMessage.Double3(0, 0, 0),
+                false, false, true, -1, false, 0, 10, false).encode());
+        assertTrue(h.projected.isEmpty());
+    }
+    @Test public void challengeBeforeSpawnWaitsForActualNativePositionAndKeepsPingWireOrder() throws Exception {
+        var h = new Harness(); h.outbound.clearSnapshot(); h.challenge();
+        assertTrue(h.written.stream().noneMatch(p -> p instanceof NetworkStackLatencyPacket));
+        h.gateway.javaPing(-12); // Allocated first, held until HELLO, so it must not be first in ACK order.
+        var spawn = new MovePlayerPacket(); spawn.setRuntimeEntityId(42); spawn.setMode(MovePlayerPacket.Mode.RESPAWN);
+        spawn.setPosition(Vector3f.from(.5F, 83.62001F, .5F)); spawn.setRotation(Vector3f.ZERO);
+        h.nativeSession.sendUpstreamPacket(spawn);
+        h.ack(); assertEquals(BridgeEnvelope.Kind.HELLO, h.backend.getFirst().kind());
+        h.boundary(100); h.ack(); h.boundary(101); h.ack(); h.ack();
+        assertTrue(h.backend.stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.LATENCY_RECEIPT
+                && BridgeControlMessage.Latency.decode(p.body()).marker() == -12
+                && BridgeControlMessage.Latency.decode(p.body()).type() == BridgeControlMessage.Latency.ACK));
+        verify(h.nativeSession, never()).disconnect(anyString());
+    }
+    @Test public void teleportHandleInputWaitsForItsRealNativeReceipt() throws Exception {
+        var h = new Harness(); h.initialize();
+        var teleport = new MovePlayerPacket(); teleport.setRuntimeEntityId(42);
+        teleport.setPosition(Vector3f.from(.5F, 83.62001F, .5F));
+        teleport.setRotation(Vector3f.ZERO); teleport.setMode(MovePlayerPacket.Mode.TELEPORT);
+        h.nativeSession.sendUpstreamPacket(teleport);
+        var input = h.input(30); input.getInputData().add(PlayerAuthInputData.HANDLE_TELEPORT);
+        h.gateway.handlePacket(input);
+        assertEquals(BridgeEnvelope.Kind.TELEPORT_EMISSION, h.backend.getLast().kind());
+        h.boundary(102);
+        assertFalse(h.backend.stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.CLIENT_PACKET));
+        h.ack();
+        assertEquals(BridgeEnvelope.Kind.CLIENT_PACKET, h.backend.getLast().kind());
+        assertTrue(AuthInputMessage.decode(h.backend.getLast().body()).tick() == 30);
+    }
+    @Test public void originalProjectionHappensBeforeFollowingAuthRequest() throws Exception {
+        var h = new Harness(); h.initialize(); var first = h.input(10); var second = h.input(11);
+        h.gateway.handlePacket(first); h.gateway.handlePacket(second);
+        long request = h.backend.getLast().sequence();
+        h.control(BridgeEnvelope.Kind.INPUT_RESULT, new BridgeControlMessage.InputResult(request, true,
+                new AuthInputMessage.Double3(.5, 82, .5), new AuthInputMessage.Double3(0, 0, 0),
+                false, true, true, -1, false, 0, 10, true).encode());
+        assertEquals(List.of(first), h.projected);
+        assertEquals(11, AuthInputMessage.decode(h.backend.getLast().body()).tick());
+    }
+    @Test public void economyUnboundInputUsesTheOriginalTranslatorWithoutBridgeTraffic() throws Exception {
+        var h = new Harness(); var input = h.input(10); h.gateway.handlePacket(input);
+        assertEquals(List.of(input), h.projected); assertTrue(h.backend.isEmpty());
+    }
+    @Test public void onlyAuthenticatedCultPingRegistrationClaimsNativePings() throws Exception {
+        var h = new Harness(); h.initialize(); assertFalse(h.gateway.ownsPing(123));
+        h.control(BridgeEnvelope.Kind.LATENCY_RECEIPT,
+                new BridgeControlMessage.Latency(BridgeControlMessage.Latency.PING_REGISTER, 0, -12).encode());
+        assertTrue(h.gateway.ownsPing(-12)); assertFalse(h.gateway.ownsPing(-12));
+    }
+    @Test public void oldNativeReceiptAfterTransferCannotConsumeGeyserCallbacksOrNewInput() throws Exception {
+        var h = new Harness(); h.challenge(); long old = h.lastReceipt().getTimestamp();
+        h.gateway.javaLogin(); var stale = new NetworkStackLatencyPacket(); stale.setFromServer(true);
+        stale.setTimestamp(old * NativeReceiptTimestamp.SCALE); h.gateway.handlePacket(stale);
+        assertTrue(h.backend.isEmpty()); assertTrue(h.projected.isEmpty());
+        h.gateway.handlePacket(h.input(99)); assertEquals(1, h.projected.size());
+    }
+}

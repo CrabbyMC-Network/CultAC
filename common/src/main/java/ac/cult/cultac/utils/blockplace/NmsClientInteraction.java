@@ -134,7 +134,10 @@ final class NmsClientInteraction {
         }
 
         BlockState state = ClientBlockPlacement.state(item.getBlock(), context);
-        if (state == null) state = item.getBlock().getStateForPlacement(context);
+        // A null bamboo state is a vanilla rejection, not an unhandled block.
+        if (state == null && !(item.getBlock() instanceof net.minecraft.world.level.block.BambooStalkBlock)) {
+            state = item.getBlock().getStateForPlacement(context);
+        }
         return state != null
                 && (item instanceof ScaffoldingBlockItem || ClientBlockPlacement.canSurvive(state, context.getLevel(), context.getClickedPos()))
                 && context.getLevel().isUnobstructed(state, context.getClickedPos(), CollisionContext.empty())

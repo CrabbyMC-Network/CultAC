@@ -66,5 +66,7 @@ include("bukkit")
 include("legacy-placement-adapter")
 include("placement-26-2-adapter")
 include("placement-1-21-11-adapter")
+include("proxy-bridge-wire")
+include("geyser-proxy-bridge")
 
 if (file("workspace.gradle.kts").exists()) apply(from = "workspace.gradle.kts")

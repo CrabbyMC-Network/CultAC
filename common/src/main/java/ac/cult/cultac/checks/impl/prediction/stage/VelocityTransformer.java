@@ -577,11 +577,10 @@ public class VelocityTransformer {
                 }
                 PredVector modified;
 
-                float jumpPower = 0.42f * (onHoney ? 0.5f : 1.0f);
-
-                if (simulationContext.getJumpAmplifier() != null) {
-                    jumpPower += 0.1f * (simulationContext.getJumpAmplifier() + 1);
-                }
+                float jumpPower = playerJumpPower(player, onHoney, simulationContext.getJumpAmplifier());
+                if (simulationContext.getVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)
+                        && jumpPower <= 1.0E-5F)
+                    continue;
 
                 modified = vector.withY(
                         groundJumpVelocityY(simulationContext.getVersion(), vector.y, jumpPower),
@@ -638,5 +637,16 @@ public class VelocityTransformer {
         return version.isNewerThanOrEquals(ClientVersion.V_1_21_2)
                 ? Math.max(currentVelocityY, jumpPower)
                 : jumpPower;
+    }
+
+    static float playerJumpPower(CultPlayer player, boolean onHoney, Integer jumpAmplifier) {
+        // Vanilla 26.2 LivingEntity#getJumpPower: cast the compensated attribute to
+        // float, multiply by block jump factor, then add the Jump Boost potion bonus.
+        float strength = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)
+                ? (float) player.compensatedEntities.getSelf().jumpStrength : 0.42F;
+        float power = strength * (onHoney ? 0.5F : 1.0F);
+        if (jumpAmplifier != null)
+            power += 0.1F * (jumpAmplifier + 1);
+        return power;
     }
 }

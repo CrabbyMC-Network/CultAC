@@ -82,3 +82,7 @@ common/logs/
 .ignored/
 /workspace.gradle.kts
 /mappings-generator/
+
+# Private authenticated proxy bridge deployment keys
+**/proxy-bridge.key
+**/bridge.key

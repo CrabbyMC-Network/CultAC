@@ -20,6 +20,10 @@ public class GeyserBlockStateMappingsTest {
             assertNotNull(stream);
             return stream;
         });
+        // Geyser 2.11 introduced optional data-driven palettes. A deep-stubbed
+        // InputStream is not a resource; preserve actual bytes or actual absence.
+        when(geyser.getBootstrap().getResourceOrNull(anyString())).thenAnswer(call ->
+                GeyserImpl.class.getClassLoader().getResourceAsStream(call.getArgument(0)));
         var instance = GeyserImpl.class.getDeclaredField("instance");
         instance.setAccessible(true);
         Object previous = instance.get(null);
