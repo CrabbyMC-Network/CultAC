@@ -175,6 +175,55 @@ public class GatewaySessionTest {
         assertEquals(motions, nativeOrder);
         verify(h.nativeSession, never()).disconnect(anyString());
     }
+    @Test public void cultPingsBetweenNativeStatesKeepTheBackendReceiptOrder() throws Exception {
+        // The backend places each boundary after the last receipt reported SENT, and a client ACK
+        // consumes every earlier entry. A ping held inside a batch reached the client before the
+        // batch's boundary while the backend had queued the boundary first.
+        var h = new Harness(); h.initialize();
+        int start = h.backend.size();
+        var events = new ArrayList<Object[]>(); // {backend index, ping id} allocations
+        var markers = new HashMap<Long, Integer>(); int marker = 7000;
+        for (int n = 0; n < 6; n++) {
+            var motion = new SetEntityMotionPacket(); motion.setRuntimeEntityId(42); motion.setMotion(Vector3f.from(n, 0, 0));
+            h.nativeSession.sendUpstreamPacket(motion);
+            if (n % 2 == 1) { events.add(new Object[]{h.backend.size(), -100 - n}); h.gateway.javaPing(-100 - n); }
+        }
+        var answered = new HashSet<BridgeEnvelope>();
+        for (int step = 0; step < 100; step++) {
+            var pending = h.backend.subList(start, h.backend.size()).stream()
+                    .filter(p -> Harness.stateRequest(p) && !answered.contains(p)).findFirst();
+            if (pending.isPresent()) {
+                answered.add(pending.get()); markers.put(Harness.requestId(pending.get()), marker); h.boundary(marker++); continue;
+            }
+            if (h.written.stream().noneMatch(p -> p instanceof NetworkStackLatencyPacket latency
+                    && !h.acknowledged.contains(latency.getTimestamp()))) break;
+            h.ack();
+        }
+        // Replay the stream through the backend's ordering rule (CultPlayer.createBedrockTransactionAfterClientbound).
+        var pendingIds = new LinkedList<Integer>(); var acked = new HashSet<Integer>(); Integer lastSent = null;
+        int acks = 0;
+        for (int i = start; i < h.backend.size(); i++) {
+            for (var event : events) if ((int) event[0] == i) pendingIds.addLast((int) event[1]);
+            var p = h.backend.get(i);
+            if (Harness.stateRequest(p)) {
+                int id = markers.get(Harness.requestId(p));
+                if (lastSent == null || acked.contains(lastSent)) pendingIds.addFirst(id);
+                else pendingIds.add(pendingIds.indexOf(lastSent) + 1, id);
+            } else if (p.kind() == BridgeEnvelope.Kind.LATENCY_RECEIPT) {
+                var receipt = BridgeControlMessage.Latency.decode(p.body());
+                if (receipt.type() == BridgeControlMessage.Latency.SENT) lastSent = receipt.marker();
+                else if (receipt.type() == BridgeControlMessage.Latency.ACK) {
+                    assertTrue("ACK " + receipt.marker() + " was already consumed by a later receipt",
+                            pendingIds.contains(receipt.marker()));
+                    int head; do { head = pendingIds.removeFirst(); acked.add(head); } while (head != receipt.marker());
+                    acks++;
+                }
+            }
+        }
+        assertTrue("every ping and boundary was acknowledged: " + acks, acks >= 3 + markers.size());
+        assertTrue(pendingIds.isEmpty());
+        verify(h.nativeSession, never()).disconnect(anyString());
+    }
     @Test public void concurrentSendersReachTheBackendInSequenceOrder() throws Exception {
         // Inputs, backend replies and native writes call send() from different Geyser threads.
         var h = new Harness(); h.challenge();

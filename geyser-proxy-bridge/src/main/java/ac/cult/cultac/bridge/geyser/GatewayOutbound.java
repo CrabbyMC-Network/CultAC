@@ -119,7 +119,9 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
     private boolean barrier(Write write) {
         if (write.message instanceof StateBoundary || !(write.message instanceof BedrockPacketWrapper wrapper)) return true;
         BedrockPacket packet = wrapper.getPacket();
-        return packet instanceof GatewayBlockAckTranslator.Boundary
+        // A receipt holds its own wire position: the backend orders boundaries by reported writes,
+        // so one held inside a batch would reach the client before that batch's boundary.
+        return packet instanceof GatewayBlockAckTranslator.Boundary || packet instanceof NetworkStackLatencyPacket
                 || packet instanceof MovePlayerPacket move && move.getRuntimeEntityId() == session.getPlayerEntity().geyserId()
                 && (move.getMode() == MovePlayerPacket.Mode.TELEPORT || move.getMode() == MovePlayerPacket.Mode.RESPAWN);
     }
@@ -137,7 +139,7 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
                             session.getPlayerEntity().getEntityId(), 0, ActorStateMessage.Kind.BLOCK_UPDATES, boundary.state).encode());
             return;
         }
-        if (!(next.message instanceof BedrockPacketWrapper wrapper)) {
+        if (!(next.message instanceof BedrockPacketWrapper wrapper) || wrapper.getPacket() instanceof NetworkStackLatencyPacket) {
             observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise); return;
         }
         BedrockPacket packet = wrapper.getPacket();
