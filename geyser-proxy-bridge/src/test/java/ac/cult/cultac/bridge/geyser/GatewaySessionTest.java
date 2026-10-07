@@ -78,7 +78,8 @@ public class GatewaySessionTest {
             return (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket).reduce((a, b) -> b).orElseThrow();
         }
         void ack() {
-            var reply = new NetworkStackLatencyPacket(); reply.setFromServer(true);
+            // Real Bedrock clients echo NetworkStackLatency with fromServer=false.
+            var reply = new NetworkStackLatencyPacket(); reply.setFromServer(false);
             var marker = (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket latency
                     && !acknowledged.contains(latency.getTimestamp())).findFirst().orElseThrow();
             acknowledged.add(marker.getTimestamp());
@@ -170,7 +171,7 @@ public class GatewaySessionTest {
     }
     @Test public void oldNativeReceiptAfterTransferCannotConsumeGeyserCallbacksOrNewInput() throws Exception {
         var h = new Harness(); h.challenge(); long old = h.lastReceipt().getTimestamp();
-        h.gateway.javaLogin(); var stale = new NetworkStackLatencyPacket(); stale.setFromServer(true);
+        h.gateway.javaLogin(); var stale = new NetworkStackLatencyPacket(); stale.setFromServer(false);
         stale.setTimestamp(old * NativeReceiptTimestamp.SCALE); h.gateway.handlePacket(stale);
         assertTrue(h.backend.isEmpty()); assertTrue(h.projected.isEmpty());
         h.gateway.handlePacket(h.input(99)); assertEquals(1, h.projected.size());
