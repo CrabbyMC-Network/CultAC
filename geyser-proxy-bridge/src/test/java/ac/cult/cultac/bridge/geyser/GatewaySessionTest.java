@@ -96,6 +96,20 @@ public class GatewaySessionTest {
             control(BridgeEnvelope.Kind.LATENCY_RECEIPT,
                     new BridgeControlMessage.Latency(BridgeControlMessage.Latency.BOUNDARY, id, marker).encode());
         }
+        /** Answers every pending backend request and native receipt, in protocol order, until input flows. */
+        boolean driveUntilInput() {
+            var answered = new HashSet<BridgeEnvelope>(); int marker = 1000;
+            for (int step = 0; step < 64; step++) {
+                if (backend.stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.CLIENT_PACKET)) return true;
+                var request = backend.stream().filter(p -> (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT
+                        || p.kind() == BridgeEnvelope.Kind.TELEPORT_EMISSION) && !answered.contains(p)).findFirst();
+                if (request.isPresent()) { answered.add(request.get()); boundary(marker++); continue; }
+                if (written.stream().noneMatch(p -> p instanceof NetworkStackLatencyPacket latency
+                        && !acknowledged.contains(latency.getTimestamp()))) return false;
+                ack();
+            }
+            return false;
+        }
         PlayerAuthInputPacket input(long tick) {
             var input = new PlayerAuthInputPacket(); input.setTick(tick); input.setPosition(Vector3f.from(.5F, 83.62001F, .5F));
             input.setDelta(Vector3f.ZERO); input.setRotation(Vector3f.ZERO); input.setMotion(Vector2f.ZERO);
@@ -103,6 +117,30 @@ public class GatewaySessionTest {
             input.setInputInteractionModel(InputInteractionModel.values()[0]); return input;
         }
         void initialize() { challenge(); ack(); boundary(100); ack(); boundary(101); ack(); }
+    }
+    private static MobEffectPacket effect(int id, int amplifier, MobEffectPacket.Event event) {
+        var packet = new MobEffectPacket(); packet.setRuntimeEntityId(42); packet.setEffectId(id);
+        packet.setAmplifier(amplifier); packet.setDuration(200); packet.setEvent(event); return packet;
+    }
+    @Test public void effectRemovalsBeforeTheHandshakeDoNotBlockActivation() throws Exception {
+        // A server switch clears effects with REMOVE events while the session is still unbound.
+        var h = new Harness();
+        h.nativeSession.sendUpstreamPacket(effect(1, 0, MobEffectPacket.Event.REMOVE));
+        h.nativeSession.sendUpstreamPacket(effect(16, 0, MobEffectPacket.Event.ADD));
+        h.challenge(); h.gateway.handlePacket(h.input(10));
+        h.ack(); assertEquals(BridgeEnvelope.Kind.HELLO, h.backend.getFirst().kind());
+        // The surviving night-vision effect is replayed as one more initial write with its own receipt.
+        assertTrue(h.driveUntilInput());
+        verify(h.nativeSession, never()).disconnect(anyString());
+    }
+    @Test public void boundEffectLevelsMatchTheLocalBridgeContract() throws Exception {
+        var h = new Harness(); h.initialize();
+        h.nativeSession.sendUpstreamPacket(effect(1, 0, MobEffectPacket.Event.ADD));
+        var state = h.backend.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT)
+                .map(p -> ActorStateMessage.decode(p.body())).filter(m -> m.kind() == ActorStateMessage.Kind.EFFECT)
+                .reduce((a, b) -> b).orElseThrow();
+        var effect = ActorStateMessage.Effect.decode(state.state());
+        assertEquals(1, effect.id()); assertEquals(1, effect.level()); assertEquals(200, effect.duration());
     }
     @Test public void rawInputWaitsForHelloAndBothActualInitialWriteReceipts() throws Exception {
         var h = new Harness(); h.challenge(); var input = h.input(10); h.gateway.handlePacket(input);

@@ -176,7 +176,15 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
                         new ActorStateMessage.Part(state.kind(), state.state()),
                         new ActorStateMessage.Part(ActorStateMessage.Kind.ATTRIBUTES, attributes(entity.getAttributes()).encode()))).encode());
             }
-            if (teleport == null && state == null) { observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise); continue; }
+            if (teleport == null && state == null) {
+                observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise);
+                // A stateless initial replay (e.g. an effect the engine does not model) needs no receipt,
+                // but it still completes the initial set; otherwise input would wait forever.
+                if (initialPackets.remove(packet) && --initialRemaining == 0) {
+                    Runnable callback = initialized; initialized = null; callback.run();
+                }
+                continue;
+            }
             if (initialPackets.remove(packet)) initialRequests.add(sequence);
             if (teleport != null) teleportRequests.add(sequence);
             waiting = next; waitingRequest = sequence;
@@ -307,13 +315,16 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
             return new ActorStateMessage(requestId, runtime, entity.getEntityId(), value.getTick(), ActorStateMessage.Kind.ATTRIBUTES,
                     new ActorStateMessage.Attributes(attributes).encode());
         }
-        if (packet instanceof MobEffectPacket value) {
+        if (packet instanceof MobEffectPacket value && value.getEvent() != MobEffectPacket.Event.NONE) {
+            // Same contract as the backend's local GeyserReplayUpdate: unmodeled effects carry no movement
+            // state, and the level is 1-based with 0 meaning removed.
+            if (switch (value.getEffectId()) { case 1, 2, 8, 15, 24, 27, 33 -> false; default -> true; }) return null;
             long runtime = value.getRuntimeEntityId();
             var entity = runtime == self ? session.getPlayerEntity() : session.getEntityCache().getEntityByGeyserId(runtime);
             if (entity == null) return null;
-            int level = value.getEvent() == MobEffectPacket.Event.REMOVE ? -1 : value.getAmplifier();
+            int level = value.getEvent() == MobEffectPacket.Event.REMOVE ? 0 : value.getAmplifier() + 1;
             return new ActorStateMessage(requestId, runtime, entity.getEntityId(), value.getTick(), ActorStateMessage.Kind.EFFECT,
-                    new ActorStateMessage.Effect(value.getEffectId(), level, value.getDuration()).encode());
+                    new ActorStateMessage.Effect(value.getEffectId(), level, level == 0 ? -1 : value.getDuration()).encode());
         }
         if (packet instanceof SetPlayerGameTypePacket value) {
             return new ActorStateMessage(requestId, self, javaId, 0, ActorStateMessage.Kind.GAMEMODE,
