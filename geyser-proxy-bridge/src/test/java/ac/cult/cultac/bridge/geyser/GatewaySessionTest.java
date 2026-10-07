@@ -32,6 +32,7 @@ public class GatewaySessionTest {
         long rootSequence = 1;
         Harness() throws Exception {
             when(nativeSession.javaUuid()).thenReturn(player);
+            when(nativeSession.getDownstream().getSession().getChannel().eventLoop().inEventLoop()).thenReturn(true);
             when(nativeSession.protocolVersion()).thenReturn(975);
             when(nativeSession.getPlayerEntity().geyserId()).thenReturn(42L);
             when(nativeSession.getPlayerEntity().getEntityId()).thenReturn(7);
@@ -121,6 +122,27 @@ public class GatewaySessionTest {
     private static MobEffectPacket effect(int id, int amplifier, MobEffectPacket.Event event) {
         var packet = new MobEffectPacket(); packet.setRuntimeEntityId(42); packet.setEffectId(id);
         packet.setAmplifier(amplifier); packet.setDuration(200); packet.setEvent(event); return packet;
+    }
+    @Test public void concurrentSendersReachTheBackendInSequenceOrder() throws Exception {
+        // Inputs, backend replies and native writes call send() from different Geyser threads.
+        var h = new Harness(); h.challenge();
+        var loop = new io.netty.channel.DefaultEventLoop();
+        try {
+            when(h.nativeSession.getDownstream().getSession().getChannel().eventLoop()).thenReturn(loop);
+            int before = h.backend.size();
+            var threads = new ArrayList<Thread>();
+            for (int t = 0; t < 4; t++) threads.add(new Thread(() -> {
+                for (int n = 0; n < 500; n++) h.gateway.send(BridgeEnvelope.Kind.LATENCY_RECEIPT,
+                        new BridgeControlMessage.Latency(BridgeControlMessage.Latency.REQUEST, n, 0).encode());
+            }));
+            threads.forEach(Thread::start);
+            for (var thread : threads) thread.join();
+            loop.submit(() -> { }).sync();
+            var received = h.backend.subList(before, h.backend.size());
+            assertEquals(2000, received.size());
+            for (int n = 1; n < received.size(); n++)
+                assertEquals(received.get(n - 1).sequence() + 1, received.get(n).sequence());
+        } finally { loop.shutdownGracefully().sync(); }
     }
     @Test public void inputForAVanishedVehicleIsForwardedWithoutDroppingTheSession() throws Exception {
         // A boat breaks while the client still predicts it for a tick.

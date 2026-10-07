@@ -23,6 +23,13 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     private UUID nonce;
     private Object downstream;
     private long nextSequence;
+    // Bridge writes leave in sequence order: numbers are assigned and queued under one lock, and the
+    // queue is only drained on the downstream channel's event loop. Geyser's sendDownstreamPacket
+    // writes immediately on that loop but defers from any other thread, which could otherwise put
+    // a later sequence on the wire first.
+    private record Outgoing(UUID nonce, ServerboundCustomPayloadPacket packet) { }
+    private final Object outgoingLock = new Object();
+    private final ArrayDeque<Outgoing> outgoing = new ArrayDeque<>();
     private boolean ready, closed;
     private ValidatedInputQueue<BedrockPacket> queue;
     private PlayerAuthInputPacket waiting;
@@ -56,7 +63,8 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     void resetBackend() {
         queue.close(); outbound.reset(); latencyCallbacks.clear(); latencyOrder.clear(); authorizedPings.clear();
         if (receipts != null) receipts.close();
-        nonce = null; downstream = null; ready = false; initialized = false; waiting = null; nextSequence = 0;
+        synchronized (outgoingLock) { nonce = null; nextSequence = 0; outgoing.clear(); }
+        downstream = null; ready = false; initialized = false; waiting = null;
         handshakeStarted = false;
         poses.clear(); sprintAttributes.close(); vehicleAttributes.clear();
         boundary = new GatewaySprintAttributes.Boundary(0, 0, false);
@@ -90,7 +98,8 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
             if (message.kind() == BridgeEnvelope.Kind.CHALLENGE) {
                 if (message.sequence() != 0 || message.body().length != 0) throw new IllegalArgumentException("Invalid challenge");
                 if (active()) throw new IllegalArgumentException("Duplicate challenge");
-                nonce = message.connection(); downstream = session.getDownstream(); nextSequence = 0;
+                synchronized (outgoingLock) { nonce = message.connection(); nextSequence = 0; outgoing.clear(); }
+                downstream = session.getDownstream();
                 receipts = new BridgeReceiptOrder(message.player(), nonce, message.direction(), 1);
                 startHandshakeWhenReady();
                 return;
@@ -114,11 +123,32 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     }
     long send(BridgeEnvelope.Kind kind, byte[] body) {
         if (!active()) throw new IllegalStateException("No authenticated backend");
-        long sequence = nextSequence++;
-        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(Key.key(BridgeEnvelopeCodec.CHANNEL),
-                codec.encode(new BridgeEnvelope(BridgeEnvelope.Direction.TO_BACKEND, kind,
-                        session.javaUuid(), nonce, sequence, body))));
+        long sequence;
+        synchronized (outgoingLock) {
+            if (nonce == null) throw new IllegalStateException("No authenticated backend");
+            sequence = nextSequence++;
+            outgoing.addLast(new Outgoing(nonce, new ServerboundCustomPayloadPacket(Key.key(BridgeEnvelopeCodec.CHANNEL),
+                    codec.encode(new BridgeEnvelope(BridgeEnvelope.Direction.TO_BACKEND, kind,
+                            session.javaUuid(), nonce, sequence, body)))));
+        }
+        flushOutgoing();
         return sequence;
+    }
+    private void flushOutgoing() {
+        var downstreamSession = session.getDownstream();
+        var channel = downstreamSession == null ? null : downstreamSession.getSession().getChannel();
+        if (channel == null) return;
+        if (!channel.eventLoop().inEventLoop()) { channel.eventLoop().execute(this::flushOutgoing); return; }
+        while (true) {
+            Outgoing next;
+            synchronized (outgoingLock) {
+                next = outgoing.pollFirst();
+                if (next == null) return;
+                // A queued message from a reset lease would break the new lease's sequence.
+                if (!next.nonce().equals(nonce)) continue;
+            }
+            session.sendDownstreamPacket(next.packet());
+        }
     }
     @Override public PacketSignal handlePacket(BedrockPacket packet) {
         ReferenceCountUtil.retain(packet);
