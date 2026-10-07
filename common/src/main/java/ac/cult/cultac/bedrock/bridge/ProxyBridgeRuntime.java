@@ -197,7 +197,9 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
         var vehicle=player.compensatedEntities.getSelf().getRiding();
         if(correction.vehicle() && (vehicle==null || vehicle.getEntityId()!=correction.vehicleId() || vehicle.bedrockRuntimeId!=correction.runtimeId()) || !correction.vehicle() && vehicle!=null)return false;
         var c=correction.coordinates();var pos=correction.position();var velocity=correction.velocity();
-        var message=new CorrectionMessage(++lease.correctionSequence,correction.controlGeneration(),correction.vehicleId(),correction.runtimeId(),correction.tick(),new AuthInputMessage.Double3(pos.x,pos.y,pos.z),new AuthInputMessage.Double3(velocity.x,velocity.y,velocity.z),correction.yaw(),correction.pitch(),correction.onGround(),c.originX(),c.originZ(),c.revision(),correction.teleportTransaction(),correction.angularVelocity(),correction.vehicle());
+        // On foot the engine marks the actor as -1; the wire names the player's own native actor.
+        long actor=correction.vehicle()?correction.runtimeId():lease.session.context().actorRuntimeId();
+        var message=new CorrectionMessage(++lease.correctionSequence,correction.controlGeneration(),correction.vehicleId(),actor,correction.tick(),new AuthInputMessage.Double3(pos.x,pos.y,pos.z),new AuthInputMessage.Double3(velocity.x,velocity.y,velocity.z),correction.yaw(),correction.pitch(),correction.onGround(),c.originX(),c.originZ(),c.revision(),correction.teleportTransaction(),correction.angularVelocity(),correction.vehicle());
         lease.session.send(BridgeEnvelope.Kind.SERVER_CORRECTION,message.encode());return true;
     }
     public static void stop(){var runtime=active;active=null;if(runtime!=null){runtime.sessions.closeAll();synchronized(runtime.leases){runtime.leases.clear();runtime.awaitingAttach.clear();}}}

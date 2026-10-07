@@ -224,6 +224,22 @@ public class GatewaySessionTest {
         assertTrue(pendingIds.isEmpty());
         verify(h.nativeSession, never()).disconnect(anyString());
     }
+    @Test public void onFootCorrectionReachesTheClientAndReportsItsNativeState() throws Exception {
+        var h = new Harness(); h.initialize();
+        int start = h.backend.size();
+        var correction = new CorrectionMessage(1, 0, -1, 42, 5, new AuthInputMessage.Double3(.5, 83, .5),
+                new AuthInputMessage.Double3(0, -.0784, 0), 0, 0, true, 0, 0, 0, -1, null, false);
+        h.control(BridgeEnvelope.Kind.SERVER_CORRECTION, correction.encode());
+        h.boundary(9000); h.ack();
+        var state = h.states().stream().filter(m -> m.kind() == ActorStateMessage.Kind.CORRECTION).reduce((a, b) -> b).orElseThrow();
+        var reported = CorrectionMessage.decode(state.state());
+        assertEquals(42, reported.runtimeId()); assertEquals(1, reported.sequence()); assertFalse(reported.vehicle());
+        assertTrue(h.written.stream().anyMatch(p -> p instanceof CorrectPlayerMovePredictionPacket));
+        assertTrue(h.backend.subList(start, h.backend.size()).stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.LATENCY_RECEIPT
+                && BridgeControlMessage.Latency.decode(p.body()).type() == BridgeControlMessage.Latency.ACK
+                && BridgeControlMessage.Latency.decode(p.body()).marker() == 9000));
+        verify(h.nativeSession, never()).disconnect(anyString());
+    }
     @Test public void concurrentSendersReachTheBackendInSequenceOrder() throws Exception {
         // Inputs, backend replies and native writes call send() from different Geyser threads.
         var h = new Harness(); h.challenge();
