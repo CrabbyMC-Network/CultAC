@@ -90,6 +90,10 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
         if (!owner.active() || !owner.ready() && !deferredReceipt) {
             // Observing an unbound backend must never change its native Geyser behavior.
             try { observe(message); } catch (RuntimeException failure) {
+                // The first capture failure decides the later handshake, so record exactly what failed.
+                if (!incompleteSnapshot) owner.warn("Initial native state capture failed on "
+                        + (message instanceof BedrockPacketWrapper wrapper ? wrapper.getPacket().getClass().getSimpleName()
+                        : message.getClass().getSimpleName()), failure);
                 incompleteSnapshot = true;
                 if (owner.active()) owner.fail("Initial native state capture failed");
             }

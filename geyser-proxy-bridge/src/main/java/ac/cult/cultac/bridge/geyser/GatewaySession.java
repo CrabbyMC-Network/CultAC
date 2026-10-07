@@ -287,11 +287,22 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     void fail(String reason) { close(); session.disconnect("CultAC: " + reason + ". Please reconnect."); }
     private void fail(String reason, RuntimeException cause) {
         // Players only see the generic reason; operators need the exact failed check.
+        warn(reason, cause);
+        fail(reason);
+    }
+    void warn(String reason, RuntimeException cause) {
         try {
             var logger = session.getGeyser() == null ? null : session.getGeyser().getLogger();
-            if (logger != null) logger.warning("[cultacproxybridge] " + reason + " for " + session.bedrockUsername() + ": " + cause);
+            if (logger == null) return;
+            var origin = new StringBuilder();
+            for (var frame : cause.getStackTrace()) {
+                if (origin.length() > 0 && !frame.getClassName().startsWith("ac.cult.")) continue;
+                origin.append(origin.length() == 0 ? " at " : " < ").append(frame.getClassName().replaceFirst(".*\\.", ""))
+                        .append('.').append(frame.getMethodName()).append(':').append(frame.getLineNumber());
+                if (origin.length() > 300) break;
+            }
+            logger.warning("[cultacproxybridge] " + reason + " for " + session.bedrockUsername() + ": " + cause + origin);
         } catch (RuntimeException ignored) { }
-        fail(reason);
     }
     @Override public void close() {
         if (closed) return;
