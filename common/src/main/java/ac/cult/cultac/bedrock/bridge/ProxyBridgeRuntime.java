@@ -15,6 +15,7 @@ import java.util.*;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.*;
 import net.minecraft.network.protocol.common.custom.DiscardedPayload;
+import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
@@ -23,6 +24,8 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
     private static volatile ProxyBridgeRuntime active;
     private final ProxyBridgeSessions sessions;
     private final Map<User,Lease> leases=new IdentityHashMap<>();
+    // Logged-in Bedrock users whose client has not yet proven it processed this backend's login.
+    private final Set<User> awaitingAttach=Collections.newSetFromMap(new IdentityHashMap<>());
     private static final int MAX_BOUNDARIES=8192;
     private static final class Marker { boolean sent; long lastAuthTick=-1; final long request; Marker(long request){this.request=request;} }
     private static final class Lease {
@@ -45,15 +48,29 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
     @Override public void onUserLogin(UserLoginEvent event) {
         User user=event.getUser();CultPlayer player=CultAPI.INSTANCE.getPlayerDataManager().getPlayer(user);
         if(player==null || !player.isBedrockMovement() || user.getBedrockBridgeConnection()!=null)return;
+        // During a Velocity server switch, backend plugin messages are forwarded while the new
+        // login is still held back, so a challenge sent now can reach Geyser before that login
+        // and be reset by it. Wait until the client acknowledges this backend's teleport.
+        synchronized(leases){awaitingAttach.add(user);}
+    }
+    private void attach(User user) {
         user.execute(()->{
             if(active!=this)return;
+            CultPlayer player=CultAPI.INSTANCE.getPlayerDataManager().getPlayer(user);
+            if(player==null || player.user!=user || !player.isBedrockMovement())return;
             var session=sessions.open(user,bytes->user.sendPacket(new ClientboundCustomPayloadPacket(new DiscardedPayload(Identifier.parse(BridgeEnvelopeCodec.CHANNEL),bytes))));
             synchronized(leases){leases.put(user,new Lease(session));}
         });
     }
     @Override public void onUserDisconnect(UserDisconnectEvent event){close(event.getUser());}
-    private void close(User owner){sessions.close(owner);synchronized(leases){leases.remove(owner);}}
+    private void close(User owner){sessions.close(owner);synchronized(leases){leases.remove(owner);awaitingAttach.remove(owner);}}
     @Override public void handle(PacketReceiveEvent event,CultPlayer player,Packet<?> packet) {
+        if(packet instanceof ServerboundAcceptTeleportationPacket) {
+            User owner=event.getUser();boolean attach;
+            synchronized(leases){attach=awaitingAttach.remove(owner);}
+            if(attach)attach(owner);
+            return;
+        }
         if(!(packet instanceof ServerboundCustomPayloadPacket custom)||!BridgeEnvelopeCodec.CHANNEL.equals(NmsPacketUtil.payloadChannel(custom.payload())))return;
         event.setCancelled(true);
         byte[] bytes=NmsPacketUtil.payloadData(event);User owner=event.getUser();
@@ -155,5 +172,5 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
         var message=new CorrectionMessage(++lease.correctionSequence,correction.controlGeneration(),correction.vehicleId(),correction.runtimeId(),correction.tick(),new AuthInputMessage.Double3(pos.x,pos.y,pos.z),new AuthInputMessage.Double3(velocity.x,velocity.y,velocity.z),correction.yaw(),correction.pitch(),correction.onGround(),c.originX(),c.originZ(),c.revision(),correction.teleportTransaction(),correction.angularVelocity(),correction.vehicle());
         lease.session.send(BridgeEnvelope.Kind.SERVER_CORRECTION,message.encode());return true;
     }
-    public static void stop(){var runtime=active;active=null;if(runtime!=null){runtime.sessions.closeAll();synchronized(runtime.leases){runtime.leases.clear();}}}
+    public static void stop(){var runtime=active;active=null;if(runtime!=null){runtime.sessions.closeAll();synchronized(runtime.leases){runtime.leases.clear();runtime.awaitingAttach.clear();}}}
 }
