@@ -122,6 +122,19 @@ public class GatewaySessionTest {
         var packet = new MobEffectPacket(); packet.setRuntimeEntityId(42); packet.setEffectId(id);
         packet.setAmplifier(amplifier); packet.setDuration(200); packet.setEvent(event); return packet;
     }
+    @Test public void inputForAVanishedVehicleIsForwardedWithoutDroppingTheSession() throws Exception {
+        // A boat breaks while the client still predicts it for a tick.
+        var h = new Harness(); h.initialize();
+        when(h.nativeSession.getEntityCache().getEntityByGeyserId(999L)).thenReturn(null);
+        var input = h.input(10); input.getInputData().add(PlayerAuthInputData.IN_CLIENT_PREDICTED_IN_VEHICLE);
+        input.setPredictedVehicle(999L);
+        h.gateway.handlePacket(input);
+        var request = h.backend.getLast();
+        assertEquals(BridgeEnvelope.Kind.CLIENT_PACKET, request.kind());
+        var sent = AuthInputMessage.decode(request.body());
+        assertEquals(999L, sent.vehicleRuntimeId()); assertEquals(-1, sent.vehicleJavaId());
+        verify(h.nativeSession, never()).disconnect(anyString());
+    }
     @Test public void effectRemovalsBeforeTheHandshakeDoNotBlockActivation() throws Exception {
         // A server switch clears effects with REMOVE events while the session is still unbound.
         var h = new Harness();

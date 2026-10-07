@@ -22,11 +22,12 @@ final class AuthInputCapture {
         long vehicleRuntime = input.getInputData().contains(PlayerAuthInputData.IN_CLIENT_PREDICTED_IN_VEHICLE)
                 ? input.getPredictedVehicle() : -1L;
         var vehicle = vehicleRuntime == -1L ? null : session.getEntityCache().getEntityByGeyserId(vehicleRuntime);
-        if (vehicleRuntime != -1L && vehicle == null)
-            throw new IllegalStateException("Unknown predicted vehicle");
+        // A vehicle can disappear (broken boat, dead mount) while the client still predicts it for a
+        // tick. Like the backend's local GeyserBedrockBridgeRuntime, forward the raw vehicle position
+        // without a Java id; the engine rejects that frame instead of the session being dropped.
         Vector3f raw = input.getPosition();
         Vector3f vehicleFeet = vehicle instanceof BoatEntity ? raw.down(vehicle.getOffset()) : raw;
-        var feet = vehicle == null ? GatewayCoordinates.playerFeet(raw)
+        var feet = vehicleRuntime == -1L ? GatewayCoordinates.playerFeet(raw)
                 : new AuthInputMessage.Double3(vehicleFeet.getX(), vehicleFeet.getY(), vehicleFeet.getZ());
         var actions = new ArrayList<AuthInputMessage.BlockAction>();
         for (var action : input.getPlayerActions()) {
