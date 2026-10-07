@@ -127,10 +127,14 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
             try {
                 if (closed) return;
                 if (packet instanceof PlayerAuthInputPacket input) inputTick = input.getTick();
-                if (packet instanceof NetworkStackLatencyPacket latency && NativeReceiptTimestamp.reserved(latency.getTimestamp())) {
-                    long original = NativeReceiptTimestamp.original(latency.getTimestamp());
+                long original = packet instanceof NetworkStackLatencyPacket latency
+                        ? NativeReceiptTimestamp.pendingOriginal(latency.getTimestamp(), latencyCallbacks::containsKey)
+                        : NativeReceiptTimestamp.NONE;
+                // Retired connection receipt must never consume Geyser's FIFO ping callback.
+                if (original == NativeReceiptTimestamp.NONE && packet instanceof NetworkStackLatencyPacket latency
+                        && NativeReceiptTimestamp.reserved(latency.getTimestamp())) return;
+                if (original != NativeReceiptTimestamp.NONE) {
                     Runnable receipt = latencyCallbacks.get(original);
-                    if (receipt == null) return; // Retired connection receipt must never consume Geyser's FIFO ping callback.
                     // The client echoes NetworkStackLatency with fromServer=false; the reserved
                     // timestamp namespace and FIFO order are the proof, as in Geyser itself.
                     if (latencyOrder.isEmpty() || latencyOrder.removeFirst() != original)
