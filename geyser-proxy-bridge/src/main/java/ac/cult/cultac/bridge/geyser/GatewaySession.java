@@ -110,7 +110,7 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
                 case CLOSE -> fail("Backend closed movement bridge");
                 default -> throw new IllegalArgumentException("Unsupported bridge control");
             }
-        } catch (RuntimeException failure) { fail("Invalid CultAC bridge control"); }
+        } catch (RuntimeException failure) { fail("Invalid CultAC bridge control", failure); }
     }
     long send(BridgeEnvelope.Kind kind, byte[] body) {
         if (!active()) throw new IllegalStateException("No authenticated backend");
@@ -127,11 +127,17 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
             try {
                 if (closed) return;
                 if (packet instanceof PlayerAuthInputPacket input) inputTick = input.getTick();
-                if (packet instanceof NetworkStackLatencyPacket latency && NativeReceiptTimestamp.reserved(latency.getTimestamp())) {
-                    long original = NativeReceiptTimestamp.original(latency.getTimestamp());
+                long original = packet instanceof NetworkStackLatencyPacket latency
+                        ? NativeReceiptTimestamp.pendingOriginal(latency.getTimestamp(), latencyCallbacks::containsKey)
+                        : NativeReceiptTimestamp.NONE;
+                // Retired connection receipt must never consume Geyser's FIFO ping callback.
+                if (original == NativeReceiptTimestamp.NONE && packet instanceof NetworkStackLatencyPacket latency
+                        && NativeReceiptTimestamp.reserved(latency.getTimestamp())) return;
+                if (original != NativeReceiptTimestamp.NONE) {
                     Runnable receipt = latencyCallbacks.get(original);
-                    if (receipt == null) return; // Retired connection receipt must never consume Geyser's FIFO ping callback.
-                    if (!latency.isFromServer() || latencyOrder.isEmpty() || latencyOrder.removeFirst() != original)
+                    // The client echoes NetworkStackLatency with fromServer=false; the reserved
+                    // timestamp namespace and FIFO order are the proof, as in Geyser itself.
+                    if (latencyOrder.isEmpty() || latencyOrder.removeFirst() != original)
                         throw new IllegalArgumentException("Reordered native receipt");
                     latencyCallbacks.remove(original); receipt.run(); return;
                 }
@@ -140,7 +146,7 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
                 }
                 transferred = true;
                 queue.offer(packet);
-            } catch (RuntimeException failure) { fail("Bedrock input queue failed"); }
+            } catch (RuntimeException failure) { fail("Bedrock input queue failed", failure); }
             finally { if (!transferred) ReferenceCountUtil.release(packet); }
         });
         return PacketSignal.HANDLED;
@@ -279,6 +285,14 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     }
     boolean ownsPing(int id) { return active() && authorizedPings.remove(id); }
     void fail(String reason) { close(); session.disconnect("CultAC: " + reason + ". Please reconnect."); }
+    private void fail(String reason, RuntimeException cause) {
+        // Players only see the generic reason; operators need the exact failed check.
+        try {
+            var logger = session.getGeyser() == null ? null : session.getGeyser().getLogger();
+            if (logger != null) logger.warning("[cultacproxybridge] " + reason + " for " + session.bedrockUsername() + ": " + cause);
+        } catch (RuntimeException ignored) { }
+        fail(reason);
+    }
     @Override public void close() {
         if (closed) return;
         closed = true; queue.close(); outbound.close(); latencyCallbacks.clear(); latencyOrder.clear();

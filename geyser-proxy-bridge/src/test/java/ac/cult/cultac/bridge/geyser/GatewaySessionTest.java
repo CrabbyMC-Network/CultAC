@@ -77,12 +77,14 @@ public class GatewaySessionTest {
         NetworkStackLatencyPacket lastReceipt() {
             return (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket).reduce((a, b) -> b).orElseThrow();
         }
+        long echoScale = NativeReceiptTimestamp.SCALE;
         void ack() {
-            var reply = new NetworkStackLatencyPacket(); reply.setFromServer(true);
+            // Real Bedrock clients echo NetworkStackLatency with fromServer=false.
+            var reply = new NetworkStackLatencyPacket(); reply.setFromServer(false);
             var marker = (NetworkStackLatencyPacket) written.stream().filter(p -> p instanceof NetworkStackLatencyPacket latency
                     && !acknowledged.contains(latency.getTimestamp())).findFirst().orElseThrow();
             acknowledged.add(marker.getTimestamp());
-            reply.setTimestamp(Math.multiplyExact(marker.getTimestamp(), NativeReceiptTimestamp.SCALE));
+            reply.setTimestamp(Math.multiplyExact(marker.getTimestamp(), echoScale));
             gateway.handlePacket(reply);
         }
         void boundary(int marker) {
@@ -110,6 +112,12 @@ public class GatewaySessionTest {
         h.boundary(100); h.ack(); h.boundary(101); h.ack();
         assertEquals(BridgeEnvelope.Kind.CLIENT_PACKET, h.backend.getLast().kind());
         assertTrue(h.projected.isEmpty());
+    }
+    @Test public void unscaledDeviceReceiptEchoesCompleteTheSameHandshake() throws Exception {
+        var h = new Harness(); h.echoScale = 1; h.challenge(); h.gateway.handlePacket(h.input(10));
+        h.ack(); assertEquals(BridgeEnvelope.Kind.HELLO, h.backend.getFirst().kind());
+        h.boundary(100); h.ack(); h.boundary(101); h.ack();
+        assertEquals(BridgeEnvelope.Kind.CLIENT_PACKET, h.backend.getLast().kind());
     }
     @Test public void rejectedInputDoesNotReachTheOriginalMovementTranslator() throws Exception {
         var h = new Harness(); h.initialize(); h.gateway.handlePacket(h.input(10));
@@ -170,7 +178,7 @@ public class GatewaySessionTest {
     }
     @Test public void oldNativeReceiptAfterTransferCannotConsumeGeyserCallbacksOrNewInput() throws Exception {
         var h = new Harness(); h.challenge(); long old = h.lastReceipt().getTimestamp();
-        h.gateway.javaLogin(); var stale = new NetworkStackLatencyPacket(); stale.setFromServer(true);
+        h.gateway.javaLogin(); var stale = new NetworkStackLatencyPacket(); stale.setFromServer(false);
         stale.setTimestamp(old * NativeReceiptTimestamp.SCALE); h.gateway.handlePacket(stale);
         assertTrue(h.backend.isEmpty()); assertTrue(h.projected.isEmpty());
         h.gateway.handlePacket(h.input(99)); assertEquals(1, h.projected.size());

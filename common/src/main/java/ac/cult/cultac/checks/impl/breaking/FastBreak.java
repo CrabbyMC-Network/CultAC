@@ -23,12 +23,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 // Based loosely off of Hawk BlockBreakSpeedSurvival
 // Also based loosely off of NoCheatPlus FastBreak
 // Also based off minecraft wiki: https://minecraft.wiki/w/Breaking#Instant_breaking
 @CheckData(name = "FastBreak", stableKey = "cult.breaking.fast_break", description = "Breaking blocks too quickly")
 public class FastBreak extends Check implements BlockBreakListener {
+    // The delay shape is no longer written; it stays so the stored verbose schema is unchanged.
     private static final Verbose V =
             Verbose.of("[delay={ulong}ms|diff={f64:%.1f}ms, balance={f64:%.1f}ms], type={block}");
 
@@ -36,55 +38,54 @@ public class FastBreak extends Check implements BlockBreakListener {
     // Better to just exempt to not annoy legit players.
     private static final Set<Block> EXEMPT_STATES = Set.of();
 
+    // Receive-time clock; replaceable so tests can replay exact client tick timelines.
+    LongSupplier clock = System::currentTimeMillis;
+
     public FastBreak(CultPlayer player) {
         super(player);
     }
+
+    // MultiPlayerGameMode#continueDestroyBlock sets destroyDelay = 5 after a finished break
+    private static final int DESTROY_DELAY_TICKS = 5;
+    private static final double TICK_MILLIS = 50;
 
     // The block the player is currently breaking
     BlockPos targetBlockPosition = null;
     // The maximum amount of damage the player deals to the block
     //
     double maximumBlockDamage = 0;
-    // The last time a finish digging packet was sent, to enforce 0.3-second delay after non-instabreak
+    // The last time a finish digging packet was sent; destroyDelay starts here
     long lastFinishBreak = 0;
     // The time the player started to break the block, to know how long the player waited until they finished breaking the block
     long startBreak = 0;
 
     // The buffer to this check
     double blockBreakBalance = 0;
-    double blockDelayBalance = 0;
 
+    // Vanilla client timing (MultiPlayerGameMode, Minecraft#startAttack/#continueAttack):
+    // - startDestroyBlock never consults destroyDelay. A click sends START (and instabreaks)
+    //   immediately after a finished break, so no START-to-previous-STOP delay is enforced.
+    // - continueDestroyBlock runs at most once per tick and either consumes one destroyDelay
+    //   tick or adds one tick of progress. A click runs it in the START tick itself.
+    // So a block needing n progress ticks finishes no earlier than n - 1 ticks after START,
+    // and no earlier than 5 + n ticks after the previous finished break.
     public void onBlockBreak(BlockBreak blockBreak) {
         if (blockBreak.action == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK) { // PE DiggingAction.START_DIGGING
-
-            startBreak = System.currentTimeMillis() - (targetBlockPosition == null ? 50 : 0); // ???
+            startBreak = clock.getAsLong();
             targetBlockPosition = blockBreak.position;
 
             // FIXME: getBlockDamage might not return the correct value if the player switched slots before this
-            maximumBlockDamage = getClientBlockDamage(blockBreak.block);
-
-            double breakDelay = System.currentTimeMillis() - lastFinishBreak;
-
-            if (breakDelay >= 275) { // Reduce buffer if "close enough"
-                blockDelayBalance *= 0.9;
-            } else { // Otherwise, increase buffer
-                blockDelayBalance += 300 - breakDelay;
-            }
-
-            if (blockDelayBalance > 1000) { // If more than a second of advantage
-                int type = BuiltInRegistries.BLOCK.getId(blockBreak.block.getBlock());
-                if (flag(V.write(verbose()).bool(true).ulong((long) breakDelay).f64(0).f64(0).sint(type)) && shouldModifyPackets()) {
-                    blockBreak.cancel();
-                }
-            }
-
-            clampBalance();
+            maximumBlockDamage = clientBlockDamage(blockBreak.block);
         }
 
         if (blockBreak.action == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK && targetBlockPosition != null) { // PE DiggingAction.FINISHED_DIGGING
-            double predictedTime = Math.ceil(1 / maximumBlockDamage) * 50;
-            double realTime = System.currentTimeMillis() - startBreak;
-            double diff = predictedTime - realTime;
+            long now = clock.getAsLong();
+            // Every STOP is sent by a progress tick, so at least one is required
+            double progressTicks = Math.max(1, Math.ceil(1 / maximumBlockDamage));
+            double earliestFinish = Math.max(
+                    startBreak + (progressTicks - 1) * TICK_MILLIS,
+                    lastFinishBreak + (DESTROY_DELAY_TICKS + progressTicks) * TICK_MILLIS);
+            double diff = earliestFinish - now;
 
             clampBalance();
 
@@ -102,7 +103,7 @@ public class FastBreak extends Check implements BlockBreakListener {
             }
 
             // also set start time because the breaking netcode is fucked on 1.14.4+
-            lastFinishBreak = startBreak = System.currentTimeMillis();
+            lastFinishBreak = startBreak = now;
         }
     }
 
@@ -136,7 +137,7 @@ public class FastBreak extends Check implements BlockBreakListener {
         }
     }
 
-    private double getClientBlockDamage(BlockState serverState) {
+    double clientBlockDamage(BlockState serverState) {
         BlockState clientState = ViaClientBlockShapeMappings.clientBlockState(player, serverState);
         return BlockBreakSpeed.getBlockDamage(player, player.getInventory().getHeldItem(), clientState);
     }
@@ -144,6 +145,5 @@ public class FastBreak extends Check implements BlockBreakListener {
     private void clampBalance() {
         double balance = Math.max(1000, (player.getTransactionPing()));
         blockBreakBalance = CultMath.clamp(blockBreakBalance, -balance, balance); // Clamp not Math.max in case other logic changes
-        blockDelayBalance = CultMath.clamp(blockDelayBalance, -balance, balance);
     }
 }
