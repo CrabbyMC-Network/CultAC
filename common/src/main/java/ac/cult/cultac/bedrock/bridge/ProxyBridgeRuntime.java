@@ -79,7 +79,9 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
             CultPlayer current=CultAPI.INSTANCE.getPlayerDataManager().getPlayer(owner);
             if(current==null || current.user!=owner || !current.isBedrockMovement()){close(owner);return;}
             try {process(current,lease,lease.session.receive(owner,bytes));}
-            catch(RuntimeException failure){close(owner);LogUtil.warn("Proxy Bedrock bridge rejected a connection: "+failure.getClass().getSimpleName());owner.closeConnection();}
+            // LinkageError covers a broken runtime classpath (e.g. a missing ServiceLoader implementation):
+            // the lease must still close instead of staying half-bound.
+            catch(RuntimeException|LinkageError failure){close(owner);LogUtil.warn("Proxy Bedrock bridge rejected a connection: "+failure);owner.closeConnection();}
         });
     }
     @Override public void handle(PacketSendEvent event,CultPlayer player,Packet<?> packet) {

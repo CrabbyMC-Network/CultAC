@@ -11,6 +11,9 @@ tasks.named<ShadowJar>("shadowJar") {
         // ServiceLoader, so minimize() strips it and adventure's static init then throws
         // (ServiceConfigurationError) on enable. Keep the gson serializer's classes.
         exclude(dependency("net.kyori:adventure-text-serializer-gson:.*"))
+        // Cloudburst math (used by the proxy Bedrock bridge) loads its vector and imaginary
+        // implementations via ServiceLoader only; without them Vector3f.from fails at runtime.
+        exclude(dependency("org.cloudburstmc.math:immutable:.*"))
     }
     archiveFileName = "${rootProject.name}-${project.name}-${rootProject.version}.jar"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
