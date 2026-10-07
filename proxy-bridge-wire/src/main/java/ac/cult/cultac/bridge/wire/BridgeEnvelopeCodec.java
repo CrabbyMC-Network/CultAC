@@ -16,7 +16,8 @@ import java.util.UUID;
 public final class BridgeEnvelopeCodec {
     public static final String CHANNEL = "cult:bedrock_bridge";
     private static final int MAGIC = 0x43504231;
-    private static final int VERSION = 1;
+    // 2: ACTOR_CONTEXT_BATCH. Gateway and backend must run the same protocol version.
+    private static final int VERSION = 2;
     private static final int TAG_BYTES = 32;
     private static final int HEADER_BYTES = 4 + 1 + 1 + 1 + 16 + 16 + 8 + 4;
     private final byte[] key;

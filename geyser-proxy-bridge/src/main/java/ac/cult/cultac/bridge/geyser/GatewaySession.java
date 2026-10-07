@@ -36,6 +36,11 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     private long waitingSequence;
     private final GatewayOutbound outbound;
     private final Map<Long, Runnable> latencyCallbacks = new HashMap<>();
+    // Pending receipts that close a state boundary (the rest are Java ping receipts), for diagnostics.
+    private final java.util.Set<Long> boundaryReceipts = new java.util.HashSet<>();
+    // Memory bound only: a client that stops answering is dropped by the 30 s receipt timeout. This
+    // must hold a slow device's loading screen worth of pings and state boundaries.
+    private static final int MAX_PENDING_RECEIPTS = 8192;
     private final ArrayDeque<Long> latencyOrder = new ArrayDeque<>();
     private long latencyCounter;
     private boolean initialized;
@@ -61,7 +66,7 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
         outbound.install();
     }
     void resetBackend() {
-        queue.close(); outbound.reset(); latencyCallbacks.clear(); latencyOrder.clear(); authorizedPings.clear();
+        queue.close(); outbound.reset(); latencyCallbacks.clear(); boundaryReceipts.clear(); latencyOrder.clear(); authorizedPings.clear();
         if (receipts != null) receipts.close();
         synchronized (outgoingLock) { nonce = null; nextSequence = 0; outgoing.clear(); }
         downstream = null; ready = false; initialized = false; waiting = null;
@@ -169,7 +174,7 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
                     // timestamp namespace and FIFO order are the proof, as in Geyser itself.
                     if (latencyOrder.isEmpty() || latencyOrder.removeFirst() != original)
                         throw new IllegalArgumentException("Reordered native receipt");
-                    latencyCallbacks.remove(original); receipt.run(); return;
+                    latencyCallbacks.remove(original); boundaryReceipts.remove(original); receipt.run(); return;
                 }
                 if (!active() || packet instanceof NetworkStackLatencyPacket) {
                     delegate.handlePacket(packet); return;
@@ -287,10 +292,12 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     }
     private void sendReceipt(Runnable sent, Runnable callback, boolean immediate, boolean direct) {
         // Separate namespace from Geyser's ping IDs; our receipts never enter its FIFO callback cache.
-        if (latencyCallbacks.size() >= 1024 || latencyCounter >= NativeReceiptTimestamp.MAX_COUNTER)
-            throw new IllegalStateException("Unbounded native receipts");
+        if (latencyCallbacks.size() >= MAX_PENDING_RECEIPTS || latencyCounter >= NativeReceiptTimestamp.MAX_COUNTER)
+            throw new IllegalStateException("Unbounded native receipts: pending=" + latencyCallbacks.size()
+                    + " boundaries=" + boundaryReceipts.size() + " pings=" + (latencyCallbacks.size() - boundaryReceipts.size()));
         long timestamp = NativeReceiptTimestamp.marker(++latencyCounter);
         latencyCallbacks.put(timestamp, callback);
+        if (direct) boundaryReceipts.add(timestamp);
         NetworkStackLatencyPacket latency = new NetworkStackLatencyPacket();
         latency.setFromServer(true); latency.setTimestamp(timestamp);
         outbound.ownReceipt(timestamp, () -> {
@@ -336,7 +343,7 @@ final class GatewaySession implements BedrockPacketHandler, AutoCloseable {
     }
     @Override public void close() {
         if (closed) return;
-        closed = true; queue.close(); outbound.close(); latencyCallbacks.clear(); latencyOrder.clear();
+        closed = true; queue.close(); outbound.close(); latencyCallbacks.clear(); boundaryReceipts.clear(); latencyOrder.clear();
         if (receipts != null) receipts.close();
         var nativeSession = session.getUpstream().getSession();
         if (nativeSession.getPacketHandler() == this) nativeSession.setPacketHandler(delegate);

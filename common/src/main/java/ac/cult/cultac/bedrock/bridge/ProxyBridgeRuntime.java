@@ -124,12 +124,10 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
                 lease.session.send(BridgeEnvelope.Kind.INPUT_RESULT,result.encode());
             }
             case ACTOR_CONTEXT -> {
-                var state=ActorStateMessage.decode(envelope.body());request(lease,state.request());
-                var before=player.getLastClientboundBedrockTransaction();var boundary=player.createBedrockTransactionAfterClientbound();
-                var marker=new Marker(state.request());
-                var apply=ProxyBridgeActorState.capture(player,state,before,boundary,()->marker.lastAuthTick);
-                player.addBedrockTransactionTask(boundary,apply);boundary(lease,state.request(),boundary.id(),marker);
+                var state=ActorStateMessage.decode(envelope.body());
+                actorStates(player,lease,new ActorStateBatch(state.request(),List.of(state)));
             }
+            case ACTOR_CONTEXT_BATCH -> actorStates(player,lease,ActorStateBatch.decode(envelope.body()));
             case TELEPORT_EMISSION -> {
                 var emission=TeleportEmissionMessage.decode(envelope.body());request(lease,emission.request());
                 var coordinates=new BedrockCoordinateFrame(emission.originX(),emission.originZ(),emission.originRevision());
@@ -155,6 +153,18 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
             case CLOSE -> close(player.user);
             default -> throw new IllegalArgumentException("Unexpected bridge message");
         }
+    }
+    /**
+     * Native writes the gateway emitted together share one receipt: the client processes them in
+     * the same flush, so every state applies, in order, once that single boundary is acknowledged.
+     */
+    private static void actorStates(CultPlayer player,Lease lease,ActorStateBatch batch) {
+        request(lease,batch.request());
+        var before=player.getLastClientboundBedrockTransaction();var boundary=player.createBedrockTransactionAfterClientbound();
+        var marker=new Marker(batch.request());
+        for(var state:batch.states())
+            player.addBedrockTransactionTask(boundary,ProxyBridgeActorState.capture(player,state,before,boundary,()->marker.lastAuthTick));
+        boundary(lease,batch.request(),boundary.id(),marker);
     }
     private static void request(Lease lease,long request){if(request<=lease.lastRequest)throw new IllegalArgumentException("Repeated native state request");lease.lastRequest=request;}
     private static void bounded(Lease lease){if(lease.markers.size()>=MAX_BOUNDARIES)throw new IllegalStateException("Unacknowledged native state overflow");}

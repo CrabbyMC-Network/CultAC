@@ -30,7 +30,8 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
     private final IdentityHashMap<BedrockPacket, ActorStateMessage> bindingPackets = new IdentityHashMap<>();
     private final Set<BedrockPacket> preparedEffects = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<BedrockPacket> initialPackets = Collections.newSetFromMap(new IdentityHashMap<>());
-    private final Set<Long> initialRequests = new HashSet<>();
+    // Initial replay writes awaiting each request's receipt (a batch can carry several).
+    private final Map<Long, Integer> initialRequests = new HashMap<>();
     private final Set<Long> teleportRequests = new HashSet<>();
     private Runnable initialized;
     private int initialRemaining;
@@ -38,7 +39,8 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
     private boolean incompleteSnapshot;
     private final IdentityHashMap<BedrockPacket, TeleportEmissionMessage> setbackSources = new IdentityHashMap<>();
     private final IdentityHashMap<BedrockPacket, CorrectionMessage> correctionSources = new IdentityHashMap<>();
-    private Write waiting;
+    // Writes held until the backend's boundary for waitingRequest; null when nothing is pending.
+    private List<Write> waiting;
     private long request, waitingRequest, operation;
     private int javaTeleport = -1;
     private boolean emittingReceipt, closed;
@@ -110,86 +112,146 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
         } else writes.add(next);
         drain();
     }
+    private boolean hasWrites() { return !initialWrites.isEmpty() || !writes.isEmpty(); }
+    private Write peekWrite() { return initialWrites.isEmpty() ? writes.peekFirst() : initialWrites.peekFirst(); }
+    private Write pollWrite() { return initialWrites.isEmpty() ? writes.removeFirst() : initialWrites.removeFirst(); }
+    /** Writes that need their own boundary (or none) and therefore end a native state batch. */
+    private boolean barrier(Write write) {
+        if (write.message instanceof StateBoundary || !(write.message instanceof BedrockPacketWrapper wrapper)) return true;
+        BedrockPacket packet = wrapper.getPacket();
+        return packet instanceof GatewayBlockAckTranslator.Boundary
+                || packet instanceof MovePlayerPacket move && move.getRuntimeEntityId() == session.getPlayerEntity().geyserId()
+                && (move.getMode() == MovePlayerPacket.Mode.TELEPORT || move.getMode() == MovePlayerPacket.Mode.RESPAWN);
+    }
     private void drain() {
-        while (!closed && owner.ready() && waiting == null && initialReceiving == 0
-                && (!initialWrites.isEmpty() || !writes.isEmpty())) {
-            Write next = initialWrites.isEmpty() ? writes.removeFirst() : initialWrites.removeFirst();
-            if (next.message instanceof StateBoundary boundary) {
-                waiting = next; waitingRequest = ++request;
-                owner.send(BridgeEnvelope.Kind.ACTOR_CONTEXT,
-                        new ActorStateMessage(waitingRequest, session.getPlayerEntity().geyserId(),
-                                session.getPlayerEntity().getEntityId(), 0, ActorStateMessage.Kind.BLOCK_UPDATES, boundary.state).encode());
-                continue;
+        while (!closed && owner.ready() && waiting == null && initialReceiving == 0 && hasWrites()) {
+            if (barrier(peekWrite())) drainBarrier(pollWrite());
+            else drainBatch();
+        }
+    }
+    private void drainBarrier(Write next) {
+        if (next.message instanceof StateBoundary boundary) {
+            waiting = List.of(next); waitingRequest = ++request;
+            owner.send(BridgeEnvelope.Kind.ACTOR_CONTEXT,
+                    new ActorStateMessage(waitingRequest, session.getPlayerEntity().geyserId(),
+                            session.getPlayerEntity().getEntityId(), 0, ActorStateMessage.Kind.BLOCK_UPDATES, boundary.state).encode());
+            return;
+        }
+        if (!(next.message instanceof BedrockPacketWrapper wrapper)) {
+            observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise); return;
+        }
+        BedrockPacket packet = wrapper.getPacket();
+        if (packet instanceof GatewayBlockAckTranslator.Boundary boundary) {
+            ReferenceCountUtil.release(next.message); next.promise.trySuccess();
+            if (boundary.start) {
+                if (blockUpdates == null) blockUpdates = new GatewayBlockUpdates(session.getBlockMappings());
+                blockUpdates.begin();
             }
-            if (!(next.message instanceof BedrockPacketWrapper wrapper)) {
-                observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise); continue;
+            else {
+                var batches = blockUpdates.end();
+                for (int i = batches.size() - 1; i >= 0; i--)
+                    writes.addFirst(new Write(next.context, new StateBoundary(batches.get(i).encode()), next.context.newPromise(), () -> { }));
             }
+            return;
+        }
+        // Self teleport: its own TELEPORT_EMISSION boundary, never batched.
+        if (blockUpdates != null) blockUpdates.capture(packet);
+        preparedEffects.remove(packet);
+        if (!owner.rewrite(packet)) { drop(next, packet); return; }
+        long sequence = ++request;
+        TeleportEmissionMessage teleport = teleport(packet, sequence);
+        if (initialPackets.remove(packet)) initialRequests.merge(sequence, 1, Integer::sum);
+        teleportRequests.add(sequence);
+        waiting = List.of(next); waitingRequest = sequence;
+        owner.send(BridgeEnvelope.Kind.TELEPORT_EMISSION, teleport.encode());
+    }
+    /**
+     * Collects the run of native writes up to the next barrier. Stateful writes share one backend
+     * boundary and one native receipt; stateless writes inside the run are held so nothing is
+     * reordered. Each write is prepared exactly as a single write would be, in queue order.
+     */
+    private void drainBatch() {
+        var held = new ArrayList<Write>();
+        var states = new ArrayList<ActorStateMessage>();
+        long batchRequest = ++request;
+        int initial = 0, bytes = 0;
+        while (hasWrites() && !barrier(peekWrite()) && states.size() < ActorStateBatch.MAX_STATES) {
+            Write next = peekWrite();
+            var wrapper = (BedrockPacketWrapper) next.message;
             BedrockPacket packet = wrapper.getPacket();
-            if (packet instanceof GatewayBlockAckTranslator.Boundary boundary) {
-                ReferenceCountUtil.release(next.message); next.promise.trySuccess();
-                if (boundary.start) {
-                    if (blockUpdates == null) blockUpdates = new GatewayBlockUpdates(session.getBlockMappings());
-                    blockUpdates.begin();
-                }
-                else {
-                    var batches = blockUpdates.end();
-                    for (int i = batches.size() - 1; i >= 0; i--)
-                        writes.addFirst(new Write(next.context, new StateBoundary(batches.get(i).encode()), next.context.newPromise(), () -> { }));
-                }
-                continue;
-            }
-            if (blockUpdates != null) blockUpdates.capture(packet);
             if (packet instanceof MobEffectPacket effect && preparedEffects.add(packet)) {
                 UpdateAttributesPacket movement = owner.beforeVehicleEffect(effect);
                 if (movement != null) {
-                    writes.addFirst(next);
-                    writes.addFirst(new Write(next.context, BedrockPacketWrapper.create(0,
+                    var pre = new Write(next.context, BedrockPacketWrapper.create(0,
                             wrapper.getSenderSubClientId(), wrapper.getTargetSubClientId(), movement, null),
-                            next.context.newPromise(), () -> { }));
+                            next.context.newPromise(), () -> { });
+                    if (initialWrites.peekFirst() == next) initialWrites.addFirst(pre); else writes.addFirst(pre);
                     continue;
                 }
             }
-            preparedEffects.remove(packet);
-            if (!owner.rewrite(packet)) {
-                ReferenceCountUtil.release(next.message); next.promise.trySuccess();
-                if (initialPackets.remove(packet) && --initialRemaining == 0) {
-                    Runnable callback = initialized; initialized = null; callback.run();
+            pollWrite(); preparedEffects.remove(packet);
+            if (blockUpdates != null) blockUpdates.capture(packet);
+            if (!owner.rewrite(packet)) { drop(next, packet); continue; }
+            ActorStateMessage state = prepare(packet, batchRequest);
+            if (state == null) {
+                if (held.isEmpty()) {
+                    observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise);
+                    // A stateless initial replay (e.g. an effect the engine does not model) needs no receipt,
+                    // but it still completes the initial set; otherwise input would wait forever.
+                    if (initialPackets.remove(packet)) completeInitial(1);
+                    continue;
                 }
+                held.add(next);
+                if (initialPackets.remove(packet)) initial++;
                 continue;
             }
-            long sequence = ++request;
-            TeleportEmissionMessage teleport = teleport(packet, sequence);
-            boolean binding = bindingPackets.containsKey(packet);
-            ActorStateMessage state = bindingPackets.remove(packet);
-            if (state != null) state = new ActorStateMessage(sequence, state.actorRuntimeId(), state.actorJavaId(),
-                    state.tick(), state.kind(), state.state());
-            if (state == null) state = teleport == null ? state(packet, sequence) : null;
-            if (teleport == null && state == null) state = entityTransforms.capture(session, packet, sequence);
-            if (!binding) {
-                var metadataState = vehicleMetadata.capture(session, packet, sequence, true,
-                        state != null && state.kind() == ActorStateMessage.Kind.ENTITY_TRANSFORM && packet instanceof AddEntityPacket ? state : null);
-                if (metadataState != null) state = metadataState;
-            }
-            if (state != null && packet instanceof AddEntityPacket entity && !entity.getAttributes().isEmpty()) {
-                state = new ActorStateMessage(sequence, state.actorRuntimeId(), state.actorJavaId(), state.tick(),
-                        ActorStateMessage.Kind.BATCH, new ActorStateMessage.Bundle(List.of(
-                        new ActorStateMessage.Part(state.kind(), state.state()),
-                        new ActorStateMessage.Part(ActorStateMessage.Kind.ATTRIBUTES, attributes(entity.getAttributes()).encode()))).encode());
-            }
-            if (teleport == null && state == null) {
-                observe(next.message); next.beforeWrite.run(); next.context.write(next.message, next.promise);
-                // A stateless initial replay (e.g. an effect the engine does not model) needs no receipt,
-                // but it still completes the initial set; otherwise input would wait forever.
-                if (initialPackets.remove(packet) && --initialRemaining == 0) {
-                    Runnable callback = initialized; initialized = null; callback.run();
-                }
-                continue;
-            }
-            if (initialPackets.remove(packet)) initialRequests.add(sequence);
-            if (teleport != null) teleportRequests.add(sequence);
-            waiting = next; waitingRequest = sequence;
-            owner.send(teleport != null ? BridgeEnvelope.Kind.TELEPORT_EMISSION : BridgeEnvelope.Kind.ACTOR_CONTEXT,
-                    teleport != null ? teleport.encode() : state.encode());
+            held.add(next); states.add(state); bytes += ActorStateBatch.encodedSize(state);
+            if (initialPackets.remove(packet)) initial++;
+            // Stop before the next state could overflow the envelope; it starts the following batch.
+            if (bytes > ActorStateBatch.MAX_STATE_BYTES - BridgeEnvelope.MAX_BODY_BYTES / 4) break;
+        }
+        if (states.isEmpty()) {
+            for (Write write : held) { observe(write.message); write.beforeWrite.run(); write.context.write(write.message, write.promise); }
+            if (initial > 0) completeInitial(initial);
+            return;
+        }
+        if (initial > 0) initialRequests.put(batchRequest, initial);
+        waiting = held; waitingRequest = batchRequest;
+        if (states.size() == 1) owner.send(BridgeEnvelope.Kind.ACTOR_CONTEXT, states.getFirst().encode());
+        else owner.send(BridgeEnvelope.Kind.ACTOR_CONTEXT_BATCH, new ActorStateBatch(batchRequest, states).encode());
+    }
+    /** The backend state for one native write, prepared exactly as the unbatched path did. */
+    private ActorStateMessage prepare(BedrockPacket packet, long sequence) {
+        boolean binding = bindingPackets.containsKey(packet);
+        ActorStateMessage state = bindingPackets.remove(packet);
+        if (state != null) state = new ActorStateMessage(sequence, state.actorRuntimeId(), state.actorJavaId(),
+                state.tick(), state.kind(), state.state());
+        if (state == null) state = state(packet, sequence);
+        if (state == null) state = entityTransforms.capture(session, packet, sequence);
+        if (!binding) {
+            var metadataState = vehicleMetadata.capture(session, packet, sequence, true,
+                    state != null && state.kind() == ActorStateMessage.Kind.ENTITY_TRANSFORM && packet instanceof AddEntityPacket ? state : null);
+            if (metadataState != null) state = metadataState;
+        }
+        if (state != null && packet instanceof AddEntityPacket entity && !entity.getAttributes().isEmpty()) {
+            state = new ActorStateMessage(sequence, state.actorRuntimeId(), state.actorJavaId(), state.tick(),
+                    ActorStateMessage.Kind.BATCH, new ActorStateMessage.Bundle(List.of(
+                    new ActorStateMessage.Part(state.kind(), state.state()),
+                    new ActorStateMessage.Part(ActorStateMessage.Kind.ATTRIBUTES, attributes(entity.getAttributes()).encode()))).encode());
+        }
+        return state;
+    }
+    private void drop(Write next, BedrockPacket packet) {
+        ReferenceCountUtil.release(next.message); next.promise.trySuccess();
+        if (initialPackets.remove(packet)) completeInitial(1);
+    }
+    private void completeInitial(int count) {
+        if (count <= 0 || initialRemaining <= 0) return;
+        initialRemaining -= count;
+        if (initialRemaining <= 0) {
+            initialRemaining = 0;
+            Runnable callback = initialized; initialized = null;
+            if (callback != null) callback.run();
         }
     }
     void boundary(BridgeControlMessage.Latency boundary) {
@@ -197,20 +259,21 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
                 || boundary.request() != waitingRequest || emittingReceipt)
             throw new IllegalArgumentException("Unknown native write boundary");
         long requestId = waitingRequest;
-        Write exact = waiting;
+        List<Write> held = waiting;
         owner.send(BridgeEnvelope.Kind.LATENCY_RECEIPT,
                 new BridgeControlMessage.Latency(BridgeControlMessage.Latency.SENT, requestId, boundary.marker()).encode());
-        observe(exact.message); exact.beforeWrite.run();
-        if (exact.message instanceof StateBoundary) exact.promise.trySuccess();
-        else exact.context.write(exact.message, exact.promise);
+        for (Write exact : held) {
+            observe(exact.message); exact.beforeWrite.run();
+            if (exact.message instanceof StateBoundary) exact.promise.trySuccess();
+            else exact.context.write(exact.message, exact.promise);
+        }
         emittingReceipt = true;
         owner.sendBoundaryReceipt(() -> {
             owner.send(BridgeEnvelope.Kind.LATENCY_RECEIPT,
                     new BridgeControlMessage.Latency(BridgeControlMessage.Latency.ACK, requestId, boundary.marker(), owner.inputTick()).encode());
             if (teleportRequests.remove(requestId)) owner.resumeInput();
-            if (initialRequests.remove(requestId) && --initialRemaining == 0) {
-                Runnable callback = initialized; initialized = null; callback.run();
-            }
+            Integer initial = initialRequests.remove(requestId);
+            if (initial != null) completeInitial(initial);
         });
     }
     private void observe(Object message) {
@@ -368,7 +431,7 @@ final class GatewayOutbound extends ChannelDuplexHandler implements AutoCloseabl
     boolean blocksInput() { return !teleportRequests.isEmpty(); }
 
     void reset() {
-        if (waiting != null && !emittingReceipt) discard(waiting);
+        if (waiting != null && !emittingReceipt) waiting.forEach(GatewayOutbound::discard);
         waiting = null; emittingReceipt = false;
         while (!writes.isEmpty()) discard(writes.removeFirst());
         while (!initialWrites.isEmpty()) discard(initialWrites.removeFirst());

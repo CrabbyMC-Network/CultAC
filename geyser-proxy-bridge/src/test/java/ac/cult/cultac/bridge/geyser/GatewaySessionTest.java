@@ -90,20 +90,37 @@ public class GatewaySessionTest {
         }
         void boundary(int marker) {
             // A preceding native receipt can arrive after the next write request was queued.
-            BridgeEnvelope request = backend.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT
-                    || p.kind() == BridgeEnvelope.Kind.TELEPORT_EMISSION).reduce((a, b) -> b).orElseThrow();
-            long id = request.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT ? ActorStateMessage.decode(request.body()).request()
-                    : TeleportEmissionMessage.decode(request.body()).request();
+            BridgeEnvelope request = backend.stream().filter(Harness::stateRequest).reduce((a, b) -> b).orElseThrow();
+            long id = requestId(request);
             control(BridgeEnvelope.Kind.LATENCY_RECEIPT,
                     new BridgeControlMessage.Latency(BridgeControlMessage.Latency.BOUNDARY, id, marker).encode());
+        }
+        static boolean stateRequest(BridgeEnvelope p) {
+            return p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT || p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT_BATCH
+                    || p.kind() == BridgeEnvelope.Kind.TELEPORT_EMISSION;
+        }
+        static long requestId(BridgeEnvelope request) {
+            return switch (request.kind()) {
+                case ACTOR_CONTEXT -> ActorStateMessage.decode(request.body()).request();
+                case ACTOR_CONTEXT_BATCH -> ActorStateBatch.decode(request.body()).request();
+                default -> TeleportEmissionMessage.decode(request.body()).request();
+            };
+        }
+        /** Every native state the gateway reported, whether sent alone or in a batch. */
+        List<ActorStateMessage> states() {
+            var states = new ArrayList<ActorStateMessage>();
+            for (var p : backend) {
+                if (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT) states.add(ActorStateMessage.decode(p.body()));
+                else if (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT_BATCH) states.addAll(ActorStateBatch.decode(p.body()).states());
+            }
+            return states;
         }
         /** Answers every pending backend request and native receipt, in protocol order, until input flows. */
         boolean driveUntilInput() {
             var answered = new HashSet<BridgeEnvelope>(); int marker = 1000;
             for (int step = 0; step < 64; step++) {
                 if (backend.stream().anyMatch(p -> p.kind() == BridgeEnvelope.Kind.CLIENT_PACKET)) return true;
-                var request = backend.stream().filter(p -> (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT
-                        || p.kind() == BridgeEnvelope.Kind.TELEPORT_EMISSION) && !answered.contains(p)).findFirst();
+                var request = backend.stream().filter(p -> stateRequest(p) && !answered.contains(p)).findFirst();
                 if (request.isPresent()) { answered.add(request.get()); boundary(marker++); continue; }
                 if (written.stream().noneMatch(p -> p instanceof NetworkStackLatencyPacket latency
                         && !acknowledged.contains(latency.getTimestamp()))) return false;
@@ -122,6 +139,41 @@ public class GatewaySessionTest {
     private static MobEffectPacket effect(int id, int amplifier, MobEffectPacket.Event event) {
         var packet = new MobEffectPacket(); packet.setRuntimeEntityId(42); packet.setEffectId(id);
         packet.setAmplifier(amplifier); packet.setDuration(200); packet.setEvent(event); return packet;
+    }
+    @Test public void crowdedNativeStateSharesBoundariesAndKeepsWireOrder() throws Exception {
+        // A busy area: many state-carrying writes arrive while a boundary is still pending.
+        var h = new Harness(); h.initialize();
+        int start = h.backend.size(), writtenStart = h.written.size();
+        var motions = new ArrayList<SetEntityMotionPacket>();
+        for (int n = 0; n < 40; n++) {
+            var motion = new SetEntityMotionPacket(); motion.setRuntimeEntityId(42); motion.setMotion(Vector3f.from(n, 0, 0));
+            motions.add(motion); h.nativeSession.sendUpstreamPacket(motion);
+        }
+        var answered = new HashSet<BridgeEnvelope>(); int marker = 5000;
+        for (int step = 0; step < 200; step++) {
+            var pending = h.backend.subList(start, h.backend.size()).stream()
+                    .filter(p -> Harness.stateRequest(p) && !answered.contains(p)).findFirst();
+            if (pending.isPresent()) { answered.add(pending.get()); h.boundary(marker++); continue; }
+            if (h.written.stream().noneMatch(p -> p instanceof NetworkStackLatencyPacket latency
+                    && !h.acknowledged.contains(latency.getTimestamp()))) break;
+            h.ack();
+        }
+        var sent = h.backend.subList(start, h.backend.size());
+        long requests = sent.stream().filter(Harness::stateRequest).count();
+        assertTrue("40 writes must share boundaries, not use one each: " + requests, requests <= 3);
+        assertEquals(1, sent.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT_BATCH).limit(1).count());
+        long receipts = sent.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.LATENCY_RECEIPT).count();
+        assertEquals("one SENT and one ACK per boundary", requests * 2, receipts);
+        var reported = 0;
+        for (var p : sent) {
+            if (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT) reported++;
+            else if (p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT_BATCH) reported += ActorStateBatch.decode(p.body()).states().size();
+        }
+        assertEquals(40, reported);
+        var nativeOrder = h.written.subList(writtenStart, h.written.size()).stream()
+                .filter(p -> p instanceof SetEntityMotionPacket).toList();
+        assertEquals(motions, nativeOrder);
+        verify(h.nativeSession, never()).disconnect(anyString());
     }
     @Test public void concurrentSendersReachTheBackendInSequenceOrder() throws Exception {
         // Inputs, backend replies and native writes call send() from different Geyser threads.
@@ -171,8 +223,7 @@ public class GatewaySessionTest {
     @Test public void boundEffectLevelsMatchTheLocalBridgeContract() throws Exception {
         var h = new Harness(); h.initialize();
         h.nativeSession.sendUpstreamPacket(effect(1, 0, MobEffectPacket.Event.ADD));
-        var state = h.backend.stream().filter(p -> p.kind() == BridgeEnvelope.Kind.ACTOR_CONTEXT)
-                .map(p -> ActorStateMessage.decode(p.body())).filter(m -> m.kind() == ActorStateMessage.Kind.EFFECT)
+        var state = h.states().stream().filter(m -> m.kind() == ActorStateMessage.Kind.EFFECT)
                 .reduce((a, b) -> b).orElseThrow();
         var effect = ActorStateMessage.Effect.decode(state.state());
         assertEquals(1, effect.id()); assertEquals(1, effect.level()); assertEquals(200, effect.duration());

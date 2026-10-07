@@ -9,7 +9,7 @@ public record BridgeEnvelope(Direction direction, Kind kind, UUID player, UUID c
     public static final int MAX_BODY_BYTES = 24 * 1024;
     public enum Direction { TO_BACKEND, TO_GATEWAY }
     public enum Kind { CHALLENGE, HELLO, CLIENT_PACKET, INPUT_RESULT, TELEPORT_EMISSION, LATENCY_RECEIPT,
-                       SERVER_TELEPORT, SERVER_CORRECTION, ACTOR_CONTEXT, CLOSE, INVENTORY_DIFF }
+                       SERVER_TELEPORT, SERVER_CORRECTION, ACTOR_CONTEXT, CLOSE, INVENTORY_DIFF, ACTOR_CONTEXT_BATCH }
 
     public BridgeEnvelope {
         Objects.requireNonNull(direction); Objects.requireNonNull(kind);

@@ -50,7 +50,8 @@ public class BridgeEnvelopeCodecTest {
         byte[] p=codec.encode(message(1)); rejected(Arrays.copyOf(p,p.length-1)); rejected(Arrays.copyOf(p,p.length+1));
     }
     @Test public void unsupportedSignedVersionIsRejected() throws Exception {
-        byte[] p=codec.encode(message(1));p[4]=2;rejected(sign(p));
+        // Current protocol is 2: a stale version-1 peer and an unknown future version must both fail.
+        for (byte version : new byte[]{1, 3}) { byte[] p=codec.encode(message(1));p[4]=version;rejected(sign(p)); }
     }
     @Test public void unknownSignedKindIsRejected() throws Exception {
         byte[] p=codec.encode(message(1));p[6]=(byte)127;rejected(sign(p));
