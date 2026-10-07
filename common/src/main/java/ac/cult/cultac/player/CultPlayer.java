@@ -409,6 +409,16 @@ public class CultPlayer implements GrimUser {
     // The design is allowing players to miss transaction packets, which shouldn't be possible
     // But if some error made a client miss a packet, then it won't hurt them too bad.
     // Also it forces players to take knockback
+    /**
+     * Removes one inbound packet from ViaVersion's rate limiter. Only for traffic Cult itself
+     * originates or has authenticated: transaction responses and proxy bridge control messages.
+     */
+    public void discountRateLimitedPacket() {
+        if (packetTracker != null) {
+            packetTracker.setIntervalPackets(packetTracker.getIntervalPackets() - 1);
+        }
+    }
+
     public synchronized boolean addTransactionResponse(int id) {
         // Count how many unacknowledged transactions this response jumps past
         int skipped = 0;
@@ -435,9 +445,7 @@ public class CultPlayer implements GrimUser {
         SentTransaction acknowledged = acknowledgeThrough(id);
 
         // ViaVersion rate-limits inbound packets; our own transactions don't count
-        if (packetTracker != null) {
-            packetTracker.setIntervalPackets(packetTracker.getIntervalPackets() - 1);
-        }
+        discountRateLimitedPacket();
 
         pruneStalePistonStateWhenIdle();
 

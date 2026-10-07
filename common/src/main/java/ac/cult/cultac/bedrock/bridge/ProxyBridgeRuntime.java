@@ -38,12 +38,28 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
         if(!Files.isRegularFile(file))return;
         try {
             byte[] key=Base64.getDecoder().decode(Files.readString(file).trim());
+            initializeMath();
             var bridge=new ProxyBridgeRuntime(key);active=bridge;
             network.registerListener(bridge);
             network.registerReceiveTap(PacketListenerPriority.LOWEST,bridge);
             registrar.send(ClientboundPingPacket.class,PacketListenerPriority.MONITOR,bridge);
             LogUtil.info("Authenticated proxy Bedrock bridge enabled.");
         }catch(Exception failure){throw new IllegalStateException("Invalid proxy bridge key file",failure);}
+    }
+    /**
+     * The bundled Cloudburst math 2.0-SNAPSHOT finds its vector/imaginary implementations with
+     * ServiceLoader.load(Class), i.e. the thread context class loader. On Netty threads that is the
+     * server's loader, which cannot see this plugin's classes. Resolve and cache both providers once
+     * here with the plugin's own loader.
+     */
+    private static void initializeMath() {
+        Thread thread=Thread.currentThread();ClassLoader previous=thread.getContextClassLoader();
+        try {
+            thread.setContextClassLoader(ProxyBridgeRuntime.class.getClassLoader());
+            // Direct references keep both classes through shadow minimization.
+            org.cloudburstmc.math.vector.Vector3f.from(0,0,0);
+            org.cloudburstmc.math.imaginary.Quaternionf.from(0,0,0,1);
+        } finally { thread.setContextClassLoader(previous); }
     }
     @Override public void onUserLogin(UserLoginEvent event) {
         User user=event.getUser();CultPlayer player=CultAPI.INSTANCE.getPlayerDataManager().getPlayer(user);
@@ -78,7 +94,7 @@ public final class ProxyBridgeRuntime extends UserLifecycleListener implements P
             Lease lease;synchronized(leases){lease=leases.get(owner);}if(lease==null)return;
             CultPlayer current=CultAPI.INSTANCE.getPlayerDataManager().getPlayer(owner);
             if(current==null || current.user!=owner || !current.isBedrockMovement()){close(owner);return;}
-            try {process(current,lease,lease.session.receive(owner,bytes));}
+            try {var envelope=lease.session.receive(owner,bytes);current.discountRateLimitedPacket();process(current,lease,envelope);}
             // LinkageError covers a broken runtime classpath (e.g. a missing ServiceLoader implementation):
             // the lease must still close instead of staying half-bound.
             catch(RuntimeException|LinkageError failure){close(owner);LogUtil.warn("Proxy Bedrock bridge rejected a connection: "+failure);owner.closeConnection();}
