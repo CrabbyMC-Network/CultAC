@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Signed post-translation observations, never an inventory request or a permission bypass. */
 final class ProxyBridgeInventoryActions {
+    private static final Set<String> UNKNOWN_COMPONENTS = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private ProxyBridgeInventoryActions() { }
     static void apply(CultPlayer player, byte[] body) {
         var message = InventoryDeltaMessage.decode(body);
@@ -34,7 +35,13 @@ final class ProxyBridgeInventoryActions {
         for (var component : source.components()) {
             if (!seen.add(component.name())) throw new IllegalArgumentException("Duplicate named item component");
             var type = NmsIdentifierUtil.registryValue(BuiltInRegistries.DATA_COMPONENT_TYPE, component.name());
-            if (type == null) throw new IllegalArgumentException("Unknown named item component");
+            if (type == null) {
+                // Geyser speaks the proxy's protocol; a backend behind ViaVersion (e.g. 1.21.11) may
+                // not know a newer component. None of them affect the modeled movement or item use.
+                if (UNKNOWN_COMPONENTS.add(component.name()))
+                    ac.cult.cultac.utils.anticheat.LogUtil.warn("Proxy bridge skipped item component unknown to this server: " + component.name());
+                continue;
+            }
             Object value = NamedValueCodec.decode(component.value());
             if (component.removed()) stack.remove(type);
             else if (component.name().equals("minecraft:creative_slot_lock")) setValue(stack, type, net.minecraft.util.Unit.INSTANCE);
